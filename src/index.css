@@ -1,0 +1,47 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-tactical-black: #0D1117;
+  --color-olive-dark: #1A2310;
+  --color-olive-mid: #222D18;
+  --color-tactical-border: #2A3320;
+  --color-olive-hover: #3A4A2A;
+  
+  --color-alert-red: #C8371A;
+  --color-alert-red-hover: #A82D15;
+  
+  --color-field-green: #8AAF5A;
+  --color-field-green-dim: #6B8A4A;
+  
+  --color-khaki-white: #F0EDE8;
+  --color-muted-dark: #6B7A5A;
+  --color-muted-light: #4A5A3A;
+  
+  --color-amber: #E8A030;
+  --color-amber-dim: #B8801A;
+  
+  --color-light-bg: #F5F3EE;
+  --color-light-card: #ECEAE4;
+
+  --font-heading: "Arial Narrow", Arial, sans-serif;
+  --font-body: "Inter", sans-serif;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-tactical-black);
+  color: var(--color-khaki-white);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  text-transform: uppercase;
+}
+
+.tactical-grid {
+  background-image: radial-gradient(var(--color-tactical-border) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
