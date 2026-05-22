@@ -1,213 +1,142 @@
-import React, { useState } from 'react';
-import { courses } from '../data/courses';
-import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
-import { RankStripe } from '../components/ui/TacticalGraphics';
-import { CheckCircle2 } from 'lucide-react';
+import { Phone, Mail, Instagram, Facebook, Youtube, MapPin, Send } from 'lucide-react';
+import { TikTokIcon } from '../components/TikTokIcon';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 export default function Contacto() {
   const [formData, setFormData] = useState({
     nombre: '',
-    rango: '',
-    institucion: 'Policía Nacional',
-    unidad: '',
     telefono: '',
     email: '',
+    tipo: 'Interesado en productos',
     ciudad: 'Quito',
-    curso: courses[0].title,
-    modalidad: 'Presencial',
-    notas: ''
+    mensaje: ''
   });
-
-  const WHATSAPP_NUMBER = "593900000000"; // Placeholder EC number
-
-  const openWhatsApp = (text: string) => {
-    const encodedText = encodeURIComponent(text);
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodedText}`, '_blank', 'noopener,noreferrer');
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const text = `¡Hola Sumak Ecuador!%0A
+Soy: ${formData.nombre}%0A
+Desde: ${formData.ciudad}%0A
+Me interesa: ${formData.tipo}%0A
+Mensaje: ${formData.mensaje}%0A
+Contacto: ${formData.telefono} | ${formData.email}`;
 
-    openWhatsApp(`Inscripción TAKTIS:
-Nombre: ${formData.nombre}
-Rango: ${formData.rango}
-Institución: ${formData.institucion} · Unidad: ${formData.unidad}
-Curso: ${formData.curso}
-Modalidad: ${formData.modalidad}
-Ciudad: ${formData.ciudad}
-Contacto: ${formData.telefono} | ${formData.email}
-Notas: ${formData.notas}`);
+    window.open(`https://wa.me/593999999999?text=${text}`, '_blank');
   };
-
-  const handleDirectWhatsapp = () => {
-    openWhatsApp('Hola TAKTIS, necesito información sobre sus cursos y próximas fechas.');
-  };
-
-  const handleProposalRequest = () => {
-    openWhatsApp('Hola TAKTIS, necesito una propuesta de capacitación in-company para mi unidad o institución.');
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const inputClass = "w-full bg-tactical-black border-2 border-tactical-border rounded-[2px] px-4 py-3 text-khaki-white focus:border-alert-red focus:outline-none transition-colors font-body text-sm mt-1";
-  const labelClass = "text-[11px] uppercase tracking-widest font-medium text-muted-dark";
 
   return (
-    <div className="flex flex-col min-h-screen bg-tactical-black">
-      <section className="bg-tactical-black border-b border-tactical-border pt-12 pb-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-           <h1 className="font-heading text-5xl font-bold text-khaki-white tracking-[0.04em] mb-2 uppercase">INSCRÍBETE</h1>
-           <p className="text-muted-dark text-lg">Selecciona tu curso, completa el formulario — te contactamos en 24 horas.</p>
-        </div>
-      </section>
+    <div className="w-full pt-32 bg-brand-black min-h-screen pb-24">
+      <div className="max-w-7xl mx-auto px-6">
+         
+         <div className="mb-16">
+            <h1 className="font-heading font-bold text-4xl sm:text-5xl text-[#F0F0F0] mb-4">Contáctanos</h1>
+            <p className="text-brand-text-muted text-xl max-w-2xl">Estamos aquí para ayudarte a dar el primer paso hacia tu bienestar y libertad financiera.</p>
+         </div>
 
-      <section className="py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
             
-            {/* Form */}
-            <div className="lg:col-span-8">
-              <form onSubmit={handleSubmit} className="bg-olive-dark border border-tactical-border rounded-[4px] p-8">
-                <RankStripe className="mb-8" />
-                <h3 className="font-heading text-2xl text-khaki-white uppercase mb-8">Datos del Postulante</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                  <div>
-                    <label htmlFor="nombre" className={labelClass}>Nombre Completo</label>
-                    <input id="nombre" required type="text" name="nombre" value={formData.nombre} onChange={handleChange} className={inputClass} />
+            {/* Left Form */}
+            <div className="lg:col-span-7">
+               <form onSubmit={handleSubmit} className="bg-brand-surface border border-brand-border rounded-[24px] p-8 shadow-2xl flex flex-col gap-6">
+                  <div className="flex flex-col gap-2">
+                     <label className="text-sm font-medium text-brand-text-muted">Nombre Completo</label>
+                     <input required type="text" value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value})} className="w-full bg-[#111] border border-brand-border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-emerald" />
                   </div>
-                  <div>
-                    <label htmlFor="rango" className={labelClass}>Rango / Grado (si aplica)</label>
-                    <input id="rango" type="text" name="rango" value={formData.rango} onChange={handleChange} className={inputClass} placeholder="Ej. Cabo 1º" />
-                  </div>
-                  <div>
-                    <label htmlFor="institucion" className={labelClass}>Institución</label>
-                    <select id="institucion" name="institucion" value={formData.institucion} onChange={handleChange} className={inputClass}>
-                       <option>Policía Nacional</option>
-                       <option>Fuerzas Armadas</option>
-                       <option>Cuerpo de Bomberos</option>
-                       <option>Cruz Roja</option>
-                       <option>Brigada Privada</option>
-                       <option>Particular</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="unidad" className={labelClass}>Unidad / Destacamento</label>
-                    <input id="unidad" type="text" name="unidad" value={formData.unidad} onChange={handleChange} className={inputClass} />
-                  </div>
-                  <div>
-                    <label htmlFor="telefono" className={labelClass}>WhatsApp / Teléfono</label>
-                    <input id="telefono" required type="tel" name="telefono" value={formData.telefono} onChange={handleChange} className={inputClass} />
-                  </div>
-                  <div>
-                    <label htmlFor="email" className={labelClass}>Email</label>
-                    <input id="email" required type="email" name="email" value={formData.email} onChange={handleChange} className={inputClass} />
-                  </div>
-                  <div>
-                    <label htmlFor="ciudad" className={labelClass}>Ciudad</label>
-                    <select id="ciudad" name="ciudad" value={formData.ciudad} onChange={handleChange} className={inputClass}>
-                       <option>Quito</option>
-                       <option>Guayaquil</option>
-                       <option>Cuenca</option>
-                       <option>Otra</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="bg-tactical-black border-t border-tactical-border/50 -mx-8 px-8 py-8">
-                   <h3 className="font-heading text-2xl text-khaki-white uppercase mb-8">Selección de Curso</h3>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                     <div>
-                       <label htmlFor="curso" className={labelClass}>Curso de Interés</label>
-                       <select id="curso" required name="curso" value={formData.curso} onChange={handleChange} className={inputClass}>
-                          {courses.map(c => <option key={c.slug} value={c.title}>{c.title}</option>)}
-                       </select>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-brand-text-muted">Celular / WhatsApp</label>
+                        <input required type="tel" value={formData.telefono} onChange={e => setFormData({...formData, telefono: e.target.value})} className="w-full bg-[#111] border border-brand-border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-emerald" />
                      </div>
-                     <div>
-                       <label htmlFor="modalidad" className={labelClass}>Modalidad Preferida</label>
-                       <select id="modalidad" name="modalidad" value={formData.modalidad} onChange={handleChange} className={inputClass}>
-                          <option>Presencial</option>
-                          <option>Virtual</option>
-                          <option>En campo</option>
-                          <option>Indiferente</option>
-                       </select>
+                     <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-brand-text-muted">Email</label>
+                        <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full bg-[#111] border border-brand-border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-emerald" />
                      </div>
-                   </div>
-                   
-                   <div className="mb-8">
-                     <label htmlFor="notas" className={labelClass}>Información Adicional (Opcional)</label>
-                     <textarea id="notas" name="notas" value={formData.notas} onChange={handleChange} className={`${inputClass} min-h-[100px] resize-y`} />
-                   </div>
+                  </div>
 
-                   <Button type="submit" className="w-full text-lg py-4">
-                      ENVIAR INSCRIPCIÓN POR WHATSAPP
-                   </Button>
-                </div>
-              </form>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-brand-text-muted">Motivo de Contacto</label>
+                        <select value={formData.tipo} onChange={e => setFormData({...formData, tipo: e.target.value})} className="w-full bg-[#111] border border-brand-border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-emerald">
+                           <option>Interesado en productos</option>
+                           <option>Quiero ser distribuidor</option>
+                           <option>Ya soy distribuidor</option>
+                           <option>Otro</option>
+                        </select>
+                     </div>
+                     <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-brand-text-muted">Ciudad</label>
+                        <select value={formData.ciudad} onChange={e => setFormData({...formData, ciudad: e.target.value})} className="w-full bg-[#111] border border-brand-border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-emerald">
+                           <option>Quito</option><option>Guayaquil</option><option>Cuenca</option><option>Loja</option><option>Ambato</option><option>Otra</option>
+                        </select>
+                     </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                     <label className="text-sm font-medium text-brand-text-muted">¿En qué podemos ayudarte?</label>
+                     <textarea required rows={4} value={formData.mensaje} onChange={e => setFormData({...formData, mensaje: e.target.value})} className="w-full bg-[#111] border border-brand-border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-emerald resize-none"></textarea>
+                  </div>
+
+                  <button type="submit" className="w-full py-4 bg-brand-emerald text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-brand-emerald-hover shadow-emerald-glow mt-2">
+                    <Send size={20} /> Enviar por WhatsApp
+                  </button>
+               </form>
             </div>
 
-            {/* Sidebar */}
-            <div className="lg:col-span-4">
-              <Card accentColor="red" className="p-8 sticky top-32">
-                 <h3 className="font-heading text-2xl text-khaki-white mb-8 uppercase">CANALES DE CONTACTO</h3>
-                 
-                 <div className="space-y-6">
-                   <Button type="button" onClick={handleDirectWhatsapp} className="w-full justify-start text-left">
-                      WhatsApp Central
-                   </Button>
-                   <a href="mailto:info@taktis.edu.ec" className="flex items-center text-field-green font-heading uppercase text-sm tracking-widest hover:text-white transition-colors">
-                     Envíenos un email
-                   </a>
-                 </div>
+            {/* Right Info */}
+            <div className="lg:col-span-5 flex flex-col gap-8">
+               
+               <div className="bg-brand-surface border-t-4 border-brand-emerald rounded-2xl p-8 border-x border-b border-brand-border">
+                  <div className="w-full bg-[#1A2A20] text-brand-emerald font-medium text-sm text-center py-2 rounded-lg border border-brand-emerald/30 mb-8">
+                    Respondemos en menos de 2 horas.
+                  </div>
 
-                 <div className="my-8 pt-8 border-t border-tactical-border">
-                    <h4 className="font-heading text-xl text-khaki-white uppercase mb-4">CAPACITACIÓN IN-COMPANY</h4>
-                    <p className="text-sm text-muted-dark leading-relaxed mb-6">
-                      ¿Tu unidad necesita formación a medida? Organizamos entrenamientos en tus instalaciones con instructores certificados.
-                    </p>
-                    <Button type="button" variant="outline" onClick={handleProposalRequest} className="w-full">SOLICITAR PROPUESTA</Button>
-                 </div>
+                  <a href="https://wa.me/593999999999" target="_blank" rel="noreferrer" className="flex items-center gap-4 bg-brand-emerald text-white p-4 rounded-xl hover:bg-brand-emerald-hover transition-colors mb-4 shadow-lg shadow-brand-emerald/20">
+                     <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0"><Phone size={20} /></div>
+                     <div className="flex flex-col">
+                        <span className="text-xs uppercase font-medium tracking-wider text-emerald-100">WhatsApp Directo</span>
+                        <span className="font-heading font-bold text-lg">+593 99 999 9999</span>
+                     </div>
+                  </a>
 
-                 <div className="pt-8 border-t border-tactical-border space-y-4">
-                    <div>
-                      <span className="block text-[10px] text-muted-dark uppercase tracking-widest mb-1">Horario de Atención</span>
-                      <span className="text-khaki-white text-sm">Lunes a Viernes · 08:00 – 17:00</span>
-                    </div>
-                    <div>
-                      <span className="inline-block bg-field-green/10 text-field-green border border-field-green px-3 py-1 rounded-[2px] text-[10px] uppercase tracking-widest font-bold">
-                        Respuesta en menos de 24 horas
-                      </span>
-                    </div>
-                 </div>
-              </Card>
-            </div>
-            
-          </div>
-        </div>
-      </section>
+                  <a href="mailto:info@sumakecuador.com" className="flex items-center gap-4 text-brand-text-muted hover:text-[#F0F0F0] transition-colors p-4">
+                     <Mail size={24} className="shrink-0" />
+                     <span className="font-medium text-sm">info@sumakecuador.com</span>
+                  </a>
+                  
+                  <div className="flex items-center gap-4 text-brand-text-muted p-4">
+                     <MapPin size={24} className="shrink-0" />
+                     <span className="font-medium text-sm">Ecuador · Envíos a Nivel Nacional</span>
+                  </div>
 
-      {/* Trust Strip */}
-      <section className="bg-light-bg py-12 border-t border-tactical-border/10">
-         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-               <div className="flex items-center gap-4">
-                 <CheckCircle2 className="w-8 h-8 text-alert-red shrink-0" />
-                 <h4 className="font-heading text-xl uppercase text-tactical-black">Inscripción directa</h4>
+                  <div className="w-full h-px bg-brand-border my-4"></div>
+                  
+                  <div className="flex flex-col gap-3 p-4">
+                     <span className="text-sm font-medium text-[#F0F0F0]">Horario de Atención</span>
+                     <span className="text-brand-text-muted text-sm">Lunes a Sábado · 8:00 – 20:00 (EC)</span>
+                  </div>
+
+                  <div className="flex justify-center gap-4 mt-4">
+                     <a href="#" className="w-12 h-12 rounded-full border border-brand-border flex items-center justify-center text-brand-emerald hover:bg-brand-emerald/10 transition-colors"><Instagram size={20} /></a>
+                     <a href="#" className="w-12 h-12 rounded-full border border-brand-border flex items-center justify-center text-brand-emerald hover:bg-brand-emerald/10 transition-colors"><Facebook size={20} /></a>
+                     <a href="#" className="w-12 h-12 rounded-full border border-brand-border flex items-center justify-center text-brand-emerald hover:bg-brand-emerald/10 transition-colors"><TikTokIcon size={20} /></a>
+                     <a href="#" className="w-12 h-12 rounded-full border border-brand-border flex items-center justify-center text-brand-emerald hover:bg-brand-emerald/10 transition-colors"><Youtube size={20} /></a>
+                  </div>
                </div>
-               <div className="flex items-center gap-4">
-                 <CheckCircle2 className="w-8 h-8 text-alert-red shrink-0" />
-                 <h4 className="font-heading text-xl uppercase text-tactical-black">Sin trámites burocráticos</h4>
+
+               <div className="bg-brand-surface border border-brand-gold/30 rounded-2xl p-8 relative overflow-hidden text-center">
+                  <div className="absolute top-0 right-0 w-[150px] h-[150px] bg-brand-gold/10 blur-[50px]"></div>
+                  <h4 className="font-heading font-bold text-xl text-brand-gold mb-3 relative z-10">¿Ya eres distribuidor?</h4>
+                  <p className="text-sm text-brand-text-muted mb-6 relative z-10">Accede a tu backoffice privado para gestionar tu red, revisar tu volumen y cobrar comisiones.</p>
+                  <Link to="/login" className="inline-block px-6 py-3 border border-brand-gold text-brand-gold rounded-xl text-sm font-semibold hover:bg-brand-gold hover:text-brand-black transition-colors relative z-10 shadow-[0_0_15px_rgba(212,175,55,0.2)]">
+                     Ingresar al Sistema
+                  </Link>
                </div>
-               <div className="flex items-center gap-4">
-                 <CheckCircle2 className="w-8 h-8 text-alert-red shrink-0" />
-                 <h4 className="font-heading text-xl uppercase text-tactical-black">Certificado garantizado al finalizar</h4>
-               </div>
+
             </div>
          </div>
-      </section>
+      </div>
     </div>
   );
 }

@@ -1,47 +1,69 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --color-tactical-black: #0D1117;
-  --color-olive-dark: #1A2310;
-  --color-olive-mid: #222D18;
-  --color-tactical-border: #2A3320;
-  --color-olive-hover: #3A4A2A;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-heading: "Poppins", ui-sans-serif, system-ui, sans-serif;
   
-  --color-alert-red: #C8371A;
-  --color-alert-red-hover: #A82D15;
+  --color-brand-black: #0F0F0F;
+  --color-brand-surface: #1A1A1A;
+  --color-brand-surface-elevated: #222222;
+  --color-brand-border: #2E2E2E;
+  --color-brand-border-hover: #3A3A3A;
   
-  --color-field-green: #8AAF5A;
-  --color-field-green-dim: #6B8A4A;
+  --color-brand-emerald: #00A86B;
+  --color-brand-emerald-hover: #008F5A;
+  --color-brand-emerald-bright: #00C47E;
+  --color-brand-emerald-dim: #4DB88A;
   
-  --color-khaki-white: #F0EDE8;
-  --color-muted-dark: #6B7A5A;
-  --color-muted-light: #4A5A3A;
+  --color-brand-gold: #D4AF37;
+  --color-brand-gold-bright: #E8C94A;
+  --color-brand-gold-dim: #A88B20;
   
-  --color-amber: #E8A030;
-  --color-amber-dim: #B8801A;
+  --color-brand-text: #F0F0F0;
+  --color-brand-text-muted: #888888;
+  --color-brand-text-lighter: #AAAAAA;
   
-  --color-light-bg: #F5F3EE;
-  --color-light-card: #ECEAE4;
+  --color-brand-light-bg: #F8F8F6;
+  --color-brand-light-surface: #EFEFED;
+  --color-brand-light-text: #0F0F0F;
+}
 
-  --font-heading: "Arial Narrow", Arial, sans-serif;
-  --font-body: "Inter", sans-serif;
+@layer utilities {
+  .bg-hero-gradient {
+    background-image: radial-gradient(ellipse at 30% 50%, #0A2518 0%, #0F0F0F 60%);
+  }
+  .bg-cta-gradient {
+    background-image: linear-gradient(135deg, #006B42 0%, #00A86B 50%, #00C47E 100%);
+  }
+  .bg-card-gradient {
+    background-image: linear-gradient(135deg, #1A1A1A, #1A2A20);
+  }
+  .text-gold-shimmer {
+    background: linear-gradient(90deg, #A88B20, #D4AF37, #E8C94A, #D4AF37, #A88B20);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+    background-size: 200% auto;
+    animation: shine 4s linear infinite;
+  }
+  @keyframes shine {
+    to {
+      background-position: 200% center;
+    }
+  }
+  .shadow-emerald-glow {
+    box-shadow: 0 0 20px rgba(0, 168, 107, 0.25);
+  }
 }
 
 body {
-  font-family: var(--font-body);
-  background-color: var(--color-tactical-black);
-  color: var(--color-khaki-white);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--color-brand-black);
+  color: var(--color-brand-text);
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1, h2, h3, h4, h5, h6, .font-heading {
   font-family: var(--font-heading);
-  text-transform: uppercase;
-}
-
-.tactical-grid {
-  background-image: radial-gradient(var(--color-tactical-border) 1px, transparent 1px);
-  background-size: 20px 20px;
 }

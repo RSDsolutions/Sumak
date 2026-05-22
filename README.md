@@ -1,27 +1,20 @@
-# Sumak
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
+</div>
 
-Aplicación web React/Vite para TAKTIS Training Institute, con catálogo de cursos, páginas institucionales, blog, certificaciones y formulario de contacto por WhatsApp.
+# Run and deploy your AI Studio app
 
-## Requisitos
+This contains everything you need to run your app locally.
 
-- Node.js 20 o superior
-- npm
+View your app in AI Studio: https://ai.studio/apps/2e175e2c-94b7-44c3-9339-e1eb0d845898
 
-## Desarrollo
+## Run Locally
 
-```bash
-npm install
-npm run dev
-```
+**Prerequisites:**  Node.js
 
-La app se levanta por defecto en `http://localhost:3000`.
 
-## Validación
-
-```bash
-npm run lint
-npm run build
-npm run test:e2e
-```
-
-Las pruebas E2E recorren las rutas públicas, validan clics principales, menú móvil, formulario de WhatsApp y enlaces vacíos.
+1. Install dependencies:
+   `npm install`
+2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. Run the app:
+   `npm run dev`

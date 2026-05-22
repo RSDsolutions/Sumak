@@ -1,5 +1,6 @@
 {
-  "name": "TAKTIS Training Institute",
-  "description": "Capacitación táctica y operacional certificada para cuerpos de seguridad y emergencia del Ecuador.",
-  "requestFramePermissions": []
+  "name": "Sumak Ecuador",
+  "description": "Salud, crecimiento y libertad financiera. Suplementos premium y oportunidad de negocio multinivel en Ecuador.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
