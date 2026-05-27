@@ -1,22 +1,20 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
-import Home from './pages/Home';
-import Productos from './pages/Productos';
-import ProductDetail from './pages/ProductDetail';
-import Plan from './pages/Plan';
-import ComoFunciona from './pages/ComoFunciona';
-import Registro from './pages/Registro';
-import Testimonios from './pages/Testimonios';
-import Contacto from './pages/Contacto';
-import Login from './pages/Login';
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+import WhatsAppButton from './components/WhatsAppButton';
+import Home from './pages/Home';
+import Nosotros from './pages/Nosotros';
+import Productos from './pages/Productos';
+import ProductDetail from './pages/ProductDetail';
+import Oportunidad from './pages/Oportunidad';
+import Plan from './pages/Plan';
+import Escaleras from './pages/Escaleras';
+import Contacto from './pages/Contacto';
+import Registro from './pages/Registro';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -48,22 +46,25 @@ export default function App() {
   return (
     <BrowserRouter>
       <ScrollToTop />
-      <div className="flex flex-col min-h-screen">
+      <div className="flex flex-col min-h-screen bg-brand-black">
         <Navbar />
         <main className="flex-grow">
           <Routes>
             <Route path="/" element={<PageTransition><Home /></PageTransition>} />
+            <Route path="/nosotros" element={<PageTransition><Nosotros /></PageTransition>} />
             <Route path="/productos" element={<PageTransition><Productos /></PageTransition>} />
             <Route path="/productos/:slug" element={<PageTransition><ProductDetail /></PageTransition>} />
+            <Route path="/oportunidad" element={<PageTransition><Oportunidad /></PageTransition>} />
             <Route path="/plan-multinivel" element={<PageTransition><Plan /></PageTransition>} />
-            <Route path="/como-funciona" element={<PageTransition><ComoFunciona /></PageTransition>} />
-            <Route path="/registro" element={<PageTransition><Registro /></PageTransition>} />
-            <Route path="/testimonios" element={<PageTransition><Testimonios /></PageTransition>} />
+            <Route path="/escaleras" element={<PageTransition><Escaleras /></PageTransition>} />
             <Route path="/contacto" element={<PageTransition><Contacto /></PageTransition>} />
+            <Route path="/registro" element={<PageTransition><Registro /></PageTransition>} />
             <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
+            <Route path="/dashboard" element={<PageTransition><Dashboard /></PageTransition>} />
           </Routes>
         </main>
         <Footer />
+        <WhatsAppButton />
       </div>
     </BrowserRouter>
   );

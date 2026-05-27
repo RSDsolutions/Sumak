@@ -1,149 +1,140 @@
 import { useParams, Link } from 'react-router-dom';
-import { productsData } from '../data';
-import { ProductBottleSVG } from '../components/ProductBottleSVG';
-import { CheckCircle2, ShoppingBag } from 'lucide-react';
-import { useState } from 'react';
+import { motion } from 'motion/react';
+import { products } from '../data';
+import { CheckCircle2, ShoppingBag, Leaf, ArrowLeft } from 'lucide-react';
+import { contactInfo } from '../data';
 
 export default function ProductDetail() {
-  const { slug } = useParams();
-  const product = productsData.find(p => p.slug === slug);
-  const [activeTab, setActiveTab] = useState('Descripción');
+  const { slug } = useParams<{ slug: string }>();
+  const product = products.find((p) => p.slug === slug);
 
   if (!product) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-brand-black text-[#F0F0F0] text-xl">
-        Producto no encontrado. <Link to="/productos" className="text-brand-emerald ml-2">Volver</Link>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#0F0F0F] gap-4">
+        <p className="text-[#F0F0F0] text-xl font-heading font-bold">Producto no encontrado.</p>
+        <Link to="/productos" className="text-[#00A86B] font-semibold hover:underline flex items-center gap-2">
+          <ArrowLeft size={16} /> Ver todos los productos
+        </Link>
       </div>
     );
   }
 
-  const tabs = ['Descripción', 'Ingredientes', 'Beneficios', 'Modo de uso'];
+  const distributorPrice = product.pvp / 2;
 
   return (
-    <div className="w-full bg-brand-black min-h-screen pt-32 pb-24">
-      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
-        
-        {/* Left: Images & Info */}
-        <div className="flex flex-col gap-6">
-          {/* Main Image */}
-          <div className="w-full h-[500px] bg-brand-surface border border-brand-border rounded-[24px] relative overflow-hidden flex justify-center items-center">
-             <ProductBottleSVG category={product.category} className="scale-125 md:scale-150" />
-             {/* Thumbnail variants (visual only) */}
-             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-30">
-               {[1, 2, 3].map((v) => (
-                 <div key={v} className={`w-12 h-12 rounded-lg border-2 ${v === 1 ? 'border-brand-emerald bg-[#2A2A2A]' : 'border-brand-border bg-brand-surface opacity-60'} cursor-pointer hover:opacity-100 transition-opacity flex items-center justify-center overflow-hidden`}>
-                     <ProductBottleSVG category={product.category} className="scale-50" />
-                 </div>
-               ))}
-             </div>
-          </div>
-          
-          {/* Tabs */}
-          <div className="mt-4">
-            <div className="flex gap-6 border-b border-brand-border overflow-x-auto pb-2 scrollbar-hide">
-              {tabs.map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`pb-3 font-medium text-sm transition-colors whitespace-nowrap relative ${
-                     activeTab === tab ? 'text-brand-emerald' : 'text-brand-text-muted hover:text-[#F0F0F0]'
-                  }`}
-                >
-                  {tab}
-                  {activeTab === tab && (
-                    <div className="absolute bottom-0 left-0 w-full h-[2px] bg-brand-emerald rounded-full"></div>
-                  )}
-                </button>
-              ))}
-            </div>
-            
-            <div className="py-6 text-brand-text-muted leading-relaxed">
-              {activeTab === 'Descripción' && (
-                <p>El {product.name} es una fórmula premium avanzada creada para proveer los mejores beneficios. {product.shortDesc} Ideal para incorporar a tu rutina diaria y potenciar tu calidad de vida.</p>
-              )}
-              {activeTab === 'Ingredientes' && (
-                <ul className="flex flex-wrap gap-2">
-                  {product.ingredients.map(ing => (
-                    <li key={ing} className="px-3 py-1.5 bg-brand-surface rounded-md border border-brand-border text-sm flex items-center gap-2">
-                      <CheckCircle2 size={14} className="text-brand-emerald" /> {ing}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {activeTab === 'Beneficios' && (
-                <p>Diseñado para {product.benefit.toLowerCase()}, aportar energía sostenible y proteger la salud celular a largo plazo. Resultados visibles desde la segunda semana de uso continuado.</p>
-              )}
-              {activeTab === 'Modo de uso' && (
-                <p>Tomar 1 cápsula o una medida con abundante agua por la mañana. No exceder la dosis recomendada. Consulte a su médico antes de usar.</p>
-              )}
-            </div>
-          </div>
-        </div>
+    <div className="bg-[#0F0F0F] min-h-screen pt-24 pb-20">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        {/* Back link */}
+        <Link
+          to="/productos"
+          className="inline-flex items-center gap-2 text-[#888888] text-sm hover:text-[#00A86B] transition-colors mb-8"
+        >
+          <ArrowLeft size={15} /> Volver a Productos
+        </Link>
 
-        {/* Right: Keep action sticky */}
-        <div className="relative">
-          <div className="sticky top-[100px] bg-brand-surface border border-brand-border rounded-[24px] p-8 lg:p-10 shadow-2xl">
-            <span className="inline-block px-3 py-1 bg-brand-emerald/10 text-brand-emerald text-xs font-bold tracking-widest uppercase rounded-full mb-4">
-              {product.category}
-            </span>
-            <h1 className="font-heading font-bold text-4xl sm:text-5xl text-[#F0F0F0] mb-2">{product.name}</h1>
-            <p className="text-brand-text-muted text-lg mb-8">{product.benefit}</p>
-            
-            <div className="flex flex-col gap-6 mb-8">
-              <div className="flex items-end justify-between border-b border-brand-border pb-6 relative">
-                 <div className="flex items-center gap-2">
-                    <span className="text-3xl text-brand-emerald font-heading font-bold">${product.retailPrice.toFixed(2)}</span>
-                    <span className="text-sm font-medium text-brand-text-muted uppercase tracking-wider mb-1">Retail</span>
-                 </div>
-                 <div className="flex flex-col items-end">
-                    <div className="absolute top-2 right-0 w-[150px] h-6 bg-brand-gold/10 blur-[15px] rounded-full"></div>
-                    <span className="text-2xl text-brand-gold font-heading font-bold relative z-10">${product.distributorPrice.toFixed(2)}</span>
-                    <span className="text-[10px] font-medium text-brand-gold-dim uppercase tracking-wider relative z-10">Afiliado</span>
-                 </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+          {/* Product visual */}
+          <motion.div
+            initial={{ opacity: 0, x: -24 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <div className="w-full aspect-square max-w-sm mx-auto lg:mx-0 rounded-2xl bg-gradient-to-br from-[#1A2A20] to-[#1A1A1A] border border-[#2E2E2E] flex items-center justify-center shadow-[0_0_60px_rgba(0,168,107,0.08)]">
+              <Leaf size={80} className="text-[#00A86B] opacity-40" />
+            </div>
+
+            <div className="mt-6 bg-[#1A1A1A] border border-[#2E2E2E] rounded-xl p-5">
+              <h3 className="font-heading font-semibold text-[#F0F0F0] text-sm mb-3">Información del Producto</h3>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div>
+                  <span className="text-[#555555] block mb-0.5">Código</span>
+                  <span className="text-[#F0F0F0] font-mono font-medium">#{product.codigo}</span>
+                </div>
+                <div>
+                  <span className="text-[#555555] block mb-0.5">Categoría</span>
+                  <span className="text-[#F0F0F0] font-medium">{product.categoria}</span>
+                </div>
+                <div>
+                  <span className="text-[#555555] block mb-0.5">PVP Público</span>
+                  <span className="text-[#F0F0F0] font-bold text-base">${product.pvp.toFixed(2)}</span>
+                </div>
+                <div>
+                  <span className="text-[#555555] block mb-0.5">Precio Distribuidor</span>
+                  <span className="text-[#00A86B] font-bold text-base">${distributorPrice.toFixed(2)}</span>
+                </div>
               </div>
-              
+            </div>
+          </motion.div>
+
+          {/* Product info */}
+          <motion.div
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+            className="flex flex-col gap-5"
+          >
+            <div>
+              <span className="inline-block text-xs font-semibold uppercase tracking-widest text-[#00A86B] bg-[#00A86B]/10 border border-[#00A86B]/20 px-3 py-1.5 rounded-full mb-3">
+                {product.categoria}
+              </span>
+              <h1 className="font-heading font-bold text-3xl sm:text-4xl text-[#F0F0F0] mb-3 leading-tight">
+                {product.nombre}
+              </h1>
+              <p className="text-[#AAAAAA] text-base leading-relaxed">{product.descripcion}</p>
+            </div>
+
+            {/* Pricing */}
+            <div className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-xl p-6">
+              <div className="flex items-center justify-between mb-4 pb-4 border-b border-[#2E2E2E]">
+                <div>
+                  <p className="text-[#555555] text-xs mb-1">Precio Público</p>
+                  <p className="font-heading font-bold text-3xl text-[#F0F0F0]">${product.pvp.toFixed(2)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[#555555] text-xs mb-1">Precio Distribuidor (50%)</p>
+                  <p className="font-heading font-bold text-3xl text-[#00A86B]">${distributorPrice.toFixed(2)}</p>
+                </div>
+              </div>
+              <p className="text-[#D4AF37] text-xs text-center">
+                Tu ganancia por venta directa: <strong>${distributorPrice.toFixed(2)}</strong>
+              </p>
+            </div>
+
+            {/* Benefits */}
+            <div>
               <ul className="flex flex-col gap-3">
-                <li className="flex items-start gap-3">
-                  <CheckCircle2 size={20} className="text-brand-emerald mt-0.5 shrink-0" />
-                  <span className="text-[#F0F0F0] text-sm">Registro sanitario vigente en Ecuador</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle2 size={20} className="text-brand-emerald mt-0.5 shrink-0" />
-                  <span className="text-[#F0F0F0] text-sm">Fórmula 100% natural libre de preservantes artificiales</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle2 size={20} className="text-brand-emerald mt-0.5 shrink-0" />
-                  <span className="text-[#F0F0F0] text-sm">Gana hasta 30% recomendando este producto</span>
-                </li>
+                {[
+                  'Producto 100% natural elaborado en Sumak Jambi',
+                  'Fórmula con extractos de plantas medicinales ancestrales',
+                  '50% de descuento para distribuidores activos',
+                ].map((b) => (
+                  <li key={b} className="flex items-start gap-3">
+                    <CheckCircle2 size={16} className="text-[#00A86B] mt-0.5 shrink-0" />
+                    <span className="text-[#AAAAAA] text-sm">{b}</span>
+                  </li>
+                ))}
               </ul>
             </div>
 
-            <div className="flex flex-col gap-3">
-              <a 
-                href={`https://wa.me/593999999999?text=Hola, quiero adquirir el ${product.name} (${product.retailPrice}).`}
+            {/* CTAs */}
+            <div className="flex flex-col gap-3 pt-2">
+              <a
+                href={`https://wa.me/${contactInfo.whatsapp}?text=Hola, quiero adquirir: ${product.nombre} (PVP: $${product.pvp.toFixed(2)})`}
                 target="_blank"
-                rel="noreferrer"
-                className="w-full py-4 rounded-xl bg-brand-emerald text-white font-medium text-lg flex items-center justify-center gap-2 hover:bg-brand-emerald-hover transition-colors shadow-emerald-glow"
+                rel="noopener noreferrer"
+                className="w-full py-4 rounded-xl bg-[#00A86B] text-white font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#008F5A] shadow-[0_0_20px_rgba(0,168,107,0.25)] transition-all duration-200"
               >
-                <ShoppingBag size={20} /> Comprar (Retail)
+                <ShoppingBag size={18} /> Comprar por WhatsApp
               </a>
-              <Link 
+              <Link
                 to="/registro"
-                className="w-full py-4 rounded-xl border border-brand-gold bg-brand-gold/5 text-brand-gold font-medium text-lg flex items-center justify-center gap-2 hover:bg-brand-gold hover:text-brand-black transition-colors"
+                className="w-full py-4 rounded-xl border-2 border-[#D4AF37] text-[#D4AF37] font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#D4AF37] hover:text-[#0F0F0F] transition-all duration-200"
               >
-                Comprar como Afiliado (${product.distributorPrice.toFixed(2)})
+                Únete y compra a ${distributorPrice.toFixed(2)}
               </Link>
             </div>
-            
-            <div className="mt-6 flex justify-center">
-               <span className="px-4 py-1.5 bg-[#222] border border-[#333] rounded-full text-xs text-brand-text-lighter font-medium flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-brand-emerald inline-block"></span>
-                  Stock disponible - Envío 24/48h
-               </span>
-            </div>
-          </div>
+          </motion.div>
         </div>
-        
       </div>
     </div>
   );

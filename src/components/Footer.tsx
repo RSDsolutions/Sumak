@@ -1,91 +1,132 @@
 import { Link } from 'react-router-dom';
-import { Instagram, Facebook, Youtube } from 'lucide-react';
-import { TikTokIcon } from './TikTokIcon';
+import { Instagram, Facebook, Phone, Mail, MapPin } from 'lucide-react';
+import { contactInfo } from '../data';
 
 export default function Footer() {
   return (
-    <footer className="bg-[#0A0A0A] border-t border-brand-border relative pt-16 pb-8">
-      {/* Emerald thin line signature */}
-      <div className="absolute top-0 left-0 w-full h-[1px] bg-brand-emerald opacity-50"></div>
-      
-      <div className="max-w-7xl mx-auto px-6 w-full">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8 mb-16">
-          
+    <footer className="bg-[#0A0A0A] border-t border-[#2E2E2E] relative pt-14 pb-8">
+      <div className="absolute top-0 left-0 w-full h-[2px] bg-[#00A86B] opacity-40" />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-12">
+
+          {/* Brand column */}
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="relative w-10 h-10 rounded-full border border-brand-emerald flex items-center justify-center bg-brand-black shrink-0">
-                <div className="flex flex-col items-center">
-                  <span className="font-heading font-bold text-[#F0F0F0] text-[9px] tracking-widest">SUMAK</span>
-                  <span className="text-brand-gold text-[5px] font-medium tracking-[0.25em] uppercase mt-[1px]">ECUADOR</span>
+            <Link to="/" className="inline-block">
+              <span className="font-heading font-bold text-[#00A86B] text-3xl tracking-wide">SUMAK</span>
+            </Link>
+            <p className="text-[#888888] text-sm leading-relaxed">
+              {contactInfo.slogan}
+            </p>
+            <p className="text-[#D4AF37] text-xs font-medium uppercase tracking-widest mt-1">
+              Sumak Vida Ecuador S.A.
+            </p>
+          </div>
+
+          {/* Navigation */}
+          <div className="flex flex-col gap-3">
+            <h4 className="font-heading text-[#F0F0F0] font-semibold mb-1 text-sm uppercase tracking-wider">
+              Navegación
+            </h4>
+            {[
+              { label: 'Inicio', to: '/' },
+              { label: 'Nosotros', to: '/nosotros' },
+              { label: 'Productos', to: '/productos' },
+              { label: 'Oportunidad', to: '/oportunidad' },
+              { label: 'Plan Multinivel', to: '/plan-multinivel' },
+              { label: 'Escaleras de Éxito', to: '/escaleras' },
+              { label: 'Contacto', to: '/contacto' },
+            ].map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                className="text-[#888888] hover:text-[#00A86B] transition-colors text-sm"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+
+          {/* Contact + Social */}
+          <div className="flex flex-col gap-5">
+            <div>
+              <h4 className="font-heading text-[#F0F0F0] font-semibold mb-3 text-sm uppercase tracking-wider">
+                Contacto
+              </h4>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-start gap-2 text-[#888888] text-sm">
+                  <Phone size={14} className="mt-0.5 shrink-0 text-[#00A86B]" />
+                  <span>{contactInfo.telefono1} — {contactInfo.telefono2}</span>
+                </div>
+                <div className="flex items-start gap-2 text-[#888888] text-sm">
+                  <Mail size={14} className="mt-0.5 shrink-0 text-[#00A86B]" />
+                  <div className="flex flex-col gap-0.5">
+                    <a href={`mailto:${contactInfo.emailPrincipal}`} className="hover:text-[#00A86B] transition-colors">
+                      {contactInfo.emailPrincipal}
+                    </a>
+                    <a href={`mailto:${contactInfo.emailSecundario}`} className="hover:text-[#00A86B] transition-colors">
+                      {contactInfo.emailSecundario}
+                    </a>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2 text-[#888888] text-sm">
+                  <MapPin size={14} className="mt-0.5 shrink-0 text-[#00A86B]" />
+                  <span>{contactInfo.direccion}</span>
                 </div>
               </div>
-              <div className="flex flex-col justify-center">
-                <span className="font-heading font-bold text-[#F0F0F0] text-lg leading-tight tracking-wide">SUMAK</span>
+            </div>
+
+            <div>
+              <h4 className="font-heading text-[#F0F0F0] font-semibold mb-3 text-sm uppercase tracking-wider">
+                Síguenos
+              </h4>
+              <div className="flex items-center gap-3">
+                <a
+                  href="https://www.facebook.com/SumakVidaEcuador"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full border border-[#2E2E2E] flex items-center justify-center text-[#888888] hover:border-[#00A86B] hover:text-[#00A86B] transition-all duration-200"
+                  aria-label="Facebook"
+                >
+                  <Facebook size={16} />
+                </a>
+                <a
+                  href="https://www.instagram.com/sumakvidaecuador"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full border border-[#2E2E2E] flex items-center justify-center text-[#888888] hover:border-[#00A86B] hover:text-[#00A86B] transition-all duration-200"
+                  aria-label="Instagram"
+                >
+                  <Instagram size={16} />
+                </a>
+                <a
+                  href={`https://wa.me/${contactInfo.whatsapp}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full border border-[#2E2E2E] flex items-center justify-center text-[#888888] hover:border-[#25D366] hover:text-[#25D366] transition-all duration-200"
+                  aria-label="WhatsApp"
+                >
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                  </svg>
+                </a>
               </div>
             </div>
-            <p className="text-brand-text-muted text-sm leading-relaxed max-w-sm">
-              Salud, crecimiento y libertad financiera.<br />
-              Suplementos premium y oportunidad de negocio multinivel.
-            </p>
-            <p className="text-brand-gold-dim text-xs font-medium uppercase tracking-wider mt-2">
-              Ecuador · Red de distribuidores activa
-            </p>
           </div>
-
-          <div className="flex flex-col gap-4">
-            <h4 className="font-heading text-[#F0F0F0] font-semibold mb-2">Enlaces Rápidos</h4>
-            <Link to="/" className="text-brand-text-muted hover:text-brand-emerald transition-colors text-sm">Inicio</Link>
-            <Link to="/productos" className="text-brand-text-muted hover:text-brand-emerald transition-colors text-sm">Productos</Link>
-            <Link to="/plan-multinivel" className="text-brand-text-muted hover:text-brand-emerald transition-colors text-sm">Plan Multinivel</Link>
-            <Link to="/como-funciona" className="text-brand-text-muted hover:text-brand-emerald transition-colors text-sm">Cómo Funciona</Link>
-          </div>
-
-          <div className="flex flex-col gap-4">
-            <h4 className="font-heading text-[#F0F0F0] font-semibold mb-2">Soporte</h4>
-            <Link to="/testimonios" className="text-brand-text-muted hover:text-brand-emerald transition-colors text-sm">Testimonios</Link>
-            <Link to="/contacto" className="text-brand-text-muted hover:text-brand-emerald transition-colors text-sm">Contacto</Link>
-            <Link to="/registro" className="text-brand-text-muted hover:text-brand-emerald transition-colors text-sm">Crea tu Cuenta</Link>
-            <Link to="/login" className="text-brand-text-muted hover:text-brand-emerald transition-colors text-sm">Acceso Distribuidores</Link>
-          </div>
-
-          <div className="flex flex-col gap-6">
-            <h4 className="font-heading text-[#F0F0F0] font-semibold">Conéctate</h4>
-            <a 
-              href="https://wa.me/593999999999" 
-              target="_blank" 
-              rel="noreferrer"
-              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-brand-emerald text-white text-xs font-semibold shadow-emerald-glow hover:bg-brand-emerald-hover transition-colors w-fit"
-            >
-              Contactar por WhatsApp
-            </a>
-            <div className="flex items-center gap-3">
-              <a href="#" className="w-10 h-10 rounded-full border border-brand-border flex items-center justify-center text-brand-text-muted hover:border-brand-emerald hover:text-brand-emerald transition-colors">
-                <Instagram size={18} />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full border border-brand-border flex items-center justify-center text-brand-text-muted hover:border-brand-emerald hover:text-brand-emerald transition-colors">
-                <Facebook size={18} />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full border border-brand-border flex items-center justify-center text-brand-text-muted hover:border-brand-emerald hover:text-brand-emerald transition-colors">
-                <TikTokIcon size={18} />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full border border-brand-border flex items-center justify-center text-brand-text-muted hover:border-brand-emerald hover:text-brand-emerald transition-colors">
-                <Youtube size={18} />
-              </a>
-            </div>
-            <a href="mailto:info@sumakecuador.com" className="text-brand-text-muted text-sm hover:text-brand-emerald transition-colors">
-              info@sumakecuador.com
-            </a>
-          </div>
-
         </div>
 
-        <div className="pt-8 border-t border-brand-border flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-[#555555] text-xs">
-            © 2025 Sumak Ecuador · Todos los derechos reservados.
+        {/* Bottom bar */}
+        <div className="pt-8 border-t border-[#1A1A1A] flex flex-col sm:flex-row justify-between items-center gap-3">
+          <p className="text-[#555555] text-xs text-center sm:text-left">
+            RUC: {contactInfo.ruc} &nbsp;|&nbsp; © 2026 Sumak Vida Ecuador S.A. &nbsp;|&nbsp; Todos los derechos reservados
           </p>
-          <div className="flex gap-4">
-            <Link to="#" className="text-[#555555] text-xs hover:text-brand-text-muted">Términos y Condiciones</Link>
-            <Link to="#" className="text-[#555555] text-xs hover:text-brand-text-muted">Políticas de Privacidad</Link>
+          <div className="flex gap-5">
+            <Link to="/login" className="text-[#555555] text-xs hover:text-[#888888] transition-colors">
+              Acceso Distribuidores
+            </Link>
+            <Link to="/registro" className="text-[#555555] text-xs hover:text-[#888888] transition-colors">
+              Únete
+            </Link>
           </div>
         </div>
       </div>

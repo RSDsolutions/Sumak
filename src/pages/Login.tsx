@@ -1,89 +1,99 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Lock, Network, DollarSign, Package } from 'lucide-react';
+import { motion } from 'motion/react';
+import { Lock, Mail } from 'lucide-react';
 
 export default function Login() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    // Placeholder — no real auth
+  }
+
   return (
-    <div className="w-full bg-brand-black min-h-screen flex flex-col justify-center relative overflow-hidden">
-      
-      {/* Visual background */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[600px] bg-brand-emerald/10 blur-[150px] opacity-40"></div>
-        <div className="absolute inset-0 bg-[#000000] opacity-50"></div>
-      </div>
+    <div className="bg-[#0F0F0F] min-h-screen flex items-center justify-center px-4 py-16">
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md"
+      >
+        <div className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl p-8 sm:p-10 shadow-[0_0_60px_rgba(0,0,0,0.5)]">
+          {/* Logo */}
+          <div className="text-center mb-8">
+            <Link to="/">
+              <span className="font-heading font-bold text-4xl text-[#00A86B] tracking-wide">SUMAK</span>
+            </Link>
+            <h1 className="font-heading font-bold text-xl text-[#F0F0F0] mt-3">Acceso Distribuidores</h1>
+            <p className="text-[#888888] text-sm mt-1">Ingresa con tus credenciales</p>
+          </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 w-full py-24 flex flex-col items-center">
-         
-         <div className="w-full max-w-md bg-brand-surface border border-brand-border rounded-[24px] border-t-4 border-t-brand-emerald shadow-[0_20px_60px_rgba(0,168,107,0.15)] p-10 mb-12 relative">
-            <div className="absolute -top-10 left-1/2 -translate-x-1/2">
-                <div className="w-20 h-20 rounded-full border border-brand-emerald flex items-center justify-center bg-brand-black shadow-emerald-glow">
-                  <div className="flex flex-col items-center">
-                    <span className="font-heading font-bold text-[#F0F0F0] text-sm tracking-widest">SUMAK</span>
-                    <span className="text-brand-gold text-[8px] font-medium tracking-[0.25em] uppercase mt-[1px]">ECUADOR</span>
-                  </div>
-                </div>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div>
+              <label htmlFor="login-email" className="block text-[#888888] text-xs font-semibold uppercase tracking-wider mb-2">
+                Email
+              </label>
+              <div className="relative">
+                <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#555555]" />
+                <input
+                  id="login-email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="tu@email.com"
+                  className="w-full bg-[#222222] border border-[#2E2E2E] rounded-xl pl-11 pr-4 py-3.5 text-[#F0F0F0] text-sm placeholder-[#555555] focus:outline-none focus:border-[#00A86B] transition-colors duration-200"
+                />
+              </div>
             </div>
 
-            <div className="mt-10 text-center mb-10">
-               <h1 className="font-heading font-bold text-2xl text-[#F0F0F0]">Acceso a Distribuidores</h1>
+            <div>
+              <label htmlFor="login-password" className="block text-[#888888] text-xs font-semibold uppercase tracking-wider mb-2">
+                Contraseña
+              </label>
+              <div className="relative">
+                <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#555555]" />
+                <input
+                  id="login-password"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full bg-[#222222] border border-[#2E2E2E] rounded-xl pl-11 pr-4 py-3.5 text-[#F0F0F0] text-sm placeholder-[#555555] focus:outline-none focus:border-[#00A86B] transition-colors duration-200"
+                />
+              </div>
             </div>
 
-            <form className="flex flex-col gap-6" onSubmit={(e) => e.preventDefault()}>
-               <div className="flex flex-col gap-2">
-                  <label className="text-sm text-[#888] font-medium ml-1">Correo o Código ID</label>
-                  <input type="text" placeholder="ID-00000" className="w-full bg-[#111] border border-[#333] rounded-xl px-5 py-4 text-white focus:outline-none focus:border-brand-emerald transition-colors" />
-               </div>
-               
-               <div className="flex flex-col gap-2">
-                  <label className="text-sm text-[#888] font-medium ml-1">Contraseña</label>
-                  <input type="password" placeholder="••••••••" className="w-full bg-[#111] border border-[#333] rounded-xl px-5 py-4 text-white focus:outline-none focus:border-brand-emerald transition-colors" />
-               </div>
-               
-               <button type="submit" className="w-full bg-brand-emerald text-white rounded-xl py-4 font-bold text-lg hover:bg-brand-emerald-hover transition-colors shadow-emerald-glow flex justify-center items-center gap-2 mt-2">
-                 Ingresar <ArrowRight size={18} />
-               </button>
-
-               <div className="text-center mt-2">
-                  <a href="#" className="text-brand-emerald text-sm hover:underline">¿Olvidaste tu contraseña?</a>
-               </div>
-            </form>
-
-            <div className="w-full h-px bg-[#333] my-8"></div>
-
-            <div className="text-center">
-               <span className="text-[#888] text-sm">¿No tienes cuenta?</span> 
-               <Link to="/registro" className="text-brand-gold text-sm font-semibold ml-2 hover:underline">Regístrate aquí</Link>
+            <div className="text-right">
+              <button
+                type="button"
+                className="text-[#888888] text-xs hover:text-[#00A86B] transition-colors duration-200"
+              >
+                ¿Olvidaste tu contraseña?
+              </button>
             </div>
-            
-            <div className="mt-8 text-center">
-               <span className="text-[#666] text-[11px] uppercase tracking-wider font-medium flex items-center justify-center gap-2">
-                  <Lock size={12} /> Conexión Segura Backoffice 3.0
-               </span>
-            </div>
-         </div>
 
-         {/* Teasers below */}
-         <div className="w-full max-w-4xl opacity-70 hover:opacity-100 transition-opacity">
-            <h3 className="text-center text-[#888] text-sm uppercase tracking-widest font-medium mb-8">La gestión total de tu negocio en un solo lugar</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-               <div className="bg-[#111] border border-[#222] p-6 rounded-2xl flex flex-col items-center text-center">
-                  <Network className="text-brand-emerald w-8 h-8 mb-4 border border-brand-emerald/30 p-1.5 rounded-lg bg-brand-emerald/10" />
-                  <span className="font-heading font-semibold text-[#F0F0F0] mb-2">Mi Red Binaria</span>
-                  <span className="text-xs text-[#777]">Acceso exclusivo para visualizar tu árbol de red en tiempo real.</span>
-               </div>
-               <div className="bg-[#111] border border-[#222] p-6 rounded-2xl flex flex-col items-center text-center">
-                  <DollarSign className="text-brand-emerald w-8 h-8 mb-4 border border-brand-emerald/30 p-1.5 rounded-lg bg-brand-emerald/10" />
-                  <span className="font-heading font-semibold text-[#F0F0F0] mb-2">Mis Comisiones</span>
-                  <span className="text-xs text-[#777]">Estado de cuenta, cobros semanales e historial de bonos.</span>
-               </div>
-               <div className="bg-[#111] border border-[#222] p-6 rounded-2xl flex flex-col items-center text-center">
-                  <Package className="text-brand-emerald w-8 h-8 mb-4 border border-brand-emerald/30 p-1.5 rounded-lg bg-brand-emerald/10" />
-                  <span className="font-heading font-semibold text-[#F0F0F0] mb-2">Mis Pedidos</span>
-                  <span className="text-xs text-[#777]">Compras, autotienda con precio afiliado y rastreo nacional.</span>
-               </div>
-            </div>
-         </div>
+            <button
+              type="submit"
+              className="w-full py-4 rounded-xl bg-[#00A86B] text-white font-bold text-sm hover:bg-[#008F5A] shadow-[0_0_20px_rgba(0,168,107,0.25)] transition-all duration-200 mt-1"
+            >
+              Iniciar Sesión
+            </button>
+          </form>
 
-      </div>
+          <div className="mt-6 pt-6 border-t border-[#2E2E2E] text-center">
+            <p className="text-[#888888] text-sm">
+              ¿Aún no eres distribuidor?{' '}
+              <Link to="/registro" className="text-[#00A86B] font-semibold hover:underline">
+                Regístrate aquí
+              </Link>
+            </p>
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 }

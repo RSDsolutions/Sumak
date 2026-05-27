@@ -1,224 +1,424 @@
+import { motion, type Variants } from 'motion/react';
 import { Link } from 'react-router-dom';
-import { Network, ArrowUpRight, Target, Users, Gem, PiggyBank, ArrowRight, ShieldCheck, Star } from 'lucide-react';
-import { useState } from 'react';
+import { ArrowRight } from 'lucide-react';
+import { levelCommissions } from '../data';
 
-const BinaryTreeSVG = () => {
-  return (
-    <svg viewBox="0 0 800 500" className="w-full h-auto drop-shadow-2xl font-sans" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur stdDeviation="5" result="blur" />
-          <feComposite in="SourceGraphic" in2="blur" operator="over" />
-        </filter>
-      </defs>
-      {/* Background connecting lines (EMERALD) */}
-      <polyline points="400,80 200,200" fill="none" stroke="#00A86B" strokeWidth="2" opacity="0.6" />
-      <polyline points="400,80 600,200" fill="none" stroke="#00A86B" strokeWidth="2" opacity="0.6" />
-      
-      <polyline points="200,200 100,320" fill="none" stroke="#008F5A" strokeWidth="2" opacity="0.4" />
-      <polyline points="200,200 300,320" fill="none" stroke="#008F5A" strokeWidth="2" opacity="0.4" />
-      
-      <polyline points="600,200 500,320" fill="none" stroke="#008F5A" strokeWidth="2" opacity="0.4" />
-      <polyline points="600,200 700,320" fill="none" stroke="#008F5A" strokeWidth="2" opacity="0.4" />
-      
-      {/* Level 3 to flow indication */}
-      <path d="M 100,320 Q 50,420 100,450" fill="none" stroke="#00A86B" strokeWidth="1.5" opacity="0.3" strokeDasharray="4 4" />
-      <path d="M 700,320 Q 750,420 700,450" fill="none" stroke="#00A86B" strokeWidth="1.5" opacity="0.3" strokeDasharray="4 4" />
-
-      {/* Nodes */}
-      {/* Level 1: YOU */}
-      <circle cx="400" cy="80" r="32" fill="#00A86B" stroke="#00C47E" strokeWidth="4" filter="url(#glow)" />
-      <text x="400" y="86" textAnchor="middle" fill="#FFF" fontSize="16" fontWeight="bold" fontFamily="Poppins">TÚ</text>
-
-      {/* Level 2 */}
-      {/* Left */}
-      <circle cx="200" cy="200" r="28" fill="#1A2A20" stroke="#00A86B" strokeWidth="3" />
-      <text x="200" y="206" textAnchor="middle" fill="#F0F0F0" fontSize="14" fontWeight="600">L1</text>
-      <rect x="150" y="140" width="100" height="24" rx="12" fill="#222" stroke="#2E2E2E" />
-      <text x="200" y="156" textAnchor="middle" fill="#00A86B" fontSize="11" fontWeight="bold" letterSpacing="1">EQUIPO A</text>
-
-      {/* Right */}
-      <circle cx="600" cy="200" r="28" fill="#1A2A20" stroke="#00A86B" strokeWidth="3" />
-      <text x="600" y="206" textAnchor="middle" fill="#F0F0F0" fontSize="14" fontWeight="600">R1</text>
-      <rect x="550" y="140" width="100" height="24" rx="12" fill="#222" stroke="#2E2E2E" />
-      <text x="600" y="156" textAnchor="middle" fill="#00A86B" fontSize="11" fontWeight="bold" letterSpacing="1">EQUIPO B</text>
-
-      {/* Level 3 */}
-      {/* L1 Children */}
-      <circle cx="100" cy="320" r="20" fill="#152018" stroke="#4DB88A" strokeWidth="2" />
-      <text x="100" y="325" textAnchor="middle" fill="#AAA" fontSize="12">L2</text>
-      
-      <circle cx="300" cy="320" r="20" fill="#152018" stroke="#4DB88A" strokeWidth="2" />
-      <text x="300" y="325" textAnchor="middle" fill="#AAA" fontSize="12">L2</text>
-
-      {/* R1 Children */}
-      <circle cx="500" cy="320" r="20" fill="#152018" stroke="#4DB88A" strokeWidth="2" />
-      <text x="500" y="325" textAnchor="middle" fill="#AAA" fontSize="12">R2</text>
-      
-      <circle cx="700" cy="320" r="20" fill="#152018" stroke="#4DB88A" strokeWidth="2" />
-      <text x="700" y="325" textAnchor="middle" fill="#AAA" fontSize="12">R2</text>
-      
-      {/* Volume indicators flowing up */}
-      <g fill="#00C47E">
-        <polygon points="190,260 200,240 210,260" opacity="0.6"/>
-        <polygon points="590,260 600,240 610,260" opacity="0.6"/>
-      </g>
-    </svg>
-  );
+const fadeUp: Variants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
 };
 
-export default function Plan() {
-  const [directos, setDirectos] = useState(5);
-  const [volumen, setVolumen] = useState(5000);
+const stagger = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.1 } },
+};
 
-  const calculateEstimate = () => {
-    // Fake calculation for visual only
-    const base = volumen * 0.10; // 10% binary roughly
-    const directBonus = directos * 15; 
-    return base + directBonus;
-  };
-
-  const estimate = calculateEstimate();
-
+// Binary tree node component
+function TreeNode({
+  label,
+  sub,
+  highlight = false,
+}: {
+  label: string;
+  sub?: string;
+  highlight?: boolean;
+}) {
   return (
-    <div className="w-full pt-24 bg-brand-black min-h-screen">
-      
-      {/* 1. HERO MINI */}
-      <section className="bg-hero-gradient py-16 px-6 border-b border-brand-border">
-         <div className="max-w-4xl mx-auto text-center">
-            <h1 className="font-heading font-bold text-4xl sm:text-5xl text-[#F0F0F0] mb-4">Plan de Compensación</h1>
-            <p className="text-brand-text-muted text-xl">Sistema binario continuo — construye tu red y genera ingresos residuales sin límite de profundidad.</p>
-         </div>
-      </section>
-
-      {/* 2. BINARY EXPLAINER */}
-      <section className="py-24 px-6 relative">
-         <div className="max-w-7xl mx-auto bg-brand-surface border border-brand-border rounded-[24px] overflow-hidden flex flex-col lg:flex-row shadow-2xl">
-            {/* Context */}
-            <div className="p-10 lg:p-16 lg:w-1/2 flex flex-col justify-center">
-               <h2 className="font-heading font-bold text-3xl sm:text-4xl text-[#F0F0F0] mb-6">¿Qué es el sistema binario?</h2>
-               <p className="text-brand-text-muted text-lg mb-8 leading-relaxed">
-                 En Sumak Ecuador, organizas a tu equipo bajo dos ramas (Izquierda y Derecha). Cada nueva persona que se suma a la visión se coloca en una de estas ramas. <strong>Las comisiones se generan sobre el volumen total de consumos y ventas de tu pierna de menor volumen</strong>, recompensando el trabajo en equipo continuo.
-               </p>
-               <ul className="flex flex-col gap-4">
-                 <li className="flex gap-3 text-[#F0F0F0]"><ShieldCheck className="text-brand-emerald shrink-0" /> Sin límite de profundidad.</li>
-                 <li className="flex gap-3 text-[#F0F0F0]"><ShieldCheck className="text-brand-emerald shrink-0" /> Pagos semanales directos a tu cuenta.</li>
-                 <li className="flex gap-3 text-[#F0F0F0]"><ShieldCheck className="text-brand-emerald shrink-0" /> Bonificaciones acumulables en todos los niveles.</li>
-               </ul>
-            </div>
-            {/* SVG Diagram */}
-            <div className="lg:w-1/2 bg-[#151515] p-6 flex items-center justify-center border-l lg:border-l border-[#2E2E2E] overflow-hidden">
-               <BinaryTreeSVG />
-            </div>
-         </div>
-      </section>
-
-      {/* 3. INCOME STREAMS */}
-      <section className="py-20 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-             <h2 className="font-heading font-bold text-3xl sm:text-4xl">4 Formas de Ganar</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-             {[
-               { icon: Target, title: 'Comisión Directa', desc: 'Gana por cada venta directa que realices, la diferencia entre retail y afiliado.', pct: 'Hasta 30%' },
-               { icon: ConnectMenuIcon, title: 'Bono Binario', desc: 'Comisión sobre el volumen de puntos generado por tu equipo más débil de las dos ramas.', pct: '10-20% Semanal' },
-               { icon: ShieldCheck, title: 'Bono de Liderazgo', desc: 'Porcentaje adicional sobre el volumen de toda tu red al alcanzar rangos premium.', pct: '5% Adicional' },
-               { icon: Users, title: 'Bono de Igualación', desc: 'Gana un porcentaje de los ingresos binarios de los distribuidores que tú personalmente inscribes.', pct: 'Hasta 15%' }
-             ].map((stream, i) => (
-               <div key={i} className="bg-[#1A2A20] border-l-[4px] border-brand-emerald p-8 rounded-r-2xl border-y border-r border-[#2E2E2E]">
-                  <stream.icon className="text-brand-emerald w-8 h-8 mb-4" />
-                  <h3 className="font-heading font-bold text-2xl text-[#F0F0F0] mb-2">{stream.title}</h3>
-                  <p className="text-brand-text-muted mb-6">{stream.desc}</p>
-                  <span className="font-heading font-bold text-2xl text-brand-emerald">{stream.pct}</span>
-               </div>
-             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 4. RANKS */}
-      <section className="bg-[#111] py-24 border-y border-brand-border">
-         <div className="max-w-7xl mx-auto px-6">
-            <h2 className="font-heading font-bold text-3xl sm:text-4xl text-center mb-16">Rangos y Beneficios</h2>
-            
-            <div className="flex overflow-x-auto pb-8 snap-x snap-mandatory gap-6 scrollbar-hide md:grid md:grid-cols-5 md:overflow-visible md:pb-0">
-               {[
-                 { name: 'Distribuidor', req: 'Registro (40PV)', inc: '$0 - $300', c: 'border-[#444]', b: '#FFF' },
-                 { name: 'Silver', req: '500 PV', inc: '$300 - $800', c: 'border-[#C0C0C0]', b: '#C0C0C0' },
-                 { name: 'Gold', req: '2,000 PV', inc: '$800 - $2.5k', c: 'border-brand-gold bg-brand-surface shadow-[0_0_20px_rgba(212,175,55,0.15)]', b: '#D4AF37' },
-                 { name: 'Platinum', req: '5,000 PV', inc: '$2.5k - $5k', c: 'border-[#E8E8FF]', b: '#E8E8FF' },
-                 { name: 'Diamante', req: '15,000 PV', inc: '$5k - $15k+', c: 'border-brand-emerald bg-brand-surface shadow-emerald-glow', b: '#00C47E', isG: true },
-               ].map((rank, i) => (
-                 <div key={i} className={`snap-center flex-shrink-0 w-[240px] md:w-auto p-6 rounded-[16px] bg-brand-surface/40 border-2 ${rank.c} flex flex-col items-center text-center relative`}>
-                    {/* SVG rank badge */}
-                    <svg width="40" height="48" viewBox="0 0 40 48" className="mb-4">
-                       <path d="M20 0 L40 10 L40 30 L20 48 L0 30 L0 10 Z" fill="transparent" stroke={rank.b} strokeWidth="2" />
-                       <text x="20" y="28" textAnchor="middle" fill={rank.b} fontSize="20" fontFamily="Poppins" fontWeight="bold">{rank.name.charAt(0)}</text>
-                    </svg>
-                    <h3 className={`font-heading font-bold text-xl mb-1 ${rank.isG ? 'text-gold-shimmer' : (rank.name === 'Gold' ? 'text-brand-gold' : 'text-[#F0F0F0]')}`}>{rank.name}</h3>
-                    <span className="text-sm border border-[#333] px-2 py-1 rounded mb-4 text-[#888]">{rank.req}</span>
-                    <span className="font-heading font-bold text-lg text-brand-gold-bright">{rank.inc}</span>
-                 </div>
-               ))}
-            </div>
-         </div>
-      </section>
-
-      {/* 5. CALCULATOR (Visual) */}
-      <section className="py-24 px-6 relative z-10">
-         <div className="max-w-4xl mx-auto bg-brand-surface border border-brand-emerald rounded-[24px] p-8 md:p-12 shadow-[0_10px_50px_rgba(0,168,107,0.15)]">
-            <h2 className="font-heading font-bold text-3xl mb-8 text-center text-[#F0F0F0]">Calcula tu Potencial</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-               <div className="flex flex-col gap-6">
-                  <div>
-                    <div className="flex justify-between mb-2">
-                      <span className="text-brand-text-muted">Distribuidores directos</span>
-                      <span className="font-bold text-brand-emerald">{directos}</span>
-                    </div>
-                    <input type="range" min="1" max="50" value={directos} onChange={(e) => setDirectos(Number(e.target.value))} className="w-full accent-brand-emerald" />
-                  </div>
-                  <div>
-                    <div className="flex justify-between mb-2">
-                      <span className="text-brand-text-muted">Volumen Equipo Menor (PV/$)</span>
-                      <span className="font-bold text-brand-emerald">${volumen}</span>
-                    </div>
-                    <input type="range" min="1000" max="50000" step="500" value={volumen} onChange={(e) => setVolumen(Number(e.target.value))} className="w-full accent-brand-emerald" />
-                  </div>
-                  <div className="mt-4 text-xs text-[#666]">
-                    * Los ingresos dependen del esfuerzo, dedicación y actividad de cada distribuidor y su organización profunda.
-                  </div>
-               </div>
-
-               <div className="bg-brand-black border border-brand-border rounded-xl p-8 text-center relative overflow-hidden">
-                 <div className="absolute inset-0 bg-brand-gold/5"></div>
-                 <span className="relative z-10 text-brand-text-muted uppercase tracking-widest font-medium text-sm mb-4 block">Estimado Mensual</span>
-                 <span className="relative z-10 font-heading font-bold text-5xl sm:text-6xl text-gold-shimmer block mb-4">
-                   ${estimate.toLocaleString()}
-                 </span>
-                 <Link to="/registro" className="relative z-10 inline-flex items-center gap-2 text-brand-emerald font-semibold mx-auto hover:text-white transition-colors">
-                   Empezar a ganar <ArrowRight size={16} />
-                 </Link>
-               </div>
-            </div>
-         </div>
-      </section>
-
-      {/* CTA */}
-      <section className="bg-cta-gradient py-24 text-center px-6">
-         <h2 className="font-heading font-bold text-4xl sm:text-5xl text-white mb-6">¿Listo para construir tu red?</h2>
-         <p className="text-white/80 text-xl max-w-2xl mx-auto mb-10">Regístrate hoy, elige tu kit de inicio y empieza tu primera semana hacia la libertad financiera.</p>
-         <Link to="/registro" className="px-10 py-5 bg-brand-black text-[#F0F0F0] rounded-xl font-bold text-xl hover:bg-brand-surface hover:-translate-y-1 transition-all">
-            Quiero Unirme
-         </Link>
-      </section>
-
+    <div
+      className={`flex flex-col items-center justify-center rounded-xl px-4 py-3 border text-center min-w-[80px] ${
+        highlight
+          ? 'bg-[#00A86B] border-[#00A86B] text-white shadow-[0_0_20px_rgba(0,168,107,0.4)]'
+          : 'bg-[#1A1A1A] border-[#2E2E2E] text-[#F0F0F0]'
+      }`}
+    >
+      <span className="font-heading font-bold text-sm">{label}</span>
+      {sub && <span className="text-[10px] opacity-70 mt-0.5">{sub}</span>}
     </div>
   );
 }
 
-// Icon helper for Binary
-function ConnectMenuIcon(props: any) {
-  return <Network {...props} />;
+function TreeLine() {
+  return <div className="w-px h-6 bg-[#2E2E2E]" />;
+}
+
+function TreeHLine({ wide = false }: { wide?: boolean }) {
+  return <div className={`h-px bg-[#2E2E2E] ${wide ? 'w-32 sm:w-48' : 'w-16 sm:w-24'}`} />;
+}
+
+export default function Plan() {
+  return (
+    <div className="bg-[#0F0F0F]">
+      {/* Hero */}
+      <section className="relative pt-32 pb-20 px-4 sm:px-6 bg-hero-gradient overflow-hidden">
+        <div className="absolute top-1/2 right-10 w-64 h-64 rounded-full bg-[#00A86B] opacity-[0.06] blur-3xl pointer-events-none" />
+        <div className="max-w-4xl mx-auto text-center">
+          <motion.p
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-[#00A86B] text-sm font-semibold uppercase tracking-[0.3em] mb-4"
+          >
+            Compensación
+          </motion.p>
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="font-heading font-bold text-4xl sm:text-5xl lg:text-6xl text-[#F0F0F0] mb-5"
+          >
+            Plan Multinivel
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="text-[#AAAAAA] text-lg max-w-2xl mx-auto"
+          >
+            Un sistema binario continuo e ilimitado diseñado para que toda tu red genere ingresos
+            de forma escalable y sostenible.
+          </motion.p>
+        </div>
+      </section>
+
+      {/* Binary System Explanation */}
+      <section className="py-16 px-4 sm:px-6 bg-[#0A0A0A]">
+        <div className="max-w-5xl mx-auto">
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-60px' }}
+          >
+            <motion.div variants={fadeUp} className="text-center mb-12">
+              <h2 className="font-heading font-bold text-2xl sm:text-3xl text-[#F0F0F0] mb-3">
+                Sistema Binario Continuo Ilimitado
+              </h2>
+              <div className="w-16 h-1 bg-[#00A86B] rounded-full mx-auto mb-5" />
+              <p className="text-[#AAAAAA] text-base max-w-2xl mx-auto">
+                Tu red se divide en dos equipos: Equipo A (izquierda) y Equipo B (derecha).
+                Las comisiones se calculan sobre el menor volumen de los dos equipos,
+                garantizando un crecimiento equilibrado.
+              </p>
+            </motion.div>
+
+            {/* Binary Tree Visual */}
+            <motion.div variants={fadeUp} className="flex flex-col items-center py-8 overflow-x-auto">
+              <div className="flex flex-col items-center min-w-[320px]">
+                {/* Root */}
+                <TreeNode label="TÚ" sub="Nivel 0" highlight />
+                <TreeLine />
+
+                {/* Level 1 branches */}
+                <div className="flex items-start gap-0">
+                  <div className="flex flex-col items-end">
+                    <TreeHLine />
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <TreeHLine wide />
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <TreeHLine />
+                  </div>
+                </div>
+
+                <div className="flex gap-32 sm:gap-48">
+                  <div className="flex flex-col items-center gap-0">
+                    <div className="w-px h-0 bg-[#2E2E2E]" />
+                    <TreeNode label="Equipo A" sub="Izquierda" />
+                    <TreeLine />
+                    <div className="flex gap-6">
+                      <div className="flex flex-col items-center">
+                        <TreeLine />
+                        <TreeNode label="Nivel 2" />
+                        <TreeLine />
+                        <div className="flex gap-3">
+                          <TreeNode label="N3" />
+                          <TreeNode label="N3" />
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <TreeLine />
+                        <TreeNode label="Nivel 2" />
+                        <TreeLine />
+                        <div className="flex gap-3">
+                          <TreeNode label="N3" />
+                          <TreeNode label="N3" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col items-center">
+                    <div className="w-px h-0 bg-[#2E2E2E]" />
+                    <TreeNode label="Equipo B" sub="Derecha" />
+                    <TreeLine />
+                    <div className="flex gap-6">
+                      <div className="flex flex-col items-center">
+                        <TreeLine />
+                        <TreeNode label="Nivel 2" />
+                        <TreeLine />
+                        <div className="flex gap-3">
+                          <TreeNode label="N3" />
+                          <TreeNode label="N3" />
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <TreeLine />
+                        <TreeNode label="Nivel 2" />
+                        <TreeLine />
+                        <div className="flex gap-3">
+                          <TreeNode label="N3" />
+                          <TreeNode label="N3" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-[#555555] text-xs mt-8">
+                  Hasta 14 niveles — después del nivel 14 se genera un nuevo código
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Binary Commission Mechanics */}
+      <section className="py-16 px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto">
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-60px' }}
+          >
+            <motion.div variants={fadeUp} className="text-center mb-12">
+              <h2 className="font-heading font-bold text-2xl sm:text-3xl text-[#F0F0F0] mb-3">
+                Cómo Funciona la Comisión Binaria
+              </h2>
+              <div className="w-16 h-1 bg-[#00A86B] rounded-full mx-auto" />
+            </motion.div>
+
+            {/* 4 cards */}
+            <motion.div variants={stagger} className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              {[
+                { label: 'Volumen Izquierda', val: '$1,000', color: 'text-[#AAAAAA]' },
+                { label: 'Volumen Derecha', val: '$1,000', color: 'text-[#AAAAAA]' },
+                { label: 'Volumen Pareado', val: '$1,000', color: 'text-[#D4AF37]' },
+                { label: 'Comisión 50%', val: '$500', color: 'text-[#00A86B]' },
+              ].map((card) => (
+                <motion.div
+                  key={card.label}
+                  variants={fadeUp}
+                  className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-xl p-5 text-center"
+                >
+                  <p className={`font-heading font-bold text-3xl ${card.color} mb-2`}>{card.val}</p>
+                  <p className="text-[#888888] text-xs">{card.label}</p>
+                </motion.div>
+              ))}
+            </motion.div>
+
+            {/* Example box */}
+            <motion.div
+              variants={fadeUp}
+              className="bg-gradient-to-r from-[#1A2A20] to-[#1A1A1A] border border-[#00A86B]/30 rounded-xl p-6 text-center"
+            >
+              <p className="text-[#888888] text-sm mb-3 font-medium uppercase tracking-wider">
+                Ejemplo de cálculo
+              </p>
+              <p className="font-heading text-[#F0F0F0] text-xl sm:text-2xl">
+                Izq: <span className="text-[#AAAAAA]">$1,000</span>
+                &nbsp;+&nbsp;
+                Der: <span className="text-[#AAAAAA]">$1,000</span>
+                &nbsp;=&nbsp;
+                <span className="text-[#D4AF37]">$1,000 pareado</span>
+                &nbsp;=&nbsp;
+                <span className="text-[#00A86B] font-bold">$500 comisión</span>
+              </p>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Affiliation Bonus */}
+      <section className="py-10 px-4 sm:px-6 bg-[#0A0A0A]">
+        <div className="max-w-3xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="bg-gradient-to-br from-[#1A2A10] to-[#1A1A1A] border-2 border-[#D4AF37]/40 rounded-2xl p-8 text-center shadow-[0_0_40px_rgba(212,175,55,0.1)]"
+          >
+            <p className="text-[#D4AF37] text-sm font-semibold uppercase tracking-widest mb-3">
+              Bono Especial
+            </p>
+            <h3 className="font-heading font-bold text-3xl sm:text-4xl text-[#F0F0F0] mb-4">
+              Bono de Afiliación Directa: <span className="text-[#D4AF37]">$50</span>
+            </h3>
+            <p className="text-[#AAAAAA] text-base max-w-lg mx-auto">
+              Gana el 40% del paquete de cada nuevo afiliado que traigas directamente.
+              Esto equivale a <strong className="text-[#F0F0F0]">$50 fijos</strong> por afiliación,
+              sin importar el paquete elegido.
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Level Commissions Table */}
+      <section className="py-16 px-4 sm:px-6">
+        <div className="max-w-3xl mx-auto">
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-60px' }}
+          >
+            <motion.div variants={fadeUp} className="text-center mb-10">
+              <h2 className="font-heading font-bold text-2xl sm:text-3xl text-[#F0F0F0] mb-3">
+                Comisiones por Nivel
+              </h2>
+              <div className="w-16 h-1 bg-[#00A86B] rounded-full mx-auto" />
+            </motion.div>
+
+            <motion.div variants={fadeUp} className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl overflow-hidden">
+              <div className="grid grid-cols-2 bg-[#222222] px-6 py-3 border-b border-[#2E2E2E]">
+                <span className="text-[#888888] text-xs font-semibold uppercase tracking-wider">Nivel</span>
+                <span className="text-[#888888] text-xs font-semibold uppercase tracking-wider text-right">Comisión</span>
+              </div>
+              {levelCommissions.map((lc) => (
+                <div
+                  key={lc.nivel}
+                  className={`grid grid-cols-2 px-6 py-3.5 border-b border-[#2E2E2E] last:border-0 ${
+                    lc.nivel === 2
+                      ? 'bg-[#00A86B]/8'
+                      : ''
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${
+                        lc.nivel === 2
+                          ? 'bg-[#00A86B] text-white'
+                          : 'bg-[#222222] text-[#888888]'
+                      }`}
+                    >
+                      {lc.nivel}
+                    </span>
+                    <span className={`text-sm ${lc.nivel === 2 ? 'text-[#F0F0F0] font-semibold' : 'text-[#AAAAAA]'}`}>
+                      Nivel {lc.nivel}
+                      {lc.nivel === 2 && <span className="ml-2 text-[10px] text-[#00A86B] font-bold uppercase">Mayor</span>}
+                    </span>
+                  </div>
+                  <span className={`text-right font-bold text-base ${
+                    lc.nivel === 2 ? 'text-[#00A86B]' : 'text-[#F0F0F0]'
+                  }`}>
+                    {lc.porcentaje}%
+                  </span>
+                </div>
+              ))}
+            </motion.div>
+
+            <motion.p variants={fadeUp} className="text-center text-[#555555] text-sm mt-4">
+              Activación mínima: compra de $100/mes para mantener comisiones activas.
+            </motion.p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Direct Sales */}
+      <section className="py-16 px-4 sm:px-6 bg-[#0A0A0A]">
+        <div className="max-w-5xl mx-auto">
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-60px' }}
+          >
+            <motion.div variants={fadeUp} className="text-center mb-10">
+              <h2 className="font-heading font-bold text-2xl sm:text-3xl text-[#F0F0F0] mb-3">
+                Ganancia por Venta Directa
+              </h2>
+              <div className="w-16 h-1 bg-[#00A86B] rounded-full mx-auto" />
+            </motion.div>
+
+            <motion.div variants={fadeUp} className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl p-8">
+              <p className="text-[#AAAAAA] text-base mb-6 text-center">
+                Compra al <span className="text-[#00A86B] font-bold">50% del PVP</span>, vende al precio público.
+                Ganancia directa del <span className="text-[#00A86B] font-bold">50%</span>.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {[
+                  { label: 'PVP Público', val: '$25.00', color: 'text-[#AAAAAA]' },
+                  { label: 'Tu Costo (50%)', val: '$12.50', color: 'text-[#D4AF37]' },
+                  { label: 'Tu Ganancia', val: '$12.50', color: 'text-[#00A86B]' },
+                ].map((item) => (
+                  <div key={item.label} className="bg-[#222222] rounded-xl p-5 text-center">
+                    <p className={`font-heading font-bold text-3xl ${item.color} mb-1`}>{item.val}</p>
+                    <p className="text-[#888888] text-xs">{item.label}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[#555555] text-xs text-center mt-4">
+                Ejemplo basado en producto de $25.00 PVP
+              </p>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Growth Example */}
+      <section className="py-16 px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto">
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-60px' }}
+          >
+            <motion.div variants={fadeUp} className="text-center mb-10">
+              <h2 className="font-heading font-bold text-2xl sm:text-3xl text-[#F0F0F0] mb-3">
+                El Poder del Crecimiento Exponencial
+              </h2>
+              <p className="text-[#888888] text-sm">Si cada persona invita a 2 personas...</p>
+              <div className="w-16 h-1 bg-[#00A86B] rounded-full mx-auto mt-3" />
+            </motion.div>
+
+            <motion.div variants={stagger} className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+              {[
+                { nivel: 1, personas: 2 },
+                { nivel: 2, personas: 4 },
+                { nivel: 3, personas: 8 },
+                { nivel: 4, personas: 16 },
+                { nivel: 5, personas: 32 },
+                { nivel: 6, personas: 64 },
+                { nivel: 7, personas: 128 },
+              ].map((row, i) => (
+                <motion.div
+                  key={row.nivel}
+                  variants={fadeUp}
+                  className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-xl p-4 text-center"
+                  style={{ opacity: 0.6 + i * 0.06 }}
+                >
+                  <p className="text-[#555555] text-[10px] uppercase tracking-wider mb-1">Nivel {row.nivel}</p>
+                  <p className="font-heading font-bold text-xl text-[#00A86B]">{row.personas}</p>
+                  <p className="text-[#888888] text-[10px]">personas</p>
+                </motion.div>
+              ))}
+            </motion.div>
+
+            <motion.div variants={fadeUp} className="mt-8 text-center">
+              <Link
+                to="/escaleras"
+                className="inline-flex items-center gap-2 text-[#00A86B] font-semibold text-sm hover:underline"
+              >
+                Ver todos los rangos y bonos de escalera <ArrowRight size={15} />
+              </Link>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+    </div>
+  );
 }

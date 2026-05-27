@@ -1,72 +1,51 @@
 import { Product } from '../data';
 import { Link } from 'react-router-dom';
-import { ProductBottleSVG } from './ProductBottleSVG';
-import { Check } from 'lucide-react';
+import { Leaf } from 'lucide-react';
 
 interface ProductCardProps {
   product: Product;
 }
 
 export function ProductCard({ product }: ProductCardProps) {
+  const distributorPrice = product.pvp / 2;
+
   return (
-    <div className="group flex flex-col bg-brand-surface rounded-[16px] border border-brand-border hover:border-brand-emerald hover:-translate-y-1 transition-all duration-300 hover:shadow-emerald-glow overflow-hidden">
-      
+    <div className="group flex flex-col bg-[#1A1A1A] rounded-2xl border border-[#2E2E2E] hover:border-[#00A86B]/40 hover:-translate-y-1 transition-all duration-300 hover:shadow-[0_0_20px_rgba(0,168,107,0.1)] overflow-hidden">
       {/* Image Area */}
-      <div className="h-[240px] w-full relative bg-brand-black overflow-hidden flex-shrink-0 border-b border-brand-border flex items-center justify-center">
-        <ProductBottleSVG category={product.category} />
-        <div className="absolute top-4 left-4 z-20">
-          <span className="px-3 py-1 bg-brand-emerald text-white text-[10px] font-medium tracking-widest uppercase rounded-full shadow-lg">
-            {product.category}
-          </span>
-        </div>
+      <div className="h-44 w-full bg-gradient-to-br from-[#1A2A20] to-[#0F1A14] border-b border-[#2E2E2E] flex items-center justify-center">
+        <Leaf size={40} className="text-[#00A86B] opacity-50" />
       </div>
 
-      {/* Content Area */}
+      {/* Content */}
       <div className="p-6 flex flex-col flex-grow">
-        <h3 className="font-heading font-semibold text-xl text-[#F0F0F0] mb-1">
-          {product.name}
+        <span className="inline-block text-[10px] font-semibold uppercase tracking-wider text-[#00A86B] bg-[#00A86B]/10 border border-[#00A86B]/20 px-2.5 py-1 rounded-full mb-3 w-fit">
+          {product.categoria}
+        </span>
+        <h3 className="font-heading font-semibold text-base text-[#F0F0F0] mb-2 leading-tight">
+          {product.nombre}
         </h3>
-        <p className="text-brand-text-muted text-sm line-clamp-2 min-h-[40px] mb-4">
-          {product.shortDesc}
+        <p className="text-[#888888] text-xs leading-relaxed mb-4 flex-grow">
+          {product.descripcion}
         </p>
 
-        {/* Benefits/Ingredients Pills */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          {product.ingredients.slice(0, 2).map((ing, i) => (
-            <span key={i} className="px-2 py-1 bg-[#222] border border-[#333] rounded-full text-xs text-brand-text-lighter flex items-center gap-1">
-              <Check size={10} className="text-brand-emerald" /> {ing}
-            </span>
-          ))}
-        </div>
-
-        <div className="mt-auto">
-          <div className="flex items-end gap-3 mb-5">
-            <div className="flex flex-col">
-              <span className="text-[10px] text-brand-text-muted uppercase tracking-wider font-medium">Retail</span>
-              <span className="font-heading font-bold text-xl text-[#F0F0F0] leading-none">${product.retailPrice.toFixed(2)}</span>
+        <div className="mt-auto border-t border-[#2E2E2E] pt-4">
+          <div className="flex items-end justify-between mb-4">
+            <div>
+              <span className="text-[10px] text-[#555555] block mb-0.5">PVP</span>
+              <span className="font-heading font-bold text-xl text-[#F0F0F0]">${product.pvp.toFixed(2)}</span>
             </div>
-            <div className="flex flex-col border-l border-brand-border pl-3">
-              <span className="text-[10px] text-brand-gold-dim uppercase tracking-wider font-medium">Distribuidor</span>
-              <span className="font-heading font-bold text-lg text-brand-gold leading-none">${product.distributorPrice.toFixed(2)}</span>
+            <div className="text-right">
+              <span className="text-[10px] text-[#555555] block mb-0.5">Distribuidor</span>
+              <span className="font-heading font-bold text-lg text-[#00A86B]">${distributorPrice.toFixed(2)}</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
-            <Link 
-              to={`/productos/${product.slug}`}
-              className="flex items-center justify-center px-4 py-2 rounded-xl border border-brand-emerald text-brand-emerald font-medium text-sm hover:bg-brand-emerald/10 transition-colors w-full"
-            >
-              Ver detalles
-            </Link>
-            <a
-              href={`https://wa.me/593999999999?text=Hola, estoy interesado en comprar ${product.name}.`}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center justify-center px-4 py-2 rounded-xl bg-brand-emerald text-white font-medium text-sm hover:bg-brand-emerald-hover transition-colors w-full shadow-lg shadow-brand-emerald/20"
-            >
-              Consultar
-            </a>
-          </div>
+          <Link
+            to={`/productos/${product.slug}`}
+            className="w-full py-2.5 rounded-xl border border-[#00A86B]/40 text-[#00A86B] text-xs font-semibold text-center hover:bg-[#00A86B] hover:text-white transition-all duration-200 block"
+          >
+            Ver detalles
+          </Link>
         </div>
       </div>
     </div>
