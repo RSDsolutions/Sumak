@@ -42,16 +42,19 @@ function TreeNodeComponent({ node, depth, isRoot }: { node: TreeNode; depth: num
 
   return (
     <div className="flex flex-col items-center">
-      <div className={`border-2 rounded-xl p-3 text-center ${isRoot ? 'border-[#00A86B] bg-[#00A86B]/10 w-52' : `${colors} w-40`}`}>
-        <p className={`font-mono text-xs font-bold mb-1 ${isRoot ? 'text-[#00A86B]' : textColor}`}>
+      <div className={`border-2 rounded-xl p-3 text-center ${isRoot ? 'border-[#00A86B] bg-[#00A86B]/10 w-52' : `${colors} w-44`}`}>
+        <p className={`font-mono text-xs font-bold mb-0.5 ${isRoot ? 'text-[#00A86B]' : textColor}`}>
           {node.profile.codigo_distribuidor ?? '—'}
         </p>
-        <p className="text-[#F0F0F0] text-xs font-medium truncate" title={node.profile.nombre_completo}>
+        <p className="text-[#F0F0F0] text-xs font-medium truncate mb-1" title={node.profile.nombre_completo}>
           {node.profile.nombre_completo}
         </p>
-        <span className={`text-[10px] font-medium mt-1 inline-block ${isRoot ? 'text-[#00A86B]' : textColor}`}>
-          {isRoot ? 'TÚ' : paqueteLabel[pkg] ?? '—'}
-        </span>
+        <p className="text-[#D4AF37] text-[10px] font-semibold">
+          ★ {node.profile.puntos ?? 0} pts
+        </p>
+        {isRoot && (
+          <span className="text-[10px] font-bold text-[#00A86B] mt-0.5 inline-block">TÚ</span>
+        )}
       </div>
 
       {node.children.length > 0 && depth < 3 && (
@@ -100,11 +103,11 @@ export default function MiRed() {
         .select('*')
         .eq('distribuidor_id', uid)
         .eq('mes', mesStr)
-        .single();
+        .maybeSingle();
       if (vol) {
-        setVolIzq(Number(vol.volumen_izquierda));
-        setVolDer(Number(vol.volumen_derecha));
-        setVolPareado(Number(vol.volumen_pareado));
+        setVolIzq(Number(vol.volumen_izquierda ?? 0));
+        setVolDer(Number(vol.volumen_derecha ?? 0));
+        setVolPareado(Number(vol.volumen_pareado ?? 0));
       }
 
       // Fetch all red_binaria nodes (RLS limits to what this user can see)

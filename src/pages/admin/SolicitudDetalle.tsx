@@ -2,7 +2,14 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText, CheckCircle, XCircle, ExternalLink, Copy } from 'lucide-react';
 import { supabaseAdmin } from '../../lib/supabase';
+import { levelCommissions } from '../../data';
 import type { Afiliacion, PaqueteKey } from '../../lib/types';
+
+const PAQUETE_PUNTOS: Record<string, number> = {
+  basico: 125,
+  emprendedor: 225,
+  lider: 525,
+};
 
 function Spinner() {
   return (
@@ -98,7 +105,9 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
         patrocinadorId = pat?.id ?? null;
       }
 
-      // 5. Insert profile
+      const packagePuntos = PAQUETE_PUNTOS[afiliacion.paquete_seleccionado] ?? 0;
+
+      // 5. Insert profile with package puntos
       const { error: profileError } = await supabaseAdmin.from('profiles').insert({
         id: userId,
         codigo_distribuidor: codigo,
@@ -111,6 +120,7 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
         codigo_patrocinador: afiliacion.codigo_patrocinador ?? null,
         patrocinador_id: patrocinadorId,
         paquete: afiliacion.paquete_seleccionado as PaqueteKey,
+        puntos: packagePuntos,
         rol: 'distribuidor',
         estado: 'activo',
         fecha_aprobacion: new Date().toISOString(),
@@ -155,7 +165,7 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
         .update({ estado: 'aprobada' })
         .eq('id', afiliacion.id);
 
-      // 9. Create welcome commission for patrocinador
+      // 9. Bono de afiliación directa para el patrocinador
       if (patrocinadorId) {
         await supabaseAdmin.from('comisiones').insert({
           beneficiario_id: patrocinadorId,
@@ -165,6 +175,79 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
           estado: 'pendiente',
           descripcion: `Bono de afiliación directa — ${afiliacion.nombre_completo}`,
         });
+      }
+
+      // 10. Level commissions on package price up the patrocinador chain
+      if (packagePuntos > 0) {
+        const { data: allProfiles } = await supabaseAdmin
+          .from('profiles')
+          .select('id, patrocinador_id');
+        const profMap = new Map<string, { patrocinador_id: string | null }>(
+          (allProfiles ?? []).map((p) => [p.id, { patrocinador_id: p.patrocinador_id }])
+        );
+        const comInserts: object[] = [];
+        let upId: string | null = userId;
+        for (const lc of levelCommissions) {
+          const prof = profMap.get(upId!);
+          if (!prof?.patrocinador_id) break;
+          upId = prof.patrocinador_id;
+          const monto = parseFloat((packagePuntos * lc.porcentaje / 100).toFixed(2));
+          if (monto > 0) {
+            comInserts.push({
+              beneficiario_id: upId,
+              origen_id: userId,
+              tipo: 'nivel',
+              nivel_red: lc.nivel,
+              monto,
+              estado: 'pendiente',
+              descripcion: `Comisión nivel ${lc.nivel} — paquete ${afiliacion.paquete_seleccionado}`,
+            });
+          }
+        }
+        if (comInserts.length > 0) await supabaseAdmin.from('comisiones').insert(comInserts);
+      }
+
+      // 11. Binary volumes — propagate package puntos up the tree
+      if (packagePuntos > 0 && padreNodoId) {
+        const mes = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01`;
+        const { data: allNodos } = await supabaseAdmin
+          .from('red_binaria')
+          .select('id, distribuidor_id, padre_id, posicion');
+        const nodoById = new Map((allNodos ?? []).map((n) => [n.id, n]));
+        const nodoByDistrib = new Map((allNodos ?? []).map((n) => [n.distribuidor_id, n]));
+
+        let child = nodoByDistrib.get(userId);
+        while (child?.padre_id) {
+          const parent = nodoById.get(child.padre_id);
+          if (!parent) break;
+          const isLeft = child.posicion === 'izquierda';
+          const { data: existing } = await supabaseAdmin
+            .from('volumenes_binarios')
+            .select('id, volumen_izquierda, volumen_derecha')
+            .eq('distribuidor_id', parent.distribuidor_id)
+            .eq('mes', mes)
+            .maybeSingle();
+          const newLeft  = Number(existing?.volumen_izquierda ?? 0) + (isLeft ? packagePuntos : 0);
+          const newRight = Number(existing?.volumen_derecha  ?? 0) + (isLeft ? 0 : packagePuntos);
+          if (existing) {
+            await supabaseAdmin.from('volumenes_binarios').update({
+              volumen_izquierda: newLeft,
+              volumen_derecha: newRight,
+              volumen_pareado: Math.min(newLeft, newRight),
+            }).eq('id', existing.id);
+          } else {
+            await supabaseAdmin.from('volumenes_binarios').insert({
+              distribuidor_id: parent.distribuidor_id,
+              mes,
+              volumen_izquierda: isLeft ? packagePuntos : 0,
+              volumen_derecha: isLeft ? 0 : packagePuntos,
+              volumen_pareado: 0,
+              comision_calculada: 0,
+              procesado: false,
+            });
+          }
+          child = parent;
+        }
       }
 
       onSuccess(codigo, tempPassword);
