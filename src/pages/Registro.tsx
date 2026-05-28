@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence, type Variants } from 'motion/react';
-import { CheckCircle2, Upload, User, FileText, Package } from 'lucide-react';
+import { CheckCircle2, Upload, User, FileText, Package, AlertCircle } from 'lucide-react';
 import { affiliatePackages } from '../data';
+import { supabase } from '../lib/supabase';
+import type { PaqueteKey } from '../lib/types';
 
 type Step = 1 | 2 | 3 | 'done';
 
@@ -22,6 +24,12 @@ interface UploadFiles {
   planilla: File | null;
   voucher: File | null;
 }
+
+const paqueteKeyMap: Record<string, PaqueteKey> = {
+  Básico: 'basico',
+  Emprendedor: 'emprendedor',
+  Líder: 'lider',
+};
 
 const stepVariants: Variants = {
   hidden: { opacity: 0, x: 30 },
@@ -109,6 +117,16 @@ function UploadArea({
   );
 }
 
+async function uploadFile(file: File, cedula: string, name: string): Promise<string | null> {
+  const ext = file.name.split('.').pop() ?? 'jpg';
+  const path = `${cedula}/${Date.now()}-${name}.${ext}`;
+  const { error } = await supabase.storage
+    .from('documentos-afiliacion')
+    .upload(path, file, { upsert: false });
+  if (error) return null;
+  return path;
+}
+
 export default function Registro() {
   const [step, setStep] = useState<Step>(1);
   const [personal, setPersonal] = useState<PersonalData>({
@@ -118,6 +136,9 @@ export default function Registro() {
     cedulaFrente: null, cedulaReverso: null, planilla: null, voucher: null,
   });
   const [selectedPkg, setSelectedPkg] = useState<string>('');
+  const [submitting, setSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState('');
+  const [submitError, setSubmitError] = useState('');
 
   function handlePersonalChange(e: React.ChangeEvent<HTMLInputElement>) {
     setPersonal((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -127,8 +148,69 @@ export default function Registro() {
     return !!(personal.nombre && personal.cedula && personal.email && personal.telefono && personal.direccion && personal.ciudad);
   }
 
-  function handleSubmit() {
-    setStep('done');
+  async function handleSubmit() {
+    if (!selectedPkg) return;
+    setSubmitting(true);
+    setSubmitError('');
+
+    try {
+      // Upload documents
+      const uploadResults: Record<string, string | null> = {
+        doc_cedula_frente: null,
+        doc_cedula_reverso: null,
+        doc_planilla: null,
+        doc_voucher: null,
+      };
+
+      if (files.cedulaFrente) {
+        setUploadProgress('Subiendo cédula (frente)...');
+        uploadResults.doc_cedula_frente = await uploadFile(files.cedulaFrente, personal.cedula, 'cedula-frente');
+      }
+      if (files.cedulaReverso) {
+        setUploadProgress('Subiendo cédula (reverso)...');
+        uploadResults.doc_cedula_reverso = await uploadFile(files.cedulaReverso, personal.cedula, 'cedula-reverso');
+      }
+      if (files.planilla) {
+        setUploadProgress('Subiendo planilla de servicios...');
+        uploadResults.doc_planilla = await uploadFile(files.planilla, personal.cedula, 'planilla');
+      }
+      if (files.voucher) {
+        setUploadProgress('Subiendo voucher de pago...');
+        uploadResults.doc_voucher = await uploadFile(files.voucher, personal.cedula, 'voucher');
+      }
+
+      setUploadProgress('Guardando solicitud...');
+
+      const paqueteKey: PaqueteKey = paqueteKeyMap[selectedPkg] ?? 'basico';
+
+      const { error } = await supabase.from('afiliaciones').insert({
+        nombre_completo: personal.nombre,
+        cedula: personal.cedula,
+        email: personal.email,
+        telefono: personal.telefono,
+        direccion: personal.direccion,
+        ciudad: personal.ciudad,
+        codigo_patrocinador: personal.patrocinador || null,
+        paquete_seleccionado: paqueteKey,
+        doc_cedula_frente: uploadResults.doc_cedula_frente,
+        doc_cedula_reverso: uploadResults.doc_cedula_reverso,
+        doc_planilla: uploadResults.doc_planilla,
+        doc_voucher: uploadResults.doc_voucher,
+      });
+
+      if (error) {
+        setSubmitError('Error al guardar la solicitud: ' + error.message);
+        return;
+      }
+
+      setStep('done');
+    } catch (err) {
+      setSubmitError('Ocurrió un error inesperado. Inténtalo de nuevo.');
+      console.error(err);
+    } finally {
+      setSubmitting(false);
+      setUploadProgress('');
+    }
   }
 
   return (
@@ -286,6 +368,20 @@ export default function Registro() {
                 <h2 className="font-heading font-bold text-xl text-[#F0F0F0]">Selección de Paquete</h2>
               </div>
 
+              {submitError && (
+                <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 mb-4">
+                  <AlertCircle size={18} className="text-red-400 shrink-0 mt-0.5" />
+                  <p className="text-red-400 text-sm">{submitError}</p>
+                </div>
+              )}
+
+              {submitting && (
+                <div className="flex items-center gap-3 bg-[#00A86B]/10 border border-[#00A86B]/30 rounded-xl px-4 py-3 mb-4">
+                  <div className="w-4 h-4 border-2 border-[#00A86B] border-t-transparent rounded-full animate-spin shrink-0" />
+                  <p className="text-[#00A86B] text-sm">{uploadProgress || 'Procesando...'}</p>
+                </div>
+              )}
+
               <div className="flex flex-col gap-4 mb-6">
                 {affiliatePackages.map((pkg) => {
                   const isSelected = selectedPkg === pkg.nombre;
@@ -340,16 +436,17 @@ export default function Registro() {
               <div className="flex gap-3">
                 <button
                   onClick={() => setStep(2)}
-                  className="flex-1 py-4 rounded-xl border border-[#2E2E2E] text-[#888888] font-semibold text-sm hover:border-[#3A3A3A] hover:text-[#F0F0F0] transition-all duration-200"
+                  disabled={submitting}
+                  className="flex-1 py-4 rounded-xl border border-[#2E2E2E] text-[#888888] font-semibold text-sm hover:border-[#3A3A3A] hover:text-[#F0F0F0] transition-all duration-200 disabled:opacity-40"
                 >
                   ← Anterior
                 </button>
                 <button
                   onClick={handleSubmit}
-                  disabled={!selectedPkg}
+                  disabled={!selectedPkg || submitting}
                   className="flex-[2] py-4 rounded-xl bg-[#00A86B] text-white font-bold text-sm hover:bg-[#008F5A] disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(0,168,107,0.2)] transition-all duration-200"
                 >
-                  Enviar Solicitud
+                  {submitting ? 'Enviando...' : 'Enviar Solicitud'}
                 </button>
               </div>
             </motion.div>
