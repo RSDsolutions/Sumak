@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { DollarSign, Users, ShoppingCart, Hash, Star, ArrowRight } from 'lucide-react';
+import { DollarSign, Users, ShoppingCart, Hash, Star, ArrowRight, TrendingUp } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
+import { getRangoActual, getNextRango } from '../../data';
 import type { Comision } from '../../lib/types';
 
 function Spinner() {
@@ -65,9 +66,9 @@ export default function Overview() {
     load();
   }, [user]);
 
-  const rankBadge = profile?.paquete
-    ? { basico: 'Básico', emprendedor: 'Emprendedor', lider: 'Líder' }[profile.paquete]
-    : 'Distribuidor';
+  const directos = stats?.afiliadosDirectos ?? 0;
+  const rangoActual = getRangoActual(directos);
+  const nextRango = getNextRango(directos);
 
   return (
     <div>
@@ -77,7 +78,7 @@ export default function Overview() {
             Bienvenido, {profile?.nombre_completo?.split(' ')[0]}
           </h1>
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold text-[#D4AF37] bg-[#D4AF37]/10 border border-[#D4AF37]/30">
-            {rankBadge}
+            {loading ? '—' : rangoActual.rango}
           </span>
         </div>
         <p className="text-[#888888] text-sm mt-1">Tu panel de distribuidor SUMAK</p>
@@ -123,18 +124,46 @@ export default function Overview() {
             </div>
           </div>
 
-          {/* Points banner */}
-          <div className="bg-gradient-to-r from-[#D4AF37]/10 to-[#D4AF37]/5 border border-[#D4AF37]/30 rounded-2xl p-5 mb-8 flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-[#D4AF37]/20 rounded-xl flex items-center justify-center">
+          {/* Puntos + Rango */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+            {/* Puntos */}
+            <div className="bg-gradient-to-br from-[#D4AF37]/10 to-transparent border border-[#D4AF37]/30 rounded-2xl p-5 flex items-center gap-4">
+              <div className="w-12 h-12 bg-[#D4AF37]/20 rounded-xl flex items-center justify-center shrink-0">
                 <Star size={22} className="text-[#D4AF37]" />
               </div>
               <div>
-                <p className="text-[#888888] text-sm">Mis Puntos Acumulados</p>
+                <p className="text-[#888888] text-sm">Puntos Acumulados</p>
                 <p className="font-heading font-bold text-3xl text-[#D4AF37]">{profile?.puntos ?? 0}</p>
+                <p className="text-[#888888] text-xs mt-0.5">1 punto = $1 de valor PVP</p>
               </div>
             </div>
-            <p className="text-[#888888] text-xs max-w-xs">Los puntos se acreditan cuando el admin marca tu pedido como entregado. 1 punto = $1 de valor PVP.</p>
+
+            {/* Rango Tramo 1 */}
+            <div className="bg-[#1A1A1A] border border-[#D4AF37]/30 rounded-2xl p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <TrendingUp size={16} className="text-[#D4AF37]" />
+                <p className="text-[#888888] text-sm">Tu Rango (Tramo 1)</p>
+              </div>
+              <div className="flex items-baseline justify-between mb-3">
+                <p className="font-heading font-bold text-xl text-[#D4AF37]">{rangoActual.rango}</p>
+                <span className="text-[#00A86B] font-semibold text-sm">{rangoActual.bono}</span>
+              </div>
+              {nextRango ? (
+                <>
+                  <div className="w-full bg-[#2E2E2E] rounded-full h-1.5 mb-1.5">
+                    <div
+                      className="bg-[#D4AF37] h-1.5 rounded-full transition-all"
+                      style={{ width: `${Math.min(100, (directos / nextRango.personasDirectas) * 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-[#555555] text-xs">
+                    {directos} / {nextRango.personasDirectas} directos para <span className="text-[#888888]">{nextRango.rango}</span>
+                  </p>
+                </>
+              ) : (
+                <p className="text-[#00A86B] text-xs font-semibold">Rango maximo alcanzado</p>
+              )}
+            </div>
           </div>
 
           {/* Recent commissions */}

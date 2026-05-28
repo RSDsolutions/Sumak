@@ -281,6 +281,22 @@ export const tramo1Ranks: Tramo1Rank[] = [
   { rango: 'Gerente (nivel 2)', personasDirectas: 40, bono: '$4,000.00 + Viaje Nacional' },
 ];
 
+export function getRangoActual(directos: number): Tramo1Rank {
+  let current = tramo1Ranks[0];
+  for (const r of tramo1Ranks) {
+    if (directos >= r.personasDirectas) current = r;
+    else break;
+  }
+  return current;
+}
+
+export function getNextRango(directos: number): Tramo1Rank | null {
+  for (const r of tramo1Ranks) {
+    if (r.personasDirectas > directos) return r;
+  }
+  return null;
+}
+
 // ── Tramo 2 Ranks ────────────────────────────────────────────
 export const tramo2Ranks: Tramo2Rank[] = [
   { rango: 'Gerente', nivelesActivos: '1–5', personasEnRed: 50, recompensa: '$5,000.00' },
