@@ -102,19 +102,31 @@ export default function MiRed() {
         .single();
       if (vol) { setVolIzq(Number(vol.volumen_izquierda)); setVolDer(Number(vol.volumen_derecha)); }
 
-      // Build subtree — fetch up to 4 levels
+      // Fetch all red_binaria nodes (RLS limits to what this user can see)
       const { data: allNodes } = await supabase
         .from('red_binaria')
-        .select('*, profile:profiles!distribuidor_id(*)')
+        .select('*')
         .limit(200);
 
       if (!allNodes) { setLoading(false); return; }
 
+      // Fetch profiles for all nodes
+      const distIds = allNodes.map((n) => n.distribuidor_id);
+      const { data: perfiles } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', distIds);
+
+      const profileMap = new Map<string, Profile>();
+      for (const p of perfiles ?? []) profileMap.set(p.id, p as Profile);
+
       const nodeMap = new Map<string, TreeNode>();
       for (const n of allNodes) {
+        const profile = profileMap.get(n.distribuidor_id);
+        if (!profile) continue;
         nodeMap.set(n.id, {
           ...(n as unknown as NodoBinario),
-          profile: n.profile as Profile,
+          profile,
           children: [],
         });
       }

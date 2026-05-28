@@ -33,11 +33,31 @@ interface ApproveModalProps {
   onSuccess: (code: string, tempPassword: string) => void;
 }
 
+interface DistribuidorOption {
+  id: string;
+  codigo_distribuidor: string;
+  nombre_completo: string;
+}
+
 function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
   const [posicion, setPosicion] = useState<'izquierda' | 'derecha'>('izquierda');
-  const [padreId, setPadreId] = useState('');
+  const [padreProfileId, setPadreProfileId] = useState('');
+  const [distribuidores, setDistribuidores] = useState<DistribuidorOption[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingDist, setLoadingDist] = useState(true);
   const [error, setError] = useState('');
+
+  // Load existing distributors for the dropdown
+  useEffect(() => {
+    supabaseAdmin
+      .from('profiles')
+      .select('id, codigo_distribuidor, nombre_completo')
+      .order('codigo_distribuidor', { ascending: true })
+      .then(({ data }) => {
+        setDistribuidores((data as DistribuidorOption[]) ?? []);
+        setLoadingDist(false);
+      });
+  }, []);
 
   async function handleApprove() {
     setLoading(true);
@@ -67,9 +87,9 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
 
       const userId = authData.user.id;
 
-      // 4. Find patrocinador_id from codigo_patrocinador
-      let patrocinadorId: string | null = null;
-      if (afiliacion.codigo_patrocinador) {
+      // 4. Resolve patrocinador: use the selected padre or look up by code in the form
+      let patrocinadorId: string | null = padreProfileId || null;
+      if (!patrocinadorId && afiliacion.codigo_patrocinador) {
         const { data: pat } = await supabaseAdmin
           .from('profiles')
           .select('id')
@@ -101,22 +121,27 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
         return;
       }
 
-      // 6. Insert into red_binaria
+      // 6. Find the parent's red_binaria node id (if a parent was selected)
       let padreNodoId: string | null = null;
-      if (padreId) {
+      const parentProfileId = padreProfileId || patrocinadorId;
+      if (parentProfileId) {
         const { data: padreNodo } = await supabaseAdmin
           .from('red_binaria')
-          .select('id')
-          .eq('distribuidor_id', padreId)
+          .select('id, nivel')
+          .eq('distribuidor_id', parentProfileId)
           .single();
-        padreNodoId = padreNodo?.id ?? null;
+        if (padreNodo) {
+          padreNodoId = padreNodo.id;
+        }
       }
 
+      // 7. Insert into red_binaria
+      const nivelNuevo = padreNodoId ? 2 : 1;
       const { error: redError } = await supabaseAdmin.from('red_binaria').insert({
         distribuidor_id: userId,
         padre_id: padreNodoId,
         posicion: posicion,
-        nivel: 1,
+        nivel: nivelNuevo,
       });
 
       if (redError) {
@@ -124,13 +149,13 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
         return;
       }
 
-      // 7. Update afiliacion state
+      // 8. Update afiliacion state
       await supabaseAdmin
         .from('afiliaciones')
         .update({ estado: 'aprobada' })
         .eq('id', afiliacion.id);
 
-      // 8. Create welcome commission for patrocinador
+      // 9. Create welcome commission for patrocinador
       if (patrocinadorId) {
         await supabaseAdmin.from('comisiones').insert({
           beneficiario_id: patrocinadorId,
@@ -162,22 +187,35 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
           </div>
         )}
 
+        {/* Parent distributor dropdown */}
         <div className="mb-4">
           <label className="block text-[#888888] text-xs font-semibold uppercase tracking-wider mb-2">
-            ID del Patrocinador (Profile UUID, opcional)
+            Ubicar bajo el distribuidor
           </label>
-          <input
-            type="text"
-            value={padreId}
-            onChange={(e) => setPadreId(e.target.value)}
-            placeholder="UUID del perfil padre en el árbol"
-            className="w-full bg-[#222222] border border-[#2E2E2E] rounded-xl px-4 py-3 text-[#F0F0F0] text-sm placeholder-[#555555] focus:outline-none focus:border-[#00A86B] transition-colors"
-          />
+          <select
+            value={padreProfileId}
+            onChange={(e) => setPadreProfileId(e.target.value)}
+            disabled={loadingDist}
+            className="w-full bg-[#222222] border border-[#2E2E2E] rounded-xl px-4 py-3 text-[#F0F0F0] text-sm focus:outline-none focus:border-[#00A86B] transition-colors appearance-none"
+          >
+            <option value="">— Sin padre (nodo raíz) —</option>
+            {distribuidores.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.codigo_distribuidor} — {d.nombre_completo}
+              </option>
+            ))}
+          </select>
+          <p className="text-[#555555] text-xs mt-1">
+            {afiliacion.codigo_patrocinador
+              ? `Patrocinador declarado: ${afiliacion.codigo_patrocinador}`
+              : 'El afiliado no declaró patrocinador'}
+          </p>
         </div>
 
+        {/* Position */}
         <div className="mb-6">
           <label className="block text-[#888888] text-xs font-semibold uppercase tracking-wider mb-2">
-            Posición en el Árbol Binario
+            Posición en el árbol binario
           </label>
           <div className="flex gap-3">
             {(['izquierda', 'derecha'] as const).map((p) => (
@@ -190,7 +228,7 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
                     : 'border-[#2E2E2E] text-[#888888] hover:border-[#3A3A3A]'
                 }`}
               >
-                {p}
+                {p === 'izquierda' ? '⬅ Izquierda (Equipo A)' : 'Derecha (Equipo B) ➡'}
               </button>
             ))}
           </div>
@@ -206,7 +244,7 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
           </button>
           <button
             onClick={handleApprove}
-            disabled={loading}
+            disabled={loading || loadingDist}
             className="flex-[2] py-3 rounded-xl bg-[#00A86B] text-white text-sm font-bold hover:bg-[#008F5A] transition-all duration-200 disabled:opacity-60"
           >
             {loading ? 'Procesando...' : 'Confirmar Aprobación'}

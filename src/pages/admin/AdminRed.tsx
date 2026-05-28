@@ -76,21 +76,33 @@ export default function AdminRed() {
   useEffect(() => {
     async function load() {
       try {
-        // Fetch all red_binaria nodes with profile data, limit depth to 5 levels
+        // Fetch all red_binaria nodes
         const { data: nodos } = await supabaseAdmin
           .from('red_binaria')
-          .select('*, profile:profiles!distribuidor_id(*)')
+          .select('*')
           .order('nivel', { ascending: true })
           .limit(100);
 
-        if (!nodos) return;
+        if (!nodos || nodos.length === 0) return;
+
+        // Fetch all profiles for those nodes in one query
+        const distIds = nodos.map((n) => n.distribuidor_id);
+        const { data: perfiles } = await supabaseAdmin
+          .from('profiles')
+          .select('*')
+          .in('id', distIds);
+
+        const profileMap = new Map<string, Profile>();
+        for (const p of perfiles ?? []) profileMap.set(p.id, p as Profile);
 
         // Build tree structure
         const nodeMap = new Map<string, TreeNode>();
         for (const n of nodos) {
+          const profile = profileMap.get(n.distribuidor_id);
+          if (!profile) continue;
           const node: TreeNode = {
             ...(n as unknown as NodoBinario),
-            profile: n.profile as Profile,
+            profile,
             children: [],
           };
           nodeMap.set(node.id, node);
