@@ -9,6 +9,7 @@ interface AuthContextValue {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
   isAdmin: boolean;
   isDistribuidor: boolean;
 }
@@ -74,11 +75,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProfile(null);
   }
 
+  async function refreshProfile(): Promise<void> {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) await fetchProfile(session.user.id);
+  }
+
   const isAdmin = profile?.rol === 'admin';
   const isDistribuidor = profile?.rol === 'distribuidor';
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signIn, signOut, isAdmin, isDistribuidor }}>
+    <AuthContext.Provider value={{ user, profile, loading, signIn, signOut, refreshProfile, isAdmin, isDistribuidor }}>
       {children}
     </AuthContext.Provider>
   );

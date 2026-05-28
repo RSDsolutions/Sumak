@@ -30,7 +30,7 @@ interface Stats {
 }
 
 export default function Overview() {
-  const { profile, user } = useAuth();
+  const { profile, user, refreshProfile } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
   const [comisiones, setComisiones] = useState<Comision[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +41,9 @@ export default function Overview() {
       const uid = user!.id;
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+      // Refresh profile so puntos are always up-to-date
+      await refreshProfile();
 
       const [
         { data: comsData },
