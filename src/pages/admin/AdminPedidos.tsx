@@ -65,8 +65,27 @@ export default function AdminPedidos() {
 
   useEffect(() => { load(); }, [tab]);
 
-  async function updateEstado(pedidoId: string, newEstado: EstadoPedido) {
+  async function updateEstado(pedidoId: string, newEstado: EstadoPedido, currentEstado: EstadoPedido) {
     setUpdatingId(pedidoId);
+
+    // Credit points to the distributor when delivering an order
+    if (newEstado === 'entregado' && currentEstado !== 'entregado') {
+      const pedido = pedidos.find((p) => p.id === pedidoId);
+      if (pedido && pedido.puntos_generados > 0) {
+        const { data: prof } = await supabaseAdmin
+          .from('profiles')
+          .select('puntos')
+          .eq('id', pedido.distribuidor_id)
+          .single();
+        if (prof) {
+          await supabaseAdmin
+            .from('profiles')
+            .update({ puntos: Number(prof.puntos) + pedido.puntos_generados })
+            .eq('id', pedido.distribuidor_id);
+        }
+      }
+    }
+
     await supabaseAdmin.from('pedidos').update({ estado: newEstado }).eq('id', pedidoId);
     setPedidos((prev) => prev.map((p) => p.id === pedidoId ? { ...p, estado: newEstado } : p));
     setUpdatingId(null);
@@ -107,7 +126,7 @@ export default function AdminPedidos() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#2E2E2E]">
-                  {['ID', 'Distribuidor', 'Total', 'Estado', 'Fecha', 'Actualizar Estado'].map((h) => (
+                  {['ID', 'Distribuidor', 'Total', 'Puntos', 'Estado', 'Fecha', 'Actualizar Estado'].map((h) => (
                     <th key={h} className="px-6 py-3 text-left text-[#888888] text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
                       {h}
                     </th>
@@ -126,6 +145,9 @@ export default function AdminPedidos() {
                     <td className="px-6 py-4 text-[#F0F0F0] font-semibold whitespace-nowrap">
                       ${Number(p.total).toFixed(2)}
                     </td>
+                    <td className="px-6 py-4 text-[#D4AF37] font-semibold whitespace-nowrap">
+                      {p.puntos_generados > 0 ? `★ ${p.puntos_generados}` : '—'}
+                    </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${estadoBadge(p.estado)}`}>
                         {p.estado}
@@ -137,7 +159,7 @@ export default function AdminPedidos() {
                     <td className="px-6 py-4">
                       <select
                         value={p.estado}
-                        onChange={(e) => updateEstado(p.id, e.target.value as EstadoPedido)}
+                        onChange={(e) => updateEstado(p.id, e.target.value as EstadoPedido, p.estado)}
                         disabled={updatingId === p.id}
                         className="bg-[#222222] border border-[#2E2E2E] rounded-lg px-3 py-1.5 text-[#F0F0F0] text-xs focus:outline-none focus:border-[#00A86B] transition-colors disabled:opacity-50"
                       >

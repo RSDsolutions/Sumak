@@ -66,6 +66,7 @@ export interface Pedido {
   estado: EstadoPedido;
   tipo_precio: TipoPrecio;
   total: number;
+  puntos_generados: number;
   notas: string | null;
   created_at: string;
   updated_at: string;

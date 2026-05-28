@@ -20,6 +20,7 @@ export default function NuevoPedido() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
+  const [earnedPuntos, setEarnedPuntos] = useState(0);
 
   const DISCOUNT = 0.5; // 50% discount for distributors
 
@@ -39,6 +40,7 @@ export default function NuevoPedido() {
 
   const total = cartItems.reduce((s, i) => s + i.precio * i.cantidad, 0);
   const savingsTotal = cartItems.reduce((s, i) => s + (i.pvp - i.precio) * i.cantidad, 0);
+  const totalPuntos = cartItems.reduce((s, i) => s + Math.round(i.pvp * i.cantidad), 0);
 
   async function handleSubmit() {
     if (cartItems.length === 0 || !user) return;
@@ -46,6 +48,8 @@ export default function NuevoPedido() {
     setError('');
 
     try {
+      const puntos = totalPuntos;
+
       // Insert pedido
       const { data: pedidoData, error: pedidoError } = await supabase
         .from('pedidos')
@@ -54,6 +58,7 @@ export default function NuevoPedido() {
           estado: 'pendiente',
           tipo_precio: 'distribuidor',
           total: parseFloat(total.toFixed(2)),
+          puntos_generados: puntos,
         })
         .select()
         .single();
@@ -80,6 +85,7 @@ export default function NuevoPedido() {
         return;
       }
 
+      setEarnedPuntos(puntos);
       setDone(true);
     } catch (err) {
       setError('Error inesperado. Intenta de nuevo.');
@@ -97,10 +103,18 @@ export default function NuevoPedido() {
             <CheckCircle2 size={40} className="text-[#00A86B]" />
           </div>
           <h2 className="font-heading font-bold text-2xl text-[#F0F0F0] mb-2">¡Pedido Enviado!</h2>
-          <p className="text-[#888888] mb-6">Tu pedido ha sido registrado. El equipo SUMAK lo procesará pronto.</p>
+          <p className="text-[#888888] mb-4">Tu pedido ha sido registrado. El equipo SUMAK lo procesará pronto.</p>
+          {earnedPuntos > 0 && (
+            <div className="inline-flex items-center gap-2 bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-xl px-5 py-3 mb-6">
+              <span className="text-[#D4AF37] text-lg font-bold">★</span>
+              <span className="text-[#D4AF37] font-semibold text-sm">
+                Ganarás <span className="font-bold text-base">{earnedPuntos} puntos</span> cuando tu pedido sea entregado
+              </span>
+            </div>
+          )}
           <div className="flex gap-3 justify-center">
             <button
-              onClick={() => { setDone(false); setQuantities({}); }}
+              onClick={() => { setDone(false); setQuantities({}); setEarnedPuntos(0); }}
               className="px-6 py-3 rounded-xl border border-[#2E2E2E] text-[#888888] font-semibold text-sm hover:border-[#3A3A3A] hover:text-[#F0F0F0] transition-all duration-200"
             >
               Nuevo Pedido
@@ -213,6 +227,10 @@ export default function NuevoPedido() {
                   <div className="flex justify-between text-sm">
                     <span className="text-[#D4AF37]">Ahorro total</span>
                     <span className="text-[#D4AF37]">${savingsTotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[#D4AF37]">★ Puntos a ganar</span>
+                    <span className="text-[#D4AF37] font-semibold">{totalPuntos} pts</span>
                   </div>
                   <div className="flex justify-between font-bold pt-2 border-t border-[#2E2E2E]">
                     <span className="text-[#F0F0F0]">Total</span>

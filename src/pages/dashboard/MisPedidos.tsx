@@ -80,7 +80,7 @@ export default function MisPedidos() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#2E2E2E]">
-                  {['Fecha', 'Productos', 'Total', 'Estado'].map((h) => (
+                  {['Fecha', 'Productos', 'Total', 'Puntos', 'Estado'].map((h) => (
                     <th key={h} className="px-6 py-3 text-left text-[#888888] text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
                       {h}
                     </th>
@@ -107,6 +107,13 @@ export default function MisPedidos() {
                     </td>
                     <td className="px-6 py-4 text-[#F0F0F0] font-semibold whitespace-nowrap">
                       ${Number(p.total).toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {p.puntos_generados > 0 ? (
+                        <span className={`text-sm font-semibold ${p.estado === 'entregado' ? 'text-[#D4AF37]' : 'text-[#888888]'}`}>
+                          ★ {p.puntos_generados}
+                        </span>
+                      ) : '—'}
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${estadoBadge(p.estado)}`}>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { DollarSign, Users, ShoppingCart, Hash, ArrowRight } from 'lucide-react';
+import { DollarSign, Users, ShoppingCart, Hash, Star, ArrowRight } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import type { Comision } from '../../lib/types';
@@ -88,7 +88,7 @@ export default function Overview() {
       ) : (
         <>
           {/* Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
             <div className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl p-6">
               <div className="w-10 h-10 bg-[#D4AF37]/10 rounded-xl flex items-center justify-center mb-4">
                 <DollarSign size={20} className="text-[#D4AF37]" />
@@ -121,6 +121,20 @@ export default function Overview() {
                 {profile?.codigo_distribuidor ?? '—'}
               </p>
             </div>
+          </div>
+
+          {/* Points banner */}
+          <div className="bg-gradient-to-r from-[#D4AF37]/10 to-[#D4AF37]/5 border border-[#D4AF37]/30 rounded-2xl p-5 mb-8 flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-[#D4AF37]/20 rounded-xl flex items-center justify-center">
+                <Star size={22} className="text-[#D4AF37]" />
+              </div>
+              <div>
+                <p className="text-[#888888] text-sm">Mis Puntos Acumulados</p>
+                <p className="font-heading font-bold text-3xl text-[#D4AF37]">{profile?.puntos ?? 0}</p>
+              </div>
+            </div>
+            <p className="text-[#888888] text-xs max-w-xs">Los puntos se acreditan cuando el admin marca tu pedido como entregado. 1 punto = $1 de valor PVP.</p>
           </div>
 
           {/* Recent commissions */}
