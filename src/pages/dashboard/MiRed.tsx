@@ -75,6 +75,7 @@ export default function MiRed() {
   const [loading, setLoading] = useState(true);
   const [volIzq, setVolIzq] = useState(0);
   const [volDer, setVolDer] = useState(0);
+  const [volPareado, setVolPareado] = useState(0);
 
   useEffect(() => {
     if (!user || !profile) return;
@@ -100,7 +101,11 @@ export default function MiRed() {
         .eq('distribuidor_id', uid)
         .eq('mes', mesStr)
         .single();
-      if (vol) { setVolIzq(Number(vol.volumen_izquierda)); setVolDer(Number(vol.volumen_derecha)); }
+      if (vol) {
+        setVolIzq(Number(vol.volumen_izquierda));
+        setVolDer(Number(vol.volumen_derecha));
+        setVolPareado(Number(vol.volumen_pareado));
+      }
 
       // Fetch all red_binaria nodes (RLS limits to what this user can see)
       const { data: allNodes } = await supabase
@@ -157,16 +162,21 @@ export default function MiRed() {
       </div>
 
       {/* Volume summary */}
-      <div className="grid grid-cols-2 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <div className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl p-5 text-center">
           <p className="text-[#888888] text-sm mb-1">Equipo A (Izquierda)</p>
-          <p className="font-heading font-bold text-xl text-[#00A86B]">${volIzq.toFixed(2)}</p>
-          <p className="text-[#555555] text-xs mt-1">{leftCount} distribuidor{leftCount !== 1 ? 'es' : ''} directo{leftCount !== 1 ? 's' : ''}</p>
+          <p className="font-heading font-bold text-xl text-[#00A86B]">{volIzq} pts</p>
+          <p className="text-[#555555] text-xs mt-1">{leftCount} directo{leftCount !== 1 ? 's' : ''}</p>
         </div>
         <div className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl p-5 text-center">
           <p className="text-[#888888] text-sm mb-1">Equipo B (Derecha)</p>
-          <p className="font-heading font-bold text-xl text-[#00A86B]">${volDer.toFixed(2)}</p>
-          <p className="text-[#555555] text-xs mt-1">{rightCount} distribuidor{rightCount !== 1 ? 'es' : ''} directo{rightCount !== 1 ? 's' : ''}</p>
+          <p className="font-heading font-bold text-xl text-[#00A86B]">{volDer} pts</p>
+          <p className="text-[#555555] text-xs mt-1">{rightCount} directo{rightCount !== 1 ? 's' : ''}</p>
+        </div>
+        <div className="bg-[#1A1A1A] border border-[#D4AF37]/30 rounded-2xl p-5 text-center">
+          <p className="text-[#888888] text-sm mb-1">Volumen Pareado</p>
+          <p className="font-heading font-bold text-xl text-[#D4AF37]">{volPareado} pts</p>
+          <p className="text-[#555555] text-xs mt-1">min(A, B) este mes</p>
         </div>
       </div>
 

@@ -40,7 +40,7 @@ export default function NuevoPedido() {
 
   const total = cartItems.reduce((s, i) => s + i.precio * i.cantidad, 0);
   const savingsTotal = cartItems.reduce((s, i) => s + (i.pvp - i.precio) * i.cantidad, 0);
-  const totalPuntos = cartItems.reduce((s, i) => s + Math.round(i.pvp * i.cantidad), 0);
+  const totalPuntos = cartItems.reduce((s, i) => s + Math.round(i.precio * i.cantidad), 0);
 
   async function handleSubmit() {
     if (cartItems.length === 0 || !user) return;

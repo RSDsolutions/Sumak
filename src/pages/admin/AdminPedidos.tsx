@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabaseAdmin } from '../../lib/supabase';
+import { levelCommissions } from '../../data';
 import type { Pedido, EstadoPedido } from '../../lib/types';
 
 type FilterTab = 'todos' | EstadoPedido;
@@ -68,20 +69,105 @@ export default function AdminPedidos() {
   async function updateEstado(pedidoId: string, newEstado: EstadoPedido, currentEstado: EstadoPedido) {
     setUpdatingId(pedidoId);
 
-    // Credit points to the distributor when delivering an order
     if (newEstado === 'entregado' && currentEstado !== 'entregado') {
       const pedido = pedidos.find((p) => p.id === pedidoId);
-      if (pedido && pedido.puntos_generados > 0) {
-        const { data: prof } = await supabaseAdmin
-          .from('profiles')
-          .select('puntos')
-          .eq('id', pedido.distribuidor_id)
-          .single();
-        if (prof) {
-          await supabaseAdmin
-            .from('profiles')
-            .update({ puntos: Number(prof.puntos) + pedido.puntos_generados })
-            .eq('id', pedido.distribuidor_id);
+      if (pedido) {
+        const puntos = pedido.puntos_generados;
+        const distribId = pedido.distribuidor_id;
+
+        // Pre-fetch all profiles and binary nodes in one round-trip
+        const [{ data: allProfiles }, { data: allNodos }] = await Promise.all([
+          supabaseAdmin.from('profiles').select('id, patrocinador_id, puntos'),
+          supabaseAdmin.from('red_binaria').select('id, distribuidor_id, padre_id, posicion'),
+        ]);
+
+        type ProfileRow = { id: string; patrocinador_id: string | null; puntos: number };
+        type NodoRow = { id: string; distribuidor_id: string; padre_id: string | null; posicion: string | null };
+
+        const profileMap = new Map<string, ProfileRow>();
+        for (const p of allProfiles ?? []) profileMap.set(p.id, { ...p, puntos: Number(p.puntos) });
+
+        const nodoByDistrib = new Map<string, NodoRow>();
+        const nodoById = new Map<string, NodoRow>();
+        for (const n of allNodos ?? []) {
+          nodoByDistrib.set(n.distribuidor_id, n);
+          nodoById.set(n.id, n);
+        }
+
+        // 1. Credit puntos to the distributor
+        if (puntos > 0) {
+          const dp = profileMap.get(distribId);
+          if (dp) {
+            await supabaseAdmin.from('profiles').update({ puntos: dp.puntos + puntos }).eq('id', distribId);
+          }
+        }
+
+        // 2. Level commissions — walk up the patrocinador chain
+        if (puntos > 0) {
+          const inserts: object[] = [];
+          let upId: string | null = distribId;
+          for (const lc of levelCommissions) {
+            const prof = profileMap.get(upId!);
+            if (!prof?.patrocinador_id) break;
+            upId = prof.patrocinador_id;
+            const monto = parseFloat((puntos * lc.porcentaje / 100).toFixed(2));
+            if (monto > 0) {
+              inserts.push({
+                beneficiario_id: upId,
+                origen_id: distribId,
+                tipo: 'nivel',
+                nivel_red: lc.nivel,
+                monto,
+                estado: 'pendiente',
+                descripcion: `Comisión nivel ${lc.nivel}`,
+              });
+            }
+          }
+          if (inserts.length > 0) await supabaseAdmin.from('comisiones').insert(inserts);
+        }
+
+        // 3. Binary volumes — walk up the binary tree propagating volume
+        if (puntos > 0) {
+          const mes = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01`;
+          let child = nodoByDistrib.get(distribId);
+
+          while (child?.padre_id) {
+            const parent = nodoById.get(child.padre_id);
+            if (!parent) break;
+
+            const isLeft = child.posicion === 'izquierda';
+
+            const { data: existing } = await supabaseAdmin
+              .from('volumenes_binarios')
+              .select('id, volumen_izquierda, volumen_derecha')
+              .eq('distribuidor_id', parent.distribuidor_id)
+              .eq('mes', mes)
+              .maybeSingle();
+
+            const newLeft  = Number(existing?.volumen_izquierda ?? 0) + (isLeft ? puntos : 0);
+            const newRight = Number(existing?.volumen_derecha  ?? 0) + (isLeft ? 0 : puntos);
+            const pareado  = Math.min(newLeft, newRight);
+
+            if (existing) {
+              await supabaseAdmin.from('volumenes_binarios').update({
+                volumen_izquierda: newLeft,
+                volumen_derecha: newRight,
+                volumen_pareado: pareado,
+              }).eq('id', existing.id);
+            } else {
+              await supabaseAdmin.from('volumenes_binarios').insert({
+                distribuidor_id: parent.distribuidor_id,
+                mes,
+                volumen_izquierda: isLeft ? puntos : 0,
+                volumen_derecha: isLeft ? 0 : puntos,
+                volumen_pareado: 0,
+                comision_calculada: 0,
+                procesado: false,
+              });
+            }
+
+            child = parent;
+          }
         }
       }
     }
