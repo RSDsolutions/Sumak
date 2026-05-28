@@ -71,7 +71,7 @@ function TreeNodeComponent({
             </div>
           ))}
         </div>
-      ))}
+      )}
     </div>
   );
 }
@@ -183,7 +183,7 @@ export default function AdminRed() {
       )}
 
       {/* All distributors volume table */}
-      {!loading && volMap.size > 0 && (
+      {!loading && roots.length > 0 && (
         <div className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl overflow-hidden mb-6">
           <div className="px-6 py-3 border-b border-[#2E2E2E]">
             <h2 className="text-[#F0F0F0] text-sm font-semibold">Volúmenes por Distribuidor — {mes}</h2>
