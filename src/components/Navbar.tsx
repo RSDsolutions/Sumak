@@ -39,61 +39,63 @@ export default function Navbar() {
     : 'bg-transparent';
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${navBg}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 shrink-0">
-          <span className="font-heading font-bold text-[#00A86B] text-2xl tracking-wide leading-none">SUMAK</span>
-        </Link>
-
-        {/* Desktop Nav */}
-        <nav className="hidden xl:flex items-center gap-6">
-          {navLinks.map((link) => {
-            const isActive = location.pathname === link.path;
-            return (
-              <Link
-                key={link.path}
-                to={link.path}
-                className={`relative text-sm font-medium transition-colors duration-200 whitespace-nowrap ${
-                  isActive ? 'text-[#F0F0F0]' : 'text-[#888888] hover:text-[#F0F0F0]'
-                }`}
-              >
-                {link.name}
-                {isActive && (
-                  <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-[#00A86B] rounded-full" />
-                )}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Desktop CTA buttons */}
-        <div className="hidden xl:flex items-center gap-3 shrink-0">
-          <Link
-            to="/login"
-            className="px-4 py-2 rounded-lg border border-[#2E2E2E] text-[#888888] hover:text-[#F0F0F0] hover:border-[#3A3A3A] transition-all duration-200 text-sm font-medium"
-          >
-            Iniciar Sesión
+    <>
+      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${navBg}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2 shrink-0">
+            <span className="font-heading font-bold text-[#00A86B] text-2xl tracking-wide leading-none">SUMAK</span>
           </Link>
-          <Link
-            to="/registro"
-            className="px-5 py-2 rounded-lg bg-[#00A86B] text-white hover:bg-[#008F5A] transition-all duration-200 text-sm font-semibold shadow-[0_0_20px_rgba(0,168,107,0.25)]"
+
+          {/* Desktop Nav */}
+          <nav className="hidden xl:flex items-center gap-6">
+            {navLinks.map((link) => {
+              const isActive = location.pathname === link.path;
+              return (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  className={`relative text-sm font-medium transition-colors duration-200 whitespace-nowrap ${
+                    isActive ? 'text-[#F0F0F0]' : 'text-[#888888] hover:text-[#F0F0F0]'
+                  }`}
+                >
+                  {link.name}
+                  {isActive && (
+                    <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-[#00A86B] rounded-full" />
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Desktop CTA buttons */}
+          <div className="hidden xl:flex items-center gap-3 shrink-0">
+            <Link
+              to="/login"
+              className="px-4 py-2 rounded-lg border border-[#2E2E2E] text-[#888888] hover:text-[#F0F0F0] hover:border-[#3A3A3A] transition-all duration-200 text-sm font-medium"
+            >
+              Iniciar Sesión
+            </Link>
+            <Link
+              to="/registro"
+              className="px-5 py-2 rounded-lg bg-[#00A86B] text-white hover:bg-[#008F5A] transition-all duration-200 text-sm font-semibold shadow-[0_0_20px_rgba(0,168,107,0.25)]"
+            >
+              Únete Ahora
+            </Link>
+          </div>
+
+          {/* Mobile hamburger */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="xl:hidden text-[#00A86B] p-2 -mr-1"
+            aria-label="Toggle menu"
           >
-            Únete Ahora
-          </Link>
+            {mobileMenuOpen ? <X size={26} /> : <Menu size={26} />}
+          </button>
         </div>
+      </header>
 
-        {/* Mobile hamburger */}
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="xl:hidden text-[#00A86B] p-2 -mr-1"
-          aria-label="Toggle menu"
-        >
-          {mobileMenuOpen ? <X size={26} /> : <Menu size={26} />}
-        </button>
-      </div>
-
-      {/* Mobile menu */}
+      {/* Mobile menu — outside <header> so backdrop-filter doesn't affect fixed positioning */}
       {mobileMenuOpen && (
         <div className="xl:hidden fixed inset-0 top-16 bg-[#0F0F0F] z-40 flex flex-col overflow-y-auto">
           <nav className="flex flex-col px-6 pt-8 gap-1">
@@ -128,6 +130,6 @@ export default function Navbar() {
           </div>
         </div>
       )}
-    </header>
+    </>
   );
 }

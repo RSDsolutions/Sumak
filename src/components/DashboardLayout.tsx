@@ -126,9 +126,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Mobile drawer */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#0F0F0F] border-r border-[#2E2E2E] transform transition-transform duration-300 lg:hidden ${
-          mobileOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        style={{ transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)' }}
+        className="fixed inset-y-0 left-0 z-50 w-64 bg-[#0F0F0F] border-r border-[#2E2E2E] transition-transform duration-300 lg:hidden"
       >
         <SidebarContent onClose={() => setMobileOpen(false)} />
       </aside>

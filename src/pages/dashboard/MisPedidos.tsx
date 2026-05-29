@@ -45,14 +45,14 @@ export default function MisPedidos() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-wrap items-start sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#F0F0F0]">Mis Pedidos</h1>
           <p className="text-[#888888] text-sm mt-1">Historial de todos tus pedidos</p>
         </div>
         <Link
           to="/dashboard/pedido/nuevo"
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#00A86B] text-white font-bold text-sm hover:bg-[#008F5A] transition-all duration-200"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#00A86B] text-white font-bold text-sm hover:bg-[#008F5A] transition-all duration-200 shrink-0"
         >
           <Plus size={16} />
           Nuevo Pedido
