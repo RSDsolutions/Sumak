@@ -21,19 +21,19 @@ interface PedidoRow extends Pedido {
 
 function estadoBadge(estado: string) {
   const map: Record<string, string> = {
-    pendiente: 'bg-amber-500/10 text-amber-400',
-    procesando: 'bg-blue-500/10 text-blue-400',
-    enviado: 'bg-purple-500/10 text-purple-400',
-    entregado: 'bg-[#00A86B]/10 text-[#00A86B]',
-    cancelado: 'bg-red-500/10 text-red-400',
+    pendiente: 'bg-amber-50 text-amber-600',
+    procesando: 'bg-blue-50 text-blue-600',
+    enviado: 'bg-purple-50 text-purple-600',
+    entregado: 'bg-[#EBF4ED] text-[#1A4E26]',
+    cancelado: 'bg-red-50 text-red-600',
   };
-  return map[estado] ?? 'bg-[#222222] text-[#888888]';
+  return map[estado] ?? 'bg-[#F4F7F5] text-[#6B7280]';
 }
 
 function Spinner() {
   return (
     <div className="flex items-center justify-center py-16">
-      <div className="w-8 h-8 border-2 border-[#00A86B] border-t-transparent rounded-full animate-spin" />
+      <div className="w-8 h-8 border-2 border-[#1A4E26] border-t-transparent rounded-full animate-spin" />
     </div>
   );
 }
@@ -75,7 +75,6 @@ export default function AdminPedidos() {
         const puntos = pedido.puntos_generados;
         const distribId = pedido.distribuidor_id;
 
-        // Pre-fetch all profiles and binary nodes in one round-trip
         const [{ data: allProfiles }, { data: allNodos }] = await Promise.all([
           supabaseAdmin.from('profiles').select('id, patrocinador_id, puntos'),
           supabaseAdmin.from('red_binaria').select('id, distribuidor_id, padre_id, posicion'),
@@ -94,7 +93,6 @@ export default function AdminPedidos() {
           nodoById.set(n.id, n);
         }
 
-        // 1. Credit puntos to the distributor
         if (puntos > 0) {
           const dp = profileMap.get(distribId);
           if (dp) {
@@ -102,7 +100,6 @@ export default function AdminPedidos() {
           }
         }
 
-        // 2. Level commissions — walk up the patrocinador chain
         if (puntos > 0) {
           const inserts: object[] = [];
           let upId: string | null = distribId;
@@ -126,7 +123,6 @@ export default function AdminPedidos() {
           if (inserts.length > 0) await supabaseAdmin.from('comisiones').insert(inserts);
         }
 
-        // 3. Binary volumes — walk up the binary tree propagating volume
         if (puntos > 0) {
           const mes = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01`;
           let child = nodoByDistrib.get(distribId);
@@ -180,18 +176,18 @@ export default function AdminPedidos() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#F0F0F0]">Pedidos</h1>
-        <p className="text-[#888888] text-sm mt-1">Gestión de pedidos de distribuidores</p>
+        <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#111111]">Pedidos</h1>
+        <p className="text-[#6B7280] text-sm mt-1">Gestión de pedidos de distribuidores</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-[#1A1A1A] border border-[#2E2E2E] rounded-xl p-1 mb-6 flex-wrap">
+      <div className="flex gap-1 bg-white border border-[#C8D8CB] rounded-xl p-1 mb-6 flex-wrap">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-              tab === t.key ? 'bg-[#00A86B] text-white' : 'text-[#888888] hover:text-[#F0F0F0]'
+              tab === t.key ? 'bg-[#1A4E26] text-white shadow-[0_0_8px_rgba(26,78,38,0.2)]' : 'text-[#6B7280] hover:text-[#111111]'
             }`}
           >
             {t.label}
@@ -199,11 +195,11 @@ export default function AdminPedidos() {
         ))}
       </div>
 
-      <div className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl overflow-hidden">
+      <div className="bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden">
         {loading ? (
           <Spinner />
         ) : pedidos.length === 0 ? (
-          <div className="px-6 py-16 text-center text-[#888888]">
+          <div className="px-6 py-16 text-center text-[#6B7280]">
             <p className="text-lg font-medium mb-2">Sin pedidos</p>
             <p className="text-sm">No hay pedidos con los filtros actuales.</p>
           </div>
@@ -211,9 +207,9 @@ export default function AdminPedidos() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#2E2E2E]">
+                <tr className="border-b border-[#C8D8CB] bg-[#F4F7F5]">
                   {['ID', 'Distribuidor', 'Total', 'Puntos', 'Estado', 'Fecha', 'Actualizar Estado'].map((h) => (
-                    <th key={h} className="px-6 py-3 text-left text-[#888888] text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
+                    <th key={h} className="px-6 py-3 text-left text-[#9CA3AF] text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
                       {h}
                     </th>
                   ))}
@@ -221,14 +217,14 @@ export default function AdminPedidos() {
               </thead>
               <tbody>
                 {pedidos.map((p) => (
-                  <tr key={p.id} className="border-b border-[#2E2E2E] hover:bg-[#222222] transition-colors">
-                    <td className="px-6 py-4 text-[#888888] font-mono text-xs">
+                  <tr key={p.id} className="border-b border-[#C8D8CB] hover:bg-[#F4F7F5] transition-colors">
+                    <td className="px-6 py-4 text-[#9CA3AF] font-mono text-xs">
                       {p.id.slice(0, 8)}...
                     </td>
-                    <td className="px-6 py-4 text-[#F0F0F0] font-medium whitespace-nowrap">
+                    <td className="px-6 py-4 text-[#111111] font-medium whitespace-nowrap">
                       {p.distribuidor_nombre}
                     </td>
-                    <td className="px-6 py-4 text-[#F0F0F0] font-semibold whitespace-nowrap">
+                    <td className="px-6 py-4 text-[#111111] font-semibold whitespace-nowrap">
                       ${Number(p.total).toFixed(2)}
                     </td>
                     <td className="px-6 py-4 text-[#D4AF37] font-semibold whitespace-nowrap">
@@ -239,7 +235,7 @@ export default function AdminPedidos() {
                         {p.estado}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-[#888888] whitespace-nowrap">
+                    <td className="px-6 py-4 text-[#6B7280] whitespace-nowrap">
                       {new Date(p.created_at).toLocaleDateString('es-EC')}
                     </td>
                     <td className="px-6 py-4">
@@ -247,7 +243,7 @@ export default function AdminPedidos() {
                         value={p.estado}
                         onChange={(e) => updateEstado(p.id, e.target.value as EstadoPedido, p.estado)}
                         disabled={updatingId === p.id}
-                        className="bg-[#222222] border border-[#2E2E2E] rounded-lg px-3 py-1.5 text-[#F0F0F0] text-xs focus:outline-none focus:border-[#00A86B] transition-colors disabled:opacity-50"
+                        className="bg-white border border-[#C8D8CB] rounded-lg px-3 py-1.5 text-[#111111] text-xs focus:outline-none focus:border-[#1A4E26] transition-colors disabled:opacity-50"
                       >
                         {ESTADOS.map((e) => (
                           <option key={e} value={e} className="capitalize">{e}</option>

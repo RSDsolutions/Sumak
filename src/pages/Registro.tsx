@@ -55,21 +55,21 @@ function StepIndicator({ current }: { current: Step }) {
               <div
                 className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 ${
                   isDone
-                    ? 'bg-[#00A86B] text-white'
+                    ? 'bg-[#1A4E26] text-white'
                     : isActive
-                    ? 'bg-[#00A86B] text-white shadow-[0_0_15px_rgba(0,168,107,0.4)]'
-                    : 'bg-[#1A1A1A] border border-[#2E2E2E] text-[#555555]'
+                    ? 'bg-[#1A4E26] text-white shadow-[0_0_15px_rgba(26,78,38,0.3)]'
+                    : 'bg-[#F4F7F5] border border-[#C8D8CB] text-[#9CA3AF]'
                 }`}
               >
                 {isDone ? <CheckCircle2 size={16} /> : s.num}
               </div>
-              <span className={`text-[10px] font-medium hidden sm:block ${isActive ? 'text-[#00A86B]' : 'text-[#555555]'}`}>
+              <span className={`text-[10px] font-medium hidden sm:block ${isActive ? 'text-[#1A4E26]' : 'text-[#9CA3AF]'}`}>
                 {s.label}
               </span>
             </div>
             {i < steps.length - 1 && (
               <div className={`w-12 sm:w-20 h-px mb-5 transition-all duration-300 ${
-                typeof current === 'number' && current > s.num ? 'bg-[#00A86B]' : 'bg-[#2E2E2E]'
+                typeof current === 'number' && current > s.num ? 'bg-[#1A4E26]' : 'bg-[#C8D8CB]'
               }`} />
             )}
           </div>
@@ -95,21 +95,21 @@ function UploadArea({
 
   return (
     <label className={`relative flex flex-col items-center justify-center gap-3 border-2 border-dashed rounded-xl p-6 cursor-pointer transition-all duration-200 ${
-      file ? 'border-[#00A86B]/60 bg-[#1A2A20]' : 'border-[#2E2E2E] bg-[#1A1A1A] hover:border-[#3A3A3A]'
+      file ? 'border-[#1A4E26]/50 bg-[#EBF4ED]' : 'border-[#C8D8CB] bg-[#F4F7F5] hover:border-[#A8C2AD]'
     }`}>
       <input type="file" accept=".jpg,.jpeg,.png,.pdf" className="sr-only" onChange={handleChange} />
       {file ? (
         <>
-          <CheckCircle2 size={28} className="text-[#00A86B]" />
-          <p className="text-[#00A86B] text-sm font-medium text-center truncate max-w-full">{file.name}</p>
+          <CheckCircle2 size={28} className="text-[#1A4E26]" />
+          <p className="text-[#1A4E26] text-sm font-medium text-center truncate max-w-full">{file.name}</p>
         </>
       ) : (
         <>
-          <Upload size={28} className="text-[#555555]" />
+          <Upload size={28} className="text-[#9CA3AF]" />
           <div className="text-center">
-            <p className="text-[#888888] text-sm font-medium">{label}</p>
-            <p className="text-[#555555] text-xs mt-1">Haga clic o arrastre su archivo aquí</p>
-            <p className="text-[#444444] text-[10px] mt-1">JPG, PNG, PDF · Máx 5 MB</p>
+            <p className="text-[#6B7280] text-sm font-medium">{label}</p>
+            <p className="text-[#9CA3AF] text-xs mt-1">Haga clic o arrastre su archivo aquí</p>
+            <p className="text-[#9CA3AF] text-[10px] mt-1">JPG, PNG, PDF · Máx 5 MB</p>
           </div>
         </>
       )}
@@ -154,7 +154,6 @@ export default function Registro() {
     setSubmitError('');
 
     try {
-      // Upload documents
       const uploadResults: Record<string, string | null> = {
         doc_cedula_frente: null,
         doc_cedula_reverso: null,
@@ -214,13 +213,13 @@ export default function Registro() {
   }
 
   return (
-    <div className="bg-[#0F0F0F] min-h-screen pt-24 pb-16 px-4 sm:px-6">
+    <div className="bg-[#F4F7F5] min-h-screen pt-24 pb-16 px-4 sm:px-6">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="font-heading font-bold text-3xl sm:text-4xl text-[#F0F0F0] mb-2">
+          <h1 className="font-heading font-bold text-3xl sm:text-4xl text-[#111111] mb-2">
             Solicitud de Afiliación
           </h1>
-          <p className="text-[#888888] text-sm">
+          <p className="text-[#6B7280] text-sm">
             Únete a la red SUMAK y comienza tu negocio de bienestar natural.
           </p>
         </div>
@@ -236,13 +235,13 @@ export default function Registro() {
               initial="hidden"
               animate="visible"
               exit="exit"
-              className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl p-6 sm:p-8"
+              className="bg-white border border-[#C8D8CB] rounded-2xl p-6 sm:p-8"
             >
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-[#00A86B]/10 flex items-center justify-center text-[#00A86B]">
+                <div className="w-10 h-10 rounded-xl bg-[#1A4E26]/10 flex items-center justify-center text-[#1A4E26]">
                   <User size={20} />
                 </div>
-                <h2 className="font-heading font-bold text-xl text-[#F0F0F0]">Datos Personales</h2>
+                <h2 className="font-heading font-bold text-xl text-[#111111]">Datos Personales</h2>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -255,8 +254,8 @@ export default function Registro() {
                   { name: 'ciudad', label: 'Ciudad', required: true, placeholder: 'Babahoyo' },
                 ].map((field) => (
                   <div key={field.name}>
-                    <label className="block text-[#888888] text-xs font-semibold uppercase tracking-wider mb-2">
-                      {field.label} {field.required && <span className="text-[#00A86B]">*</span>}
+                    <label className="block text-[#6B7280] text-xs font-semibold uppercase tracking-wider mb-2">
+                      {field.label} {field.required && <span className="text-[#1A4E26]">*</span>}
                     </label>
                     <input
                       name={field.name}
@@ -265,13 +264,13 @@ export default function Registro() {
                       placeholder={field.placeholder}
                       value={personal[field.name as keyof PersonalData]}
                       onChange={handlePersonalChange}
-                      className="w-full bg-[#222222] border border-[#2E2E2E] rounded-xl px-4 py-3 text-[#F0F0F0] text-sm placeholder-[#555555] focus:outline-none focus:border-[#00A86B] transition-colors duration-200"
+                      className="w-full bg-white border border-[#C8D8CB] rounded-xl px-4 py-3 text-[#111111] text-sm placeholder-[#9CA3AF] focus:outline-none focus:border-[#1A4E26] transition-colors duration-200"
                     />
                   </div>
                 ))}
                 <div className="sm:col-span-2">
-                  <label className="block text-[#888888] text-xs font-semibold uppercase tracking-wider mb-2">
-                    Código del Patrocinador <span className="text-[#555555] font-normal">(opcional)</span>
+                  <label className="block text-[#6B7280] text-xs font-semibold uppercase tracking-wider mb-2">
+                    Código del Patrocinador <span className="text-[#9CA3AF] font-normal">(opcional)</span>
                   </label>
                   <input
                     name="patrocinador"
@@ -279,7 +278,7 @@ export default function Registro() {
                     placeholder="SUMAK-XXXXX"
                     value={personal.patrocinador}
                     onChange={handlePersonalChange}
-                    className="w-full bg-[#222222] border border-[#2E2E2E] rounded-xl px-4 py-3 text-[#F0F0F0] text-sm placeholder-[#555555] focus:outline-none focus:border-[#00A86B] transition-colors duration-200"
+                    className="w-full bg-white border border-[#C8D8CB] rounded-xl px-4 py-3 text-[#111111] text-sm placeholder-[#9CA3AF] focus:outline-none focus:border-[#1A4E26] transition-colors duration-200"
                   />
                 </div>
               </div>
@@ -287,7 +286,7 @@ export default function Registro() {
               <button
                 onClick={() => step1Valid() && setStep(2)}
                 disabled={!step1Valid()}
-                className="w-full mt-6 py-4 rounded-xl bg-[#00A86B] text-white font-bold text-sm hover:bg-[#008F5A] disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(0,168,107,0.2)] transition-all duration-200"
+                className="w-full mt-6 py-4 rounded-xl bg-[#1A4E26] text-white font-bold text-sm hover:bg-[#163F1E] disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(26,78,38,0.2)] transition-all duration-200"
               >
                 Siguiente →
               </button>
@@ -302,13 +301,13 @@ export default function Registro() {
               initial="hidden"
               animate="visible"
               exit="exit"
-              className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl p-6 sm:p-8"
+              className="bg-white border border-[#C8D8CB] rounded-2xl p-6 sm:p-8"
             >
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-[#00A86B]/10 flex items-center justify-center text-[#00A86B]">
+                <div className="w-10 h-10 rounded-xl bg-[#1A4E26]/10 flex items-center justify-center text-[#1A4E26]">
                   <FileText size={20} />
                 </div>
-                <h2 className="font-heading font-bold text-xl text-[#F0F0F0]">Documentos Requeridos</h2>
+                <h2 className="font-heading font-bold text-xl text-[#111111]">Documentos Requeridos</h2>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -337,13 +336,13 @@ export default function Registro() {
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={() => setStep(1)}
-                  className="flex-1 py-4 rounded-xl border border-[#2E2E2E] text-[#888888] font-semibold text-sm hover:border-[#3A3A3A] hover:text-[#F0F0F0] transition-all duration-200"
+                  className="flex-1 py-4 rounded-xl border border-[#C8D8CB] text-[#6B7280] font-semibold text-sm hover:border-[#A8C2AD] hover:text-[#111111] transition-all duration-200"
                 >
                   ← Anterior
                 </button>
                 <button
                   onClick={() => setStep(3)}
-                  className="flex-[2] py-4 rounded-xl bg-[#00A86B] text-white font-bold text-sm hover:bg-[#008F5A] shadow-[0_0_20px_rgba(0,168,107,0.2)] transition-all duration-200"
+                  className="flex-[2] py-4 rounded-xl bg-[#1A4E26] text-white font-bold text-sm hover:bg-[#163F1E] shadow-[0_0_20px_rgba(26,78,38,0.2)] transition-all duration-200"
                 >
                   Siguiente →
                 </button>
@@ -359,26 +358,26 @@ export default function Registro() {
               initial="hidden"
               animate="visible"
               exit="exit"
-              className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl p-6 sm:p-8"
+              className="bg-white border border-[#C8D8CB] rounded-2xl p-6 sm:p-8"
             >
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-[#00A86B]/10 flex items-center justify-center text-[#00A86B]">
+                <div className="w-10 h-10 rounded-xl bg-[#1A4E26]/10 flex items-center justify-center text-[#1A4E26]">
                   <Package size={20} />
                 </div>
-                <h2 className="font-heading font-bold text-xl text-[#F0F0F0]">Selección de Paquete</h2>
+                <h2 className="font-heading font-bold text-xl text-[#111111]">Selección de Paquete</h2>
               </div>
 
               {submitError && (
-                <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 mb-4">
-                  <AlertCircle size={18} className="text-red-400 shrink-0 mt-0.5" />
-                  <p className="text-red-400 text-sm">{submitError}</p>
+                <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4">
+                  <AlertCircle size={18} className="text-red-500 shrink-0 mt-0.5" />
+                  <p className="text-red-600 text-sm">{submitError}</p>
                 </div>
               )}
 
               {submitting && (
-                <div className="flex items-center gap-3 bg-[#00A86B]/10 border border-[#00A86B]/30 rounded-xl px-4 py-3 mb-4">
-                  <div className="w-4 h-4 border-2 border-[#00A86B] border-t-transparent rounded-full animate-spin shrink-0" />
-                  <p className="text-[#00A86B] text-sm">{uploadProgress || 'Procesando...'}</p>
+                <div className="flex items-center gap-3 bg-[#EBF4ED] border border-[#1A4E26]/30 rounded-xl px-4 py-3 mb-4">
+                  <div className="w-4 h-4 border-2 border-[#1A4E26] border-t-transparent rounded-full animate-spin shrink-0" />
+                  <p className="text-[#1A4E26] text-sm">{uploadProgress || 'Procesando...'}</p>
                 </div>
               )}
 
@@ -390,8 +389,8 @@ export default function Registro() {
                       key={pkg.nombre}
                       className={`relative flex items-start gap-4 border-2 rounded-xl p-5 cursor-pointer transition-all duration-200 ${
                         isSelected
-                          ? 'border-[#00A86B] bg-[#1A2A20] shadow-[0_0_20px_rgba(0,168,107,0.15)]'
-                          : 'border-[#2E2E2E] hover:border-[#3A3A3A]'
+                          ? 'border-[#1A4E26] bg-[#EBF4ED] shadow-[0_0_20px_rgba(26,78,38,0.1)]'
+                          : 'border-[#C8D8CB] bg-white hover:border-[#A8C2AD]'
                       }`}
                     >
                       <input
@@ -400,29 +399,29 @@ export default function Registro() {
                         value={pkg.nombre}
                         checked={isSelected}
                         onChange={() => setSelectedPkg(pkg.nombre)}
-                        className="mt-1 accent-[#00A86B]"
+                        className="mt-1 accent-[#1A4E26]"
                       />
                       <div className="flex-grow">
                         <div className="flex items-center justify-between flex-wrap gap-2">
                           <div className="flex items-center gap-2">
-                            <span className="font-heading font-bold text-lg text-[#F0F0F0]">{pkg.nombre}</span>
+                            <span className="font-heading font-bold text-lg text-[#111111]">{pkg.nombre}</span>
                             {pkg.destacado && (
-                              <span className="bg-[#00A86B] text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
+                              <span className="bg-[#1A4E26] text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
                                 Popular
                               </span>
                             )}
                           </div>
-                          <span className="font-heading font-bold text-2xl text-[#00A86B]">${pkg.precio}</span>
+                          <span className="font-heading font-bold text-2xl text-[#1A4E26]">${pkg.precio}</span>
                         </div>
                         <div className="flex gap-4 mt-2 mb-3">
-                          <span className="text-xs text-[#888888]">{pkg.puntos} puntos</span>
-                          <span className="text-xs text-[#888888]">{pkg.productos} productos</span>
-                          <span className="text-xs text-[#00A86B] font-medium">50% descuento</span>
+                          <span className="text-xs text-[#6B7280]">{pkg.puntos} puntos</span>
+                          <span className="text-xs text-[#6B7280]">{pkg.productos} productos</span>
+                          <span className="text-xs text-[#1A4E26] font-medium">50% descuento</span>
                         </div>
                         <ul className="flex flex-col gap-1.5">
                           {pkg.beneficios.map((b) => (
-                            <li key={b} className="flex items-center gap-2 text-xs text-[#888888]">
-                              <CheckCircle2 size={12} className="text-[#00A86B] shrink-0" />
+                            <li key={b} className="flex items-center gap-2 text-xs text-[#6B7280]">
+                              <CheckCircle2 size={12} className="text-[#1A4E26] shrink-0" />
                               {b}
                             </li>
                           ))}
@@ -437,14 +436,14 @@ export default function Registro() {
                 <button
                   onClick={() => setStep(2)}
                   disabled={submitting}
-                  className="flex-1 py-4 rounded-xl border border-[#2E2E2E] text-[#888888] font-semibold text-sm hover:border-[#3A3A3A] hover:text-[#F0F0F0] transition-all duration-200 disabled:opacity-40"
+                  className="flex-1 py-4 rounded-xl border border-[#C8D8CB] text-[#6B7280] font-semibold text-sm hover:border-[#A8C2AD] hover:text-[#111111] transition-all duration-200 disabled:opacity-40"
                 >
                   ← Anterior
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={!selectedPkg || submitting}
-                  className="flex-[2] py-4 rounded-xl bg-[#00A86B] text-white font-bold text-sm hover:bg-[#008F5A] disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(0,168,107,0.2)] transition-all duration-200"
+                  className="flex-[2] py-4 rounded-xl bg-[#1A4E26] text-white font-bold text-sm hover:bg-[#163F1E] disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(26,78,38,0.2)] transition-all duration-200"
                 >
                   {submitting ? 'Enviando...' : 'Enviar Solicitud'}
                 </button>
@@ -459,20 +458,20 @@ export default function Registro() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5 }}
-              className="bg-[#1A1A1A] border border-[#00A86B]/40 rounded-2xl p-10 text-center"
+              className="bg-white border border-[#1A4E26]/30 rounded-2xl p-10 text-center"
             >
-              <div className="w-20 h-20 rounded-full bg-[#00A86B]/10 flex items-center justify-center mx-auto mb-5">
-                <CheckCircle2 size={40} className="text-[#00A86B]" />
+              <div className="w-20 h-20 rounded-full bg-[#1A4E26]/10 flex items-center justify-center mx-auto mb-5">
+                <CheckCircle2 size={40} className="text-[#1A4E26]" />
               </div>
-              <h2 className="font-heading font-bold text-3xl text-[#F0F0F0] mb-4">¡Solicitud Enviada!</h2>
-              <p className="text-[#AAAAAA] text-base leading-relaxed max-w-md mx-auto mb-8">
+              <h2 className="font-heading font-bold text-3xl text-[#111111] mb-4">¡Solicitud Enviada!</h2>
+              <p className="text-[#6B7280] text-base leading-relaxed max-w-md mx-auto mb-8">
                 Tu solicitud de afiliación está en revisión. El equipo de SUMAK verificará tus
                 documentos y te contactará en los próximos días hábiles con tus credenciales de
                 acceso y tu código de distribuidor.
               </p>
               <Link
                 to="/"
-                className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-[#00A86B] text-white font-bold hover:bg-[#008F5A] shadow-[0_0_20px_rgba(0,168,107,0.25)] transition-all duration-200"
+                className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-[#1A4E26] text-white font-bold hover:bg-[#163F1E] shadow-[0_0_20px_rgba(26,78,38,0.25)] transition-all duration-200"
               >
                 Volver al Inicio
               </Link>

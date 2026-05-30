@@ -6,20 +6,20 @@ import type { NodoBinario, Profile } from '../../lib/types';
 function Spinner() {
   return (
     <div className="flex items-center justify-center py-20">
-      <div className="w-8 h-8 border-2 border-[#00A86B] border-t-transparent rounded-full animate-spin" />
+      <div className="w-8 h-8 border-2 border-[#1A4E26] border-t-transparent rounded-full animate-spin" />
     </div>
   );
 }
 
 const paqueteColor: Record<string, string> = {
-  basico: 'border-[#555555] bg-[#222222]',
-  emprendedor: 'border-[#00A86B]/50 bg-[#00A86B]/5',
-  lider: 'border-[#D4AF37]/50 bg-[#D4AF37]/5',
+  basico: 'border-[#C8D8CB] bg-[#F4F7F5]',
+  emprendedor: 'border-[#1A4E26]/40 bg-[#EBF4ED]',
+  lider: 'border-[#D4AF37]/50 bg-[#FFFDF0]',
 };
 
 const paqueteTextColor: Record<string, string> = {
-  basico: 'text-[#AAAAAA]',
-  emprendedor: 'text-[#00A86B]',
+  basico: 'text-[#6B7280]',
+  emprendedor: 'text-[#1A4E26]',
   lider: 'text-[#D4AF37]',
 };
 
@@ -42,27 +42,27 @@ function TreeNodeComponent({ node, depth, isRoot }: { node: TreeNode; depth: num
 
   return (
     <div className="flex flex-col items-center">
-      <div className={`border-2 rounded-xl p-3 text-center ${isRoot ? 'border-[#00A86B] bg-[#00A86B]/10 w-52' : `${colors} w-44`}`}>
-        <p className={`font-mono text-xs font-bold mb-0.5 ${isRoot ? 'text-[#00A86B]' : textColor}`}>
+      <div className={`border-2 rounded-xl p-3 text-center ${isRoot ? 'border-[#1A4E26] bg-[#EBF4ED] w-52' : `${colors} w-44`}`}>
+        <p className={`font-mono text-xs font-bold mb-0.5 ${isRoot ? 'text-[#1A4E26]' : textColor}`}>
           {node.profile.codigo_distribuidor ?? '—'}
         </p>
-        <p className="text-[#F0F0F0] text-xs font-medium truncate mb-1" title={node.profile.nombre_completo}>
+        <p className="text-[#111111] text-xs font-medium truncate mb-1" title={node.profile.nombre_completo}>
           {node.profile.nombre_completo}
         </p>
         <p className="text-[#D4AF37] text-[10px] font-semibold">
           ★ {node.profile.puntos ?? 0} pts
         </p>
         {isRoot && (
-          <span className="text-[10px] font-bold text-[#00A86B] mt-0.5 inline-block">TÚ</span>
+          <span className="text-[10px] font-bold text-[#1A4E26] mt-0.5 inline-block">TÚ</span>
         )}
       </div>
 
       {node.children.length > 0 && depth < 3 && (
         <div className="flex gap-8 mt-6 relative">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-6 h-6 w-px bg-[#2E2E2E]" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-6 h-6 w-px bg-[#C8D8CB]" />
           {node.children.map((child) => (
             <div key={child.id} className="flex flex-col items-center relative">
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-6 h-6 w-px bg-[#2E2E2E]" />
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-6 h-6 w-px bg-[#C8D8CB]" />
               <TreeNodeComponent node={child} depth={depth + 1} />
             </div>
           ))}
@@ -160,34 +160,34 @@ export default function MiRed() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#F0F0F0]">Mi Red</h1>
-        <p className="text-[#888888] text-sm mt-1">Tu árbol binario de distribuidores</p>
+        <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#111111]">Mi Red</h1>
+        <p className="text-[#6B7280] text-sm mt-1">Tu árbol binario de distribuidores</p>
       </div>
 
       {/* Volume summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <div className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl p-5 text-center">
-          <p className="text-[#888888] text-sm mb-1">Equipo A (Izquierda)</p>
-          <p className="font-heading font-bold text-xl text-[#00A86B]">{volIzq} pts</p>
-          <p className="text-[#555555] text-xs mt-1">{leftCount} directo{leftCount !== 1 ? 's' : ''}</p>
+        <div className="bg-white border border-[#C8D8CB] rounded-2xl p-5 text-center shadow-[0_0_8px_rgba(26,78,38,0.04)]">
+          <p className="text-[#6B7280] text-sm mb-1">Equipo A (Izquierda)</p>
+          <p className="font-heading font-bold text-xl text-[#1A4E26]">{volIzq} pts</p>
+          <p className="text-[#9CA3AF] text-xs mt-1">{leftCount} directo{leftCount !== 1 ? 's' : ''}</p>
         </div>
-        <div className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl p-5 text-center">
-          <p className="text-[#888888] text-sm mb-1">Equipo B (Derecha)</p>
-          <p className="font-heading font-bold text-xl text-[#00A86B]">{volDer} pts</p>
-          <p className="text-[#555555] text-xs mt-1">{rightCount} directo{rightCount !== 1 ? 's' : ''}</p>
+        <div className="bg-white border border-[#C8D8CB] rounded-2xl p-5 text-center shadow-[0_0_8px_rgba(26,78,38,0.04)]">
+          <p className="text-[#6B7280] text-sm mb-1">Equipo B (Derecha)</p>
+          <p className="font-heading font-bold text-xl text-[#1A4E26]">{volDer} pts</p>
+          <p className="text-[#9CA3AF] text-xs mt-1">{rightCount} directo{rightCount !== 1 ? 's' : ''}</p>
         </div>
-        <div className="bg-[#1A1A1A] border border-[#D4AF37]/30 rounded-2xl p-5 text-center">
-          <p className="text-[#888888] text-sm mb-1">Volumen Pareado</p>
+        <div className="bg-white border border-[#D4AF37]/30 rounded-2xl p-5 text-center shadow-[0_0_8px_rgba(212,175,55,0.06)]">
+          <p className="text-[#6B7280] text-sm mb-1">Volumen Pareado</p>
           <p className="font-heading font-bold text-xl text-[#D4AF37]">{volPareado} pts</p>
-          <p className="text-[#555555] text-xs mt-1">min(A, B) este mes</p>
+          <p className="text-[#9CA3AF] text-xs mt-1">min(A, B) este mes</p>
         </div>
       </div>
 
-      <div className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl p-6 overflow-auto">
+      <div className="bg-white border border-[#C8D8CB] rounded-2xl p-6 overflow-auto">
         {loading ? (
           <Spinner />
         ) : !rootNode ? (
-          <div className="text-center py-16 text-[#888888]">
+          <div className="text-center py-16 text-[#6B7280]">
             <p className="text-lg font-medium mb-2">Aún no estás en la red</p>
             <p className="text-sm">Tu posición en el árbol binario aún no ha sido asignada.</p>
           </div>

@@ -4,8 +4,8 @@ import { contactInfo } from '../data';
 
 export default function Footer() {
   return (
-    <footer className="bg-[#0A0A0A] border-t border-[#2E2E2E] relative pt-14 pb-8">
-      <div className="absolute top-0 left-0 w-full h-[2px] bg-[#00A86B] opacity-40" />
+    <footer className="bg-[#F4F7F5] border-t border-[#C8D8CB] relative pt-14 pb-8">
+      <div className="absolute top-0 left-0 w-full h-[2px] bg-[#1A4E26] opacity-40" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-12">
@@ -13,9 +13,9 @@ export default function Footer() {
           {/* Brand column */}
           <div className="flex flex-col gap-4">
             <Link to="/" className="inline-block">
-              <span className="font-heading font-bold text-[#00A86B] text-3xl tracking-wide">SUMAK</span>
+              <span className="font-heading font-bold text-[#1A4E26] text-3xl tracking-wide">SUMAK</span>
             </Link>
-            <p className="text-[#888888] text-sm leading-relaxed">
+            <p className="text-[#6B7280] text-sm leading-relaxed">
               {contactInfo.slogan}
             </p>
             <p className="text-[#D4AF37] text-xs font-medium uppercase tracking-widest mt-1">
@@ -25,7 +25,7 @@ export default function Footer() {
 
           {/* Navigation */}
           <div className="flex flex-col gap-3">
-            <h4 className="font-heading text-[#F0F0F0] font-semibold mb-1 text-sm uppercase tracking-wider">
+            <h4 className="font-heading text-[#111111] font-semibold mb-1 text-sm uppercase tracking-wider">
               Navegación
             </h4>
             {[
@@ -40,7 +40,7 @@ export default function Footer() {
               <Link
                 key={link.to}
                 to={link.to}
-                className="text-[#888888] hover:text-[#00A86B] transition-colors text-sm"
+                className="text-[#6B7280] hover:text-[#1A4E26] transition-colors text-sm"
               >
                 {link.label}
               </Link>
@@ -50,34 +50,34 @@ export default function Footer() {
           {/* Contact + Social */}
           <div className="flex flex-col gap-5">
             <div>
-              <h4 className="font-heading text-[#F0F0F0] font-semibold mb-3 text-sm uppercase tracking-wider">
+              <h4 className="font-heading text-[#111111] font-semibold mb-3 text-sm uppercase tracking-wider">
                 Contacto
               </h4>
               <div className="flex flex-col gap-3">
-                <div className="flex items-start gap-2 text-[#888888] text-sm">
-                  <Phone size={14} className="mt-0.5 shrink-0 text-[#00A86B]" />
+                <div className="flex items-start gap-2 text-[#6B7280] text-sm">
+                  <Phone size={14} className="mt-0.5 shrink-0 text-[#1A4E26]" />
                   <span>{contactInfo.telefono1} — {contactInfo.telefono2}</span>
                 </div>
-                <div className="flex items-start gap-2 text-[#888888] text-sm">
-                  <Mail size={14} className="mt-0.5 shrink-0 text-[#00A86B]" />
+                <div className="flex items-start gap-2 text-[#6B7280] text-sm">
+                  <Mail size={14} className="mt-0.5 shrink-0 text-[#1A4E26]" />
                   <div className="flex flex-col gap-0.5">
-                    <a href={`mailto:${contactInfo.emailPrincipal}`} className="hover:text-[#00A86B] transition-colors">
+                    <a href={`mailto:${contactInfo.emailPrincipal}`} className="hover:text-[#1A4E26] transition-colors">
                       {contactInfo.emailPrincipal}
                     </a>
-                    <a href={`mailto:${contactInfo.emailSecundario}`} className="hover:text-[#00A86B] transition-colors">
+                    <a href={`mailto:${contactInfo.emailSecundario}`} className="hover:text-[#1A4E26] transition-colors">
                       {contactInfo.emailSecundario}
                     </a>
                   </div>
                 </div>
-                <div className="flex items-start gap-2 text-[#888888] text-sm">
-                  <MapPin size={14} className="mt-0.5 shrink-0 text-[#00A86B]" />
+                <div className="flex items-start gap-2 text-[#6B7280] text-sm">
+                  <MapPin size={14} className="mt-0.5 shrink-0 text-[#1A4E26]" />
                   <span>{contactInfo.direccion}</span>
                 </div>
               </div>
             </div>
 
             <div>
-              <h4 className="font-heading text-[#F0F0F0] font-semibold mb-3 text-sm uppercase tracking-wider">
+              <h4 className="font-heading text-[#111111] font-semibold mb-3 text-sm uppercase tracking-wider">
                 Síguenos
               </h4>
               <div className="flex items-center gap-3">
@@ -85,7 +85,7 @@ export default function Footer() {
                   href="https://www.facebook.com/SumakVidaEcuador"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-full border border-[#2E2E2E] flex items-center justify-center text-[#888888] hover:border-[#00A86B] hover:text-[#00A86B] transition-all duration-200"
+                  className="w-10 h-10 rounded-full border border-[#C8D8CB] flex items-center justify-center text-[#6B7280] hover:border-[#1A4E26] hover:text-[#1A4E26] transition-all duration-200"
                   aria-label="Facebook"
                 >
                   <Facebook size={16} />
@@ -94,7 +94,7 @@ export default function Footer() {
                   href="https://www.instagram.com/sumakvidaecuador"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-full border border-[#2E2E2E] flex items-center justify-center text-[#888888] hover:border-[#00A86B] hover:text-[#00A86B] transition-all duration-200"
+                  className="w-10 h-10 rounded-full border border-[#C8D8CB] flex items-center justify-center text-[#6B7280] hover:border-[#1A4E26] hover:text-[#1A4E26] transition-all duration-200"
                   aria-label="Instagram"
                 >
                   <Instagram size={16} />
@@ -103,7 +103,7 @@ export default function Footer() {
                   href={`https://wa.me/${contactInfo.whatsapp}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-full border border-[#2E2E2E] flex items-center justify-center text-[#888888] hover:border-[#25D366] hover:text-[#25D366] transition-all duration-200"
+                  className="w-10 h-10 rounded-full border border-[#C8D8CB] flex items-center justify-center text-[#6B7280] hover:border-[#25D366] hover:text-[#25D366] transition-all duration-200"
                   aria-label="WhatsApp"
                 >
                   <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
@@ -116,15 +116,15 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="pt-8 border-t border-[#1A1A1A] flex flex-col sm:flex-row justify-between items-center gap-3">
-          <p className="text-[#555555] text-xs text-center sm:text-left">
+        <div className="pt-8 border-t border-[#E0EAE2] flex flex-col sm:flex-row justify-between items-center gap-3">
+          <p className="text-[#9CA3AF] text-xs text-center sm:text-left">
             RUC: {contactInfo.ruc} &nbsp;|&nbsp; © 2026 Sumak Vida Ecuador S.A. &nbsp;|&nbsp; Todos los derechos reservados
           </p>
           <div className="flex gap-5">
-            <Link to="/login" className="text-[#555555] text-xs hover:text-[#888888] transition-colors">
+            <Link to="/login" className="text-[#9CA3AF] text-xs hover:text-[#6B7280] transition-colors">
               Acceso Distribuidores
             </Link>
-            <Link to="/registro" className="text-[#555555] text-xs hover:text-[#888888] transition-colors">
+            <Link to="/registro" className="text-[#9CA3AF] text-xs hover:text-[#6B7280] transition-colors">
               Únete
             </Link>
           </div>

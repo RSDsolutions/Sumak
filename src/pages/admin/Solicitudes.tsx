@@ -8,17 +8,17 @@ type FilterTab = 'todas' | EstadoAfiliacion;
 
 function estadoBadge(estado: string) {
   const map: Record<string, string> = {
-    pendiente: 'bg-amber-500/10 text-amber-400 border border-amber-500/30',
-    aprobada: 'bg-[#00A86B]/10 text-[#00A86B] border border-[#00A86B]/30',
-    rechazada: 'bg-red-500/10 text-red-400 border border-red-500/30',
+    pendiente: 'bg-amber-50 text-amber-600 border border-amber-200',
+    aprobada: 'bg-[#EBF4ED] text-[#1A4E26] border border-[#1A4E26]/30',
+    rechazada: 'bg-red-50 text-red-600 border border-red-200',
   };
-  return map[estado] ?? 'bg-[#222222] text-[#888888]';
+  return map[estado] ?? 'bg-[#F4F7F5] text-[#6B7280]';
 }
 
 function paqueteBadge(paquete: string) {
   const map: Record<string, string> = {
-    basico: 'bg-[#555555]/20 text-[#AAAAAA]',
-    emprendedor: 'bg-[#00A86B]/10 text-[#00A86B]',
+    basico: 'bg-[#F4F7F5] text-[#6B7280]',
+    emprendedor: 'bg-[#EBF4ED] text-[#1A4E26]',
     lider: 'bg-[#D4AF37]/10 text-[#D4AF37]',
   };
   return map[paquete] ?? '';
@@ -33,7 +33,7 @@ const paqueteLabel: Record<string, string> = {
 function Spinner() {
   return (
     <div className="flex items-center justify-center py-16">
-      <div className="w-8 h-8 border-2 border-[#00A86B] border-t-transparent rounded-full animate-spin" />
+      <div className="w-8 h-8 border-2 border-[#1A4E26] border-t-transparent rounded-full animate-spin" />
     </div>
   );
 }
@@ -76,20 +76,20 @@ export default function Solicitudes() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#F0F0F0]">Solicitudes de Afiliación</h1>
-        <p className="text-[#888888] text-sm mt-1">Revisa y gestiona las solicitudes de nuevos distribuidores</p>
+        <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#111111]">Solicitudes de Afiliación</h1>
+        <p className="text-[#6B7280] text-sm mt-1">Revisa y gestiona las solicitudes de nuevos distribuidores</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-[#1A1A1A] border border-[#2E2E2E] rounded-xl p-1 mb-4 w-fit">
+      <div className="flex gap-1 bg-white border border-[#C8D8CB] rounded-xl p-1 mb-4 w-fit">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
               tab === t.key
-                ? 'bg-[#00A86B] text-white'
-                : 'text-[#888888] hover:text-[#F0F0F0]'
+                ? 'bg-[#1A4E26] text-white shadow-[0_0_8px_rgba(26,78,38,0.2)]'
+                : 'text-[#6B7280] hover:text-[#111111]'
             }`}
           >
             {t.label}
@@ -99,21 +99,21 @@ export default function Solicitudes() {
 
       {/* Search */}
       <div className="relative mb-6">
-        <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#555555]" />
+        <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
         <input
           type="text"
           placeholder="Buscar por nombre, cédula o email..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-md bg-[#1A1A1A] border border-[#2E2E2E] rounded-xl pl-11 pr-4 py-3 text-[#F0F0F0] text-sm placeholder-[#555555] focus:outline-none focus:border-[#00A86B] transition-colors"
+          className="w-full max-w-md bg-white border border-[#C8D8CB] rounded-xl pl-11 pr-4 py-3 text-[#111111] text-sm placeholder-[#9CA3AF] focus:outline-none focus:border-[#1A4E26] transition-colors"
         />
       </div>
 
-      <div className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl overflow-hidden">
+      <div className="bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden">
         {loading ? (
           <Spinner />
         ) : filtered.length === 0 ? (
-          <div className="px-6 py-16 text-center text-[#888888]">
+          <div className="px-6 py-16 text-center text-[#6B7280]">
             <p className="text-lg font-medium mb-2">No hay solicitudes</p>
             <p className="text-sm">No se encontraron solicitudes con los filtros actuales.</p>
           </div>
@@ -121,9 +121,9 @@ export default function Solicitudes() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#2E2E2E]">
+                <tr className="border-b border-[#C8D8CB] bg-[#F4F7F5]">
                   {['Fecha', 'Nombre', 'Email', 'Cédula', 'Paquete', 'Estado', ''].map((h, i) => (
-                    <th key={i} className="px-6 py-3 text-left text-[#888888] text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
+                    <th key={i} className="px-6 py-3 text-left text-[#9CA3AF] text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
                       {h}
                     </th>
                   ))}
@@ -134,14 +134,14 @@ export default function Solicitudes() {
                   <tr
                     key={a.id}
                     onClick={() => navigate(`/admin/solicitudes/${a.id}`)}
-                    className="border-b border-[#2E2E2E] hover:bg-[#222222] cursor-pointer transition-colors"
+                    className="border-b border-[#C8D8CB] hover:bg-[#F4F7F5] cursor-pointer transition-colors"
                   >
-                    <td className="px-6 py-4 text-[#888888] whitespace-nowrap">
+                    <td className="px-6 py-4 text-[#6B7280] whitespace-nowrap">
                       {new Date(a.created_at).toLocaleDateString('es-EC')}
                     </td>
-                    <td className="px-6 py-4 text-[#F0F0F0] font-medium whitespace-nowrap">{a.nombre_completo}</td>
-                    <td className="px-6 py-4 text-[#888888]">{a.email}</td>
-                    <td className="px-6 py-4 text-[#888888] font-mono">{a.cedula}</td>
+                    <td className="px-6 py-4 text-[#111111] font-medium whitespace-nowrap">{a.nombre_completo}</td>
+                    <td className="px-6 py-4 text-[#6B7280]">{a.email}</td>
+                    <td className="px-6 py-4 text-[#6B7280] font-mono">{a.cedula}</td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${paqueteBadge(a.paquete_seleccionado)}`}>
                         {paqueteLabel[a.paquete_seleccionado] ?? a.paquete_seleccionado}
@@ -152,7 +152,7 @@ export default function Solicitudes() {
                         {a.estado}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-[#888888]">
+                    <td className="px-6 py-4 text-[#9CA3AF]">
                       <ChevronRight size={16} />
                     </td>
                   </tr>

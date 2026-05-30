@@ -17,26 +17,26 @@ interface ComisionRow extends Comision {
 
 function estadoBadge(estado: string) {
   const map: Record<string, string> = {
-    pendiente: 'bg-amber-500/10 text-amber-400 border border-amber-500/30',
-    pagado: 'bg-[#00A86B]/10 text-[#00A86B] border border-[#00A86B]/30',
-    cancelado: 'bg-red-500/10 text-red-400 border border-red-500/30',
+    pendiente: 'bg-amber-50 text-amber-600 border border-amber-200',
+    pagado: 'bg-[#EBF4ED] text-[#1A4E26] border border-[#1A4E26]/30',
+    cancelado: 'bg-red-50 text-red-600 border border-red-200',
   };
   return map[estado] ?? '';
 }
 
 function tipoBadge(tipo: string) {
   const map: Record<string, string> = {
-    afiliacion: 'bg-blue-500/10 text-blue-400',
-    binaria: 'bg-purple-500/10 text-purple-400',
+    afiliacion: 'bg-blue-50 text-blue-600',
+    binaria: 'bg-purple-50 text-purple-600',
     nivel: 'bg-[#D4AF37]/10 text-[#D4AF37]',
   };
-  return map[tipo] ?? 'bg-[#222222] text-[#888888]';
+  return map[tipo] ?? 'bg-[#F4F7F5] text-[#6B7280]';
 }
 
 function Spinner() {
   return (
     <div className="flex items-center justify-center py-16">
-      <div className="w-8 h-8 border-2 border-[#00A86B] border-t-transparent rounded-full animate-spin" />
+      <div className="w-8 h-8 border-2 border-[#1A4E26] border-t-transparent rounded-full animate-spin" />
     </div>
   );
 }
@@ -109,24 +109,24 @@ export default function AdminComisiones() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#F0F0F0]">Comisiones</h1>
-        <p className="text-[#888888] text-sm mt-1">Gestión de pagos y comisiones de distribuidores</p>
+        <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#111111]">Comisiones</h1>
+        <p className="text-[#6B7280] text-sm mt-1">Gestión de pagos y comisiones de distribuidores</p>
       </div>
 
       {/* Total pendiente */}
-      <div className="bg-[#1A1A1A] border border-[#D4AF37]/30 rounded-2xl p-6 mb-6 flex items-center gap-4">
+      <div className="bg-white border border-[#D4AF37]/30 rounded-2xl p-6 mb-6 flex items-center gap-4 shadow-[0_0_20px_rgba(212,175,55,0.06)]">
         <div className="w-12 h-12 bg-[#D4AF37]/10 rounded-xl flex items-center justify-center">
           <DollarSign size={24} className="text-[#D4AF37]" />
         </div>
         <div>
-          <p className="text-[#888888] text-sm">Total Pendiente de Pago</p>
+          <p className="text-[#6B7280] text-sm">Total Pendiente de Pago</p>
           <p className="font-heading font-bold text-2xl text-[#D4AF37]">${totalPendiente.toFixed(2)}</p>
         </div>
         {selected.size > 0 && (
           <button
             onClick={markAsPaid}
             disabled={marking}
-            className="ml-auto px-5 py-2.5 rounded-xl bg-[#00A86B] text-white font-bold text-sm hover:bg-[#008F5A] transition-all duration-200 disabled:opacity-60"
+            className="ml-auto px-5 py-2.5 rounded-xl bg-[#1A4E26] text-white font-bold text-sm hover:bg-[#163F1E] transition-all duration-200 disabled:opacity-60 shadow-[0_0_12px_rgba(26,78,38,0.2)]"
           >
             {marking ? 'Procesando...' : `Marcar ${selected.size} como Pagadas`}
           </button>
@@ -134,13 +134,13 @@ export default function AdminComisiones() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-[#1A1A1A] border border-[#2E2E2E] rounded-xl p-1 mb-4 w-fit">
+      <div className="flex gap-1 bg-white border border-[#C8D8CB] rounded-xl p-1 mb-4 w-fit">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-              tab === t.key ? 'bg-[#00A86B] text-white' : 'text-[#888888] hover:text-[#F0F0F0]'
+              tab === t.key ? 'bg-[#1A4E26] text-white shadow-[0_0_8px_rgba(26,78,38,0.2)]' : 'text-[#6B7280] hover:text-[#111111]'
             }`}
           >
             {t.label}
@@ -148,11 +148,11 @@ export default function AdminComisiones() {
         ))}
       </div>
 
-      <div className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl overflow-hidden">
+      <div className="bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden">
         {loading ? (
           <Spinner />
         ) : comisiones.length === 0 ? (
-          <div className="px-6 py-16 text-center text-[#888888]">
+          <div className="px-6 py-16 text-center text-[#6B7280]">
             <p className="text-lg font-medium mb-2">Sin comisiones</p>
             <p className="text-sm">No hay comisiones con los filtros actuales.</p>
           </div>
@@ -160,19 +160,19 @@ export default function AdminComisiones() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#2E2E2E]">
+                <tr className="border-b border-[#C8D8CB] bg-[#F4F7F5]">
                   {tab === 'pendiente' && (
                     <th className="px-4 py-3 text-left">
                       <input
                         type="checkbox"
                         checked={selected.size === pendientes.length && pendientes.length > 0}
                         onChange={toggleAll}
-                        className="accent-[#00A86B]"
+                        className="accent-[#1A4E26]"
                       />
                     </th>
                   )}
                   {['Beneficiario', 'Tipo', 'Descripción', 'Monto', 'Fecha', 'Estado'].map((h) => (
-                    <th key={h} className="px-6 py-3 text-left text-[#888888] text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
+                    <th key={h} className="px-6 py-3 text-left text-[#9CA3AF] text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
                       {h}
                     </th>
                   ))}
@@ -180,7 +180,7 @@ export default function AdminComisiones() {
               </thead>
               <tbody>
                 {comisiones.map((c) => (
-                  <tr key={c.id} className="border-b border-[#2E2E2E] hover:bg-[#222222] transition-colors">
+                  <tr key={c.id} className="border-b border-[#C8D8CB] hover:bg-[#F4F7F5] transition-colors">
                     {tab === 'pendiente' && (
                       <td className="px-4 py-4">
                         {c.estado === 'pendiente' && (
@@ -188,12 +188,12 @@ export default function AdminComisiones() {
                             type="checkbox"
                             checked={selected.has(c.id)}
                             onChange={() => toggleSelect(c.id)}
-                            className="accent-[#00A86B]"
+                            className="accent-[#1A4E26]"
                           />
                         )}
                       </td>
                     )}
-                    <td className="px-6 py-4 text-[#F0F0F0] font-medium whitespace-nowrap">
+                    <td className="px-6 py-4 text-[#111111] font-medium whitespace-nowrap">
                       {c.beneficiario_nombre || '—'}
                     </td>
                     <td className="px-6 py-4">
@@ -201,13 +201,13 @@ export default function AdminComisiones() {
                         {c.tipo}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-[#888888] max-w-[200px] truncate">
+                    <td className="px-6 py-4 text-[#6B7280] max-w-[200px] truncate">
                       {c.descripcion ?? '—'}
                     </td>
-                    <td className="px-6 py-4 text-[#F0F0F0] font-semibold whitespace-nowrap">
+                    <td className="px-6 py-4 text-[#111111] font-semibold whitespace-nowrap">
                       ${Number(c.monto).toFixed(2)}
                     </td>
-                    <td className="px-6 py-4 text-[#888888] whitespace-nowrap">
+                    <td className="px-6 py-4 text-[#6B7280] whitespace-nowrap">
                       {new Date(c.created_at).toLocaleDateString('es-EC')}
                     </td>
                     <td className="px-6 py-4">

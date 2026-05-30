@@ -7,27 +7,27 @@ import type { Profile, Comision, Pedido } from '../../lib/types';
 function Spinner() {
   return (
     <div className="flex items-center justify-center py-20">
-      <div className="w-8 h-8 border-2 border-[#00A86B] border-t-transparent rounded-full animate-spin" />
+      <div className="w-8 h-8 border-2 border-[#1A4E26] border-t-transparent rounded-full animate-spin" />
     </div>
   );
 }
 
 function estadoComisionBadge(estado: string) {
   const map: Record<string, string> = {
-    pendiente: 'bg-amber-500/10 text-amber-400 border border-amber-500/30',
-    pagado: 'bg-[#00A86B]/10 text-[#00A86B] border border-[#00A86B]/30',
-    cancelado: 'bg-red-500/10 text-red-400 border border-red-500/30',
+    pendiente: 'bg-amber-50 text-amber-600 border border-amber-200',
+    pagado: 'bg-[#EBF4ED] text-[#1A4E26] border border-[#1A4E26]/30',
+    cancelado: 'bg-red-50 text-red-600 border border-red-200',
   };
   return map[estado] ?? '';
 }
 
 function estadoPedidoBadge(estado: string) {
   const map: Record<string, string> = {
-    pendiente: 'bg-amber-500/10 text-amber-400',
-    procesando: 'bg-blue-500/10 text-blue-400',
-    enviado: 'bg-purple-500/10 text-purple-400',
-    entregado: 'bg-[#00A86B]/10 text-[#00A86B]',
-    cancelado: 'bg-red-500/10 text-red-400',
+    pendiente: 'bg-amber-50 text-amber-600',
+    procesando: 'bg-blue-50 text-blue-600',
+    enviado: 'bg-purple-50 text-purple-600',
+    entregado: 'bg-[#EBF4ED] text-[#1A4E26]',
+    cancelado: 'bg-red-50 text-red-600',
   };
   return map[estado] ?? '';
 }
@@ -81,7 +81,7 @@ export default function DistribuidorDetalle() {
   }
 
   if (loading) return <Spinner />;
-  if (!profile) return <div className="text-center py-20 text-[#888888]">Distribuidor no encontrado.</div>;
+  if (!profile) return <div className="text-center py-20 text-[#6B7280]">Distribuidor no encontrado.</div>;
 
   const paqueteLabel: Record<string, string> = {
     basico: 'Básico',
@@ -93,21 +93,21 @@ export default function DistribuidorDetalle() {
     <div>
       {/* Header */}
       <div className="flex items-start gap-3 mb-6">
-        <button onClick={() => navigate('/admin/distribuidores')} className="text-[#888888] hover:text-[#F0F0F0] transition-colors mt-1">
+        <button onClick={() => navigate('/admin/distribuidores')} className="text-[#6B7280] hover:text-[#111111] transition-colors mt-1">
           <ArrowLeft size={20} />
         </button>
         <div className="flex-1">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="font-heading font-bold text-2xl text-[#F0F0F0]">{profile.nombre_completo}</h1>
+            <h1 className="font-heading font-bold text-2xl text-[#111111]">{profile.nombre_completo}</h1>
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
               profile.estado === 'activo'
-                ? 'bg-[#00A86B]/10 text-[#00A86B] border border-[#00A86B]/30'
-                : 'bg-red-500/10 text-red-400 border border-red-500/30'
+                ? 'bg-[#EBF4ED] text-[#1A4E26] border border-[#1A4E26]/30'
+                : 'bg-red-50 text-red-600 border border-red-200'
             }`}>
               {profile.estado}
             </span>
           </div>
-          <p className="text-[#888888] text-sm mt-0.5">
+          <p className="text-[#6B7280] text-sm mt-0.5">
             {profile.codigo_distribuidor ?? '—'} · {profile.paquete ? paqueteLabel[profile.paquete] : '—'}
           </p>
         </div>
@@ -117,7 +117,7 @@ export default function DistribuidorDetalle() {
           className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${
             profile.estado === 'activo'
               ? 'bg-red-600 hover:bg-red-700 text-white'
-              : 'bg-[#00A86B] hover:bg-[#008F5A] text-white'
+              : 'bg-[#1A4E26] hover:bg-[#163F1E] text-white'
           } disabled:opacity-60`}
         >
           {toggling ? '...' : profile.estado === 'activo' ? 'Suspender' : 'Activar'}
@@ -131,9 +131,9 @@ export default function DistribuidorDetalle() {
           { label: 'Total Comisiones Ganadas', value: `$${totalGanado.toFixed(2)}` },
           { label: 'Comisiones Pendientes', value: `$${totalPendiente.toFixed(2)}` },
         ].map(({ label, value }) => (
-          <div key={label} className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-xl p-5">
-            <p className="text-[#888888] text-sm mb-1">{label}</p>
-            <p className="font-heading font-bold text-xl text-[#F0F0F0]">{value}</p>
+          <div key={label} className="bg-white border border-[#C8D8CB] rounded-xl p-5 shadow-[0_0_8px_rgba(26,78,38,0.04)]">
+            <p className="text-[#6B7280] text-sm mb-1">{label}</p>
+            <p className="font-heading font-bold text-xl text-[#111111]">{value}</p>
           </div>
         ))}
       </div>
@@ -141,8 +141,8 @@ export default function DistribuidorDetalle() {
       {/* Profile details + commissions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Profile */}
-        <div className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl p-6">
-          <h2 className="font-heading font-semibold text-[#F0F0F0] mb-4">Información</h2>
+        <div className="bg-white border border-[#C8D8CB] rounded-2xl p-6">
+          <h2 className="font-heading font-semibold text-[#111111] mb-4">Información</h2>
           <dl className="space-y-3">
             {[
               { label: 'Email', value: profile.email },
@@ -155,28 +155,28 @@ export default function DistribuidorDetalle() {
               { label: 'Aprobación', value: profile.fecha_aprobacion ? new Date(profile.fecha_aprobacion).toLocaleDateString('es-EC') : '—' },
             ].map(({ label, value }) => (
               <div key={label} className="flex justify-between items-start gap-4">
-                <dt className="text-[#888888] text-sm shrink-0">{label}</dt>
-                <dd className="text-[#F0F0F0] text-sm text-right">{value}</dd>
+                <dt className="text-[#6B7280] text-sm shrink-0">{label}</dt>
+                <dd className="text-[#111111] text-sm text-right">{value}</dd>
               </div>
             ))}
           </dl>
         </div>
 
         {/* Commissions */}
-        <div className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl p-6">
-          <h2 className="font-heading font-semibold text-[#F0F0F0] mb-4">Últimas Comisiones</h2>
+        <div className="bg-white border border-[#C8D8CB] rounded-2xl p-6">
+          <h2 className="font-heading font-semibold text-[#111111] mb-4">Últimas Comisiones</h2>
           {comisiones.length === 0 ? (
-            <p className="text-[#888888] text-sm">Sin comisiones registradas.</p>
+            <p className="text-[#6B7280] text-sm">Sin comisiones registradas.</p>
           ) : (
             <div className="space-y-2">
               {comisiones.map((c) => (
-                <div key={c.id} className="flex items-center justify-between py-2 border-b border-[#2E2E2E] last:border-0">
+                <div key={c.id} className="flex items-center justify-between py-2 border-b border-[#C8D8CB] last:border-0">
                   <div>
-                    <p className="text-[#F0F0F0] text-sm capitalize">{c.tipo}</p>
-                    <p className="text-[#888888] text-xs">{new Date(c.created_at).toLocaleDateString('es-EC')}</p>
+                    <p className="text-[#111111] text-sm capitalize">{c.tipo}</p>
+                    <p className="text-[#9CA3AF] text-xs">{new Date(c.created_at).toLocaleDateString('es-EC')}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[#F0F0F0] font-semibold text-sm">${Number(c.monto).toFixed(2)}</p>
+                    <p className="text-[#111111] font-semibold text-sm">${Number(c.monto).toFixed(2)}</p>
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium capitalize ${estadoComisionBadge(c.estado)}`}>
                       {c.estado}
                     </span>
@@ -189,10 +189,10 @@ export default function DistribuidorDetalle() {
       </div>
 
       {/* Orders */}
-      <div className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl p-6 mt-6">
-        <h2 className="font-heading font-semibold text-[#F0F0F0] mb-4">Últimos Pedidos</h2>
+      <div className="bg-white border border-[#C8D8CB] rounded-2xl p-6 mt-6">
+        <h2 className="font-heading font-semibold text-[#111111] mb-4">Últimos Pedidos</h2>
         {pedidos.length === 0 ? (
-          <div className="flex items-center gap-2 text-[#888888] text-sm">
+          <div className="flex items-center gap-2 text-[#6B7280] text-sm">
             <AlertCircle size={16} />
             Sin pedidos registrados.
           </div>
@@ -200,17 +200,17 @@ export default function DistribuidorDetalle() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#2E2E2E]">
+                <tr className="border-b border-[#C8D8CB] bg-[#F4F7F5]">
                   {['Fecha', 'Total', 'Estado'].map((h) => (
-                    <th key={h} className="px-4 py-2 text-left text-[#888888] text-xs font-semibold uppercase tracking-wider">{h}</th>
+                    <th key={h} className="px-4 py-2 text-left text-[#9CA3AF] text-xs font-semibold uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {pedidos.map((p) => (
-                  <tr key={p.id} className="border-b border-[#2E2E2E]">
-                    <td className="px-4 py-3 text-[#888888]">{new Date(p.created_at).toLocaleDateString('es-EC')}</td>
-                    <td className="px-4 py-3 text-[#F0F0F0] font-semibold">${Number(p.total).toFixed(2)}</td>
+                  <tr key={p.id} className="border-b border-[#C8D8CB]">
+                    <td className="px-4 py-3 text-[#6B7280]">{new Date(p.created_at).toLocaleDateString('es-EC')}</td>
+                    <td className="px-4 py-3 text-[#111111] font-semibold">${Number(p.total).toFixed(2)}</td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${estadoPedidoBadge(p.estado)}`}>
                         {p.estado}

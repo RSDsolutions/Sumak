@@ -7,27 +7,27 @@ import type { Comision } from '../../lib/types';
 function Spinner() {
   return (
     <div className="flex items-center justify-center py-16">
-      <div className="w-8 h-8 border-2 border-[#00A86B] border-t-transparent rounded-full animate-spin" />
+      <div className="w-8 h-8 border-2 border-[#1A4E26] border-t-transparent rounded-full animate-spin" />
     </div>
   );
 }
 
 function estadoBadge(estado: string) {
   const map: Record<string, string> = {
-    pendiente: 'bg-amber-500/10 text-amber-400 border border-amber-500/30',
-    pagado: 'bg-[#00A86B]/10 text-[#00A86B] border border-[#00A86B]/30',
-    cancelado: 'bg-red-500/10 text-red-400 border border-red-500/30',
+    pendiente: 'bg-amber-50 text-amber-600 border border-amber-200',
+    pagado: 'bg-[#EBF4ED] text-[#1A4E26] border border-[#1A4E26]/30',
+    cancelado: 'bg-red-50 text-red-600 border border-red-200',
   };
   return map[estado] ?? '';
 }
 
 function tipoBadge(tipo: string) {
   const map: Record<string, string> = {
-    afiliacion: 'bg-blue-500/10 text-blue-400',
-    binaria: 'bg-purple-500/10 text-purple-400',
+    afiliacion: 'bg-blue-50 text-blue-600',
+    binaria: 'bg-purple-50 text-purple-600',
     nivel: 'bg-[#D4AF37]/10 text-[#D4AF37]',
   };
-  return map[tipo] ?? 'bg-[#222222] text-[#888888]';
+  return map[tipo] ?? 'bg-[#F4F7F5] text-[#6B7280]';
 }
 
 export default function MisComisiones() {
@@ -56,41 +56,41 @@ export default function MisComisiones() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#F0F0F0]">Mis Comisiones</h1>
-        <p className="text-[#888888] text-sm mt-1">Historial completo de tus comisiones y ganancias</p>
+        <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#111111]">Mis Comisiones</h1>
+        <p className="text-[#6B7280] text-sm mt-1">Historial completo de tus comisiones y ganancias</p>
       </div>
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <div className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl p-6">
+        <div className="bg-white border border-[#C8D8CB] rounded-2xl p-6 shadow-[0_0_8px_rgba(26,78,38,0.04)]">
           <div className="w-10 h-10 bg-[#D4AF37]/10 rounded-xl flex items-center justify-center mb-4">
             <TrendingUp size={20} className="text-[#D4AF37]" />
           </div>
-          <p className="text-[#888888] text-sm mb-1">Total Generado</p>
-          <p className="font-heading font-bold text-2xl text-[#F0F0F0]">${totalTodo.toFixed(2)}</p>
+          <p className="text-[#6B7280] text-sm mb-1">Total Generado</p>
+          <p className="font-heading font-bold text-2xl text-[#111111]">${totalTodo.toFixed(2)}</p>
         </div>
-        <div className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl p-6">
-          <div className="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center mb-4">
-            <Clock size={20} className="text-amber-400" />
+        <div className="bg-white border border-[#C8D8CB] rounded-2xl p-6 shadow-[0_0_8px_rgba(26,78,38,0.04)]">
+          <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center mb-4">
+            <Clock size={20} className="text-amber-600" />
           </div>
-          <p className="text-[#888888] text-sm mb-1">Pendiente de Cobro</p>
-          <p className="font-heading font-bold text-2xl text-amber-400">${totalPendiente.toFixed(2)}</p>
+          <p className="text-[#6B7280] text-sm mb-1">Pendiente de Cobro</p>
+          <p className="font-heading font-bold text-2xl text-amber-600">${totalPendiente.toFixed(2)}</p>
         </div>
-        <div className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl p-6">
-          <div className="w-10 h-10 bg-[#00A86B]/10 rounded-xl flex items-center justify-center mb-4">
-            <DollarSign size={20} className="text-[#00A86B]" />
+        <div className="bg-white border border-[#C8D8CB] rounded-2xl p-6 shadow-[0_0_8px_rgba(26,78,38,0.04)]">
+          <div className="w-10 h-10 bg-[#1A4E26]/10 rounded-xl flex items-center justify-center mb-4">
+            <DollarSign size={20} className="text-[#1A4E26]" />
           </div>
-          <p className="text-[#888888] text-sm mb-1">Total Pagado</p>
-          <p className="font-heading font-bold text-2xl text-[#00A86B]">${totalGanado.toFixed(2)}</p>
+          <p className="text-[#6B7280] text-sm mb-1">Total Pagado</p>
+          <p className="font-heading font-bold text-2xl text-[#1A4E26]">${totalGanado.toFixed(2)}</p>
         </div>
       </div>
 
-      <div className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl overflow-hidden">
+      <div className="bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden">
         {loading ? (
           <Spinner />
         ) : comisiones.length === 0 ? (
-          <div className="px-6 py-16 text-center text-[#888888]">
-            <DollarSign size={40} className="mx-auto mb-3 opacity-30" />
+          <div className="px-6 py-16 text-center text-[#6B7280]">
+            <DollarSign size={40} className="mx-auto mb-3 text-[#6B7280] opacity-30" />
             <p className="text-lg font-medium mb-2">Sin comisiones aún</p>
             <p className="text-sm">Tus comisiones aparecerán aquí cuando afiliés distribuidores o tengas volumen binario.</p>
           </div>
@@ -98,9 +98,9 @@ export default function MisComisiones() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#2E2E2E]">
+                <tr className="border-b border-[#C8D8CB] bg-[#F4F7F5]">
                   {['Tipo', 'Descripción', 'Monto', 'Estado', 'Fecha'].map((h) => (
-                    <th key={h} className="px-6 py-3 text-left text-[#888888] text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
+                    <th key={h} className="px-6 py-3 text-left text-[#9CA3AF] text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
                       {h}
                     </th>
                   ))}
@@ -108,14 +108,14 @@ export default function MisComisiones() {
               </thead>
               <tbody>
                 {comisiones.map((c) => (
-                  <tr key={c.id} className="border-b border-[#2E2E2E] hover:bg-[#222222] transition-colors">
+                  <tr key={c.id} className="border-b border-[#C8D8CB] hover:bg-[#F4F7F5] transition-colors">
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${tipoBadge(c.tipo)}`}>
                         {c.tipo}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-[#888888] max-w-[250px] truncate">{c.descripcion ?? '—'}</td>
-                    <td className="px-6 py-4 text-[#F0F0F0] font-semibold whitespace-nowrap">
+                    <td className="px-6 py-4 text-[#6B7280] max-w-[250px] truncate">{c.descripcion ?? '—'}</td>
+                    <td className="px-6 py-4 text-[#111111] font-semibold whitespace-nowrap">
                       ${Number(c.monto).toFixed(2)}
                     </td>
                     <td className="px-6 py-4">
@@ -123,7 +123,7 @@ export default function MisComisiones() {
                         {c.estado}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-[#888888] whitespace-nowrap">
+                    <td className="px-6 py-4 text-[#6B7280] whitespace-nowrap">
                       {new Date(c.created_at).toLocaleDateString('es-EC')}
                     </td>
                   </tr>

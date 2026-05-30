@@ -5,7 +5,7 @@ import type { NodoBinario, Profile } from '../../lib/types';
 function Spinner() {
   return (
     <div className="flex items-center justify-center py-20">
-      <div className="w-8 h-8 border-2 border-[#00A86B] border-t-transparent rounded-full animate-spin" />
+      <div className="w-8 h-8 border-2 border-[#1A4E26] border-t-transparent rounded-full animate-spin" />
     </div>
   );
 }
@@ -33,11 +33,11 @@ function TreeNodeComponent({
   if (depth > 4) return null;
   const pkg = node.profile.paquete ?? 'basico';
   const borderColor =
-    pkg === 'lider' ? 'border-[#D4AF37]/50' : pkg === 'emprendedor' ? 'border-[#00A86B]/40' : 'border-[#555555]';
+    pkg === 'lider' ? 'border-[#D4AF37]/50' : pkg === 'emprendedor' ? 'border-[#1A4E26]/40' : 'border-[#C8D8CB]';
   const bgColor =
-    pkg === 'lider' ? 'bg-[#D4AF37]/5' : pkg === 'emprendedor' ? 'bg-[#00A86B]/5' : 'bg-[#222222]';
+    pkg === 'lider' ? 'bg-[#FFFDF0]' : pkg === 'emprendedor' ? 'bg-[#EBF4ED]' : 'bg-[#F4F7F5]';
   const codeColor =
-    pkg === 'lider' ? 'text-[#D4AF37]' : pkg === 'emprendedor' ? 'text-[#00A86B]' : 'text-[#AAAAAA]';
+    pkg === 'lider' ? 'text-[#D4AF37]' : pkg === 'emprendedor' ? 'text-[#1A4E26]' : 'text-[#6B7280]';
 
   const vol = volMap.get(node.distribuidor_id);
 
@@ -47,26 +47,26 @@ function TreeNodeComponent({
         <p className={`font-mono text-xs font-bold mb-0.5 ${codeColor}`}>
           {node.profile.codigo_distribuidor ?? '—'}
         </p>
-        <p className="text-[#F0F0F0] text-xs font-medium truncate mb-1" title={node.profile.nombre_completo}>
+        <p className="text-[#111111] text-xs font-medium truncate mb-1" title={node.profile.nombre_completo}>
           {node.profile.nombre_completo}
         </p>
         <p className="text-[#D4AF37] text-[10px] font-semibold">
           ★ {node.profile.puntos ?? 0} pts propios
         </p>
         {vol && (vol.volumen_izquierda > 0 || vol.volumen_derecha > 0) && (
-          <div className="mt-1.5 pt-1.5 border-t border-[#2E2E2E] grid grid-cols-2 gap-1 text-[9px] text-center">
-            <span className="text-[#00A86B]">A: {vol.volumen_izquierda}pts</span>
-            <span className="text-[#00A86B]">B: {vol.volumen_derecha}pts</span>
+          <div className="mt-1.5 pt-1.5 border-t border-[#C8D8CB] grid grid-cols-2 gap-1 text-[9px] text-center">
+            <span className="text-[#1A4E26]">A: {vol.volumen_izquierda}pts</span>
+            <span className="text-[#1A4E26]">B: {vol.volumen_derecha}pts</span>
           </div>
         )}
       </div>
 
       {node.children.length > 0 && depth < 4 && (
         <div className="flex gap-8 mt-6 relative">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-6 h-6 w-px bg-[#2E2E2E]" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-6 h-6 w-px bg-[#C8D8CB]" />
           {node.children.map((child) => (
             <div key={child.id} className="flex flex-col items-center relative">
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-6 h-6 w-px bg-[#2E2E2E]" />
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-6 h-6 w-px bg-[#C8D8CB]" />
               <TreeNodeComponent node={child} volMap={volMap} depth={depth + 1} />
             </div>
           ))}
@@ -139,8 +139,8 @@ export default function AdminRed() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#F0F0F0]">Red Binaria</h1>
-        <p className="text-[#888888] text-sm mt-1">Árbol de distribuidores con volúmenes de {mes}</p>
+        <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#111111]">Red Binaria</h1>
+        <p className="text-[#6B7280] text-sm mt-1">Árbol de distribuidores con volúmenes de {mes}</p>
       </div>
 
       {/* Volume summary per root */}
@@ -149,31 +149,31 @@ export default function AdminRed() {
           {roots.map((root) => {
             const vol = volMap.get(root.distribuidor_id);
             return (
-              <div key={root.id} className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl p-4">
+              <div key={root.id} className="bg-white border border-[#C8D8CB] rounded-2xl p-4">
                 <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                   <div>
-                    <span className="font-mono text-xs text-[#00A86B] font-bold mr-2">
+                    <span className="font-mono text-xs text-[#1A4E26] font-bold mr-2">
                       {root.profile.codigo_distribuidor}
                     </span>
-                    <span className="text-[#F0F0F0] text-sm font-medium">{root.profile.nombre_completo}</span>
+                    <span className="text-[#111111] text-sm font-medium">{root.profile.nombre_completo}</span>
                   </div>
                   <span className="text-[#D4AF37] text-xs font-semibold">★ {root.profile.puntos ?? 0} pts propios</span>
                 </div>
                 <div className="grid grid-cols-3 gap-3 text-center">
-                  <div className="bg-[#222222] rounded-xl p-3">
-                    <p className="text-[#888888] text-xs mb-1">Equipo A (Izq)</p>
-                    <p className="text-[#00A86B] font-bold text-lg">{vol?.volumen_izquierda ?? 0}</p>
-                    <p className="text-[#555555] text-[10px]">puntos</p>
+                  <div className="bg-[#F4F7F5] border border-[#C8D8CB] rounded-xl p-3">
+                    <p className="text-[#6B7280] text-xs mb-1">Equipo A (Izq)</p>
+                    <p className="text-[#1A4E26] font-bold text-lg">{vol?.volumen_izquierda ?? 0}</p>
+                    <p className="text-[#9CA3AF] text-[10px]">puntos</p>
                   </div>
-                  <div className="bg-[#222222] rounded-xl p-3">
-                    <p className="text-[#888888] text-xs mb-1">Equipo B (Der)</p>
-                    <p className="text-[#00A86B] font-bold text-lg">{vol?.volumen_derecha ?? 0}</p>
-                    <p className="text-[#555555] text-[10px]">puntos</p>
+                  <div className="bg-[#F4F7F5] border border-[#C8D8CB] rounded-xl p-3">
+                    <p className="text-[#6B7280] text-xs mb-1">Equipo B (Der)</p>
+                    <p className="text-[#1A4E26] font-bold text-lg">{vol?.volumen_derecha ?? 0}</p>
+                    <p className="text-[#9CA3AF] text-[10px]">puntos</p>
                   </div>
-                  <div className="bg-[#D4AF37]/5 border border-[#D4AF37]/20 rounded-xl p-3">
-                    <p className="text-[#888888] text-xs mb-1">Pareado</p>
+                  <div className="bg-[#FFFDF0] border border-[#D4AF37]/20 rounded-xl p-3">
+                    <p className="text-[#6B7280] text-xs mb-1">Pareado</p>
                     <p className="text-[#D4AF37] font-bold text-lg">{vol?.volumen_pareado ?? 0}</p>
-                    <p className="text-[#555555] text-[10px]">puntos</p>
+                    <p className="text-[#9CA3AF] text-[10px]">puntos</p>
                   </div>
                 </div>
               </div>
@@ -184,16 +184,16 @@ export default function AdminRed() {
 
       {/* All distributors volume table */}
       {!loading && roots.length > 0 && (
-        <div className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl overflow-hidden mb-6">
-          <div className="px-6 py-3 border-b border-[#2E2E2E]">
-            <h2 className="text-[#F0F0F0] text-sm font-semibold">Volúmenes por Distribuidor — {mes}</h2>
+        <div className="bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden mb-6">
+          <div className="px-6 py-3 border-b border-[#C8D8CB] bg-[#F4F7F5]">
+            <h2 className="text-[#111111] text-sm font-semibold">Volúmenes por Distribuidor — {mes}</h2>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#2E2E2E]">
+                <tr className="border-b border-[#C8D8CB] bg-[#F4F7F5]">
                   {['Distribuidor', 'Pts Propios', 'Equipo A', 'Equipo B', 'Pareado'].map((h) => (
-                    <th key={h} className="px-5 py-3 text-left text-[#888888] text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
+                    <th key={h} className="px-5 py-3 text-left text-[#9CA3AF] text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
                       {h}
                     </th>
                   ))}
@@ -208,14 +208,14 @@ export default function AdminRed() {
                 }).map((node) => {
                   const vol = volMap.get(node.distribuidor_id);
                   return (
-                    <tr key={node.id} className="border-b border-[#2E2E2E] hover:bg-[#222222] transition-colors">
+                    <tr key={node.id} className="border-b border-[#C8D8CB] hover:bg-[#F4F7F5] transition-colors">
                       <td className="px-5 py-3">
-                        <p className="text-[#F0F0F0] text-sm">{node.profile.nombre_completo}</p>
-                        <p className="text-[#888888] text-xs font-mono">{node.profile.codigo_distribuidor}</p>
+                        <p className="text-[#111111] text-sm">{node.profile.nombre_completo}</p>
+                        <p className="text-[#6B7280] text-xs font-mono">{node.profile.codigo_distribuidor}</p>
                       </td>
                       <td className="px-5 py-3 text-[#D4AF37] font-semibold">★ {node.profile.puntos ?? 0}</td>
-                      <td className="px-5 py-3 text-[#00A86B] font-semibold">{vol?.volumen_izquierda ?? 0}</td>
-                      <td className="px-5 py-3 text-[#00A86B] font-semibold">{vol?.volumen_derecha ?? 0}</td>
+                      <td className="px-5 py-3 text-[#1A4E26] font-semibold">{vol?.volumen_izquierda ?? 0}</td>
+                      <td className="px-5 py-3 text-[#1A4E26] font-semibold">{vol?.volumen_derecha ?? 0}</td>
                       <td className="px-5 py-3 text-[#D4AF37] font-semibold">{vol?.volumen_pareado ?? 0}</td>
                     </tr>
                   );
@@ -227,11 +227,11 @@ export default function AdminRed() {
       )}
 
       {/* Tree visualization */}
-      <div className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl p-6 overflow-auto">
+      <div className="bg-white border border-[#C8D8CB] rounded-2xl p-6 overflow-auto">
         {loading ? (
           <Spinner />
         ) : roots.length === 0 ? (
-          <div className="text-center py-16 text-[#888888]">
+          <div className="text-center py-16 text-[#6B7280]">
             <p className="text-lg font-medium mb-2">Red vacía</p>
             <p className="text-sm">No hay distribuidores en la red binaria aún.</p>
           </div>

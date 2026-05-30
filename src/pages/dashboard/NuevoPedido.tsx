@@ -99,11 +99,11 @@ export default function NuevoPedido() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <div className="w-20 h-20 bg-[#00A86B]/10 rounded-full flex items-center justify-center mx-auto mb-5">
-            <CheckCircle2 size={40} className="text-[#00A86B]" />
+          <div className="w-20 h-20 bg-[#1A4E26]/10 rounded-full flex items-center justify-center mx-auto mb-5">
+            <CheckCircle2 size={40} className="text-[#1A4E26]" />
           </div>
-          <h2 className="font-heading font-bold text-2xl text-[#F0F0F0] mb-2">¡Pedido Enviado!</h2>
-          <p className="text-[#888888] mb-4">Tu pedido ha sido registrado. El equipo SUMAK lo procesará pronto.</p>
+          <h2 className="font-heading font-bold text-2xl text-[#111111] mb-2">¡Pedido Enviado!</h2>
+          <p className="text-[#6B7280] mb-4">Tu pedido ha sido registrado. El equipo SUMAK lo procesará pronto.</p>
           {earnedPuntos > 0 && (
             <div className="inline-flex items-center gap-2 bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-xl px-5 py-3 mb-6">
               <span className="text-[#D4AF37] text-lg font-bold">★</span>
@@ -115,13 +115,13 @@ export default function NuevoPedido() {
           <div className="flex gap-3 justify-center">
             <button
               onClick={() => { setDone(false); setQuantities({}); setEarnedPuntos(0); }}
-              className="px-6 py-3 rounded-xl border border-[#2E2E2E] text-[#888888] font-semibold text-sm hover:border-[#3A3A3A] hover:text-[#F0F0F0] transition-all duration-200"
+              className="px-6 py-3 rounded-xl border border-[#C8D8CB] text-[#6B7280] font-semibold text-sm hover:border-[#A8C2AD] hover:text-[#111111] transition-all duration-200"
             >
               Nuevo Pedido
             </button>
             <button
               onClick={() => navigate('/dashboard/pedidos')}
-              className="px-6 py-3 rounded-xl bg-[#00A86B] text-white font-bold text-sm hover:bg-[#008F5A] transition-all duration-200"
+              className="px-6 py-3 rounded-xl bg-[#1A4E26] text-white font-bold text-sm hover:bg-[#163F1E] transition-all duration-200 shadow-[0_0_12px_rgba(26,78,38,0.2)]"
             >
               Ver Mis Pedidos
             </button>
@@ -134,8 +134,8 @@ export default function NuevoPedido() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#F0F0F0]">Nuevo Pedido</h1>
-        <p className="text-[#888888] text-sm mt-1">Selecciona los productos que deseas ordenar a precio distribuidor</p>
+        <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#111111]">Nuevo Pedido</h1>
+        <p className="text-[#6B7280] text-sm mt-1">Selecciona los productos que deseas ordenar a precio distribuidor</p>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -150,36 +150,36 @@ export default function NuevoPedido() {
               return (
                 <div
                   key={p.codigo}
-                  className={`bg-[#1A1A1A] border rounded-2xl p-5 transition-all duration-200 ${
-                    qty > 0 ? 'border-[#00A86B]/40 bg-[#00A86B]/5' : 'border-[#2E2E2E]'
+                  className={`bg-white border rounded-2xl p-5 transition-all duration-200 shadow-[0_0_8px_rgba(26,78,38,0.04)] ${
+                    qty > 0 ? 'border-[#1A4E26]/40 bg-[#EBF4ED]' : 'border-[#C8D8CB]'
                   }`}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <p className="text-[#F0F0F0] font-semibold text-sm">{p.nombre}</p>
-                      <p className="text-[#888888] text-xs mt-0.5">{p.categoria}</p>
+                      <p className="text-[#111111] font-semibold text-sm">{p.nombre}</p>
+                      <p className="text-[#6B7280] text-xs mt-0.5">{p.categoria}</p>
                     </div>
-                    <span className="text-[#888888] text-xs font-mono ml-2">#{p.codigo}</span>
+                    <span className="text-[#9CA3AF] text-xs font-mono ml-2">#{p.codigo}</span>
                   </div>
-                  <p className="text-[#888888] text-xs mb-3 leading-relaxed">{p.descripcion}</p>
+                  <p className="text-[#6B7280] text-xs mb-3 leading-relaxed">{p.descripcion}</p>
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <p className="text-[#888888] text-xs line-through">PVP: ${p.pvp.toFixed(2)}</p>
-                      <p className="text-[#00A86B] font-bold">Tu precio: ${precioDistribuidor.toFixed(2)}</p>
+                      <p className="text-[#9CA3AF] text-xs line-through">PVP: ${p.pvp.toFixed(2)}</p>
+                      <p className="text-[#1A4E26] font-bold">Tu precio: ${precioDistribuidor.toFixed(2)}</p>
                       <p className="text-[#D4AF37] text-xs">Ahorras: ${ahorro.toFixed(2)}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setQty(p.codigo, qty - 1)}
                         disabled={qty === 0}
-                        className="w-8 h-8 rounded-lg bg-[#222222] border border-[#2E2E2E] flex items-center justify-center text-[#888888] hover:text-[#F0F0F0] hover:border-[#3A3A3A] disabled:opacity-30 transition-all duration-200"
+                        className="w-8 h-8 rounded-lg bg-[#F4F7F5] border border-[#C8D8CB] flex items-center justify-center text-[#6B7280] hover:text-[#111111] hover:border-[#A8C2AD] disabled:opacity-30 transition-all duration-200"
                       >
                         <Minus size={14} />
                       </button>
-                      <span className="w-8 text-center text-[#F0F0F0] font-bold text-sm">{qty}</span>
+                      <span className="w-8 text-center text-[#111111] font-bold text-sm">{qty}</span>
                       <button
                         onClick={() => setQty(p.codigo, qty + 1)}
-                        className="w-8 h-8 rounded-lg bg-[#00A86B]/10 border border-[#00A86B]/30 flex items-center justify-center text-[#00A86B] hover:bg-[#00A86B]/20 transition-all duration-200"
+                        className="w-8 h-8 rounded-lg bg-[#1A4E26]/10 border border-[#1A4E26]/30 flex items-center justify-center text-[#1A4E26] hover:bg-[#1A4E26]/20 transition-all duration-200"
                       >
                         <Plus size={14} />
                       </button>
@@ -193,14 +193,14 @@ export default function NuevoPedido() {
 
         {/* Cart summary */}
         <div className="xl:col-span-1">
-          <div className="sticky top-6 bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl p-6">
+          <div className="sticky top-6 bg-white border border-[#C8D8CB] rounded-2xl p-6 shadow-[0_0_8px_rgba(26,78,38,0.04)]">
             <div className="flex items-center gap-2 mb-5">
-              <ShoppingCart size={20} className="text-[#00A86B]" />
-              <h2 className="font-heading font-semibold text-[#F0F0F0]">Tu Pedido</h2>
+              <ShoppingCart size={20} className="text-[#1A4E26]" />
+              <h2 className="font-heading font-semibold text-[#111111]">Tu Pedido</h2>
             </div>
 
             {cartItems.length === 0 ? (
-              <p className="text-[#888888] text-sm text-center py-6">
+              <p className="text-[#9CA3AF] text-sm text-center py-6">
                 Selecciona productos del catálogo
               </p>
             ) : (
@@ -209,20 +209,20 @@ export default function NuevoPedido() {
                   {cartItems.map((item) => (
                     <div key={item.codigo} className="flex justify-between items-start gap-3">
                       <div className="flex-1 min-w-0">
-                        <p className="text-[#F0F0F0] text-sm truncate">{item.nombre}</p>
-                        <p className="text-[#888888] text-xs">{item.cantidad} × ${item.precio.toFixed(2)}</p>
+                        <p className="text-[#111111] text-sm truncate">{item.nombre}</p>
+                        <p className="text-[#6B7280] text-xs">{item.cantidad} × ${item.precio.toFixed(2)}</p>
                       </div>
-                      <p className="text-[#F0F0F0] font-semibold text-sm shrink-0">
+                      <p className="text-[#111111] font-semibold text-sm shrink-0">
                         ${(item.precio * item.cantidad).toFixed(2)}
                       </p>
                     </div>
                   ))}
                 </div>
 
-                <div className="border-t border-[#2E2E2E] pt-4 space-y-2 mb-5">
+                <div className="border-t border-[#C8D8CB] pt-4 space-y-2 mb-5">
                   <div className="flex justify-between text-sm">
-                    <span className="text-[#888888]">Subtotal</span>
-                    <span className="text-[#F0F0F0]">${total.toFixed(2)}</span>
+                    <span className="text-[#6B7280]">Subtotal</span>
+                    <span className="text-[#111111]">${total.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-[#D4AF37]">Ahorro total</span>
@@ -232,16 +232,16 @@ export default function NuevoPedido() {
                     <span className="text-[#D4AF37]">★ Puntos a ganar</span>
                     <span className="text-[#D4AF37] font-semibold">{totalPuntos} pts</span>
                   </div>
-                  <div className="flex justify-between font-bold pt-2 border-t border-[#2E2E2E]">
-                    <span className="text-[#F0F0F0]">Total</span>
-                    <span className="text-[#00A86B] text-lg">${total.toFixed(2)}</span>
+                  <div className="flex justify-between font-bold pt-2 border-t border-[#C8D8CB]">
+                    <span className="text-[#111111]">Total</span>
+                    <span className="text-[#1A4E26] text-lg">${total.toFixed(2)}</span>
                   </div>
                 </div>
               </>
             )}
 
             {error && (
-              <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm mb-4">
+              <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm mb-4">
                 {error}
               </div>
             )}
@@ -249,7 +249,7 @@ export default function NuevoPedido() {
             <button
               onClick={handleSubmit}
               disabled={cartItems.length === 0 || submitting}
-              className="w-full py-4 rounded-xl bg-[#00A86B] text-white font-bold text-sm hover:bg-[#008F5A] disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(0,168,107,0.2)] transition-all duration-200"
+              className="w-full py-4 rounded-xl bg-[#1A4E26] text-white font-bold text-sm hover:bg-[#163F1E] disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(26,78,38,0.2)] transition-all duration-200"
             >
               {submitting ? 'Enviando...' : `Realizar Pedido ($${total.toFixed(2)})`}
             </button>

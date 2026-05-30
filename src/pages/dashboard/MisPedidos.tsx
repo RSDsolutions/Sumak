@@ -8,20 +8,20 @@ import type { Pedido } from '../../lib/types';
 function Spinner() {
   return (
     <div className="flex items-center justify-center py-16">
-      <div className="w-8 h-8 border-2 border-[#00A86B] border-t-transparent rounded-full animate-spin" />
+      <div className="w-8 h-8 border-2 border-[#1A4E26] border-t-transparent rounded-full animate-spin" />
     </div>
   );
 }
 
 function estadoBadge(estado: string) {
   const map: Record<string, string> = {
-    pendiente: 'bg-amber-500/10 text-amber-400 border border-amber-500/30',
-    procesando: 'bg-blue-500/10 text-blue-400 border border-blue-500/30',
-    enviado: 'bg-purple-500/10 text-purple-400 border border-purple-500/30',
-    entregado: 'bg-[#00A86B]/10 text-[#00A86B] border border-[#00A86B]/30',
-    cancelado: 'bg-red-500/10 text-red-400 border border-red-500/30',
+    pendiente: 'bg-amber-50 text-amber-600 border border-amber-200',
+    procesando: 'bg-blue-50 text-blue-600 border border-blue-200',
+    enviado: 'bg-purple-50 text-purple-600 border border-purple-200',
+    entregado: 'bg-[#EBF4ED] text-[#1A4E26] border border-[#1A4E26]/30',
+    cancelado: 'bg-red-50 text-red-600 border border-red-200',
   };
-  return map[estado] ?? 'bg-[#222222] text-[#888888]';
+  return map[estado] ?? 'bg-[#F4F7F5] text-[#6B7280]';
 }
 
 export default function MisPedidos() {
@@ -47,29 +47,29 @@ export default function MisPedidos() {
     <div>
       <div className="flex flex-wrap items-start sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#F0F0F0]">Mis Pedidos</h1>
-          <p className="text-[#888888] text-sm mt-1">Historial de todos tus pedidos</p>
+          <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#111111]">Mis Pedidos</h1>
+          <p className="text-[#6B7280] text-sm mt-1">Historial de todos tus pedidos</p>
         </div>
         <Link
           to="/dashboard/pedido/nuevo"
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#00A86B] text-white font-bold text-sm hover:bg-[#008F5A] transition-all duration-200 shrink-0"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1A4E26] text-white font-bold text-sm hover:bg-[#163F1E] transition-all duration-200 shrink-0 shadow-[0_0_12px_rgba(26,78,38,0.2)]"
         >
           <Plus size={16} />
           Nuevo Pedido
         </Link>
       </div>
 
-      <div className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl overflow-hidden">
+      <div className="bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden">
         {loading ? (
           <Spinner />
         ) : pedidos.length === 0 ? (
-          <div className="px-6 py-16 text-center text-[#888888]">
-            <ShoppingCart size={40} className="mx-auto mb-3 opacity-30" />
+          <div className="px-6 py-16 text-center text-[#6B7280]">
+            <ShoppingCart size={40} className="mx-auto mb-3 text-[#6B7280] opacity-30" />
             <p className="text-lg font-medium mb-2">Sin pedidos</p>
             <p className="text-sm mb-6">Aún no has realizado ningún pedido.</p>
             <Link
               to="/dashboard/pedido/nuevo"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#00A86B] text-white font-bold text-sm hover:bg-[#008F5A] transition-all duration-200"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#1A4E26] text-white font-bold text-sm hover:bg-[#163F1E] transition-all duration-200 shadow-[0_0_12px_rgba(26,78,38,0.2)]"
             >
               <Plus size={16} />
               Hacer mi primer pedido
@@ -79,9 +79,9 @@ export default function MisPedidos() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#2E2E2E]">
+                <tr className="border-b border-[#C8D8CB] bg-[#F4F7F5]">
                   {['Fecha', 'Productos', 'Total', 'Puntos', 'Estado'].map((h) => (
-                    <th key={h} className="px-6 py-3 text-left text-[#888888] text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
+                    <th key={h} className="px-6 py-3 text-left text-[#9CA3AF] text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
                       {h}
                     </th>
                   ))}
@@ -89,28 +89,28 @@ export default function MisPedidos() {
               </thead>
               <tbody>
                 {pedidos.map((p) => (
-                  <tr key={p.id} className="border-b border-[#2E2E2E] hover:bg-[#222222] transition-colors">
-                    <td className="px-6 py-4 text-[#888888] whitespace-nowrap">
+                  <tr key={p.id} className="border-b border-[#C8D8CB] hover:bg-[#F4F7F5] transition-colors">
+                    <td className="px-6 py-4 text-[#6B7280] whitespace-nowrap">
                       {new Date(p.created_at).toLocaleDateString('es-EC')}
                     </td>
-                    <td className="px-6 py-4 text-[#F0F0F0]">
+                    <td className="px-6 py-4 text-[#111111]">
                       {p.items && p.items.length > 0 ? (
                         <div>
                           {p.items.slice(0, 2).map((item) => (
                             <p key={item.id} className="text-sm">{item.producto_nombre} × {item.cantidad}</p>
                           ))}
                           {p.items.length > 2 && (
-                            <p className="text-[#888888] text-xs">+{p.items.length - 2} más</p>
+                            <p className="text-[#9CA3AF] text-xs">+{p.items.length - 2} más</p>
                           )}
                         </div>
                       ) : '—'}
                     </td>
-                    <td className="px-6 py-4 text-[#F0F0F0] font-semibold whitespace-nowrap">
+                    <td className="px-6 py-4 text-[#111111] font-semibold whitespace-nowrap">
                       ${Number(p.total).toFixed(2)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {p.puntos_generados > 0 ? (
-                        <span className={`text-sm font-semibold ${p.estado === 'entregado' ? 'text-[#D4AF37]' : 'text-[#888888]'}`}>
+                        <span className={`text-sm font-semibold ${p.estado === 'entregado' ? 'text-[#D4AF37]' : 'text-[#9CA3AF]'}`}>
                           ★ {p.puntos_generados}
                         </span>
                       ) : '—'}

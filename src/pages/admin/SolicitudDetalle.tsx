@@ -14,18 +14,18 @@ const PAQUETE_PUNTOS: Record<string, number> = {
 function Spinner() {
   return (
     <div className="flex items-center justify-center py-20">
-      <div className="w-8 h-8 border-2 border-[#00A86B] border-t-transparent rounded-full animate-spin" />
+      <div className="w-8 h-8 border-2 border-[#1A4E26] border-t-transparent rounded-full animate-spin" />
     </div>
   );
 }
 
 function estadoBadge(estado: string) {
   const map: Record<string, string> = {
-    pendiente: 'bg-amber-500/10 text-amber-400 border border-amber-500/30',
-    aprobada: 'bg-[#00A86B]/10 text-[#00A86B] border border-[#00A86B]/30',
-    rechazada: 'bg-red-500/10 text-red-400 border border-red-500/30',
+    pendiente: 'bg-amber-50 text-amber-600 border border-amber-200',
+    aprobada: 'bg-[#EBF4ED] text-[#1A4E26] border border-[#1A4E26]/30',
+    rechazada: 'bg-red-50 text-red-600 border border-red-200',
   };
-  return map[estado] ?? 'bg-[#222222] text-[#888888]';
+  return map[estado] ?? 'bg-[#F4F7F5] text-[#6B7280]';
 }
 
 const paqueteKeyFull: Record<string, string> = {
@@ -260,26 +260,26 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/70">
-      <div className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl p-6 w-full max-w-md shadow-2xl">
-        <h3 className="font-heading font-bold text-lg text-[#F0F0F0] mb-4">Aprobar Solicitud</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/40">
+      <div className="bg-white border border-[#C8D8CB] rounded-2xl p-6 w-full max-w-md shadow-2xl">
+        <h3 className="font-heading font-bold text-lg text-[#111111] mb-4">Aprobar Solicitud</h3>
 
         {error && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm mb-4">
+          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm mb-4">
             {error}
           </div>
         )}
 
         {/* Parent distributor dropdown */}
         <div className="mb-4">
-          <label className="block text-[#888888] text-xs font-semibold uppercase tracking-wider mb-2">
+          <label className="block text-[#6B7280] text-xs font-semibold uppercase tracking-wider mb-2">
             Ubicar bajo el distribuidor
           </label>
           <select
             value={padreProfileId}
             onChange={(e) => setPadreProfileId(e.target.value)}
             disabled={loadingDist}
-            className="w-full bg-[#222222] border border-[#2E2E2E] rounded-xl px-4 py-3 text-[#F0F0F0] text-sm focus:outline-none focus:border-[#00A86B] transition-colors appearance-none"
+            className="w-full bg-white border border-[#C8D8CB] rounded-xl px-4 py-3 text-[#111111] text-sm focus:outline-none focus:border-[#1A4E26] transition-colors appearance-none"
           >
             <option value="">— Sin padre (nodo raíz) —</option>
             {distribuidores.map((d) => (
@@ -288,7 +288,7 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
               </option>
             ))}
           </select>
-          <p className="text-[#555555] text-xs mt-1">
+          <p className="text-[#9CA3AF] text-xs mt-1">
             {afiliacion.codigo_patrocinador
               ? `Patrocinador declarado: ${afiliacion.codigo_patrocinador}`
               : 'El afiliado no declaró patrocinador'}
@@ -297,7 +297,7 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
 
         {/* Position */}
         <div className="mb-6">
-          <label className="block text-[#888888] text-xs font-semibold uppercase tracking-wider mb-2">
+          <label className="block text-[#6B7280] text-xs font-semibold uppercase tracking-wider mb-2">
             Posición en el árbol binario
           </label>
           <div className="flex gap-3">
@@ -307,8 +307,8 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
                 onClick={() => setPosicion(p)}
                 className={`flex-1 py-3 rounded-xl border text-sm font-medium capitalize transition-all duration-200 ${
                   posicion === p
-                    ? 'border-[#00A86B] bg-[#00A86B]/10 text-[#00A86B]'
-                    : 'border-[#2E2E2E] text-[#888888] hover:border-[#3A3A3A]'
+                    ? 'border-[#1A4E26] bg-[#1A4E26]/10 text-[#1A4E26]'
+                    : 'border-[#C8D8CB] text-[#6B7280] hover:border-[#A8C2AD]'
                 }`}
               >
                 {p === 'izquierda' ? '⬅ Izquierda (Equipo A)' : 'Derecha (Equipo B) ➡'}
@@ -321,14 +321,14 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
           <button
             onClick={onClose}
             disabled={loading}
-            className="flex-1 py-3 rounded-xl border border-[#2E2E2E] text-[#888888] text-sm font-medium hover:border-[#3A3A3A] transition-all duration-200"
+            className="flex-1 py-3 rounded-xl border border-[#C8D8CB] text-[#6B7280] text-sm font-medium hover:border-[#A8C2AD] transition-all duration-200"
           >
             Cancelar
           </button>
           <button
             onClick={handleApprove}
             disabled={loading || loadingDist}
-            className="flex-[2] py-3 rounded-xl bg-[#00A86B] text-white text-sm font-bold hover:bg-[#008F5A] transition-all duration-200 disabled:opacity-60"
+            className="flex-[2] py-3 rounded-xl bg-[#1A4E26] text-white text-sm font-bold hover:bg-[#163F1E] transition-all duration-200 disabled:opacity-60"
           >
             {loading ? 'Procesando...' : 'Confirmar Aprobación'}
           </button>
@@ -360,11 +360,11 @@ function RejectModal({ afiliacionId, onClose, onSuccess }: RejectModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/70">
-      <div className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl p-6 w-full max-w-md shadow-2xl">
-        <h3 className="font-heading font-bold text-lg text-[#F0F0F0] mb-4">Rechazar Solicitud</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/40">
+      <div className="bg-white border border-[#C8D8CB] rounded-2xl p-6 w-full max-w-md shadow-2xl">
+        <h3 className="font-heading font-bold text-lg text-[#111111] mb-4">Rechazar Solicitud</h3>
         <div className="mb-4">
-          <label className="block text-[#888888] text-xs font-semibold uppercase tracking-wider mb-2">
+          <label className="block text-[#6B7280] text-xs font-semibold uppercase tracking-wider mb-2">
             Motivo del rechazo *
           </label>
           <textarea
@@ -372,14 +372,14 @@ function RejectModal({ afiliacionId, onClose, onSuccess }: RejectModalProps) {
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="Explica el motivo del rechazo..."
-            className="w-full bg-[#222222] border border-[#2E2E2E] rounded-xl px-4 py-3 text-[#F0F0F0] text-sm placeholder-[#555555] focus:outline-none focus:border-red-500 transition-colors resize-none"
+            className="w-full bg-white border border-[#C8D8CB] rounded-xl px-4 py-3 text-[#111111] text-sm placeholder-[#9CA3AF] focus:outline-none focus:border-red-400 transition-colors resize-none"
           />
         </div>
         <div className="flex gap-3">
           <button
             onClick={onClose}
             disabled={loading}
-            className="flex-1 py-3 rounded-xl border border-[#2E2E2E] text-[#888888] text-sm font-medium hover:border-[#3A3A3A] transition-all duration-200"
+            className="flex-1 py-3 rounded-xl border border-[#C8D8CB] text-[#6B7280] text-sm font-medium hover:border-[#A8C2AD] transition-all duration-200"
           >
             Cancelar
           </button>
@@ -412,42 +412,42 @@ function SuccessModal({ codigo, tempPassword, onClose }: SuccessModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/70">
-      <div className="bg-[#1A1A1A] border border-[#00A86B]/40 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/40">
+      <div className="bg-white border border-[#1A4E26]/30 rounded-2xl p-6 w-full max-w-md shadow-2xl">
         <div className="text-center mb-5">
-          <div className="w-14 h-14 bg-[#00A86B]/10 rounded-full flex items-center justify-center mx-auto mb-3">
-            <CheckCircle size={28} className="text-[#00A86B]" />
+          <div className="w-14 h-14 bg-[#1A4E26]/10 rounded-full flex items-center justify-center mx-auto mb-3">
+            <CheckCircle size={28} className="text-[#1A4E26]" />
           </div>
-          <h3 className="font-heading font-bold text-xl text-[#F0F0F0]">Distribuidor Aprobado</h3>
-          <p className="text-[#888888] text-sm mt-1">Comparte las credenciales con el nuevo distribuidor</p>
+          <h3 className="font-heading font-bold text-xl text-[#111111]">Distribuidor Aprobado</h3>
+          <p className="text-[#6B7280] text-sm mt-1">Comparte las credenciales con el nuevo distribuidor</p>
         </div>
 
         <div className="space-y-3 mb-6">
-          <div className="bg-[#222222] border border-[#2E2E2E] rounded-xl p-4">
-            <p className="text-[#888888] text-xs font-semibold uppercase tracking-wider mb-1">Código Distribuidor</p>
+          <div className="bg-[#F4F7F5] border border-[#C8D8CB] rounded-xl p-4">
+            <p className="text-[#9CA3AF] text-xs font-semibold uppercase tracking-wider mb-1">Código Distribuidor</p>
             <div className="flex items-center justify-between">
-              <p className="text-[#F0F0F0] font-mono font-bold text-lg">{codigo}</p>
-              <button onClick={() => copy(codigo)} className="text-[#888888] hover:text-[#00A86B] transition-colors">
+              <p className="text-[#111111] font-mono font-bold text-lg">{codigo}</p>
+              <button onClick={() => copy(codigo)} className="text-[#9CA3AF] hover:text-[#1A4E26] transition-colors">
                 <Copy size={16} />
               </button>
             </div>
           </div>
-          <div className="bg-[#222222] border border-[#2E2E2E] rounded-xl p-4">
-            <p className="text-[#888888] text-xs font-semibold uppercase tracking-wider mb-1">Contraseña Temporal</p>
+          <div className="bg-[#F4F7F5] border border-[#C8D8CB] rounded-xl p-4">
+            <p className="text-[#9CA3AF] text-xs font-semibold uppercase tracking-wider mb-1">Contraseña Temporal</p>
             <div className="flex items-center justify-between">
-              <p className="text-[#F0F0F0] font-mono font-bold text-lg">{tempPassword}</p>
-              <button onClick={() => copy(tempPassword)} className="text-[#888888] hover:text-[#00A86B] transition-colors">
+              <p className="text-[#111111] font-mono font-bold text-lg">{tempPassword}</p>
+              <button onClick={() => copy(tempPassword)} className="text-[#9CA3AF] hover:text-[#1A4E26] transition-colors">
                 <Copy size={16} />
               </button>
             </div>
           </div>
         </div>
 
-        {copied && <p className="text-center text-[#00A86B] text-sm mb-3">Copiado al portapapeles</p>}
+        {copied && <p className="text-center text-[#1A4E26] text-sm mb-3">Copiado al portapapeles</p>}
 
         <button
           onClick={onClose}
-          className="w-full py-3 rounded-xl bg-[#00A86B] text-white font-bold text-sm hover:bg-[#008F5A] transition-all duration-200"
+          className="w-full py-3 rounded-xl bg-[#1A4E26] text-white font-bold text-sm hover:bg-[#163F1E] transition-all duration-200"
         >
           Listo
         </button>
@@ -509,7 +509,7 @@ export default function SolicitudDetalle() {
   if (loading) return <Spinner />;
   if (!afiliacion) {
     return (
-      <div className="text-center py-20 text-[#888888]">
+      <div className="text-center py-20 text-[#6B7280]">
         Solicitud no encontrada.
       </div>
     );
@@ -550,13 +550,13 @@ export default function SolicitudDetalle() {
       <div className="flex items-center gap-3 mb-6">
         <button
           onClick={() => navigate('/admin/solicitudes')}
-          className="text-[#888888] hover:text-[#F0F0F0] transition-colors"
+          className="text-[#6B7280] hover:text-[#111111] transition-colors"
         >
           <ArrowLeft size={20} />
         </button>
         <div>
-          <h1 className="font-heading font-bold text-2xl text-[#F0F0F0]">{afiliacion.nombre_completo}</h1>
-          <p className="text-[#888888] text-sm">Solicitud de afiliación</p>
+          <h1 className="font-heading font-bold text-2xl text-[#111111]">{afiliacion.nombre_completo}</h1>
+          <p className="text-[#6B7280] text-sm">Solicitud de afiliación</p>
         </div>
         <span className={`ml-auto inline-flex items-center px-3 py-1 rounded-full text-xs font-medium capitalize ${estadoBadge(afiliacion.estado)}`}>
           {afiliacion.estado}
@@ -565,8 +565,8 @@ export default function SolicitudDetalle() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Personal data */}
-        <div className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl p-6">
-          <h2 className="font-heading font-semibold text-[#F0F0F0] mb-4">Datos Personales</h2>
+        <div className="bg-white border border-[#C8D8CB] rounded-2xl p-6">
+          <h2 className="font-heading font-semibold text-[#111111] mb-4">Datos Personales</h2>
           <dl className="space-y-3">
             {[
               { label: 'Nombre', value: afiliacion.nombre_completo },
@@ -580,43 +580,43 @@ export default function SolicitudDetalle() {
               { label: 'Fecha', value: new Date(afiliacion.created_at).toLocaleString('es-EC') },
             ].map(({ label, value }) => (
               <div key={label} className="flex justify-between items-start gap-4">
-                <dt className="text-[#888888] text-sm shrink-0">{label}</dt>
-                <dd className="text-[#F0F0F0] text-sm text-right">{value}</dd>
+                <dt className="text-[#6B7280] text-sm shrink-0">{label}</dt>
+                <dd className="text-[#111111] text-sm text-right">{value}</dd>
               </div>
             ))}
           </dl>
 
           {afiliacion.notas_admin && (
-            <div className="mt-4 pt-4 border-t border-[#2E2E2E]">
-              <p className="text-[#888888] text-xs font-semibold uppercase tracking-wider mb-1">Notas Admin</p>
-              <p className="text-red-400 text-sm">{afiliacion.notas_admin}</p>
+            <div className="mt-4 pt-4 border-t border-[#C8D8CB]">
+              <p className="text-[#9CA3AF] text-xs font-semibold uppercase tracking-wider mb-1">Notas Admin</p>
+              <p className="text-red-600 text-sm">{afiliacion.notas_admin}</p>
             </div>
           )}
         </div>
 
         {/* Documents */}
-        <div className="bg-[#1A1A1A] border border-[#2E2E2E] rounded-2xl p-6">
-          <h2 className="font-heading font-semibold text-[#F0F0F0] mb-4">Documentos</h2>
+        <div className="bg-white border border-[#C8D8CB] rounded-2xl p-6">
+          <h2 className="font-heading font-semibold text-[#111111] mb-4">Documentos</h2>
           <div className="space-y-3">
             {Object.entries(docLabels).map(([key, label]) => {
               const url = docUrls[key];
               return (
-                <div key={key} className="flex items-center justify-between bg-[#222222] rounded-xl px-4 py-3">
+                <div key={key} className="flex items-center justify-between bg-[#F4F7F5] rounded-xl px-4 py-3 border border-[#C8D8CB]">
                   <div className="flex items-center gap-3">
-                    <FileText size={16} className={url ? 'text-[#00A86B]' : 'text-[#555555]'} />
-                    <span className="text-[#F0F0F0] text-sm">{label}</span>
+                    <FileText size={16} className={url ? 'text-[#1A4E26]' : 'text-[#9CA3AF]'} />
+                    <span className="text-[#111111] text-sm">{label}</span>
                   </div>
                   {url ? (
                     <a
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-[#00A86B] text-xs hover:underline"
+                      className="flex items-center gap-1 text-[#1A4E26] text-xs hover:underline"
                     >
                       Ver <ExternalLink size={12} />
                     </a>
                   ) : (
-                    <span className="text-[#555555] text-xs">No subido</span>
+                    <span className="text-[#9CA3AF] text-xs">No subido</span>
                   )}
                 </div>
               );
@@ -630,7 +630,7 @@ export default function SolicitudDetalle() {
         <div className="flex gap-3 mt-6">
           <button
             onClick={() => setShowApprove(true)}
-            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#00A86B] text-white font-bold text-sm hover:bg-[#008F5A] transition-all duration-200"
+            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#1A4E26] text-white font-bold text-sm hover:bg-[#163F1E] transition-all duration-200 shadow-[0_0_12px_rgba(26,78,38,0.2)]"
           >
             <CheckCircle size={16} />
             Aprobar

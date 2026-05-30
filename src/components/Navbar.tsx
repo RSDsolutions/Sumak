@@ -35,7 +35,7 @@ export default function Navbar() {
 
   const isHome = location.pathname === '/';
   const navBg = isScrolled || !isHome || mobileMenuOpen
-    ? 'bg-[#0F0F0F]/95 backdrop-blur-md border-b border-[#2E2E2E]'
+    ? 'bg-white/95 backdrop-blur-md border-b border-[#C8D8CB] shadow-sm'
     : 'bg-transparent';
 
   return (
@@ -44,7 +44,7 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 shrink-0">
-            <span className="font-heading font-bold text-[#00A86B] text-2xl tracking-wide leading-none">SUMAK</span>
+            <span className="font-heading font-bold text-[#1A4E26] text-2xl tracking-wide leading-none">SUMAK</span>
           </Link>
 
           {/* Desktop Nav */}
@@ -56,12 +56,12 @@ export default function Navbar() {
                   key={link.path}
                   to={link.path}
                   className={`relative text-sm font-medium transition-colors duration-200 whitespace-nowrap ${
-                    isActive ? 'text-[#F0F0F0]' : 'text-[#888888] hover:text-[#F0F0F0]'
+                    isActive ? 'text-[#111111]' : 'text-[#6B7280] hover:text-[#111111]'
                   }`}
                 >
                   {link.name}
                   {isActive && (
-                    <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-[#00A86B] rounded-full" />
+                    <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-[#1A4E26] rounded-full" />
                   )}
                 </Link>
               );
@@ -72,13 +72,13 @@ export default function Navbar() {
           <div className="hidden xl:flex items-center gap-3 shrink-0">
             <Link
               to="/login"
-              className="px-4 py-2 rounded-lg border border-[#2E2E2E] text-[#888888] hover:text-[#F0F0F0] hover:border-[#3A3A3A] transition-all duration-200 text-sm font-medium"
+              className="px-4 py-2 rounded-lg border border-[#C8D8CB] text-[#6B7280] hover:text-[#111111] hover:border-[#A8C2AD] transition-all duration-200 text-sm font-medium"
             >
               Iniciar Sesión
             </Link>
             <Link
               to="/registro"
-              className="px-5 py-2 rounded-lg bg-[#00A86B] text-white hover:bg-[#008F5A] transition-all duration-200 text-sm font-semibold shadow-[0_0_20px_rgba(0,168,107,0.25)]"
+              className="px-5 py-2 rounded-lg bg-[#1A4E26] text-white hover:bg-[#163F1E] transition-all duration-200 text-sm font-semibold shadow-[0_0_20px_rgba(26,78,38,0.25)]"
             >
               Únete Ahora
             </Link>
@@ -87,7 +87,7 @@ export default function Navbar() {
           {/* Mobile hamburger */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="xl:hidden text-[#00A86B] p-2 -mr-1"
+            className="xl:hidden text-[#1A4E26] p-2 -mr-1"
             aria-label="Toggle menu"
           >
             {mobileMenuOpen ? <X size={26} /> : <Menu size={26} />}
@@ -97,7 +97,7 @@ export default function Navbar() {
 
       {/* Mobile menu — outside <header> so backdrop-filter doesn't affect fixed positioning */}
       {mobileMenuOpen && (
-        <div className="xl:hidden fixed inset-0 top-16 bg-[#0F0F0F] z-40 flex flex-col overflow-y-auto">
+        <div className="xl:hidden fixed inset-0 top-16 bg-white z-40 flex flex-col overflow-y-auto">
           <nav className="flex flex-col px-6 pt-8 gap-1">
             {navLinks.map((link) => {
               const isActive = location.pathname === link.path;
@@ -105,8 +105,8 @@ export default function Navbar() {
                 <Link
                   key={link.path}
                   to={link.path}
-                  className={`py-4 text-lg font-heading font-semibold border-b border-[#1A1A1A] transition-colors duration-150 ${
-                    isActive ? 'text-[#00A86B]' : 'text-[#F0F0F0]'
+                  className={`py-4 text-lg font-heading font-semibold border-b border-[#E0EAE2] transition-colors duration-150 ${
+                    isActive ? 'text-[#1A4E26]' : 'text-[#111111]'
                   }`}
                 >
                   {link.name}
@@ -117,13 +117,13 @@ export default function Navbar() {
           <div className="mt-auto px-6 pb-10 pt-8 flex flex-col gap-3">
             <Link
               to="/registro"
-              className="w-full py-4 text-center rounded-xl bg-[#00A86B] text-white font-bold text-base shadow-[0_0_20px_rgba(0,168,107,0.3)]"
+              className="w-full py-4 text-center rounded-xl bg-[#1A4E26] text-white font-bold text-base shadow-[0_0_20px_rgba(26,78,38,0.3)]"
             >
               Únete Ahora
             </Link>
             <Link
               to="/login"
-              className="w-full py-4 text-center rounded-xl border border-[#2E2E2E] text-[#F0F0F0] font-semibold text-base"
+              className="w-full py-4 text-center rounded-xl border border-[#C8D8CB] text-[#111111] font-semibold text-base"
             >
               Iniciar Sesión
             </Link>
