@@ -13,7 +13,7 @@ export default function Footer() {
           {/* Brand column */}
           <div className="flex flex-col gap-4">
             <Link to="/" className="inline-block">
-              <span className="font-heading font-bold text-[#1A4E26] text-3xl tracking-wide">SUMAK</span>
+              <img src="/LOGO_SUMAK.png" alt="Sumak Vida" className="h-16 w-auto object-contain" />
             </Link>
             <p className="text-[#6B7280] text-sm leading-relaxed">
               {contactInfo.slogan}

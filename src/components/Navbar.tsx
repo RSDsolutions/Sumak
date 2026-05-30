@@ -44,7 +44,7 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center shrink-0">
-            <img src="/LOGO_SUMAK.png" alt="Sumak Vida" className="h-10 w-auto object-contain" />
+            <img src="/LOGO_SUMAK.png" alt="Sumak Vida" className="h-14 w-auto object-contain" />
           </Link>
 
           {/* Desktop Nav */}
