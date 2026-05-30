@@ -59,8 +59,8 @@ export default function Login() {
         <div className="bg-white border border-[#C8D8CB] rounded-2xl p-8 sm:p-10 shadow-[0_0_40px_rgba(26,78,38,0.08)]">
           {/* Logo */}
           <div className="text-center mb-8">
-            <Link to="/">
-              <span className="font-heading font-bold text-4xl text-[#1A4E26] tracking-wide">SUMAK</span>
+            <Link to="/" className="inline-block">
+              <img src="/LOGO_SUMAK.png" alt="Sumak Vida" className="h-16 w-auto object-contain mx-auto" />
             </Link>
             <h1 className="font-heading font-bold text-xl text-[#111111] mt-3">Acceso Distribuidores</h1>
             <p className="text-[#6B7280] text-sm mt-1">Ingresa con tus credenciales</p>
