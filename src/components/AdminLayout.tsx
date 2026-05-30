@@ -42,8 +42,8 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-6 border-b border-white/20">
         <div>
-          <span className="font-heading font-bold text-2xl text-white tracking-wide">SUMAK</span>
-          <div className="mt-1">
+          <img src="/LOGO_SUMAK.png" alt="Sumak Vida" className="h-12 w-auto object-contain brightness-0 invert" />
+          <div className="mt-2">
             <span className="text-[10px] font-bold uppercase tracking-widest text-[#D4AF37] bg-[#D4AF37]/20 border border-[#D4AF37]/40 rounded px-2 py-0.5">
               ADMIN
             </span>
@@ -129,7 +129,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           >
             <Menu size={22} />
           </button>
-          <span className="font-heading font-bold text-xl text-[#1A4E26]">SUMAK</span>
+          <img src="/LOGO_SUMAK.png" alt="Sumak Vida" className="h-9 w-auto object-contain" />
           <span className="text-[10px] font-bold uppercase tracking-widest text-[#D4AF37] bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded px-2 py-0.5">
             ADMIN
           </span>
