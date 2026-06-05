@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { DollarSign, Users, ShoppingCart, Hash, Star, ArrowRight, TrendingUp } from 'lucide-react';
+import { DollarSign, Users, ShoppingCart, Hash, Star, ArrowRight, TrendingUp, CheckCircle2, AlertCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { getRangoActual, getNextRango } from '../../data';
@@ -27,6 +27,7 @@ interface Stats {
   comisionesPendientes: number;
   afiliadosDirectos: number;
   pedidosMes: number;
+  compraCalificada: boolean;
 }
 
 export default function Overview() {
@@ -48,10 +49,12 @@ export default function Overview() {
         { data: comsData },
         { count: directos },
         { count: pedidos },
+        { data: compraData },
       ] = await Promise.all([
         supabase.from('comisiones').select('*').eq('beneficiario_id', uid).order('created_at', { ascending: false }).limit(5),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('patrocinador_id', uid),
         supabase.from('pedidos').select('*', { count: 'exact', head: true }).eq('distribuidor_id', uid).gte('created_at', startOfMonth),
+        supabase.from('pedidos').select('id').eq('distribuidor_id', uid).eq('estado', 'entregado').gte('total', 100).gte('created_at', startOfMonth).limit(1),
       ]);
 
       const coms = (comsData ?? []) as Comision[];
@@ -62,6 +65,7 @@ export default function Overview() {
         comisionesPendientes: pendiente,
         afiliadosDirectos: directos ?? 0,
         pedidosMes: pedidos ?? 0,
+        compraCalificada: (compraData?.length ?? 0) > 0,
       });
       setLoading(false);
     }
@@ -124,6 +128,30 @@ export default function Overview() {
                 {profile?.codigo_distribuidor ?? '—'}
               </p>
             </div>
+          </div>
+
+          {/* Banner elegibilidad comisiones */}
+          <div className={`flex items-center gap-3 rounded-xl px-5 py-3 mb-4 border text-sm font-medium ${
+            stats?.compraCalificada
+              ? 'bg-[#EBF4ED] border-[#1A4E26]/20 text-[#1A4E26]'
+              : 'bg-amber-50 border-amber-200 text-amber-700'
+          }`}>
+            {stats?.compraCalificada ? (
+              <>
+                <CheckCircle2 size={16} className="shrink-0" />
+                <span>Compra mensual completada — estás habilitado para recibir comisiones este mes</span>
+              </>
+            ) : (
+              <>
+                <AlertCircle size={16} className="shrink-0" />
+                <span>
+                  Realiza una <strong>compra de $100 o más en un solo pedido</strong> este mes para habilitarte a recibir comisiones
+                </span>
+                <Link to="/dashboard/pedido/nuevo" className="ml-auto shrink-0 underline text-amber-700 hover:text-amber-900 text-xs">
+                  Comprar ahora
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Puntos + Rango */}

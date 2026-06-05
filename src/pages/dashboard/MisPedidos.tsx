@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Plus } from 'lucide-react';
+import { ShoppingCart, Plus, X, Eye } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
-import type { Pedido } from '../../lib/types';
+import type { Pedido, PedidoItem } from '../../lib/types';
 
 function Spinner() {
   return (
@@ -24,10 +24,87 @@ function estadoBadge(estado: string) {
   return map[estado] ?? 'bg-[#F4F7F5] text-[#6B7280]';
 }
 
+const ESTADO_LABELS: Record<string, string> = {
+  pendiente: 'Pendiente',
+  procesando: 'Procesando',
+  enviado: 'Enviado',
+  entregado: 'Completado',
+  cancelado: 'Cancelado',
+};
+
+interface DetalleModalProps {
+  pedido: Pedido;
+  onClose: () => void;
+}
+
+function DetalleModal({ pedido, onClose }: DetalleModalProps) {
+  const items: PedidoItem[] = pedido.items ?? [];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/40">
+      <div className="bg-white border border-[#C8D8CB] rounded-2xl w-full max-w-lg shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#C8D8CB]">
+          <div>
+            <h3 className="font-heading font-bold text-lg text-[#111111]">Detalle del Pedido</h3>
+            <p className="text-[#9CA3AF] text-xs mt-0.5">
+              {new Date(pedido.created_at).toLocaleString('es-EC')}
+            </p>
+          </div>
+          <button onClick={onClose} className="text-[#9CA3AF] hover:text-[#111111] transition-colors">
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Estado + puntos */}
+        <div className="px-6 py-3 bg-[#F4F7F5] border-b border-[#C8D8CB] flex items-center justify-between">
+          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${estadoBadge(pedido.estado)}`}>
+            {ESTADO_LABELS[pedido.estado] ?? pedido.estado}
+          </span>
+          {pedido.puntos_generados > 0 && (
+            <span className={`text-sm font-semibold ${pedido.estado === 'entregado' ? 'text-[#D4AF37]' : 'text-[#9CA3AF]'}`}>
+              ★ {pedido.puntos_generados} puntos {pedido.estado === 'entregado' ? 'ganados' : 'pendientes'}
+            </span>
+          )}
+        </div>
+
+        {/* Items */}
+        <div className="px-6 py-4">
+          <p className="text-[#9CA3AF] text-xs font-semibold uppercase tracking-wider mb-3">Productos</p>
+          {items.length === 0 ? (
+            <p className="text-[#9CA3AF] text-sm text-center py-4">Sin ítems</p>
+          ) : (
+            <div className="space-y-2">
+              {items.map((item) => (
+                <div key={item.id} className="flex justify-between items-center py-2 border-b border-[#F4F7F5] last:border-0">
+                  <div>
+                    <p className="text-[#111111] text-sm font-medium">{item.producto_nombre}</p>
+                    <p className="text-[#9CA3AF] text-xs">
+                      #{item.producto_codigo} · {item.cantidad} × ${Number(item.precio_unitario).toFixed(2)}
+                    </p>
+                  </div>
+                  <p className="text-[#111111] font-semibold text-sm">${Number(item.subtotal).toFixed(2)}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Total */}
+        <div className="flex justify-between items-center px-6 py-4 bg-[#F4F7F5] border-t border-[#C8D8CB] rounded-b-2xl">
+          <span className="font-heading font-bold text-[#111111]">Total</span>
+          <span className="font-heading font-bold text-xl text-[#1A4E26]">${Number(pedido.total).toFixed(2)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MisPedidos() {
   const { user } = useAuth();
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -80,7 +157,7 @@ export default function MisPedidos() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#C8D8CB] bg-[#F4F7F5]">
-                  {['Fecha', 'Productos', 'Total', 'Puntos', 'Estado'].map((h) => (
+                  {['Fecha', 'Productos', 'Total', 'Puntos', 'Estado', ''].map((h) => (
                     <th key={h} className="px-6 py-3 text-left text-[#9CA3AF] text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
                       {h}
                     </th>
@@ -117,8 +194,17 @@ export default function MisPedidos() {
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${estadoBadge(p.estado)}`}>
-                        {p.estado}
+                        {ESTADO_LABELS[p.estado] ?? p.estado}
                       </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => setSelectedPedido(p)}
+                        className="flex items-center gap-1.5 text-[#1A4E26] text-xs font-medium hover:underline"
+                      >
+                        <Eye size={14} />
+                        Ver detalle
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -127,6 +213,13 @@ export default function MisPedidos() {
           </div>
         )}
       </div>
+
+      {selectedPedido && (
+        <DetalleModal
+          pedido={selectedPedido}
+          onClose={() => setSelectedPedido(null)}
+        />
+      )}
     </div>
   );
 }

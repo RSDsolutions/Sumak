@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, Plus, Minus, CheckCircle2 } from 'lucide-react';
-import { products } from '../../data';
-import { supabase } from '../../lib/supabase';
+import { ShoppingCart, Plus, Minus, CheckCircle2, AlertCircle, TrendingUp } from 'lucide-react';
+import { products, levelCommissions } from '../../data';
+import { supabase, supabaseAdmin } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 
 interface CartItem {
@@ -21,8 +21,29 @@ export default function NuevoPedido() {
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
   const [earnedPuntos, setEarnedPuntos] = useState(0);
+  const [compraCalificada, setCompraCalificada] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState(true);
 
-  const DISCOUNT = 0.5; // 50% discount for distributors
+  const DISCOUNT = 0.5;
+
+  useEffect(() => {
+    if (!user) return;
+    async function checkMonthly() {
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const { data } = await supabase
+        .from('pedidos')
+        .select('id')
+        .eq('distribuidor_id', user!.id)
+        .eq('estado', 'entregado')
+        .gte('total', 100)
+        .gte('created_at', startOfMonth)
+        .limit(1);
+      setCompraCalificada((data?.length ?? 0) > 0);
+      setLoadingStatus(false);
+    }
+    checkMonthly();
+  }, [user]);
 
   function setQty(codigo: string, qty: number) {
     setQuantities((prev) => ({ ...prev, [codigo]: Math.max(0, qty) }));
@@ -41,6 +62,7 @@ export default function NuevoPedido() {
   const total = cartItems.reduce((s, i) => s + i.precio * i.cantidad, 0);
   const savingsTotal = cartItems.reduce((s, i) => s + (i.pvp - i.precio) * i.cantidad, 0);
   const totalPuntos = cartItems.reduce((s, i) => s + Math.round(i.precio * i.cantidad), 0);
+  const willQualify = total >= 100;
 
   async function handleSubmit() {
     if (cartItems.length === 0 || !user) return;
@@ -49,12 +71,13 @@ export default function NuevoPedido() {
 
     try {
       const puntos = totalPuntos;
+      const distribId = user.id;
 
-      // Insert pedido
+      // 1. Crear pedido
       const { data: pedidoData, error: pedidoError } = await supabase
         .from('pedidos')
         .insert({
-          distribuidor_id: user.id,
+          distribuidor_id: distribId,
           estado: 'pendiente',
           tipo_precio: 'distribuidor',
           total: parseFloat(total.toFixed(2)),
@@ -68,7 +91,7 @@ export default function NuevoPedido() {
         return;
       }
 
-      // Insert items
+      // 2. Insertar ítems
       const items = cartItems.map((item) => ({
         pedido_id: pedidoData.id,
         producto_codigo: item.codigo,
@@ -77,14 +100,90 @@ export default function NuevoPedido() {
         precio_unitario: item.precio,
         subtotal: parseFloat((item.precio * item.cantidad).toFixed(2)),
       }));
-
       const { error: itemsError } = await supabase.from('pedido_items').insert(items);
-
       if (itemsError) {
         setError('Error al guardar los productos: ' + itemsError.message);
         return;
       }
 
+      // 3. Sumar puntos al comprador inmediatamente
+      if (puntos > 0) {
+        const { data: myProfile } = await supabaseAdmin
+          .from('profiles')
+          .select('puntos')
+          .eq('id', distribId)
+          .single();
+        if (myProfile) {
+          await supabaseAdmin
+            .from('profiles')
+            .update({ puntos: Number(myProfile.puntos) + puntos })
+            .eq('id', distribId);
+        }
+      }
+
+      // 4. Comisiones por nivel para upline elegible (requiere compra mensual ≥ $100)
+      if (puntos > 0) {
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+        const { data: allProfiles } = await supabaseAdmin
+          .from('profiles')
+          .select('id, patrocinador_id');
+
+        const profMap = new Map<string, string | null>();
+        for (const p of allProfiles ?? []) profMap.set(p.id, p.patrocinador_id);
+
+        // Construir cadena de upline (hasta 14 niveles)
+        const uplineChain: Array<{ id: string; nivel: number; porcentaje: number }> = [];
+        let upId: string | null = distribId;
+        for (const lc of levelCommissions) {
+          const sponsorId = profMap.get(upId!) ?? null;
+          if (!sponsorId) break;
+          upId = sponsorId;
+          uplineChain.push({ id: upId, nivel: lc.nivel, porcentaje: lc.porcentaje });
+        }
+
+        if (uplineChain.length > 0) {
+          // Verificar qué miembros del upline tienen compra mensual ≥ $100 (en una sola compra)
+          const uplineIds = uplineChain.map((u) => u.id);
+          const { data: eligibleOrders } = await supabaseAdmin
+            .from('pedidos')
+            .select('distribuidor_id')
+            .in('distribuidor_id', uplineIds)
+            .eq('estado', 'entregado')
+            .gte('total', 100)
+            .gte('created_at', startOfMonth);
+
+          const eligibleSet = new Set(
+            (eligibleOrders ?? []).map((o: { distribuidor_id: string }) => o.distribuidor_id)
+          );
+
+          const comInserts: object[] = [];
+          for (const entry of uplineChain) {
+            if (eligibleSet.has(entry.id)) {
+              const monto = parseFloat((puntos * entry.porcentaje / 100).toFixed(2));
+              if (monto > 0) {
+                comInserts.push({
+                  beneficiario_id: entry.id,
+                  origen_id: distribId,
+                  tipo: 'nivel',
+                  nivel_red: entry.nivel,
+                  monto,
+                  estado: 'pendiente',
+                  descripcion: `Comisión nivel ${entry.nivel}`,
+                });
+              }
+            }
+          }
+          if (comInserts.length > 0) await supabaseAdmin.from('comisiones').insert(comInserts);
+        }
+      }
+
+      // 5. Marcar pedido como entregado (aprobación automática)
+      await supabaseAdmin.from('pedidos').update({ estado: 'entregado' }).eq('id', pedidoData.id);
+
+      // Si esta compra califica ($100+), actualizar estado local
+      if (total >= 100) setCompraCalificada(true);
       setEarnedPuntos(puntos);
       setDone(true);
     } catch (err) {
@@ -98,20 +197,29 @@ export default function NuevoPedido() {
   if (done) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
+        <div className="text-center max-w-sm">
           <div className="w-20 h-20 bg-[#1A4E26]/10 rounded-full flex items-center justify-center mx-auto mb-5">
             <CheckCircle2 size={40} className="text-[#1A4E26]" />
           </div>
-          <h2 className="font-heading font-bold text-2xl text-[#111111] mb-2">¡Pedido Enviado!</h2>
-          <p className="text-[#6B7280] mb-4">Tu pedido ha sido registrado. El equipo SUMAK lo procesará pronto.</p>
+          <h2 className="font-heading font-bold text-2xl text-[#111111] mb-2">¡Pedido Procesado!</h2>
+          <p className="text-[#6B7280] mb-5">Tu pedido ha sido aprobado automáticamente.</p>
+
           {earnedPuntos > 0 && (
-            <div className="inline-flex items-center gap-2 bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-xl px-5 py-3 mb-6">
+            <div className="inline-flex items-center gap-2 bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-xl px-5 py-3 mb-4 w-full justify-center">
               <span className="text-[#D4AF37] text-lg font-bold">★</span>
               <span className="text-[#D4AF37] font-semibold text-sm">
-                Ganarás <span className="font-bold text-base">{earnedPuntos} puntos</span> cuando tu pedido sea entregado
+                Ganaste <span className="font-bold text-base">{earnedPuntos} puntos</span>
               </span>
             </div>
           )}
+
+          {willQualify && (
+            <div className="flex items-center gap-2 bg-[#EBF4ED] border border-[#1A4E26]/20 rounded-xl px-5 py-3 mb-6 text-sm text-[#1A4E26] font-semibold">
+              <TrendingUp size={16} />
+              Estás habilitado para recibir comisiones este mes
+            </div>
+          )}
+
           <div className="flex gap-3 justify-center">
             <button
               onClick={() => { setDone(false); setQuantities({}); setEarnedPuntos(0); }}
@@ -133,13 +241,36 @@ export default function NuevoPedido() {
 
   return (
     <div>
-      <div className="mb-8">
+      <div className="mb-6">
         <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#111111]">Nuevo Pedido</h1>
         <p className="text-[#6B7280] text-sm mt-1">Selecciona los productos que deseas ordenar a precio distribuidor</p>
       </div>
 
+      {/* Estado de compra mensual */}
+      {!loadingStatus && (
+        <div className={`flex items-center gap-3 rounded-xl px-5 py-3 mb-6 border text-sm font-medium ${
+          compraCalificada
+            ? 'bg-[#EBF4ED] border-[#1A4E26]/20 text-[#1A4E26]'
+            : 'bg-amber-50 border-amber-200 text-amber-700'
+        }`}>
+          {compraCalificada ? (
+            <>
+              <CheckCircle2 size={16} className="shrink-0" />
+              <span>Compra mensual completada — estás habilitado para recibir comisiones este mes</span>
+            </>
+          ) : (
+            <>
+              <AlertCircle size={16} className="shrink-0" />
+              <span>
+                Para recibir comisiones este mes debes realizar <strong>una compra de $100 o más</strong> (en un solo pedido)
+              </span>
+            </>
+          )}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Product catalog */}
+        {/* Catálogo de productos */}
         <div className="xl:col-span-2">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {products.map((p) => {
@@ -191,7 +322,7 @@ export default function NuevoPedido() {
           </div>
         </div>
 
-        {/* Cart summary */}
+        {/* Resumen del carrito */}
         <div className="xl:col-span-1">
           <div className="sticky top-6 bg-white border border-[#C8D8CB] rounded-2xl p-6 shadow-[0_0_8px_rgba(26,78,38,0.04)]">
             <div className="flex items-center gap-2 mb-5">
@@ -237,6 +368,13 @@ export default function NuevoPedido() {
                     <span className="text-[#1A4E26] text-lg">${total.toFixed(2)}</span>
                   </div>
                 </div>
+
+                {willQualify && !compraCalificada && (
+                  <div className="flex items-center gap-2 text-xs text-[#1A4E26] bg-[#EBF4ED] rounded-lg px-3 py-2 mb-4">
+                    <TrendingUp size={12} />
+                    Este pedido te habilitará para recibir comisiones este mes
+                  </div>
+                )}
               </>
             )}
 
@@ -251,7 +389,7 @@ export default function NuevoPedido() {
               disabled={cartItems.length === 0 || submitting}
               className="w-full py-4 rounded-xl bg-[#1A4E26] text-white font-bold text-sm hover:bg-[#163F1E] disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(26,78,38,0.2)] transition-all duration-200"
             >
-              {submitting ? 'Enviando...' : `Realizar Pedido ($${total.toFixed(2)})`}
+              {submitting ? 'Procesando...' : `Realizar Pedido ($${total.toFixed(2)})`}
             </button>
           </div>
         </div>

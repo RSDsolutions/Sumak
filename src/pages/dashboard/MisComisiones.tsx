@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { DollarSign, TrendingUp, Clock } from 'lucide-react';
+import { DollarSign, TrendingUp, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import type { Comision } from '../../lib/types';
@@ -30,20 +31,29 @@ function tipoBadge(tipo: string) {
   return map[tipo] ?? 'bg-[#F4F7F5] text-[#6B7280]';
 }
 
+const TIPO_LABELS: Record<string, string> = {
+  afiliacion: 'Referido',
+  nivel: 'Por nivel',
+  binaria: 'Binaria',
+};
+
 export default function MisComisiones() {
   const { user } = useAuth();
   const [comisiones, setComisiones] = useState<Comision[]>([]);
   const [loading, setLoading] = useState(true);
+  const [compraCalificada, setCompraCalificada] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     async function load() {
-      const { data } = await supabase
-        .from('comisiones')
-        .select('*')
-        .eq('beneficiario_id', user!.id)
-        .order('created_at', { ascending: false });
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const [{ data }, { data: compraData }] = await Promise.all([
+        supabase.from('comisiones').select('*').eq('beneficiario_id', user!.id).order('created_at', { ascending: false }),
+        supabase.from('pedidos').select('id').eq('distribuidor_id', user!.id).eq('estado', 'entregado').gte('total', 100).gte('created_at', startOfMonth).limit(1),
+      ]);
       setComisiones((data ?? []) as Comision[]);
+      setCompraCalificada((compraData?.length ?? 0) > 0);
       setLoading(false);
     }
     load();
@@ -55,10 +65,32 @@ export default function MisComisiones() {
 
   return (
     <div>
-      <div className="mb-8">
+      <div className="mb-6">
         <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#111111]">Mis Comisiones</h1>
         <p className="text-[#6B7280] text-sm mt-1">Historial completo de tus comisiones y ganancias</p>
       </div>
+
+      {/* Banner elegibilidad */}
+      {!loading && (
+        <div className={`flex items-center gap-3 rounded-xl px-5 py-3 mb-6 border text-sm font-medium ${
+          compraCalificada
+            ? 'bg-[#EBF4ED] border-[#1A4E26]/20 text-[#1A4E26]'
+            : 'bg-amber-50 border-amber-200 text-amber-700'
+        }`}>
+          {compraCalificada ? (
+            <>
+              <CheckCircle2 size={16} className="shrink-0" />
+              <span>Habilitado para recibir comisiones este mes</span>
+            </>
+          ) : (
+            <>
+              <AlertCircle size={16} className="shrink-0" />
+              <span>Debes realizar una <strong>compra de $100 o más en un solo pedido</strong> este mes para recibir comisiones</span>
+              <Link to="/dashboard/pedido/nuevo" className="ml-auto shrink-0 underline text-xs">Comprar</Link>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
@@ -110,8 +142,8 @@ export default function MisComisiones() {
                 {comisiones.map((c) => (
                   <tr key={c.id} className="border-b border-[#C8D8CB] hover:bg-[#F4F7F5] transition-colors">
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${tipoBadge(c.tipo)}`}>
-                        {c.tipo}
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${tipoBadge(c.tipo)}`}>
+                        {TIPO_LABELS[c.tipo] ?? c.tipo}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-[#6B7280] max-w-[250px] truncate">{c.descripcion ?? '—'}</td>

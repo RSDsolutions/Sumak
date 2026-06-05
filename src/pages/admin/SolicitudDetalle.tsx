@@ -11,6 +11,12 @@ const PAQUETE_PUNTOS: Record<string, number> = {
   lider: 525,
 };
 
+const PAQUETE_PRECIOS: Record<string, number> = {
+  basico: 125,
+  emprendedor: 225,
+  lider: 525,
+};
+
 function Spinner() {
   return (
     <div className="flex items-center justify-center py-20">
@@ -165,88 +171,71 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
         .update({ estado: 'aprobada' })
         .eq('id', afiliacion.id);
 
-      // 9. Bono de afiliación directa para el patrocinador
+      // 9. Comisión de referido directa para el patrocinador (40% del precio del paquete)
       if (patrocinadorId) {
+        const montoReferido = parseFloat(((PAQUETE_PRECIOS[afiliacion.paquete_seleccionado] ?? 0) * 0.40).toFixed(2));
         await supabaseAdmin.from('comisiones').insert({
           beneficiario_id: patrocinadorId,
           origen_id: userId,
           tipo: 'afiliacion',
-          monto: 50,
+          monto: montoReferido,
           estado: 'pendiente',
-          descripcion: `Bono de afiliación directa — ${afiliacion.nombre_completo}`,
+          descripcion: `Comisión referido (40%) — ${afiliacion.nombre_completo} — paquete ${afiliacion.paquete_seleccionado}`,
         });
       }
 
-      // 10. Level commissions on package price up the patrocinador chain
+      // 10. Comisiones por nivel sobre precio del paquete (solo para upline con compra mensual ≥ $100)
       if (packagePuntos > 0) {
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
         const { data: allProfiles } = await supabaseAdmin
           .from('profiles')
           .select('id, patrocinador_id');
         const profMap = new Map<string, { patrocinador_id: string | null }>(
           (allProfiles ?? []).map((p) => [p.id, { patrocinador_id: p.patrocinador_id }])
         );
-        const comInserts: object[] = [];
+
+        // Collect upline IDs
+        const uplineChain: Array<{ id: string; nivel: number; porcentaje: number }> = [];
         let upId: string | null = userId;
         for (const lc of levelCommissions) {
           const prof = profMap.get(upId!);
           if (!prof?.patrocinador_id) break;
           upId = prof.patrocinador_id;
-          const monto = parseFloat((packagePuntos * lc.porcentaje / 100).toFixed(2));
-          if (monto > 0) {
-            comInserts.push({
-              beneficiario_id: upId,
-              origen_id: userId,
-              tipo: 'nivel',
-              nivel_red: lc.nivel,
-              monto,
-              estado: 'pendiente',
-              descripcion: `Comisión nivel ${lc.nivel} — paquete ${afiliacion.paquete_seleccionado}`,
-            });
-          }
+          uplineChain.push({ id: upId, nivel: lc.nivel, porcentaje: lc.porcentaje });
         }
-        if (comInserts.length > 0) await supabaseAdmin.from('comisiones').insert(comInserts);
-      }
 
-      // 11. Binary volumes — propagate package puntos up the tree
-      if (packagePuntos > 0 && padreNodoId) {
-        const mes = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01`;
-        const { data: allNodos } = await supabaseAdmin
-          .from('red_binaria')
-          .select('id, distribuidor_id, padre_id, posicion');
-        const nodoById = new Map((allNodos ?? []).map((n) => [n.id, n]));
-        const nodoByDistrib = new Map((allNodos ?? []).map((n) => [n.distribuidor_id, n]));
+        if (uplineChain.length > 0) {
+          // Check which upline members have a $100+ single purchase this month
+          const uplineIds = uplineChain.map((u) => u.id);
+          const { data: eligibleOrders } = await supabaseAdmin
+            .from('pedidos')
+            .select('distribuidor_id')
+            .in('distribuidor_id', uplineIds)
+            .eq('estado', 'entregado')
+            .gte('total', 100)
+            .gte('created_at', startOfMonth);
+          const eligibleSet = new Set((eligibleOrders ?? []).map((o: { distribuidor_id: string }) => o.distribuidor_id));
 
-        let child = nodoByDistrib.get(userId);
-        while (child?.padre_id) {
-          const parent = nodoById.get(child.padre_id);
-          if (!parent) break;
-          const isLeft = child.posicion === 'izquierda';
-          const { data: existing } = await supabaseAdmin
-            .from('volumenes_binarios')
-            .select('id, volumen_izquierda, volumen_derecha')
-            .eq('distribuidor_id', parent.distribuidor_id)
-            .eq('mes', mes)
-            .maybeSingle();
-          const newLeft  = Number(existing?.volumen_izquierda ?? 0) + (isLeft ? packagePuntos : 0);
-          const newRight = Number(existing?.volumen_derecha  ?? 0) + (isLeft ? 0 : packagePuntos);
-          if (existing) {
-            await supabaseAdmin.from('volumenes_binarios').update({
-              volumen_izquierda: newLeft,
-              volumen_derecha: newRight,
-              volumen_pareado: Math.min(newLeft, newRight),
-            }).eq('id', existing.id);
-          } else {
-            await supabaseAdmin.from('volumenes_binarios').insert({
-              distribuidor_id: parent.distribuidor_id,
-              mes,
-              volumen_izquierda: isLeft ? packagePuntos : 0,
-              volumen_derecha: isLeft ? 0 : packagePuntos,
-              volumen_pareado: 0,
-              comision_calculada: 0,
-              procesado: false,
-            });
+          const comInserts: object[] = [];
+          for (const entry of uplineChain) {
+            if (eligibleSet.has(entry.id)) {
+              const monto = parseFloat((packagePuntos * entry.porcentaje / 100).toFixed(2));
+              if (monto > 0) {
+                comInserts.push({
+                  beneficiario_id: entry.id,
+                  origen_id: userId,
+                  tipo: 'nivel',
+                  nivel_red: entry.nivel,
+                  monto,
+                  estado: 'pendiente',
+                  descripcion: `Comisión nivel ${entry.nivel} — paquete ${afiliacion.paquete_seleccionado}`,
+                });
+              }
+            }
           }
-          child = parent;
+          if (comInserts.length > 0) await supabaseAdmin.from('comisiones').insert(comInserts);
         }
       }
 
