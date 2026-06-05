@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Users } from 'lucide-react';
 import { supabaseAdmin } from '../../lib/supabase';
 import type { NodoBinario, Profile } from '../../lib/types';
 
@@ -10,64 +11,60 @@ function Spinner() {
   );
 }
 
-interface VolumeData {
-  volumen_izquierda: number;
-  volumen_derecha: number;
-  volumen_pareado: number;
-}
-
 interface TreeNode extends NodoBinario {
   profile: Profile;
   children: TreeNode[];
 }
 
-function TreeNodeComponent({
-  node,
-  volMap,
-  depth,
-}: {
-  node: TreeNode;
-  volMap: Map<string, VolumeData>;
-  depth: number;
-}) {
+function countNodes(node: TreeNode): number {
+  return 1 + node.children.reduce((s, c) => s + countNodes(c), 0);
+}
+
+function TreeNodeCard({ node, depth }: { node: TreeNode; depth: number }) {
   if (depth > 4) return null;
   const pkg = node.profile.paquete ?? 'basico';
-  const borderColor =
-    pkg === 'lider' ? 'border-[#D4AF37]/50' : pkg === 'emprendedor' ? 'border-[#1A4E26]/40' : 'border-[#C8D8CB]';
-  const bgColor =
-    pkg === 'lider' ? 'bg-[#FFFDF0]' : pkg === 'emprendedor' ? 'bg-[#EBF4ED]' : 'bg-[#F4F7F5]';
-  const codeColor =
-    pkg === 'lider' ? 'text-[#D4AF37]' : pkg === 'emprendedor' ? 'text-[#1A4E26]' : 'text-[#6B7280]';
+  const isFrontal = !node.posicion && depth === 1;
 
-  const vol = volMap.get(node.distribuidor_id);
+  const borderColor =
+    pkg === 'lider' ? 'border-[#D4AF37]/60' :
+    pkg === 'emprendedor' ? 'border-[#1A4E26]/40' :
+    'border-[#C8D8CB]';
+  const bgColor =
+    pkg === 'lider' ? 'bg-[#FFFDF0]' :
+    pkg === 'emprendedor' ? 'bg-[#EBF4ED]' :
+    'bg-[#F4F7F5]';
+  const codeColor =
+    pkg === 'lider' ? 'text-[#D4AF37]' :
+    pkg === 'emprendedor' ? 'text-[#1A4E26]' :
+    'text-[#6B7280]';
 
   return (
     <div className="flex flex-col items-center">
-      <div className={`border-2 rounded-xl p-3 w-48 text-center ${borderColor} ${bgColor}`}>
+      <div className={`border-2 rounded-xl p-3 w-44 text-center ${borderColor} ${bgColor}`}>
         <p className={`font-mono text-xs font-bold mb-0.5 ${codeColor}`}>
           {node.profile.codigo_distribuidor ?? '—'}
         </p>
         <p className="text-[#111111] text-xs font-medium truncate mb-1" title={node.profile.nombre_completo}>
           {node.profile.nombre_completo}
         </p>
-        <p className="text-[#D4AF37] text-[10px] font-semibold">
-          ★ {node.profile.puntos ?? 0} pts propios
-        </p>
-        {vol && (vol.volumen_izquierda > 0 || vol.volumen_derecha > 0) && (
-          <div className="mt-1.5 pt-1.5 border-t border-[#C8D8CB] grid grid-cols-2 gap-1 text-[9px] text-center">
-            <span className="text-[#1A4E26]">A: {vol.volumen_izquierda}pts</span>
-            <span className="text-[#1A4E26]">B: {vol.volumen_derecha}pts</span>
-          </div>
+        <p className="text-[#D4AF37] text-[10px] font-semibold">★ {node.profile.puntos ?? 0} pts</p>
+        {isFrontal && (
+          <span className="text-[10px] font-bold text-[#1A4E26] mt-0.5 inline-block">Frontal</span>
+        )}
+        {node.posicion && (
+          <span className="text-[10px] text-[#9CA3AF] mt-0.5 inline-block capitalize">
+            {node.posicion === 'izquierda' ? '⬅ Izq' : 'Der ➡'}
+          </span>
         )}
       </div>
 
       {node.children.length > 0 && depth < 4 && (
-        <div className="flex gap-8 mt-6 relative">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-6 h-6 w-px bg-[#C8D8CB]" />
+        <div className="flex gap-6 mt-5 relative">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-5 h-5 w-px bg-[#C8D8CB]" />
           {node.children.map((child) => (
             <div key={child.id} className="flex flex-col items-center relative">
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-6 h-6 w-px bg-[#C8D8CB]" />
-              <TreeNodeComponent node={child} volMap={volMap} depth={depth + 1} />
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-5 h-5 w-px bg-[#C8D8CB]" />
+              <TreeNodeCard node={child} depth={depth + 1} />
             </div>
           ))}
         </div>
@@ -76,20 +73,72 @@ function TreeNodeComponent({
   );
 }
 
+function AdminRootCard({ node }: { node: TreeNode }) {
+  const total = countNodes(node) - 1;
+  return (
+    <div className="flex flex-col items-center">
+      {/* Admin node */}
+      <div className="border-2 border-[#1A4E26] bg-[#EBF4ED] rounded-xl p-4 w-52 text-center shadow-[0_0_16px_rgba(26,78,38,0.12)]">
+        <p className="font-mono text-xs font-bold text-[#1A4E26] mb-0.5">
+          {node.profile.codigo_distribuidor ?? '—'}
+        </p>
+        <p className="text-[#111111] text-sm font-bold truncate mb-1" title={node.profile.nombre_completo}>
+          {node.profile.nombre_completo}
+        </p>
+        <p className="text-[#D4AF37] text-[10px] font-semibold">★ {node.profile.puntos ?? 0} pts</p>
+        <span className="text-[10px] font-bold text-[#1A4E26] mt-0.5 inline-block uppercase tracking-wider">ADMIN</span>
+      </div>
+
+      {node.children.length > 0 && (
+        <>
+          {/* Línea vertical desde admin hacia barra horizontal */}
+          <div className="h-6 w-px bg-[#C8D8CB]" />
+          {/* Barra horizontal */}
+          <div className="relative flex items-start justify-center">
+            {node.children.length > 1 && (
+              <div
+                className="absolute top-0 bg-[#C8D8CB] h-px"
+                style={{ width: `calc(${(node.children.length - 1)} * 12rem + ${(node.children.length - 1)} * 1.5rem)` }}
+              />
+            )}
+            <div className="flex gap-6">
+              {node.children.map((child) => (
+                <div key={child.id} className="flex flex-col items-center">
+                  <div className="h-5 w-px bg-[#C8D8CB]" />
+                  <TreeNodeCard node={child} depth={1} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {node.children.length === 0 && (
+        <p className="text-[#9CA3AF] text-xs mt-4">Sin distribuidores en red aún</p>
+      )}
+
+      <div className="flex items-center gap-1.5 text-[#6B7280] text-xs mt-4">
+        <Users size={12} />
+        {total} distribuidor{total !== 1 ? 'es' : ''} en la red
+      </div>
+    </div>
+  );
+}
+
 export default function AdminRed() {
-  const [roots, setRoots] = useState<TreeNode[]>([]);
-  const [volMap, setVolMap] = useState<Map<string, VolumeData>>(new Map());
+  const [adminNode, setAdminNode] = useState<TreeNode | null>(null);
+  const [orphans, setOrphans] = useState<TreeNode[]>([]);
   const [loading, setLoading] = useState(true);
+  const [allNodes, setAllNodes] = useState<TreeNode[]>([]);
 
   useEffect(() => {
     async function load() {
       try {
-        const mes = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01`;
-
-        const [{ data: nodos }, { data: vols }] = await Promise.all([
-          supabaseAdmin.from('red_binaria').select('*').order('nivel', { ascending: true }).limit(100),
-          supabaseAdmin.from('volumenes_binarios').select('*').eq('mes', mes),
-        ]);
+        const { data: nodos } = await supabaseAdmin
+          .from('red_binaria')
+          .select('*')
+          .order('nivel', { ascending: true })
+          .limit(500);
 
         if (!nodos || nodos.length === 0) return;
 
@@ -99,16 +148,6 @@ export default function AdminRed() {
         const profileMap = new Map<string, Profile>();
         for (const p of perfiles ?? []) profileMap.set(p.id, p as Profile);
 
-        const vm = new Map<string, VolumeData>();
-        for (const v of vols ?? []) {
-          vm.set(v.distribuidor_id, {
-            volumen_izquierda: Number(v.volumen_izquierda),
-            volumen_derecha: Number(v.volumen_derecha),
-            volumen_pareado: Number(v.volumen_pareado),
-          });
-        }
-        setVolMap(vm);
-
         const nodeMap = new Map<string, TreeNode>();
         for (const n of nodos) {
           const profile = profileMap.get(n.distribuidor_id);
@@ -116,17 +155,27 @@ export default function AdminRed() {
           nodeMap.set(n.id, { ...(n as unknown as NodoBinario), profile, children: [] });
         }
 
-        const treeRoots: TreeNode[] = [];
+        const roots: TreeNode[] = [];
         for (const [, node] of nodeMap) {
           if (!node.padre_id) {
-            treeRoots.push(node);
+            roots.push(node);
           } else {
             const parent = nodeMap.get(node.padre_id);
             if (parent) parent.children.push(node);
           }
         }
 
-        setRoots(treeRoots);
+        // Find admin root (rol = 'admin')
+        const adminRoot = roots.find((r) => r.profile.rol === 'admin') ?? roots[0] ?? null;
+        const orphanRoots = roots.filter((r) => r !== adminRoot);
+
+        const flat: TreeNode[] = [];
+        const collect = (n: TreeNode) => { flat.push(n); n.children.forEach(collect); };
+        if (adminRoot) collect(adminRoot);
+
+        setAdminNode(adminRoot);
+        setOrphans(orphanRoots);
+        setAllNodes(flat);
       } finally {
         setLoading(false);
       }
@@ -134,65 +183,25 @@ export default function AdminRed() {
     load();
   }, []);
 
-  const mes = new Date().toLocaleString('es-EC', { month: 'long', year: 'numeric' });
-
   return (
     <div>
       <div className="mb-6">
-        <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#111111]">Red Binaria</h1>
-        <p className="text-[#6B7280] text-sm mt-1">Árbol de distribuidores con volúmenes de {mes}</p>
+        <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#111111]">Red de Distribuidores</h1>
+        <p className="text-[#6B7280] text-sm mt-1">Árbol Frontal Directo Binario Continuo</p>
       </div>
 
-      {/* Volume summary per root */}
-      {!loading && roots.length > 0 && (
-        <div className="mb-6 space-y-3">
-          {roots.map((root) => {
-            const vol = volMap.get(root.distribuidor_id);
-            return (
-              <div key={root.id} className="bg-white border border-[#C8D8CB] rounded-2xl p-4">
-                <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-                  <div>
-                    <span className="font-mono text-xs text-[#1A4E26] font-bold mr-2">
-                      {root.profile.codigo_distribuidor}
-                    </span>
-                    <span className="text-[#111111] text-sm font-medium">{root.profile.nombre_completo}</span>
-                  </div>
-                  <span className="text-[#D4AF37] text-xs font-semibold">★ {root.profile.puntos ?? 0} pts propios</span>
-                </div>
-                <div className="grid grid-cols-3 gap-3 text-center">
-                  <div className="bg-[#F4F7F5] border border-[#C8D8CB] rounded-xl p-3">
-                    <p className="text-[#6B7280] text-xs mb-1">Equipo A (Izq)</p>
-                    <p className="text-[#1A4E26] font-bold text-lg">{vol?.volumen_izquierda ?? 0}</p>
-                    <p className="text-[#9CA3AF] text-[10px]">puntos</p>
-                  </div>
-                  <div className="bg-[#F4F7F5] border border-[#C8D8CB] rounded-xl p-3">
-                    <p className="text-[#6B7280] text-xs mb-1">Equipo B (Der)</p>
-                    <p className="text-[#1A4E26] font-bold text-lg">{vol?.volumen_derecha ?? 0}</p>
-                    <p className="text-[#9CA3AF] text-[10px]">puntos</p>
-                  </div>
-                  <div className="bg-[#FFFDF0] border border-[#D4AF37]/20 rounded-xl p-3">
-                    <p className="text-[#6B7280] text-xs mb-1">Pareado</p>
-                    <p className="text-[#D4AF37] font-bold text-lg">{vol?.volumen_pareado ?? 0}</p>
-                    <p className="text-[#9CA3AF] text-[10px]">puntos</p>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* All distributors volume table */}
-      {!loading && roots.length > 0 && (
+      {/* Tabla de distribuidores */}
+      {!loading && allNodes.length > 0 && (
         <div className="bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden mb-6">
-          <div className="px-6 py-3 border-b border-[#C8D8CB] bg-[#F4F7F5]">
-            <h2 className="text-[#111111] text-sm font-semibold">Volúmenes por Distribuidor — {mes}</h2>
+          <div className="px-6 py-3 border-b border-[#C8D8CB] bg-[#F4F7F5] flex items-center justify-between">
+            <h2 className="text-[#111111] text-sm font-semibold">Distribuidores en Red</h2>
+            <span className="text-[#6B7280] text-xs">{allNodes.length} total</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#C8D8CB] bg-[#F4F7F5]">
-                  {['Distribuidor', 'Pts Propios', 'Equipo A', 'Equipo B', 'Pareado'].map((h) => (
+                  {['Distribuidor', 'Paquete', 'Pts Propios', 'Nivel', 'Posición', 'Upline'].map((h) => (
                     <th key={h} className="px-5 py-3 text-left text-[#9CA3AF] text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
                       {h}
                     </th>
@@ -200,48 +209,56 @@ export default function AdminRed() {
                 </tr>
               </thead>
               <tbody>
-                {roots.flatMap((root) => {
-                  const allNodes: TreeNode[] = [];
-                  const collect = (n: TreeNode) => { allNodes.push(n); n.children.forEach(collect); };
-                  collect(root);
-                  return allNodes;
-                }).map((node) => {
-                  const vol = volMap.get(node.distribuidor_id);
-                  return (
-                    <tr key={node.id} className="border-b border-[#C8D8CB] hover:bg-[#F4F7F5] transition-colors">
-                      <td className="px-5 py-3">
-                        <p className="text-[#111111] text-sm">{node.profile.nombre_completo}</p>
-                        <p className="text-[#6B7280] text-xs font-mono">{node.profile.codigo_distribuidor}</p>
-                      </td>
-                      <td className="px-5 py-3 text-[#D4AF37] font-semibold">★ {node.profile.puntos ?? 0}</td>
-                      <td className="px-5 py-3 text-[#1A4E26] font-semibold">{vol?.volumen_izquierda ?? 0}</td>
-                      <td className="px-5 py-3 text-[#1A4E26] font-semibold">{vol?.volumen_derecha ?? 0}</td>
-                      <td className="px-5 py-3 text-[#D4AF37] font-semibold">{vol?.volumen_pareado ?? 0}</td>
-                    </tr>
-                  );
-                })}
+                {allNodes.map((node) => (
+                  <tr key={node.id} className="border-b border-[#C8D8CB] hover:bg-[#F4F7F5] transition-colors">
+                    <td className="px-5 py-3">
+                      <p className="text-[#111111] text-sm font-medium">{node.profile.nombre_completo}</p>
+                      <p className="text-[#6B7280] text-xs font-mono">{node.profile.codigo_distribuidor}</p>
+                    </td>
+                    <td className="px-5 py-3 capitalize text-[#6B7280] text-sm">{node.profile.paquete ?? '—'}</td>
+                    <td className="px-5 py-3 text-[#D4AF37] font-semibold">★ {node.profile.puntos ?? 0}</td>
+                    <td className="px-5 py-3 text-[#111111] text-sm">{node.nivel}</td>
+                    <td className="px-5 py-3 text-[#6B7280] text-sm">
+                      {!node.posicion ? (
+                        <span className="text-[#1A4E26] font-medium text-xs">Frontal</span>
+                      ) : node.posicion === 'izquierda' ? '⬅ Izquierda' : 'Derecha ➡'}
+                    </td>
+                    <td className="px-5 py-3 text-[#6B7280] text-xs">
+                      {node.padre_id ? (allNodes.find((n) => n.id === node.padre_id)?.profile.codigo_distribuidor ?? '—') : '—'}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
         </div>
       )}
 
-      {/* Tree visualization */}
+      {/* Árbol visual */}
       <div className="bg-white border border-[#C8D8CB] rounded-2xl p-6 overflow-auto">
         {loading ? (
           <Spinner />
-        ) : roots.length === 0 ? (
+        ) : !adminNode ? (
           <div className="text-center py-16 text-[#6B7280]">
             <p className="text-lg font-medium mb-2">Red vacía</p>
-            <p className="text-sm">No hay distribuidores en la red binaria aún.</p>
+            <p className="text-sm">No hay distribuidores en la red aún.</p>
           </div>
         ) : (
-          <div className="flex gap-16 overflow-x-auto pb-4 pt-2">
-            {roots.map((root) => (
-              <div key={root.id} className="flex-shrink-0">
-                <TreeNodeComponent node={root} volMap={volMap} depth={0} />
+          <div className="flex flex-col items-center overflow-x-auto pb-4 pt-2 min-w-max mx-auto">
+            <AdminRootCard node={adminNode} />
+
+            {orphans.length > 0 && (
+              <div className="mt-10 pt-6 border-t border-[#C8D8CB] w-full">
+                <p className="text-[#9CA3AF] text-xs font-semibold uppercase tracking-wider mb-4 text-center">
+                  Nodos sin conectar
+                </p>
+                <div className="flex gap-8 justify-center flex-wrap">
+                  {orphans.map((orphan) => (
+                    <TreeNodeCard key={orphan.id} node={orphan} depth={0} />
+                  ))}
+                </div>
               </div>
-            ))}
+            )}
           </div>
         )}
       </div>

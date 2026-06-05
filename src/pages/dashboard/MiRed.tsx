@@ -23,15 +23,13 @@ const paqueteTextColor: Record<string, string> = {
   lider: 'text-[#D4AF37]',
 };
 
-const paqueteLabel: Record<string, string> = {
-  basico: 'Básico',
-  emprendedor: 'Emprendedor',
-  lider: 'Líder',
-};
-
 interface TreeNode extends NodoBinario {
   profile: Profile;
   children: TreeNode[];
+}
+
+function countSubtree(node: TreeNode): number {
+  return node.children.reduce((s, c) => s + 1 + countSubtree(c), 0);
 }
 
 function TreeNodeComponent({ node, depth, isRoot }: { node: TreeNode; depth: number; isRoot?: boolean }) {
@@ -55,6 +53,11 @@ function TreeNodeComponent({ node, depth, isRoot }: { node: TreeNode; depth: num
         {isRoot && (
           <span className="text-[10px] font-bold text-[#1A4E26] mt-0.5 inline-block">TÚ</span>
         )}
+        {!isRoot && node.posicion && (
+          <span className="text-[9px] text-[#9CA3AF]">
+            {node.posicion === 'izquierda' ? '⬅ Izq' : 'Der ➡'}
+          </span>
+        )}
       </div>
 
       {node.children.length > 0 && depth < 3 && (
@@ -76,9 +79,6 @@ export default function MiRed() {
   const { user, profile } = useAuth();
   const [rootNode, setRootNode] = useState<TreeNode | null>(null);
   const [loading, setLoading] = useState(true);
-  const [volIzq, setVolIzq] = useState(0);
-  const [volDer, setVolDer] = useState(0);
-  const [volPareado, setVolPareado] = useState(0);
 
   useEffect(() => {
     if (!user || !profile) return;
@@ -86,7 +86,6 @@ export default function MiRed() {
     async function load() {
       const uid = user!.id;
 
-      // Fetch this distributor's node
       const { data: myNode } = await supabase
         .from('red_binaria')
         .select('*')
@@ -95,22 +94,6 @@ export default function MiRed() {
 
       if (!myNode) { setLoading(false); return; }
 
-      // Fetch volume
-      const currentMonth = new Date();
-      const mesStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-01`;
-      const { data: vol } = await supabase
-        .from('volumenes_binarios')
-        .select('*')
-        .eq('distribuidor_id', uid)
-        .eq('mes', mesStr)
-        .maybeSingle();
-      if (vol) {
-        setVolIzq(Number(vol.volumen_izquierda ?? 0));
-        setVolDer(Number(vol.volumen_derecha ?? 0));
-        setVolPareado(Number(vol.volumen_pareado ?? 0));
-      }
-
-      // Fetch all red_binaria nodes (RLS limits to what this user can see)
       const { data: allNodes } = await supabase
         .from('red_binaria')
         .select('*')
@@ -118,7 +101,6 @@ export default function MiRed() {
 
       if (!allNodes) { setLoading(false); return; }
 
-      // Fetch profiles for all nodes
       const distIds = allNodes.map((n) => n.distribuidor_id);
       const { data: perfiles } = await supabase
         .from('profiles')
@@ -130,13 +112,9 @@ export default function MiRed() {
 
       const nodeMap = new Map<string, TreeNode>();
       for (const n of allNodes) {
-        const profile = profileMap.get(n.distribuidor_id);
-        if (!profile) continue;
-        nodeMap.set(n.id, {
-          ...(n as unknown as NodoBinario),
-          profile,
-          children: [],
-        });
+        const prof = profileMap.get(n.distribuidor_id);
+        if (!prof) continue;
+        nodeMap.set(n.id, { ...(n as unknown as NodoBinario), profile: prof, children: [] });
       }
 
       for (const [, node] of nodeMap) {
@@ -146,40 +124,53 @@ export default function MiRed() {
         }
       }
 
-      const myTreeNode = nodeMap.get(myNode.id);
-      setRootNode(myTreeNode ?? null);
+      const myTreeNode = nodeMap.get(myNode.id) ?? null;
+      setRootNode(myTreeNode);
       setLoading(false);
     }
 
     load();
   }, [user, profile]);
 
-  const leftCount = rootNode?.children.filter((c) => c.posicion === 'izquierda').length ?? 0;
-  const rightCount = rootNode?.children.filter((c) => c.posicion === 'derecha').length ?? 0;
+  const leftChild = rootNode?.children.find((c) => c.posicion === 'izquierda');
+  const rightChild = rootNode?.children.find((c) => c.posicion === 'derecha');
+  const frontales = rootNode?.children.filter((c) => !c.posicion) ?? [];
+
+  const leftCount = leftChild ? 1 + countSubtree(leftChild) : 0;
+  const rightCount = rightChild ? 1 + countSubtree(rightChild) : 0;
+  const frontalCount = frontales.length;
+  const totalRed = (rootNode ? countSubtree(rootNode) : 0);
 
   return (
     <div>
       <div className="mb-8">
         <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#111111]">Mi Red</h1>
-        <p className="text-[#6B7280] text-sm mt-1">Tu árbol binario de distribuidores</p>
+        <p className="text-[#6B7280] text-sm mt-1">Tu árbol de distribuidores</p>
       </div>
 
-      {/* Volume summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      {/* Resumen de red */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         <div className="bg-white border border-[#C8D8CB] rounded-2xl p-5 text-center shadow-[0_0_8px_rgba(26,78,38,0.04)]">
-          <p className="text-[#6B7280] text-sm mb-1">Equipo A (Izquierda)</p>
-          <p className="font-heading font-bold text-xl text-[#1A4E26]">{volIzq} pts</p>
-          <p className="text-[#9CA3AF] text-xs mt-1">{leftCount} directo{leftCount !== 1 ? 's' : ''}</p>
+          <p className="text-[#6B7280] text-sm mb-1">Equipo Izq.</p>
+          <p className="font-heading font-bold text-2xl text-[#1A4E26]">{leftCount}</p>
+          <p className="text-[#9CA3AF] text-xs mt-1">distribuidores</p>
         </div>
         <div className="bg-white border border-[#C8D8CB] rounded-2xl p-5 text-center shadow-[0_0_8px_rgba(26,78,38,0.04)]">
-          <p className="text-[#6B7280] text-sm mb-1">Equipo B (Derecha)</p>
-          <p className="font-heading font-bold text-xl text-[#1A4E26]">{volDer} pts</p>
-          <p className="text-[#9CA3AF] text-xs mt-1">{rightCount} directo{rightCount !== 1 ? 's' : ''}</p>
+          <p className="text-[#6B7280] text-sm mb-1">Equipo Der.</p>
+          <p className="font-heading font-bold text-2xl text-[#1A4E26]">{rightCount}</p>
+          <p className="text-[#9CA3AF] text-xs mt-1">distribuidores</p>
         </div>
+        {frontalCount > 0 && (
+          <div className="bg-white border border-[#C8D8CB] rounded-2xl p-5 text-center shadow-[0_0_8px_rgba(26,78,38,0.04)]">
+            <p className="text-[#6B7280] text-sm mb-1">Frontales</p>
+            <p className="font-heading font-bold text-2xl text-[#1A4E26]">{frontalCount}</p>
+            <p className="text-[#9CA3AF] text-xs mt-1">directos</p>
+          </div>
+        )}
         <div className="bg-white border border-[#D4AF37]/30 rounded-2xl p-5 text-center shadow-[0_0_8px_rgba(212,175,55,0.06)]">
-          <p className="text-[#6B7280] text-sm mb-1">Volumen Pareado</p>
-          <p className="font-heading font-bold text-xl text-[#D4AF37]">{volPareado} pts</p>
-          <p className="text-[#9CA3AF] text-xs mt-1">min(A, B) este mes</p>
+          <p className="text-[#6B7280] text-sm mb-1">Total Red</p>
+          <p className="font-heading font-bold text-2xl text-[#D4AF37]">{totalRed}</p>
+          <p className="text-[#9CA3AF] text-xs mt-1">en toda la red</p>
         </div>
       </div>
 
@@ -189,7 +180,7 @@ export default function MiRed() {
         ) : !rootNode ? (
           <div className="text-center py-16 text-[#6B7280]">
             <p className="text-lg font-medium mb-2">Aún no estás en la red</p>
-            <p className="text-sm">Tu posición en el árbol binario aún no ha sido asignada.</p>
+            <p className="text-sm">Tu posición aún no ha sido asignada por el administrador.</p>
           </div>
         ) : (
           <div className="flex justify-center overflow-x-auto pb-4 pt-2">

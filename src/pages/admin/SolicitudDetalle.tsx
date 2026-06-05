@@ -50,10 +50,10 @@ interface DistribuidorOption {
   id: string;
   codigo_distribuidor: string;
   nombre_completo: string;
+  rol: string;
 }
 
 function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
-  const [posicion, setPosicion] = useState<'izquierda' | 'derecha'>('izquierda');
   const [padreProfileId, setPadreProfileId] = useState('');
   const [distribuidores, setDistribuidores] = useState<DistribuidorOption[]>([]);
   const [loading, setLoading] = useState(false);
@@ -64,7 +64,7 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
   useEffect(() => {
     supabaseAdmin
       .from('profiles')
-      .select('id, codigo_distribuidor, nombre_completo')
+      .select('id, codigo_distribuidor, nombre_completo, rol')
       .order('codigo_distribuidor', { ascending: true })
       .then(({ data }) => {
         setDistribuidores((data as DistribuidorOption[]) ?? []);
@@ -137,8 +137,9 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
         return;
       }
 
-      // 6. Find the parent's red_binaria node id (if a parent was selected)
+      // 6. Find the parent's red_binaria node id and nivel
       let padreNodoId: string | null = null;
+      let padreNivel: number = 0;
       const parentProfileId = padreProfileId || patrocinadorId;
       if (parentProfileId) {
         const { data: padreNodo } = await supabaseAdmin
@@ -148,15 +149,46 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
           .single();
         if (padreNodo) {
           padreNodoId = padreNodo.id;
+          padreNivel = padreNodo.nivel;
         }
       }
 
-      // 7. Insert into red_binaria
-      const nivelNuevo = padreNodoId ? 2 : 1;
+      // 7. Auto-determinar posición en árbol binario
+      let posicionFinal: 'izquierda' | 'derecha' | null = null;
+      if (padreNodoId) {
+        const selectedParent = distribuidores.find((d) => d.id === parentProfileId);
+        const parentIsAdmin = selectedParent?.rol === 'admin';
+
+        if (parentIsAdmin) {
+          // Hijos directos del admin = frontales, sin posición izq/der
+          posicionFinal = null;
+        } else {
+          // Auto-asignar izquierda o derecha según disponibilidad
+          const { data: hijos } = await supabaseAdmin
+            .from('red_binaria')
+            .select('posicion')
+            .eq('padre_id', padreNodoId);
+
+          const tieneIzq = hijos?.some((h) => h.posicion === 'izquierda');
+          const tieneDer = hijos?.some((h) => h.posicion === 'derecha');
+
+          if (!tieneIzq) {
+            posicionFinal = 'izquierda';
+          } else if (!tieneDer) {
+            posicionFinal = 'derecha';
+          } else {
+            setError('Este distribuidor ya tiene ambas posiciones (Izq. y Der.) ocupadas. Selecciona otro.');
+            return;
+          }
+        }
+      }
+
+      // 8. Insert into red_binaria
+      const nivelNuevo = padreNivel > 0 ? padreNivel + 1 : 1;
       const { error: redError } = await supabaseAdmin.from('red_binaria').insert({
         distribuidor_id: userId,
         padre_id: padreNodoId,
-        posicion: posicion,
+        posicion: posicionFinal,
         nivel: nivelNuevo,
       });
 
@@ -262,7 +294,7 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
         {/* Parent distributor dropdown */}
         <div className="mb-4">
           <label className="block text-[#6B7280] text-xs font-semibold uppercase tracking-wider mb-2">
-            Ubicar bajo el distribuidor
+            Ubicar bajo el distribuidor (partner)
           </label>
           <select
             value={padreProfileId}
@@ -273,7 +305,7 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
             <option value="">— Sin padre (nodo raíz) —</option>
             {distribuidores.map((d) => (
               <option key={d.id} value={d.id}>
-                {d.codigo_distribuidor} — {d.nombre_completo}
+                {d.rol === 'admin' ? '★ ' : ''}{d.codigo_distribuidor} — {d.nombre_completo}{d.rol === 'admin' ? ' (Admin)' : ''}
               </option>
             ))}
           </select>
@@ -284,26 +316,16 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
           </p>
         </div>
 
-        {/* Position */}
-        <div className="mb-6">
-          <label className="block text-[#6B7280] text-xs font-semibold uppercase tracking-wider mb-2">
-            Posición en el árbol binario
-          </label>
-          <div className="flex gap-3">
-            {(['izquierda', 'derecha'] as const).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPosicion(p)}
-                className={`flex-1 py-3 rounded-xl border text-sm font-medium capitalize transition-all duration-200 ${
-                  posicion === p
-                    ? 'border-[#1A4E26] bg-[#1A4E26]/10 text-[#1A4E26]'
-                    : 'border-[#C8D8CB] text-[#6B7280] hover:border-[#A8C2AD]'
-                }`}
-              >
-                {p === 'izquierda' ? '⬅ Izquierda (Equipo A)' : 'Derecha (Equipo B) ➡'}
-              </button>
-            ))}
-          </div>
+        {/* Posición auto-asignada */}
+        <div className="mb-6 bg-[#F4F7F5] border border-[#C8D8CB] rounded-xl px-4 py-3">
+          <p className="text-[#6B7280] text-xs font-semibold uppercase tracking-wider mb-1">Posición en la red</p>
+          {!padreProfileId ? (
+            <p className="text-[#9CA3AF] text-sm">Se definirá al seleccionar un partner</p>
+          ) : distribuidores.find((d) => d.id === padreProfileId)?.rol === 'admin' ? (
+            <p className="text-[#1A4E26] text-sm font-medium">Frontal directo del admin (sin posición izq/der)</p>
+          ) : (
+            <p className="text-[#1A4E26] text-sm font-medium">Se asigna automáticamente: Izquierda si libre, Derecha si no</p>
+          )}
         </div>
 
         <div className="flex gap-3">

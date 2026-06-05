@@ -107,9 +107,6 @@ export interface VolumenBinario {
   mes: string;
   volumen_izquierda: number;
   volumen_derecha: number;
-  volumen_pareado: number;
-  comision_calculada: number;
-  procesado: boolean;
   created_at: string;
 }
 
