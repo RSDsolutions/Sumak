@@ -139,141 +139,98 @@ export default function Home() {
               </motion.div>
             </div>
 
-            {/* Right: Product collage — PNG images floating clean */}
+            {/* Right: 2 hero products — large, clean PNG, dramatic */}
             <div className="relative hidden lg:flex items-center justify-center h-[580px]">
 
-              {/* Radial glow behind composition */}
-              <div className="absolute w-[420px] h-[420px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(26,78,38,0.12) 0%, transparent 70%)' }} />
-              <div className="absolute w-[320px] h-[320px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.08) 0%, transparent 70%)' }} />
+              {/* Ambient glow base */}
+              <div className="absolute w-[480px] h-[480px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(26,78,38,0.14) 0%, transparent 65%)' }} />
 
-              {/* Decorative orbit rings */}
-              <div className="absolute w-[370px] h-[370px] rounded-full border border-[#1A4E26]/08 pointer-events-none" />
-              <div className="absolute w-[480px] h-[480px] rounded-full border border-[#D4AF37]/06 pointer-events-none" style={{ borderStyle: 'dashed' }} />
-
-              {/* Center large — REGEN 24 */}
-              <div className="absolute left-1/2 top-[42%] -translate-x-1/2 -translate-y-1/2 z-20">
+              {/* ── Product 1: REGEN 24 — main, large, left-center ── */}
+              <div className="absolute left-[4%] top-1/2 -translate-y-1/2 z-20">
                 <motion.div
-                  animate={{ y: [0, -20, 0] }}
-                  transition={{ duration: 4.2, repeat: Infinity, ease: 'easeInOut' }}
-                  className="relative"
+                  initial={{ opacity: 0, x: -30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.7, delay: 0.3 }}
                 >
-                  {/* Glow behind main product */}
-                  <div className="absolute inset-[-20%] rounded-full blur-2xl opacity-30 pointer-events-none" style={{ background: 'radial-gradient(circle, #1A4E26 0%, transparent 70%)' }} />
-                  <img
-                    src="/products/regen-24.png"
-                    alt="REGEN 24"
-                    className="w-60 h-60 object-contain relative z-10"
-                    style={{ filter: 'drop-shadow(0 30px 40px rgba(26,78,38,0.35)) drop-shadow(0 8px 16px rgba(0,0,0,0.2))' }}
-                  />
+                  <motion.div
+                    animate={{ y: [0, -18, 0] }}
+                    transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
+                    className="relative"
+                  >
+                    {/* Strong green glow */}
+                    <div className="absolute inset-[-15%] rounded-full blur-3xl opacity-40 pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(26,78,38,0.6) 0%, transparent 70%)' }} />
+                    {/* Soft light halo */}
+                    <div className="absolute inset-[-5%] rounded-full blur-xl opacity-25 pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.5) 0%, transparent 60%)' }} />
+                    <img
+                      src="/products/regen-24.png"
+                      alt="REGEN 24"
+                      className="w-[310px] h-[310px] object-contain relative z-10"
+                      style={{ filter: 'drop-shadow(0 40px 50px rgba(26,78,38,0.40)) drop-shadow(0 10px 20px rgba(0,0,0,0.22))' }}
+                    />
+                  </motion.div>
+                  {/* Badge under main product */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 1.1, duration: 0.5 }}
+                    className="mt-3 mx-auto w-fit bg-[#1A4E26] rounded-xl px-4 py-2 shadow-lg"
+                  >
+                    <p className="text-[10px] text-white/70 font-medium text-center">Más vendido</p>
+                    <p className="text-sm font-bold text-white text-center">REGEN 24</p>
+                  </motion.div>
                 </motion.div>
               </div>
 
-              {/* Top left — Té */}
-              <div className="absolute top-[3%] left-[2%] z-10">
+              {/* ── Product 2: Colágeno — secondary, right, offset ── */}
+              <div className="absolute right-[2%] top-[12%] z-10">
                 <motion.div
-                  animate={{ y: [0, -14, 0], rotate: [-2, 2, -2] }}
-                  transition={{ duration: 3.8, repeat: Infinity, ease: 'easeInOut', delay: 0.8 }}
-                  className="relative"
+                  initial={{ opacity: 0, x: 30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.7, delay: 0.55 }}
                 >
-                  <div className="absolute inset-[-30%] rounded-full blur-xl opacity-20 pointer-events-none" style={{ background: 'radial-gradient(circle, #D4AF37 0%, transparent 70%)' }} />
-                  <img
-                    src="/products/te-extractos-de-la-vida.png"
-                    alt="Té Extractos de la Vida"
-                    className="w-[148px] h-[148px] object-contain relative z-10"
-                    style={{ filter: 'drop-shadow(0 20px 28px rgba(26,78,38,0.28)) drop-shadow(0 4px 12px rgba(0,0,0,0.18))' }}
-                  />
-                </motion.div>
-              </div>
-
-              {/* Top right — Colágeno */}
-              <div className="absolute top-[2%] right-[0%] z-10">
-                <motion.div
-                  animate={{ y: [0, -18, 0], rotate: [2, -2, 2] }}
-                  transition={{ duration: 4.6, repeat: Infinity, ease: 'easeInOut', delay: 1.5 }}
-                  className="relative"
-                >
-                  <div className="absolute inset-[-30%] rounded-full blur-xl opacity-20 pointer-events-none" style={{ background: 'radial-gradient(circle, #1A4E26 0%, transparent 70%)' }} />
-                  <img
-                    src="/products/colageno-hidrolizado.png"
-                    alt="Colágeno Hidrolizado"
-                    className="w-[138px] h-[138px] object-contain relative z-10"
-                    style={{ filter: 'drop-shadow(0 18px 28px rgba(26,78,38,0.25)) drop-shadow(0 4px 10px rgba(0,0,0,0.16))' }}
-                  />
-                </motion.div>
-              </div>
-
-              {/* Bottom left — Bebida Andina */}
-              <div className="absolute bottom-[5%] left-[5%] z-10">
-                <motion.div
-                  animate={{ y: [0, -12, 0], rotate: [-1, 3, -1] }}
-                  transition={{ duration: 3.9, repeat: Infinity, ease: 'easeInOut', delay: 0.3 }}
-                  className="relative"
-                >
-                  <div className="absolute inset-[-30%] rounded-full blur-xl opacity-15 pointer-events-none" style={{ background: 'radial-gradient(circle, #D4AF37 0%, transparent 70%)' }} />
-                  <img
-                    src="/products/bebida-andina.png"
-                    alt="Bebida Andina"
-                    className="w-[118px] h-[118px] object-contain relative z-10"
-                    style={{ filter: 'drop-shadow(0 16px 24px rgba(26,78,38,0.22)) drop-shadow(0 3px 8px rgba(0,0,0,0.15))' }}
-                  />
-                </motion.div>
-              </div>
-
-              {/* Bottom right — Fibramak */}
-              <div className="absolute bottom-[8%] right-[4%] z-10">
-                <motion.div
-                  animate={{ y: [0, -10, 0], rotate: [3, -1, 3] }}
-                  transition={{ duration: 4.3, repeat: Infinity, ease: 'easeInOut', delay: 2.0 }}
-                  className="relative"
-                >
-                  <div className="absolute inset-[-30%] rounded-full blur-xl opacity-15 pointer-events-none" style={{ background: 'radial-gradient(circle, #1A4E26 0%, transparent 70%)' }} />
-                  <img
-                    src="/products/fibramak-plus.png"
-                    alt="Fibramak Plus"
-                    className="w-[108px] h-[108px] object-contain relative z-10"
-                    style={{ filter: 'drop-shadow(0 14px 22px rgba(26,78,38,0.20)) drop-shadow(0 3px 8px rgba(0,0,0,0.14))' }}
-                  />
+                  <motion.div
+                    animate={{ y: [0, -22, 0] }}
+                    transition={{ duration: 5.2, repeat: Infinity, ease: 'easeInOut', delay: 1.2 }}
+                    className="relative"
+                  >
+                    {/* Green glow */}
+                    <div className="absolute inset-[-20%] rounded-full blur-2xl opacity-30 pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(26,78,38,0.5) 0%, transparent 70%)' }} />
+                    <img
+                      src="/products/colageno-hidrolizado.png"
+                      alt="Colágeno Hidrolizado"
+                      className="w-[220px] h-[220px] object-contain relative z-10"
+                      style={{ filter: 'drop-shadow(0 28px 36px rgba(26,78,38,0.32)) drop-shadow(0 6px 14px rgba(0,0,0,0.18))' }}
+                    />
+                  </motion.div>
+                  {/* Badge */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 1.4, duration: 0.5 }}
+                    className="mt-3 mx-auto w-fit bg-white/90 backdrop-blur-sm border border-[#1A4E26]/20 rounded-xl px-4 py-2 shadow-md"
+                  >
+                    <p className="text-[10px] text-[#6B7280] font-medium text-center">100% Natural</p>
+                    <p className="text-sm font-bold text-[#1A4E26] text-center">Colágeno</p>
+                  </motion.div>
                 </motion.div>
               </div>
 
               {/* Floating sparkle dots */}
               {[
-                { size: 5, left: '15%', top: '22%', delay: 0 },
-                { size: 4, left: '78%', top: '18%', delay: 0.6 },
-                { size: 6, left: '60%', top: '80%', delay: 1.2 },
-                { size: 3, left: '28%', top: '72%', delay: 0.4 },
-                { size: 4, left: '88%', top: '55%', delay: 1.8 },
-                { size: 5, left: '10%', top: '50%', delay: 0.9 },
+                { size: 6, left: '48%', top: '10%', delay: 0, color: '#D4AF37' },
+                { size: 4, left: '18%', top: '15%', delay: 0.7, color: '#1A4E26' },
+                { size: 5, left: '72%', top: '75%', delay: 1.3, color: '#1A4E26' },
+                { size: 4, left: '55%', top: '88%', delay: 0.4, color: '#D4AF37' },
+                { size: 3, left: '85%', top: '45%', delay: 1.9, color: '#1A4E26' },
               ].map((dot, i) => (
                 <motion.div
                   key={i}
                   className="absolute rounded-full pointer-events-none"
-                  style={{ width: dot.size, height: dot.size, left: dot.left, top: dot.top, background: i % 2 === 0 ? '#1A4E26' : '#D4AF37' }}
-                  animate={{ scale: [1, 1.8, 1], opacity: [0.3, 0.7, 0.3] }}
-                  transition={{ duration: 2.5 + i * 0.3, repeat: Infinity, ease: 'easeInOut', delay: dot.delay }}
+                  style={{ width: dot.size, height: dot.size, left: dot.left, top: dot.top, background: dot.color }}
+                  animate={{ scale: [1, 2, 1], opacity: [0.25, 0.6, 0.25] }}
+                  transition={{ duration: 3 + i * 0.4, repeat: Infinity, ease: 'easeInOut', delay: dot.delay }}
                 />
               ))}
-
-              {/* Label badges floating near products */}
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 1, duration: 0.6 }}
-                className="absolute top-[28%] right-[-2%] z-30 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-lg border border-[#1A4E26]/15"
-              >
-                <p className="text-[10px] text-[#6B7280] font-medium">Más vendido</p>
-                <p className="text-xs font-bold text-[#1A4E26]">REGEN 24</p>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 1.3, duration: 0.6 }}
-                className="absolute bottom-[32%] left-[-4%] z-30 bg-[#1A4E26] rounded-xl px-3 py-2 shadow-lg"
-              >
-                <p className="text-[10px] text-white/70 font-medium">100% Natural</p>
-                <p className="text-xs font-bold text-white">Ingredientes andinos</p>
-              </motion.div>
             </div>
           </div>
         </div>
