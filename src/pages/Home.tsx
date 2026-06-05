@@ -50,24 +50,32 @@ export default function Home() {
     <div className="bg-white">
 
       {/* ── Hero ──────────────────────────────────────────────── */}
-      <section className="relative min-h-screen overflow-hidden bg-hero-gradient pt-16">
-        <div className="absolute top-1/4 right-[8%] w-96 h-96 rounded-full bg-[#1A4E26] opacity-[0.06] blur-3xl pointer-events-none" />
-        <div className="absolute bottom-1/3 left-[3%] w-64 h-64 rounded-full bg-[#1A4E26] opacity-[0.04] blur-2xl pointer-events-none" />
-        <div className="absolute top-[20%] left-[30%] w-40 h-40 rounded-full bg-[#D4AF37] opacity-[0.04] blur-2xl pointer-events-none" />
+      <section className="relative min-h-screen overflow-hidden pt-16" style={{ background: 'linear-gradient(135deg, #f0f7f2 0%, #e8f4eb 40%, #f5f0e8 100%)' }}>
+
+        {/* Background atmosphere */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-[-10%] right-[-5%] w-[700px] h-[700px] rounded-full opacity-20" style={{ background: 'radial-gradient(circle, #1A4E26 0%, transparent 70%)' }} />
+          <div className="absolute bottom-[-15%] left-[-10%] w-[500px] h-[500px] rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #D4AF37 0%, transparent 70%)' }} />
+          <div className="absolute top-[30%] left-[45%] w-[300px] h-[300px] rounded-full opacity-15" style={{ background: 'radial-gradient(circle, #1A4E26 0%, transparent 70%)' }} />
+          {/* Light rays */}
+          <div className="absolute top-0 right-[20%] w-[2px] h-full opacity-5" style={{ background: 'linear-gradient(to bottom, transparent, #1A4E26 40%, transparent)' }} />
+          <div className="absolute top-0 right-[35%] w-[1px] h-full opacity-5" style={{ background: 'linear-gradient(to bottom, transparent, #D4AF37 50%, transparent)' }} />
+        </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-screen flex items-center">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 xl:gap-20 items-center w-full py-24">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 xl:gap-16 items-center w-full py-24">
 
             {/* Left: Text content */}
             <div>
-              <motion.p
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5 }}
-                className="text-[#1A4E26] text-sm font-semibold uppercase tracking-[0.3em] mb-5"
+                className="inline-flex items-center gap-2 bg-[#1A4E26]/10 border border-[#1A4E26]/20 rounded-full px-4 py-1.5 mb-6"
               >
-                Sumak Jambi — Laboratorio Ancestral
-              </motion.p>
+                <span className="w-2 h-2 rounded-full bg-[#1A4E26] animate-pulse" />
+                <span className="text-[#1A4E26] text-sm font-semibold tracking-wide">Sumak Jambi — Laboratorio Ancestral</span>
+              </motion.div>
 
               <motion.h1
                 initial={{ opacity: 0, y: 24 }}
@@ -75,7 +83,13 @@ export default function Home() {
                 transition={{ duration: 0.65, delay: 0.1 }}
                 className="font-heading font-bold text-4xl sm:text-5xl xl:text-6xl text-[#111111] leading-tight mb-6"
               >
-                Naturaleza que Nutre,{' '}
+                Naturaleza que{' '}
+                <span className="relative inline-block">
+                  <span className="relative z-10 text-[#1A4E26]">Nutre</span>
+                  <span className="absolute inset-x-0 bottom-1 h-3 bg-[#D4AF37]/20 rounded-sm -z-0" />
+                </span>
+                ,{' '}
+                <br className="hidden sm:block" />
                 <span className="text-[#1A4E26]">Bienestar</span> que Transforma
               </motion.h1>
 
@@ -83,7 +97,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.65, delay: 0.2 }}
-                className="text-[#6B7280] text-lg sm:text-xl max-w-xl mb-10 leading-relaxed"
+                className="text-[#4B5563] text-lg sm:text-xl max-w-xl mb-10 leading-relaxed"
               >
                 Productos 100% naturales con más de 15 años de experiencia en medicina andina
                 ancestral. Cuida tu salud y construye tu libertad financiera.
@@ -97,13 +111,14 @@ export default function Home() {
               >
                 <Link
                   to="/registro"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-[#1A4E26] text-white font-bold text-base hover:bg-[#163F1E] shadow-[0_0_30px_rgba(26,78,38,0.35)] transition-all duration-200"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-[#1A4E26] text-white font-bold text-base hover:bg-[#163F1E] transition-all duration-200"
+                  style={{ boxShadow: '0 8px 32px rgba(26,78,38,0.45), 0 2px 8px rgba(26,78,38,0.3)' }}
                 >
                   Únete Ahora <ArrowRight size={18} />
                 </Link>
                 <Link
                   to="/productos"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl border border-[#C8D8CB] text-[#111111] font-semibold text-base hover:border-[#1A4E26] hover:text-[#1A4E26] transition-all duration-200"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-white/70 backdrop-blur-sm border border-[#1A4E26]/20 text-[#1A4E26] font-semibold text-base hover:bg-white hover:border-[#1A4E26]/40 transition-all duration-200 shadow-sm"
                 >
                   Ver Productos
                 </Link>
@@ -116,92 +131,149 @@ export default function Home() {
                 className="flex flex-wrap gap-5"
               >
                 {['100% Natural', '15+ Años de Experiencia', 'Red Global Binaria'].map((badge) => (
-                  <div key={badge} className="flex items-center gap-2">
-                    <CheckCircle size={15} className="text-[#1A4E26] flex-shrink-0" />
-                    <span className="text-[#6B7280] text-sm">{badge}</span>
+                  <div key={badge} className="flex items-center gap-2 bg-white/60 backdrop-blur-sm border border-[#1A4E26]/15 rounded-full px-3 py-1.5">
+                    <CheckCircle size={13} className="text-[#1A4E26] flex-shrink-0" />
+                    <span className="text-[#374151] text-xs font-medium">{badge}</span>
                   </div>
                 ))}
               </motion.div>
             </div>
 
-            {/* Right: Product collage (lg+ only) */}
-            <div className="relative hidden lg:flex items-center justify-center h-[540px]">
-              {/* Decorative rings */}
-              <div className="absolute w-80 h-80 rounded-full border-2 border-[#1A4E26]/10 pointer-events-none" />
-              <div className="absolute w-[430px] h-[430px] rounded-full border border-[#D4AF37]/10 pointer-events-none" />
-              <div className="absolute w-64 h-64 rounded-full bg-[#1A4E26]/[0.05] blur-3xl pointer-events-none" />
+            {/* Right: Product collage — PNG images floating clean */}
+            <div className="relative hidden lg:flex items-center justify-center h-[580px]">
+
+              {/* Radial glow behind composition */}
+              <div className="absolute w-[420px] h-[420px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(26,78,38,0.12) 0%, transparent 70%)' }} />
+              <div className="absolute w-[320px] h-[320px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.08) 0%, transparent 70%)' }} />
+
+              {/* Decorative orbit rings */}
+              <div className="absolute w-[370px] h-[370px] rounded-full border border-[#1A4E26]/08 pointer-events-none" />
+              <div className="absolute w-[480px] h-[480px] rounded-full border border-[#D4AF37]/06 pointer-events-none" style={{ borderStyle: 'dashed' }} />
 
               {/* Center large — REGEN 24 */}
-              <div className="absolute left-1/2 top-[38%] -translate-x-1/2 -translate-y-1/2 z-20">
+              <div className="absolute left-1/2 top-[42%] -translate-x-1/2 -translate-y-1/2 z-20">
                 <motion.div
-                  animate={{ y: [0, -22, 0] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-                  className="w-56 h-56 bg-white rounded-3xl shadow-[0_24px_60px_rgba(26,78,38,0.2)] border border-[#1A4E26]/10 flex items-center justify-center p-5"
+                  animate={{ y: [0, -20, 0] }}
+                  transition={{ duration: 4.2, repeat: Infinity, ease: 'easeInOut' }}
+                  className="relative"
                 >
-                  <img src="/products/regen-24.png" alt="REGEN 24" className="w-full h-full object-contain drop-shadow-md" />
+                  {/* Glow behind main product */}
+                  <div className="absolute inset-[-20%] rounded-full blur-2xl opacity-30 pointer-events-none" style={{ background: 'radial-gradient(circle, #1A4E26 0%, transparent 70%)' }} />
+                  <img
+                    src="/products/regen-24.png"
+                    alt="REGEN 24"
+                    className="w-60 h-60 object-contain relative z-10"
+                    style={{ filter: 'drop-shadow(0 30px 40px rgba(26,78,38,0.35)) drop-shadow(0 8px 16px rgba(0,0,0,0.2))' }}
+                  />
                 </motion.div>
               </div>
 
               {/* Top left — Té */}
-              <div className="absolute top-[4%] left-[3%] z-10">
+              <div className="absolute top-[3%] left-[2%] z-10">
                 <motion.div
-                  animate={{ y: [0, -14, 0] }}
-                  transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut', delay: 0.8 }}
-                  className="w-[142px] h-[142px] bg-white rounded-2xl shadow-[0_16px_44px_rgba(26,78,38,0.15)] border border-[#1A4E26]/10 flex items-center justify-center p-3"
+                  animate={{ y: [0, -14, 0], rotate: [-2, 2, -2] }}
+                  transition={{ duration: 3.8, repeat: Infinity, ease: 'easeInOut', delay: 0.8 }}
+                  className="relative"
                 >
-                  <img src="/products/te-extractos-de-la-vida.png" alt="Té Extractos de la Vida" className="w-full h-full object-contain drop-shadow-sm" />
+                  <div className="absolute inset-[-30%] rounded-full blur-xl opacity-20 pointer-events-none" style={{ background: 'radial-gradient(circle, #D4AF37 0%, transparent 70%)' }} />
+                  <img
+                    src="/products/te-extractos-de-la-vida.png"
+                    alt="Té Extractos de la Vida"
+                    className="w-[148px] h-[148px] object-contain relative z-10"
+                    style={{ filter: 'drop-shadow(0 20px 28px rgba(26,78,38,0.28)) drop-shadow(0 4px 12px rgba(0,0,0,0.18))' }}
+                  />
                 </motion.div>
               </div>
 
               {/* Top right — Colágeno */}
-              <div className="absolute top-[4%] right-[3%] z-10">
+              <div className="absolute top-[2%] right-[0%] z-10">
                 <motion.div
-                  animate={{ y: [0, -18, 0] }}
-                  transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut', delay: 1.5 }}
-                  className="w-[142px] h-[142px] bg-white rounded-2xl shadow-[0_16px_44px_rgba(26,78,38,0.15)] border border-[#1A4E26]/10 flex items-center justify-center p-3"
+                  animate={{ y: [0, -18, 0], rotate: [2, -2, 2] }}
+                  transition={{ duration: 4.6, repeat: Infinity, ease: 'easeInOut', delay: 1.5 }}
+                  className="relative"
                 >
-                  <img src="/products/colageno-hidrolizado.png" alt="Colágeno Hidrolizado" className="w-full h-full object-contain drop-shadow-sm" />
+                  <div className="absolute inset-[-30%] rounded-full blur-xl opacity-20 pointer-events-none" style={{ background: 'radial-gradient(circle, #1A4E26 0%, transparent 70%)' }} />
+                  <img
+                    src="/products/colageno-hidrolizado.png"
+                    alt="Colágeno Hidrolizado"
+                    className="w-[138px] h-[138px] object-contain relative z-10"
+                    style={{ filter: 'drop-shadow(0 18px 28px rgba(26,78,38,0.25)) drop-shadow(0 4px 10px rgba(0,0,0,0.16))' }}
+                  />
                 </motion.div>
               </div>
 
               {/* Bottom left — Bebida Andina */}
-              <div className="absolute bottom-[6%] left-[8%] z-10">
+              <div className="absolute bottom-[5%] left-[5%] z-10">
                 <motion.div
-                  animate={{ y: [0, -12, 0] }}
-                  transition={{ duration: 3.8, repeat: Infinity, ease: 'easeInOut', delay: 0.3 }}
-                  className="w-[124px] h-[124px] bg-white rounded-2xl shadow-[0_14px_40px_rgba(26,78,38,0.13)] border border-[#1A4E26]/10 flex items-center justify-center p-3"
+                  animate={{ y: [0, -12, 0], rotate: [-1, 3, -1] }}
+                  transition={{ duration: 3.9, repeat: Infinity, ease: 'easeInOut', delay: 0.3 }}
+                  className="relative"
                 >
-                  <img src="/products/bebida-andina.png" alt="Bebida Andina" className="w-full h-full object-contain drop-shadow-sm" />
+                  <div className="absolute inset-[-30%] rounded-full blur-xl opacity-15 pointer-events-none" style={{ background: 'radial-gradient(circle, #D4AF37 0%, transparent 70%)' }} />
+                  <img
+                    src="/products/bebida-andina.png"
+                    alt="Bebida Andina"
+                    className="w-[118px] h-[118px] object-contain relative z-10"
+                    style={{ filter: 'drop-shadow(0 16px 24px rgba(26,78,38,0.22)) drop-shadow(0 3px 8px rgba(0,0,0,0.15))' }}
+                  />
                 </motion.div>
               </div>
 
               {/* Bottom right — Fibramak */}
-              <div className="absolute bottom-[8%] right-[6%] z-10">
+              <div className="absolute bottom-[8%] right-[4%] z-10">
                 <motion.div
-                  animate={{ y: [0, -10, 0] }}
-                  transition={{ duration: 4.2, repeat: Infinity, ease: 'easeInOut', delay: 2.0 }}
-                  className="w-[114px] h-[114px] bg-white rounded-2xl shadow-[0_14px_40px_rgba(26,78,38,0.13)] border border-[#1A4E26]/10 flex items-center justify-center p-3"
+                  animate={{ y: [0, -10, 0], rotate: [3, -1, 3] }}
+                  transition={{ duration: 4.3, repeat: Infinity, ease: 'easeInOut', delay: 2.0 }}
+                  className="relative"
                 >
-                  <img src="/products/fibramak-plus.png" alt="Fibramak Plus" className="w-full h-full object-contain drop-shadow-sm" />
+                  <div className="absolute inset-[-30%] rounded-full blur-xl opacity-15 pointer-events-none" style={{ background: 'radial-gradient(circle, #1A4E26 0%, transparent 70%)' }} />
+                  <img
+                    src="/products/fibramak-plus.png"
+                    alt="Fibramak Plus"
+                    className="w-[108px] h-[108px] object-contain relative z-10"
+                    style={{ filter: 'drop-shadow(0 14px 22px rgba(26,78,38,0.20)) drop-shadow(0 3px 8px rgba(0,0,0,0.14))' }}
+                  />
                 </motion.div>
               </div>
 
-              {/* Floating dots */}
-              {[...Array(8)].map((_, i) => (
+              {/* Floating sparkle dots */}
+              {[
+                { size: 5, left: '15%', top: '22%', delay: 0 },
+                { size: 4, left: '78%', top: '18%', delay: 0.6 },
+                { size: 6, left: '60%', top: '80%', delay: 1.2 },
+                { size: 3, left: '28%', top: '72%', delay: 0.4 },
+                { size: 4, left: '88%', top: '55%', delay: 1.8 },
+                { size: 5, left: '10%', top: '50%', delay: 0.9 },
+              ].map((dot, i) => (
                 <motion.div
                   key={i}
-                  className="absolute rounded-full bg-[#1A4E26] pointer-events-none"
-                  style={{
-                    width: 4 + (i % 3) * 2,
-                    height: 4 + (i % 3) * 2,
-                    left: `${8 + i * 11}%`,
-                    top: `${18 + (i % 5) * 14}%`,
-                    opacity: 0.16,
-                  }}
-                  animate={{ y: [0, -10, 0], opacity: [0.16, 0.30, 0.16] }}
-                  transition={{ duration: 3 + i * 0.4, repeat: Infinity, ease: 'easeInOut', delay: i * 0.3 }}
+                  className="absolute rounded-full pointer-events-none"
+                  style={{ width: dot.size, height: dot.size, left: dot.left, top: dot.top, background: i % 2 === 0 ? '#1A4E26' : '#D4AF37' }}
+                  animate={{ scale: [1, 1.8, 1], opacity: [0.3, 0.7, 0.3] }}
+                  transition={{ duration: 2.5 + i * 0.3, repeat: Infinity, ease: 'easeInOut', delay: dot.delay }}
                 />
               ))}
+
+              {/* Label badges floating near products */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 1, duration: 0.6 }}
+                className="absolute top-[28%] right-[-2%] z-30 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-lg border border-[#1A4E26]/15"
+              >
+                <p className="text-[10px] text-[#6B7280] font-medium">Más vendido</p>
+                <p className="text-xs font-bold text-[#1A4E26]">REGEN 24</p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 1.3, duration: 0.6 }}
+                className="absolute bottom-[32%] left-[-4%] z-30 bg-[#1A4E26] rounded-xl px-3 py-2 shadow-lg"
+              >
+                <p className="text-[10px] text-white/70 font-medium">100% Natural</p>
+                <p className="text-xs font-bold text-white">Ingredientes andinos</p>
+              </motion.div>
             </div>
           </div>
         </div>
@@ -212,7 +284,7 @@ export default function Home() {
           animate={{ y: [0, 8, 0] }}
           transition={{ duration: 1.8, repeat: Infinity }}
         >
-          <div className="w-6 h-10 rounded-full border-2 border-[#C8D8CB] flex items-start justify-center pt-2">
+          <div className="w-6 h-10 rounded-full border-2 border-[#1A4E26]/20 flex items-start justify-center pt-2 bg-white/30 backdrop-blur-sm">
             <div className="w-1.5 h-1.5 rounded-full bg-[#1A4E26]" />
           </div>
         </motion.div>
