@@ -11,6 +11,7 @@ export interface Product {
   categoriaKey: string;
   pvp: number;
   descripcion: string;
+  imagen?: string;
 }
 
 export interface AffiliatePackage {
@@ -73,6 +74,7 @@ export const products: Product[] = [
     categoriaKey: 'bebidas',
     pvp: 25.00,
     descripcion: 'Bebida base de hierbas. Limpia, desintoxica y regenera.',
+    imagen: '/products/te-extractos-de-la-vida.png',
   },
   {
     codigo: '00002',
@@ -82,6 +84,7 @@ export const products: Product[] = [
     categoriaKey: 'bebidas',
     pvp: 25.00,
     descripcion: 'Bebida con frutas tropicales. Desintoxica el colón.',
+    imagen: '/products/regen-24.png',
   },
   {
     codigo: '00003',
@@ -91,6 +94,7 @@ export const products: Product[] = [
     categoriaKey: 'bebidas',
     pvp: 20.00,
     descripcion: 'Probiótico con extractos andinos. 1000 ml.',
+    imagen: '/products/bebida-andina.png',
   },
   {
     codigo: '00004',
@@ -100,6 +104,7 @@ export const products: Product[] = [
     categoriaKey: 'bebidas',
     pvp: 25.00,
     descripcion: 'Enriquecido con oxígeno líquido. 50 ml.',
+    imagen: '/products/vive-oxi-100.png',
   },
   {
     codigo: '00005',
@@ -109,6 +114,7 @@ export const products: Product[] = [
     categoriaKey: 'suplementos',
     pvp: 25.00,
     descripcion: 'Limpieza intestinal profunda. Desintoxica.',
+    imagen: '/products/fibramak-plus.png',
   },
   {
     codigo: '00006',
@@ -127,6 +133,7 @@ export const products: Product[] = [
     categoriaKey: 'suplementos',
     pvp: 27.50,
     descripcion: 'Reforzado con ácido hialurónico. 500g.',
+    imagen: '/products/colageno-hidrolizado.png',
   },
   {
     codigo: '00008',
@@ -136,6 +143,7 @@ export const products: Product[] = [
     categoriaKey: 'suplementos',
     pvp: 60.00,
     descripcion: 'Mezcla de quinua, calostro bovino y hongos. 100% orgánico.',
+    imagen: '/products/formula-1000.png',
   },
   {
     codigo: '00009',
@@ -163,6 +171,7 @@ export const products: Product[] = [
     categoriaKey: 'capsulas',
     pvp: 20.00,
     descripcion: '100 cápsulas. Equilibrio ciclo menstrual.',
+    imagen: '/products/capsula-madre-silvestre.png',
   },
   {
     codigo: '00012',
@@ -172,6 +181,7 @@ export const products: Product[] = [
     categoriaKey: 'cuidado-personal',
     pvp: 20.00,
     descripcion: 'Extractos células madres. Aroma miel. 1 litro.',
+    imagen: '/products/shampoo-activa.png',
   },
   {
     codigo: '00013',

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion, type Variants } from 'motion/react';
-import { Leaf, Users, Shield, ArrowRight, Star } from 'lucide-react';
+import { Leaf, Users, Shield, ArrowRight, Star, CheckCircle } from 'lucide-react';
 import { products } from '../data';
 
 const fadeUp: Variants = {
@@ -10,16 +10,15 @@ const fadeUp: Variants = {
 
 const stagger = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.12 } },
+  visible: { transition: { staggerChildren: 0.1 } },
 };
 
-const featuredSlugs = [
-  'te-extractos-de-la-vida',
-  'regen-24',
-  'moringa-en-polvo',
-  'colageno-hidrolizado',
-];
+const featuredSlugs = ['regen-24', 'te-extractos-de-la-vida', 'colageno-hidrolizado'];
 const featuredProducts = products.filter((p) => featuredSlugs.includes(p.slug));
+
+const mainProducts = products.filter(
+  (p) => !['accesorios', 'material'].includes(p.categoriaKey)
+);
 
 const pillars = [
   {
@@ -49,81 +48,167 @@ const stats = [
 export default function Home() {
   return (
     <div className="bg-white">
-      {/* Hero */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-hero-gradient pt-16">
-        <div className="absolute top-1/4 right-[8%] w-72 h-72 rounded-full bg-[#1A4E26] opacity-[0.08] blur-3xl pointer-events-none" />
-        <div className="absolute bottom-1/4 left-[5%] w-56 h-56 rounded-full bg-[#1A4E26] opacity-[0.05] blur-2xl pointer-events-none" />
-        <div className="absolute top-[15%] left-[20%] w-32 h-32 rounded-full bg-[#D4AF37] opacity-[0.04] blur-2xl pointer-events-none" />
 
-        {[...Array(6)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute rounded-full bg-[#1A4E26]"
-            style={{
-              width: 4 + (i % 3) * 3,
-              height: 4 + (i % 3) * 3,
-              left: `${12 + i * 13}%`,
-              top: `${25 + (i % 3) * 18}%`,
-              opacity: 0.18,
-            }}
-            animate={{ y: [0, -18, 0], opacity: [0.18, 0.35, 0.18] }}
-            transition={{ duration: 3 + i * 0.5, repeat: Infinity, ease: 'easeInOut', delay: i * 0.4 }}
-          />
-        ))}
+      {/* ── Hero ──────────────────────────────────────────────── */}
+      <section className="relative min-h-screen overflow-hidden bg-hero-gradient pt-16">
+        <div className="absolute top-1/4 right-[8%] w-96 h-96 rounded-full bg-[#1A4E26] opacity-[0.06] blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/3 left-[3%] w-64 h-64 rounded-full bg-[#1A4E26] opacity-[0.04] blur-2xl pointer-events-none" />
+        <div className="absolute top-[20%] left-[30%] w-40 h-40 rounded-full bg-[#D4AF37] opacity-[0.04] blur-2xl pointer-events-none" />
 
-        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center">
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-[#1A4E26] text-sm font-semibold uppercase tracking-[0.3em] mb-5"
-          >
-            Sumak Jambi — Laboratorio Ancestral
-          </motion.p>
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-screen flex items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 xl:gap-20 items-center w-full py-24">
 
-          <motion.h1
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.65, delay: 0.1 }}
-            className="font-heading font-bold text-4xl sm:text-5xl lg:text-6xl xl:text-7xl text-[#111111] leading-tight mb-6"
-          >
-            Naturaleza que Nutre,{' '}
-            <span className="text-[#1A4E26]">Bienestar</span> que Transforma
-          </motion.h1>
+            {/* Left: Text content */}
+            <div>
+              <motion.p
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="text-[#1A4E26] text-sm font-semibold uppercase tracking-[0.3em] mb-5"
+              >
+                Sumak Jambi — Laboratorio Ancestral
+              </motion.p>
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.65, delay: 0.2 }}
-            className="text-[#6B7280] text-lg sm:text-xl max-w-2xl mx-auto mb-10 leading-relaxed"
-          >
-            Productos 100% naturales con más de 15 años de experiencia en medicina andina
-            ancestral. Cuida tu salud y construye tu libertad financiera.
-          </motion.p>
+              <motion.h1
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.65, delay: 0.1 }}
+                className="font-heading font-bold text-4xl sm:text-5xl xl:text-6xl text-[#111111] leading-tight mb-6"
+              >
+                Naturaleza que Nutre,{' '}
+                <span className="text-[#1A4E26]">Bienestar</span> que Transforma
+              </motion.h1>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center"
-          >
-            <Link
-              to="/registro"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-[#1A4E26] text-white font-bold text-base hover:bg-[#163F1E] shadow-[0_0_30px_rgba(26,78,38,0.35)] transition-all duration-200"
-            >
-              Únete Ahora <ArrowRight size={18} />
-            </Link>
-            <Link
-              to="/productos"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl border border-[#C8D8CB] text-[#111111] font-semibold text-base hover:border-[#1A4E26] hover:text-[#1A4E26] transition-all duration-200"
-            >
-              Conoce Nuestros Productos
-            </Link>
-          </motion.div>
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.65, delay: 0.2 }}
+                className="text-[#6B7280] text-lg sm:text-xl max-w-xl mb-10 leading-relaxed"
+              >
+                Productos 100% naturales con más de 15 años de experiencia en medicina andina
+                ancestral. Cuida tu salud y construye tu libertad financiera.
+              </motion.p>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className="flex flex-col sm:flex-row gap-4 mb-10"
+              >
+                <Link
+                  to="/registro"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-[#1A4E26] text-white font-bold text-base hover:bg-[#163F1E] shadow-[0_0_30px_rgba(26,78,38,0.35)] transition-all duration-200"
+                >
+                  Únete Ahora <ArrowRight size={18} />
+                </Link>
+                <Link
+                  to="/productos"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl border border-[#C8D8CB] text-[#111111] font-semibold text-base hover:border-[#1A4E26] hover:text-[#1A4E26] transition-all duration-200"
+                >
+                  Ver Productos
+                </Link>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.5 }}
+                className="flex flex-wrap gap-5"
+              >
+                {['100% Natural', '15+ Años de Experiencia', 'Red Global Binaria'].map((badge) => (
+                  <div key={badge} className="flex items-center gap-2">
+                    <CheckCircle size={15} className="text-[#1A4E26] flex-shrink-0" />
+                    <span className="text-[#6B7280] text-sm">{badge}</span>
+                  </div>
+                ))}
+              </motion.div>
+            </div>
+
+            {/* Right: Product collage (lg+ only) */}
+            <div className="relative hidden lg:flex items-center justify-center h-[540px]">
+              {/* Decorative rings */}
+              <div className="absolute w-80 h-80 rounded-full border-2 border-[#1A4E26]/10 pointer-events-none" />
+              <div className="absolute w-[430px] h-[430px] rounded-full border border-[#D4AF37]/10 pointer-events-none" />
+              <div className="absolute w-64 h-64 rounded-full bg-[#1A4E26]/[0.05] blur-3xl pointer-events-none" />
+
+              {/* Center large — REGEN 24 */}
+              <div className="absolute left-1/2 top-[38%] -translate-x-1/2 -translate-y-1/2 z-20">
+                <motion.div
+                  animate={{ y: [0, -22, 0] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                  className="w-56 h-56 bg-white rounded-3xl shadow-[0_24px_60px_rgba(26,78,38,0.2)] border border-[#1A4E26]/10 flex items-center justify-center p-5"
+                >
+                  <img src="/products/regen-24.png" alt="REGEN 24" className="w-full h-full object-contain drop-shadow-md" />
+                </motion.div>
+              </div>
+
+              {/* Top left — Té */}
+              <div className="absolute top-[4%] left-[3%] z-10">
+                <motion.div
+                  animate={{ y: [0, -14, 0] }}
+                  transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut', delay: 0.8 }}
+                  className="w-[142px] h-[142px] bg-white rounded-2xl shadow-[0_16px_44px_rgba(26,78,38,0.15)] border border-[#1A4E26]/10 flex items-center justify-center p-3"
+                >
+                  <img src="/products/te-extractos-de-la-vida.png" alt="Té Extractos de la Vida" className="w-full h-full object-contain drop-shadow-sm" />
+                </motion.div>
+              </div>
+
+              {/* Top right — Colágeno */}
+              <div className="absolute top-[4%] right-[3%] z-10">
+                <motion.div
+                  animate={{ y: [0, -18, 0] }}
+                  transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut', delay: 1.5 }}
+                  className="w-[142px] h-[142px] bg-white rounded-2xl shadow-[0_16px_44px_rgba(26,78,38,0.15)] border border-[#1A4E26]/10 flex items-center justify-center p-3"
+                >
+                  <img src="/products/colageno-hidrolizado.png" alt="Colágeno Hidrolizado" className="w-full h-full object-contain drop-shadow-sm" />
+                </motion.div>
+              </div>
+
+              {/* Bottom left — Bebida Andina */}
+              <div className="absolute bottom-[6%] left-[8%] z-10">
+                <motion.div
+                  animate={{ y: [0, -12, 0] }}
+                  transition={{ duration: 3.8, repeat: Infinity, ease: 'easeInOut', delay: 0.3 }}
+                  className="w-[124px] h-[124px] bg-white rounded-2xl shadow-[0_14px_40px_rgba(26,78,38,0.13)] border border-[#1A4E26]/10 flex items-center justify-center p-3"
+                >
+                  <img src="/products/bebida-andina.png" alt="Bebida Andina" className="w-full h-full object-contain drop-shadow-sm" />
+                </motion.div>
+              </div>
+
+              {/* Bottom right — Fibramak */}
+              <div className="absolute bottom-[8%] right-[6%] z-10">
+                <motion.div
+                  animate={{ y: [0, -10, 0] }}
+                  transition={{ duration: 4.2, repeat: Infinity, ease: 'easeInOut', delay: 2.0 }}
+                  className="w-[114px] h-[114px] bg-white rounded-2xl shadow-[0_14px_40px_rgba(26,78,38,0.13)] border border-[#1A4E26]/10 flex items-center justify-center p-3"
+                >
+                  <img src="/products/fibramak-plus.png" alt="Fibramak Plus" className="w-full h-full object-contain drop-shadow-sm" />
+                </motion.div>
+              </div>
+
+              {/* Floating dots */}
+              {[...Array(8)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="absolute rounded-full bg-[#1A4E26] pointer-events-none"
+                  style={{
+                    width: 4 + (i % 3) * 2,
+                    height: 4 + (i % 3) * 2,
+                    left: `${8 + i * 11}%`,
+                    top: `${18 + (i % 5) * 14}%`,
+                    opacity: 0.16,
+                  }}
+                  animate={{ y: [0, -10, 0], opacity: [0.16, 0.30, 0.16] }}
+                  transition={{ duration: 3 + i * 0.4, repeat: Infinity, ease: 'easeInOut', delay: i * 0.3 }}
+                />
+              ))}
+            </div>
+          </div>
         </div>
 
+        {/* Scroll indicator */}
         <motion.div
-          className="absolute bottom-8 left-1/2 -translate-x-1/2"
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 hidden sm:flex"
           animate={{ y: [0, 8, 0] }}
           transition={{ duration: 1.8, repeat: Infinity }}
         >
@@ -133,7 +218,7 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* Stats */}
+      {/* ── Stats ──────────────────────────────────────────────── */}
       <section className="bg-[#F4F7F5] border-y border-[#C8D8CB] py-8">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-0 lg:divide-x lg:divide-[#C8D8CB]">
@@ -147,7 +232,161 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Pillars */}
+      {/* ── Featured Products ──────────────────────────────────── */}
+      <section className="py-24 px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-80px' }}
+            className="text-center mb-14"
+          >
+            <motion.p variants={fadeUp} className="text-[#1A4E26] text-sm font-semibold uppercase tracking-widest mb-3">
+              Catálogo
+            </motion.p>
+            <motion.h2 variants={fadeUp} className="font-heading font-bold text-3xl sm:text-4xl text-[#111111] mb-4">
+              Productos Destacados
+            </motion.h2>
+            <motion.p variants={fadeUp} className="text-[#6B7280] max-w-xl mx-auto text-base">
+              Formulados con plantas medicinales andinas, cada producto está diseñado para nutrir y transformar.
+            </motion.p>
+            <motion.div variants={fadeUp} className="w-16 h-1 bg-[#1A4E26] rounded-full mx-auto mt-5" />
+          </motion.div>
+
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-60px' }}
+            className="grid grid-cols-1 sm:grid-cols-3 gap-8"
+          >
+            {featuredProducts.map((product) => (
+              <motion.div
+                key={product.codigo}
+                variants={fadeUp}
+                className="bg-white rounded-3xl overflow-hidden border border-[#C8D8CB] hover:shadow-[0_8px_40px_rgba(26,78,38,0.13)] hover:-translate-y-1 transition-all duration-300 group"
+              >
+                <div className="h-60 bg-gradient-to-br from-[#EBF4ED] to-[#D5ECD9] relative flex items-center justify-center p-6 overflow-hidden">
+                  {product.imagen ? (
+                    <img
+                      src={product.imagen}
+                      alt={product.nombre}
+                      className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-500 drop-shadow-lg"
+                    />
+                  ) : (
+                    <Leaf size={56} className="text-[#1A4E26] opacity-30" />
+                  )}
+                  <span className="absolute top-4 left-4 text-[10px] font-semibold uppercase tracking-wider text-[#1A4E26] bg-white/80 backdrop-blur-sm px-2.5 py-1 rounded-full border border-[#1A4E26]/20">
+                    {product.categoria}
+                  </span>
+                </div>
+                <div className="p-6">
+                  <h3 className="font-heading font-bold text-[#111111] text-xl mb-2 leading-tight">{product.nombre}</h3>
+                  <p className="text-[#6B7280] text-sm leading-relaxed mb-6">{product.descripcion}</p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-[#9CA3AF] mb-0.5">Precio Público</p>
+                      <p className="font-bold text-[#111111] text-2xl">${product.pvp.toFixed(2)}</p>
+                    </div>
+                    <Link
+                      to={`/productos/${product.slug}`}
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1A4E26] text-white text-sm font-semibold hover:bg-[#163F1E] transition-all"
+                    >
+                      Ver Más <ArrowRight size={15} />
+                    </Link>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          <div className="text-center mt-12">
+            <Link
+              to="/productos"
+              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl border border-[#C8D8CB] text-[#111111] font-semibold hover:border-[#1A4E26] hover:text-[#1A4E26] transition-all duration-200"
+            >
+              Ver todos los productos <ArrowRight size={16} />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── All Products Dark Showcase ────────────────────────── */}
+      <section className="py-24 bg-[#1A4E26] relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full bg-white opacity-[0.02] blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-80 h-80 rounded-full bg-[#D4AF37] opacity-[0.05] blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-white opacity-[0.01] blur-3xl pointer-events-none" />
+
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-60px' }}
+            className="text-center mb-14"
+          >
+            <motion.p variants={fadeUp} className="text-[#D4AF37] text-sm font-semibold uppercase tracking-widest mb-3">
+              Nuestro Catálogo
+            </motion.p>
+            <motion.h2 variants={fadeUp} className="font-heading font-bold text-3xl sm:text-4xl text-white mb-4">
+              Naturaleza en Cada Producto
+            </motion.h2>
+            <motion.p variants={fadeUp} className="text-white/65 max-w-2xl mx-auto text-base leading-relaxed">
+              Fórmulas ancestrales andinas con ingredientes 100% naturales, diseñadas para nutrir
+              tu cuerpo y transformar tu bienestar desde adentro.
+            </motion.p>
+          </motion.div>
+
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-40px' }}
+            className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4"
+          >
+            {mainProducts.map((product) => (
+              <motion.div key={product.codigo} variants={fadeUp}>
+                <Link
+                  to={`/productos/${product.slug}`}
+                  className="group block bg-white/[0.07] hover:bg-white/[0.14] rounded-2xl p-4 border border-white/15 hover:border-[#D4AF37]/50 transition-all duration-300"
+                >
+                  <div className="h-24 sm:h-28 flex items-center justify-center mb-3 overflow-hidden">
+                    {product.imagen ? (
+                      <img
+                        src={product.imagen}
+                        alt={product.nombre}
+                        className="max-h-full max-w-full object-contain group-hover:scale-110 transition-transform duration-300 drop-shadow-lg"
+                      />
+                    ) : (
+                      <Leaf size={36} className="text-white/35" />
+                    )}
+                  </div>
+                  <p className="text-white text-center text-[11px] font-semibold leading-tight mb-1 line-clamp-2">{product.nombre}</p>
+                  <p className="text-[#D4AF37] text-center text-[11px] font-medium">${product.pvp.toFixed(2)}</p>
+                </Link>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="text-center mt-12"
+          >
+            <Link
+              to="/productos"
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-white text-[#1A4E26] font-bold hover:bg-white/90 transition-all shadow-lg"
+            >
+              Ver Catálogo Completo <ArrowRight size={16} />
+            </Link>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── Pillars ──────────────────────────────────────────────── */}
       <section className="py-20 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
           <motion.div
@@ -190,71 +429,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Featured Products */}
-      <section className="py-20 px-4 sm:px-6 bg-[#F4F7F5]">
-        <div className="max-w-6xl mx-auto">
-          <motion.div
-            variants={stagger}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-80px' }}
-            className="text-center mb-14"
-          >
-            <motion.p variants={fadeUp} className="text-[#1A4E26] text-sm font-semibold uppercase tracking-widest mb-3">
-              Catálogo
-            </motion.p>
-            <motion.h2 variants={fadeUp} className="font-heading font-bold text-3xl sm:text-4xl text-[#111111] mb-4">
-              Productos Destacados
-            </motion.h2>
-            <motion.div variants={fadeUp} className="w-16 h-1 bg-[#1A4E26] rounded-full mx-auto" />
-          </motion.div>
-
-          <motion.div
-            variants={stagger}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-60px' }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-          >
-            {featuredProducts.map((product) => (
-              <motion.div
-                key={product.codigo}
-                variants={fadeUp}
-                className="bg-white border border-[#C8D8CB] rounded-2xl p-6 flex flex-col hover:border-[#1A4E26]/40 hover:shadow-[0_0_20px_rgba(26,78,38,0.1)] transition-all duration-300"
-              >
-                <div className="w-full h-32 rounded-xl bg-gradient-to-br from-[#EBF4ED] to-[#D5ECD9] flex items-center justify-center mb-5 border border-[#C8D8CB]">
-                  <Leaf size={40} className="text-[#1A4E26] opacity-60" />
-                </div>
-                <span className="inline-block text-[10px] font-semibold uppercase tracking-wider text-[#1A4E26] bg-[#1A4E26]/10 border border-[#1A4E26]/20 px-2.5 py-1 rounded-full mb-3 w-fit">
-                  {product.categoria}
-                </span>
-                <h3 className="font-heading font-bold text-[#111111] text-base mb-2 leading-tight">{product.nombre}</h3>
-                <p className="text-[#6B7280] text-xs leading-relaxed mb-4 flex-grow">{product.descripcion}</p>
-                <div className="flex items-center justify-between mt-auto">
-                  <span className="font-bold text-[#111111] text-lg">${product.pvp.toFixed(2)}</span>
-                  <Link
-                    to={`/productos/${product.slug}`}
-                    className="text-[#1A4E26] text-xs font-semibold hover:underline"
-                  >
-                    Ver Más →
-                  </Link>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-
-          <div className="text-center mt-10">
-            <Link
-              to="/productos"
-              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl border border-[#C8D8CB] text-[#111111] font-semibold hover:border-[#1A4E26] hover:text-[#1A4E26] transition-all duration-200"
-            >
-              Ver todos los productos <ArrowRight size={16} />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Business Opportunity */}
+      {/* ── Business Opportunity ──────────────────────────────────── */}
       <section className="py-20 px-4 sm:px-6 bg-cta-gradient">
         <div className="max-w-5xl mx-auto text-center">
           <motion.div
@@ -303,7 +478,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Motivational Quote */}
+      {/* ── Quote ──────────────────────────────────────────────── */}
       <section className="py-20 px-4 sm:px-6 bg-[#F4F7F5]">
         <div className="max-w-3xl mx-auto text-center">
           <motion.div

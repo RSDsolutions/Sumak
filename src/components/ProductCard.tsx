@@ -12,8 +12,16 @@ export function ProductCard({ product }: ProductCardProps) {
   return (
     <div className="group flex flex-col bg-[#1A1A1A] rounded-2xl border border-[#2E2E2E] hover:border-[#00A86B]/40 hover:-translate-y-1 transition-all duration-300 hover:shadow-[0_0_20px_rgba(0,168,107,0.1)] overflow-hidden">
       {/* Image Area */}
-      <div className="h-44 w-full bg-gradient-to-br from-[#1A2A20] to-[#0F1A14] border-b border-[#2E2E2E] flex items-center justify-center">
-        <Leaf size={40} className="text-[#00A86B] opacity-50" />
+      <div className="h-44 w-full bg-gradient-to-br from-[#1A2A20] to-[#0F1A14] border-b border-[#2E2E2E] flex items-center justify-center overflow-hidden">
+        {product.imagen ? (
+          <img
+            src={product.imagen}
+            alt={product.nombre}
+            className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-300 drop-shadow-lg"
+          />
+        ) : (
+          <Leaf size={40} className="text-[#00A86B] opacity-50" />
+        )}
       </div>
 
       {/* Content */}

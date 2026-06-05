@@ -89,12 +89,21 @@ export default function Productos() {
               <motion.div
                 key={product.codigo}
                 variants={fadeUp}
-                className="bg-white border border-[#C8D8CB] rounded-2xl p-6 flex flex-col hover:border-[#1A4E26]/40 hover:shadow-[0_0_20px_rgba(26,78,38,0.1)] transition-all duration-300"
+                className="bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden flex flex-col hover:border-[#1A4E26]/40 hover:shadow-[0_4px_28px_rgba(26,78,38,0.12)] hover:-translate-y-0.5 transition-all duration-300 group"
               >
-                {/* Image placeholder */}
-                <div className="w-full h-36 rounded-xl bg-gradient-to-br from-[#EBF4ED] to-[#D5ECD9] flex items-center justify-center mb-5 border border-[#C8D8CB]">
-                  <Leaf size={36} className="text-[#1A4E26] opacity-50" />
+                {/* Product image */}
+                <div className="w-full h-48 bg-gradient-to-br from-[#EBF4ED] to-[#D5ECD9] flex items-center justify-center overflow-hidden">
+                  {product.imagen ? (
+                    <img
+                      src={product.imagen}
+                      alt={product.nombre}
+                      className="w-full h-full object-contain p-5 group-hover:scale-105 transition-transform duration-400 drop-shadow-md"
+                    />
+                  ) : (
+                    <Leaf size={40} className="text-[#1A4E26] opacity-40" />
+                  )}
                 </div>
+                <div className="p-6 flex flex-col flex-grow">
 
                 {/* Code badge */}
                 <div className="flex items-center justify-between mb-3">
@@ -124,6 +133,7 @@ export default function Productos() {
                   >
                     Ver Más
                   </Link>
+                </div>
                 </div>
               </motion.div>
             ))}
