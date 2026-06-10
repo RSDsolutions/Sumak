@@ -79,8 +79,10 @@ const ingredientPatterns: Array<{ slug: string; patterns: RegExp[] }> = [
   { slug: 'probioticos', patterns: [/probiotico/] },
 ];
 
-// Categorías que NO tienen imagen — se renderizan como pill de texto
-const nutrientPattern = /^(vitamina|minerales?|aminoacid|fibra|antioxidante|proteina|proteinas|endulzante|edulcorante|complejo)/;
+// Categorías que NO tienen imagen — se renderizan como pill de texto dorado
+// (incluye nombres genéricos de categorías y también minerales/elementos
+// individuales que se pueden listar sueltos como "Magnesio" o "Calcio")
+const nutrientPattern = /^(vitamina|minerales?|aminoacid|fibra|antioxidante|proteinas?|endulzante|edulcorante|complejo|magnesio|calcio|hierro|zinc|potasio|selenio|cromo|cobre|fosforo|sodio|manganeso|biotina|omega|acido folico|acido pantotenico|cloruro|yodo)\b/;
 
 export interface IngredientDisplay {
   name: string;          // nombre principal sin descripción
@@ -97,7 +99,7 @@ function normalizeIngredient(raw: string): string {
 }
 
 export function parseIngredient(raw: string): IngredientDisplay {
-  // Separar nombre y descripción si tiene " — "
+  // Separar nombre y descripción si tiene " — " o " - "
   let name = raw;
   let description: string | undefined;
   if (raw.includes(' — ')) {
@@ -112,19 +114,21 @@ export function parseIngredient(raw: string): IngredientDisplay {
 
   const normalized = normalizeIngredient(name);
 
-  // Detectar nutrientes (vitaminas, minerales, etc.)
-  if (nutrientPattern.test(normalized)) {
-    return { name, description, isNutrient: true };
-  }
-
-  // Buscar match en patterns
+  // 1) Buscar imagen específica primero (extracto/polvo/esencia/aceite de X → X.png)
+  //    Esto debe ir ANTES de la detección de nutrientes para que casos como
+  //    "Ácido Hialurónico" tomen su imagen en lugar de caer en la regla "acido"
   for (const { slug, patterns } of ingredientPatterns) {
     if (patterns.some((p) => p.test(normalized))) {
       return { name, description, image: `/ingredientes/${slug}.png` };
     }
   }
 
-  // Sin match: chip de texto
+  // 2) Detectar nutrientes (vitaminas, minerales sueltos, aminoácidos, etc.)
+  if (nutrientPattern.test(normalized)) {
+    return { name, description, isNutrient: true };
+  }
+
+  // 3) Sin match: chip de texto verde
   return { name, description };
 }
 
