@@ -234,25 +234,87 @@ function BinaryNodeCard({ node, depth, maxDepth }: { node: TreeNode; depth: numb
   );
 }
 
-// ── Card showing a single frontal of the admin (with its binary subtree) ──
-function FrontalColumn({ node, maxDepth, idx }: { node: TreeNode; maxDepth: number; idx: number }) {
+// ── Empty slot card (placeholder for incomplete pair) ──
+function EmptySlot({ position }: { position: 'izquierda' | 'derecha' }) {
+  return (
+    <div className="flex flex-col items-center">
+      <div className="border-2 border-dashed border-[#C8D8CB] rounded-2xl p-3 w-44 text-center bg-white/40">
+        <div className="w-9 h-9 rounded-xl mx-auto mb-2 flex items-center justify-center bg-[#F4F7F5] text-[#9CA3AF]">
+          <Users size={16} />
+        </div>
+        <p className="text-[10px] uppercase tracking-widest text-[#9CA3AF] font-bold mb-1">Disponible</p>
+        <p className="text-[#9CA3AF] text-[11px]">Sin asignar</p>
+        <p className="text-[9px] mt-1 text-[#9CA3AF] uppercase tracking-wider">
+          {position === 'izquierda' ? '← Izq' : 'Der →'}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ── Frontal PAIR: muestra izquierda + derecha del admin como un slot ──
+function FrontalPair({ izquierda, derecha, maxDepth, idx }: {
+  izquierda: TreeNode | null;
+  derecha: TreeNode | null;
+  maxDepth: number;
+  idx: number;
+}) {
+  const completo = !!(izquierda && derecha);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: idx * 0.03 }}
-      className="bg-[#FAFBFA] border border-[#C8D8CB] rounded-2xl p-5 shrink-0"
+      transition={{ duration: 0.4, delay: idx * 0.05 }}
+      className={`bg-[#FAFBFA] border-2 rounded-2xl p-5 shrink-0 ${
+        completo ? 'border-[#D4AF37]/40' : 'border-[#C8D8CB]'
+      }`}
     >
       <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[#C8D8CB]">
-        <div className="w-7 h-7 rounded-lg bg-[#D4AF37]/15 text-[#D4AF37] flex items-center justify-center">
+        <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+          completo ? 'bg-[#D4AF37]/15 text-[#D4AF37]' : 'bg-amber-50 text-amber-600'
+        }`}>
           <Star size={13} fill="currentColor" />
         </div>
         <div>
-          <p className="text-[9px] uppercase tracking-widest text-[#D4AF37] font-bold">Frontal {idx + 1}</p>
-          <p className="text-[#111111] text-xs font-bold">{node.profile.nombre_completo}</p>
+          <p className={`text-[9px] uppercase tracking-widest font-bold ${
+            completo ? 'text-[#D4AF37]' : 'text-amber-600'
+          }`}>
+            Frontal {idx + 1} {completo ? '· Completo' : '· Incompleto'}
+          </p>
+          <p className="text-[#111111] text-xs font-bold">
+            {izquierda && derecha
+              ? `${izquierda.profile.codigo_distribuidor} + ${derecha.profile.codigo_distribuidor}`
+              : (izquierda?.profile.codigo_distribuidor ?? derecha?.profile.codigo_distribuidor ?? '—')}
+          </p>
         </div>
       </div>
-      <BinaryNodeCard node={node} depth={0} maxDepth={maxDepth} />
+
+      {/* Pareja izquierda / derecha */}
+      <div className="flex gap-4 items-start justify-center">
+        {/* IZQUIERDA */}
+        <div className="flex flex-col items-center">
+          <span className="text-[9px] uppercase tracking-widest text-[#1A4E26] font-bold mb-2 px-2 py-0.5 rounded-full bg-[#EBF4ED]">
+            ← Izquierda
+          </span>
+          {izquierda ? (
+            <BinaryNodeCard node={izquierda} depth={0} maxDepth={maxDepth} />
+          ) : (
+            <EmptySlot position="izquierda" />
+          )}
+        </div>
+        {/* DERECHA */}
+        <div className="flex flex-col items-center">
+          <span className="text-[9px] uppercase tracking-widest text-[#1A4E26] font-bold mb-2 px-2 py-0.5 rounded-full bg-[#EBF4ED]">
+            Derecha →
+          </span>
+          {derecha ? (
+            <BinaryNodeCard node={derecha} depth={0} maxDepth={maxDepth} />
+          ) : (
+            <EmptySlot position="derecha" />
+          )}
+        </div>
+      </div>
     </motion.div>
   );
 }
@@ -406,8 +468,11 @@ export default function AdminRed() {
           className="bg-white border border-[#D4AF37]/40 rounded-2xl p-4"
         >
           <p className="text-[10px] uppercase tracking-widest text-[#D4AF37] mb-1 font-bold">Frontales</p>
-          <p className="font-heading font-bold text-3xl text-[#D4AF37]">{frontales.length}</p>
-          <p className="text-[10px] text-[#9CA3AF] mt-1">directos del admin</p>
+          <p className="font-heading font-bold text-3xl text-[#D4AF37]">{Math.ceil(frontales.length / 2)}</p>
+          <p className="text-[10px] text-[#9CA3AF] mt-1">
+            {Math.floor(frontales.length / 2)} completo{Math.floor(frontales.length / 2) !== 1 ? 's' : ''}
+            {frontales.length % 2 === 1 && ' · 1 en construcción'}
+          </p>
         </motion.div>
 
         <motion.div
@@ -576,7 +641,7 @@ export default function AdminRed() {
           </h2>
           <p className="text-[10px] text-[#9CA3AF] flex items-center gap-1">
             <RefreshCw size={10} className="text-[#1A4E26]" />
-            {frontales.length} frontal{frontales.length !== 1 ? 'es' : ''} · profundidad {maxDepth} · zoom y arrastra para navegar
+            {Math.ceil(frontales.length / 2)} frontal{Math.ceil(frontales.length / 2) !== 1 ? 'es' : ''} ({frontales.length} pos.) · profundidad {maxDepth} · zoom y arrastra para navegar
           </p>
         </div>
 
@@ -608,7 +673,7 @@ export default function AdminRed() {
                   </p>
                   <p className="text-[#D4AF37] text-xs font-bold">★ {adminNode.profile.puntos ?? 0} pts</p>
                   <p className="text-white/65 text-[10px] mt-1 font-bold uppercase tracking-wider">
-                    ROOT · {frontales.length} frontal{frontales.length !== 1 ? 'es' : ''}
+                    ROOT · {Math.ceil(frontales.length / 2)} frontal{Math.ceil(frontales.length / 2) !== 1 ? 'es' : ''}
                   </p>
                 </div>
               </div>
@@ -620,14 +685,34 @@ export default function AdminRed() {
                     <div className="h-6 w-px bg-[#C8D8CB]" />
                   </div>
                   <p className="text-center text-[10px] uppercase tracking-widest text-[#9CA3AF] font-bold mb-3">
-                    ↓ Frontales directos del admin (multi-leg) ↓
+                    ↓ Frontales del admin · cada uno con su izquierda y derecha ↓
                   </p>
 
-                  {/* Frontales en columnas */}
-                  <div className="flex gap-5 justify-center pb-4">
-                    {frontales.map((frontal, idx) => (
-                      <FrontalColumn key={frontal.id} node={frontal} maxDepth={maxDepth - 1} idx={idx} />
-                    ))}
+                  {/* Frontales agrupados en pares (izq + der) por orden de creación */}
+                  <div className="flex gap-5 justify-center pb-4 flex-wrap">
+                    {(() => {
+                      // Ordenar frontales por created_at ascendente para pareo estable
+                      const ordered = [...frontales].sort((a, b) =>
+                        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+                      );
+                      // Agrupar en pares: [izq, der]
+                      const pairs: { izq: TreeNode | null; der: TreeNode | null }[] = [];
+                      for (let i = 0; i < ordered.length; i += 2) {
+                        pairs.push({
+                          izq: ordered[i] ?? null,
+                          der: ordered[i + 1] ?? null,
+                        });
+                      }
+                      return pairs.map((pair, idx) => (
+                        <FrontalPair
+                          key={pair.izq?.id ?? pair.der?.id ?? idx}
+                          izquierda={pair.izq}
+                          derecha={pair.der}
+                          maxDepth={maxDepth - 1}
+                          idx={idx}
+                        />
+                      ));
+                    })()}
                   </div>
                 </>
               )}
