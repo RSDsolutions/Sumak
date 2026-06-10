@@ -10,6 +10,7 @@ import {
   Menu,
   X,
   LogOut,
+  Trophy,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useCart } from '../lib/cart';
@@ -28,6 +29,7 @@ const navItems: NavItem[] = [
   { label: 'Mi Carrito', to: '/dashboard/pedido/nuevo', icon: <ShoppingCart size={18} />, showBadge: true },
   { label: 'Mis Pedidos', to: '/dashboard/pedidos', icon: <ShoppingCart size={18} /> },
   { label: 'Mi Red', to: '/dashboard/red', icon: <Network size={18} /> },
+  { label: 'Mi Escalera', to: '/dashboard/escalera', icon: <Trophy size={18} /> },
   { label: 'Comisiones', to: '/dashboard/comisiones', icon: <DollarSign size={18} /> },
   { label: 'Mi Perfil', to: '/dashboard/perfil', icon: <User size={18} /> },
 ];

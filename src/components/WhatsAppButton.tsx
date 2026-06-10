@@ -1,9 +1,10 @@
 import { motion } from 'motion/react';
+import { contactInfo } from '../data';
 
 export default function WhatsAppButton() {
   return (
     <motion.a
-      href="https://wa.me/593989413008"
+      href={`https://wa.me/${contactInfo.whatsapp}`}
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Contáctanos por WhatsApp"

@@ -30,6 +30,7 @@ import MisComisiones from './pages/dashboard/MisComisiones';
 import MisPedidos from './pages/dashboard/MisPedidos';
 import NuevoPedido from './pages/dashboard/NuevoPedido';
 import MiPerfil from './pages/dashboard/MiPerfil';
+import MiEscalera from './pages/dashboard/MiEscalera';
 import Tienda from './pages/dashboard/Tienda';
 import TiendaProducto from './pages/dashboard/TiendaProducto';
 
@@ -189,6 +190,16 @@ export default function App() {
               <ProtectedRoute allowedRoles={['distribuidor']}>
                 <DashboardLayout>
                   <MiRed />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/escalera"
+            element={
+              <ProtectedRoute allowedRoles={['distribuidor']}>
+                <DashboardLayout>
+                  <MiEscalera />
                 </DashboardLayout>
               </ProtectedRoute>
             }
