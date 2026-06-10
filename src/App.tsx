@@ -40,6 +40,7 @@ import SolicitudDetalle from './pages/admin/SolicitudDetalle';
 import Distribuidores from './pages/admin/Distribuidores';
 import DistribuidorDetalle from './pages/admin/DistribuidorDetalle';
 import AdminComisiones from './pages/admin/AdminComisiones';
+import AdminMisComisiones from './pages/admin/AdminMisComisiones';
 import AdminPedidos from './pages/admin/AdminPedidos';
 import AdminRed from './pages/admin/AdminRed';
 
@@ -310,6 +311,16 @@ export default function App() {
               <ProtectedRoute allowedRoles={['admin']}>
                 <AdminLayout>
                   <AdminComisiones />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/mis-comisiones"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminLayout>
+                  <AdminMisComisiones />
                 </AdminLayout>
               </ProtectedRoute>
             }

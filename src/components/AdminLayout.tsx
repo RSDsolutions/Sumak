@@ -7,6 +7,7 @@ import {
   DollarSign,
   ShoppingCart,
   Network,
+  Crown,
   Menu,
   X,
   LogOut,
@@ -24,6 +25,7 @@ const navItems: NavItem[] = [
   { label: 'Solicitudes', to: '/admin/solicitudes', icon: <FileCheck size={18} /> },
   { label: 'Distribuidores', to: '/admin/distribuidores', icon: <Users size={18} /> },
   { label: 'Comisiones', to: '/admin/comisiones', icon: <DollarSign size={18} /> },
+  { label: 'Mis Comisiones', to: '/admin/mis-comisiones', icon: <Crown size={18} /> },
   { label: 'Pedidos', to: '/admin/pedidos', icon: <ShoppingCart size={18} /> },
   { label: 'Red Binaria', to: '/admin/red', icon: <Network size={18} /> },
 ];
