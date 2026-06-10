@@ -370,7 +370,7 @@ export default function ProductDetail() {
                     <p className="text-[#6B7280] text-sm mb-6">Formulado con plantas, extractos y nutrientes seleccionados.</p>
 
                     {conImagen.length > 0 && (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-6">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 mb-6">
                         {conImagen.map((ing, i) => (
                           <motion.div
                             key={ing.name + i}
@@ -378,21 +378,23 @@ export default function ProductDetail() {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.3, delay: Math.min(i * 0.02, 0.3) }}
-                            className="bg-gradient-to-br from-[#F4F7F5] to-[#EBF4ED] border border-[#C8D8CB] rounded-2xl p-3 text-center hover:border-[#1A4E26]/40 hover:shadow-[0_4px_16px_rgba(26,78,38,0.10)] transition-all"
+                            className="bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden hover:border-[#1A4E26]/40 hover:shadow-[0_8px_24px_rgba(26,78,38,0.15)] hover:-translate-y-0.5 transition-all duration-300 group cursor-default"
                             title={ing.description}
                           >
-                            <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-2 rounded-full bg-white border border-[#C8D8CB] overflow-hidden flex items-center justify-center">
+                            <div className="aspect-square relative overflow-hidden" style={{ background: 'radial-gradient(circle at 50% 40%, #FFFFFF 0%, #EBF4ED 70%, #D5ECD9 100%)' }}>
                               <img
                                 src={ing.image}
                                 alt={ing.name}
-                                className="w-full h-full object-contain p-1.5"
+                                className="absolute inset-0 w-full h-full object-contain p-3 sm:p-4 group-hover:scale-110 transition-transform duration-500"
                                 loading="lazy"
                               />
                             </div>
-                            <p className="text-[#111111] text-[11px] font-bold leading-tight line-clamp-2">{ing.name}</p>
-                            {ing.description && (
-                              <p className="text-[#6B7280] text-[9px] mt-1 leading-snug line-clamp-2">{ing.description}</p>
-                            )}
+                            <div className="px-2 py-2.5 border-t border-[#C8D8CB] text-center bg-white">
+                              <p className="text-[#111111] text-[11px] sm:text-xs font-bold leading-tight line-clamp-2">{ing.name}</p>
+                              {ing.description && (
+                                <p className="text-[#6B7280] text-[9px] mt-0.5 leading-snug line-clamp-1">{ing.description}</p>
+                              )}
+                            </div>
                           </motion.div>
                         ))}
                       </div>

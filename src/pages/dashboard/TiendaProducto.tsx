@@ -301,22 +301,24 @@ export default function TiendaProducto() {
               return (
                 <div>
                   {conImagen.length > 0 && (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 mb-5">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2.5 mb-5">
                       {conImagen.map((ing, i) => (
                         <div
                           key={ing.name + i}
-                          className="bg-gradient-to-br from-[#F4F7F5] to-[#EBF4ED] border border-[#C8D8CB] rounded-2xl p-2.5 text-center hover:border-[#1A4E26]/40 transition-colors"
+                          className="bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden hover:border-[#1A4E26]/40 hover:shadow-[0_6px_18px_rgba(26,78,38,0.12)] hover:-translate-y-0.5 transition-all duration-300 group"
                           title={ing.description}
                         >
-                          <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-1.5 rounded-full bg-white border border-[#C8D8CB] overflow-hidden flex items-center justify-center">
+                          <div className="aspect-square relative overflow-hidden" style={{ background: 'radial-gradient(circle at 50% 40%, #FFFFFF 0%, #EBF4ED 70%, #D5ECD9 100%)' }}>
                             <img
                               src={ing.image}
                               alt={ing.name}
-                              className="w-full h-full object-contain p-1"
+                              className="absolute inset-0 w-full h-full object-contain p-2.5 sm:p-3 group-hover:scale-110 transition-transform duration-500"
                               loading="lazy"
                             />
                           </div>
-                          <p className="text-[#111111] text-[10px] font-bold leading-tight line-clamp-2">{ing.name}</p>
+                          <div className="px-1.5 py-1.5 border-t border-[#C8D8CB] text-center bg-white">
+                            <p className="text-[#111111] text-[10px] font-bold leading-tight line-clamp-2">{ing.name}</p>
+                          </div>
                         </div>
                       ))}
                     </div>
