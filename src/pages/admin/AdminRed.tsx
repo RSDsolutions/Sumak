@@ -1,9 +1,10 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
   Users, Network, Search, Crown, User, ChevronRight, ChevronDown,
-  Star, Sparkles, Layers, TrendingUp, Award,
+  Star, Sparkles, Layers, TrendingUp, Award, ZoomIn, ZoomOut, Maximize2,
+  RefreshCw, Move,
 } from 'lucide-react';
 import { supabaseAdmin } from '../../lib/supabase';
 import type { NodoBinario, Profile } from '../../lib/types';
@@ -12,6 +13,150 @@ function Spinner() {
   return (
     <div className="flex items-center justify-center py-20">
       <div className="w-8 h-8 border-2 border-[#1A4E26] border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
+
+// ── Zoom/Pan container for the binary tree ──────────────
+const ZOOM_MIN = 0.3;
+const ZOOM_MAX = 2.5;
+const ZOOM_STEP = 0.15;
+
+function ZoomPanContainer({ children, height = 600 }: { children: React.ReactNode; height?: number }) {
+  const [scale, setScale] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef<{ startX: number; startY: number; offsetX: number; offsetY: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const zoomIn = useCallback(() => setScale((s) => Math.min(ZOOM_MAX, parseFloat((s + ZOOM_STEP).toFixed(2)))), []);
+  const zoomOut = useCallback(() => setScale((s) => Math.max(ZOOM_MIN, parseFloat((s - ZOOM_STEP).toFixed(2)))), []);
+  const reset = useCallback(() => { setScale(1); setOffset({ x: 0, y: 0 }); }, []);
+
+  // Mouse drag pan
+  const onMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    setIsDragging(true);
+    dragRef.current = { startX: e.clientX, startY: e.clientY, offsetX: offset.x, offsetY: offset.y };
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+    const onMove = (e: MouseEvent) => {
+      if (!dragRef.current) return;
+      const dx = e.clientX - dragRef.current.startX;
+      const dy = e.clientY - dragRef.current.startY;
+      setOffset({ x: dragRef.current.offsetX + dx, y: dragRef.current.offsetY + dy });
+    };
+    const onUp = () => { setIsDragging(false); dragRef.current = null; };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, [isDragging]);
+
+  // Touch drag pan
+  const onTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length !== 1) return;
+    const t = e.touches[0];
+    setIsDragging(true);
+    dragRef.current = { startX: t.clientX, startY: t.clientY, offsetX: offset.x, offsetY: offset.y };
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+    const onTouchMove = (e: TouchEvent) => {
+      if (!dragRef.current || e.touches.length !== 1) return;
+      const t = e.touches[0];
+      const dx = t.clientX - dragRef.current.startX;
+      const dy = t.clientY - dragRef.current.startY;
+      setOffset({ x: dragRef.current.offsetX + dx, y: dragRef.current.offsetY + dy });
+    };
+    const onTouchEnd = () => { setIsDragging(false); dragRef.current = null; };
+    window.addEventListener('touchmove', onTouchMove);
+    window.addEventListener('touchend', onTouchEnd);
+    return () => {
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [isDragging]);
+
+  // Wheel zoom (ctrl+wheel)
+  const onWheel = (e: React.WheelEvent) => {
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    if (e.deltaY < 0) zoomIn(); else zoomOut();
+  };
+
+  // Keyboard
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!containerRef.current?.matches(':hover')) return;
+      if (e.key === '+' || (e.key === '=' && e.shiftKey)) { e.preventDefault(); zoomIn(); }
+      else if (e.key === '-' || e.key === '_') { e.preventDefault(); zoomOut(); }
+      else if (e.key === '0') { e.preventDefault(); reset(); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [zoomIn, zoomOut, reset]);
+
+  return (
+    <div className="relative" style={{ height }}>
+      {/* Controls floating */}
+      <div className="absolute top-3 right-3 z-20 bg-white border border-[#C8D8CB] rounded-xl shadow-lg flex flex-col overflow-hidden">
+        <button onClick={zoomIn} className="p-2 hover:bg-[#F4F7F5] transition-colors border-b border-[#C8D8CB]" title="Acercar (+)" aria-label="Acercar">
+          <ZoomIn size={16} className="text-[#1A4E26]" />
+        </button>
+        <button onClick={zoomOut} className="p-2 hover:bg-[#F4F7F5] transition-colors border-b border-[#C8D8CB]" title="Alejar (-)" aria-label="Alejar">
+          <ZoomOut size={16} className="text-[#1A4E26]" />
+        </button>
+        <button onClick={reset} className="p-2 hover:bg-[#F4F7F5] transition-colors" title="Restaurar vista (0)" aria-label="Restaurar">
+          <Maximize2 size={16} className="text-[#1A4E26]" />
+        </button>
+      </div>
+
+      {/* Zoom indicator */}
+      <div className="absolute top-3 left-3 z-20 bg-white/95 backdrop-blur-sm border border-[#C8D8CB] rounded-lg px-3 py-1.5 shadow-md text-xs font-bold text-[#1A4E26] font-mono">
+        {Math.round(scale * 100)}%
+      </div>
+
+      {/* Hint */}
+      <div className="absolute bottom-3 left-3 z-20 bg-white/95 backdrop-blur-sm border border-[#C8D8CB] rounded-lg px-3 py-1.5 shadow-md text-[10px] text-[#6B7280] flex items-center gap-1.5">
+        <Move size={11} className="text-[#1A4E26]" />
+        Arrastra para mover · Ctrl+rueda para zoom · 0 reset
+      </div>
+
+      {/* Pan/zoom viewport */}
+      <div
+        ref={containerRef}
+        onMouseDown={onMouseDown}
+        onTouchStart={onTouchStart}
+        onWheel={onWheel}
+        tabIndex={0}
+        className={`relative w-full h-full overflow-hidden rounded-b-2xl ${isDragging ? 'cursor-grabbing' : 'cursor-grab'} focus:outline-none`}
+        style={{
+          background: 'radial-gradient(circle at 50% 50%, #FAFBFA 0%, #F4F7F5 100%)',
+          backgroundImage: `radial-gradient(circle, rgba(26,78,38,0.06) 1px, transparent 1px)`,
+          backgroundSize: '24px 24px',
+        }}
+      >
+        <div
+          className="absolute"
+          style={{
+            top: '50%',
+            left: '50%',
+            transform: `translate(-50%, 0) translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
+            transformOrigin: 'top center',
+            transition: isDragging ? 'none' : 'transform 0.15s ease-out',
+            userSelect: 'none',
+            pointerEvents: isDragging ? 'none' : 'auto',
+          }}
+        >
+          {children}
+        </div>
+      </div>
     </div>
   );
 }
@@ -429,8 +574,9 @@ export default function AdminRed() {
             <Network size={14} className="text-[#1A4E26]" />
             Árbol completo
           </h2>
-          <p className="text-[10px] text-[#9CA3AF]">
-            {frontales.length} frontal{frontales.length !== 1 ? 'es' : ''} · profundidad {maxDepth}
+          <p className="text-[10px] text-[#9CA3AF] flex items-center gap-1">
+            <RefreshCw size={10} className="text-[#1A4E26]" />
+            {frontales.length} frontal{frontales.length !== 1 ? 'es' : ''} · profundidad {maxDepth} · zoom y arrastra para navegar
           </p>
         </div>
 
@@ -443,57 +589,57 @@ export default function AdminRed() {
             <p className="text-sm">No hay distribuidores en la red aún.</p>
           </div>
         ) : (
-          <div className="p-5">
-            {/* Admin root card */}
-            <div className="flex justify-center mb-2">
-              <div className="border-2 border-[#0B2913] bg-gradient-to-br from-[#0F2E18] to-[#1A4E26] rounded-2xl p-4 w-60 text-center shadow-[0_15px_40px_rgba(26,78,38,0.25)] relative">
-                <div className="absolute -top-2 -right-2 bg-[#D4AF37] text-[#0B2913] text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full">
-                  Admin
+          <ZoomPanContainer height={640}>
+            <div className="p-8 min-w-[600px]">
+              {/* Admin root card */}
+              <div className="flex justify-center mb-2">
+                <div className="border-2 border-[#0B2913] bg-gradient-to-br from-[#0F2E18] to-[#1A4E26] rounded-2xl p-4 w-60 text-center shadow-[0_15px_40px_rgba(26,78,38,0.25)] relative">
+                  <div className="absolute -top-2 -right-2 bg-[#D4AF37] text-[#0B2913] text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full">
+                    Admin
+                  </div>
+                  <div className="w-12 h-12 rounded-xl bg-[#D4AF37]/20 mx-auto mb-2 flex items-center justify-center">
+                    <Crown size={22} className="text-[#D4AF37]" />
+                  </div>
+                  <p className="font-mono text-[11px] text-[#D4AF37] font-bold mb-0.5">
+                    {adminNode.profile.codigo_distribuidor ?? '—'}
+                  </p>
+                  <p className="text-white text-sm font-bold leading-tight mb-1 line-clamp-2">
+                    {adminNode.profile.nombre_completo}
+                  </p>
+                  <p className="text-[#D4AF37] text-xs font-bold">★ {adminNode.profile.puntos ?? 0} pts</p>
+                  <p className="text-white/65 text-[10px] mt-1 font-bold uppercase tracking-wider">
+                    ROOT · {frontales.length} frontal{frontales.length !== 1 ? 'es' : ''}
+                  </p>
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-[#D4AF37]/20 mx-auto mb-2 flex items-center justify-center">
-                  <Crown size={22} className="text-[#D4AF37]" />
-                </div>
-                <p className="font-mono text-[11px] text-[#D4AF37] font-bold mb-0.5">
-                  {adminNode.profile.codigo_distribuidor ?? '—'}
-                </p>
-                <p className="text-white text-sm font-bold leading-tight mb-1 line-clamp-2">
-                  {adminNode.profile.nombre_completo}
-                </p>
-                <p className="text-[#D4AF37] text-xs font-bold">★ {adminNode.profile.puntos ?? 0} pts</p>
-                <p className="text-white/65 text-[10px] mt-1 font-bold uppercase tracking-wider">
-                  ROOT · {frontales.length} frontal{frontales.length !== 1 ? 'es' : ''}
-                </p>
               </div>
-            </div>
 
-            {/* Connector down + horizontal */}
-            {frontales.length > 0 && (
-              <>
-                <div className="flex justify-center">
-                  <div className="h-6 w-px bg-[#C8D8CB]" />
-                </div>
-                <p className="text-center text-[10px] uppercase tracking-widest text-[#9CA3AF] font-bold mb-3">
-                  ↓ Frontales directos del admin (multi-leg) ↓
-                </p>
+              {/* Connector down + horizontal */}
+              {frontales.length > 0 && (
+                <>
+                  <div className="flex justify-center">
+                    <div className="h-6 w-px bg-[#C8D8CB]" />
+                  </div>
+                  <p className="text-center text-[10px] uppercase tracking-widest text-[#9CA3AF] font-bold mb-3">
+                    ↓ Frontales directos del admin (multi-leg) ↓
+                  </p>
 
-                {/* Frontales: scrollable horizontal list */}
-                <div className="overflow-x-auto pb-4">
-                  <div className="flex gap-5 min-w-max px-2">
+                  {/* Frontales en columnas */}
+                  <div className="flex gap-5 justify-center pb-4">
                     {frontales.map((frontal, idx) => (
                       <FrontalColumn key={frontal.id} node={frontal} maxDepth={maxDepth - 1} idx={idx} />
                     ))}
                   </div>
-                </div>
-              </>
-            )}
+                </>
+              )}
 
-            {frontales.length === 0 && (
-              <div className="text-center mt-6 py-8 text-[#9CA3AF] text-sm">
-                <Users size={32} className="mx-auto mb-2 opacity-40" />
-                Aún no hay frontales asignados. Al aprobar una solicitud, puedes ubicarla directamente bajo el admin como frontal.
-              </div>
-            )}
-          </div>
+              {frontales.length === 0 && (
+                <div className="text-center mt-6 py-8 text-[#9CA3AF] text-sm">
+                  <Users size={32} className="mx-auto mb-2 opacity-40" />
+                  Aún no hay frontales asignados. Al aprobar una solicitud, puedes ubicarla directamente bajo el admin como frontal.
+                </div>
+              )}
+            </div>
+          </ZoomPanContainer>
         )}
       </div>
 

@@ -85,7 +85,14 @@ export default function NuevoPedido() {
         .upload(voucherPath, voucherFile, { upsert: false });
 
       if (uploadError) {
-        setError('Error al subir el voucher: ' + uploadError.message);
+        const msg = uploadError.message.toLowerCase();
+        if (msg.includes('bucket not found') || msg.includes('not found')) {
+          setError('El sistema aún no está configurado para recibir vouchers. Contacta al administrador para que ejecute la migración SQL "004b_voucher_bucket_fix.sql".');
+        } else if (msg.includes('row-level security') || msg.includes('rls') || msg.includes('policy')) {
+          setError('No tienes permisos para subir vouchers. Pide al administrador que verifique las políticas del bucket "pedidos-vouchers".');
+        } else {
+          setError('Error al subir el voucher: ' + uploadError.message);
+        }
         setSubmitting(false);
         return;
       }
