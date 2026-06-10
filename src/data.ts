@@ -420,8 +420,8 @@ export const products: Product[] = [
     categoriaKey: 'accesorios',
     pvp: 5.00,
     descripcion: 'Tomatodo deportivo con logo de Sumak. Práctico y ecológico.',
+    imagen: '/products/tomatodo-sumak.png',
     presentacion: 'Capacidad: 750 ml',
-    proximamente: true,
     beneficios: [
       'Material libre de BPA',
       'Diseño deportivo y elegante',
@@ -439,8 +439,8 @@ export const products: Product[] = [
     categoriaKey: 'accesorios',
     pvp: 15.00,
     descripcion: 'Mochila ejecutiva con logo Sumak. Ideal para distribuidores y representantes.',
+    imagen: '/products/mochila-sumak.png',
     presentacion: 'Resistente, compartimento para laptop',
-    proximamente: true,
     beneficios: [
       'Tela resistente al agua',
       'Compartimento acolchado para laptop',

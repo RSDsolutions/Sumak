@@ -50,7 +50,7 @@ export default function MisComisiones() {
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
       const [{ data }, { data: compraData }] = await Promise.all([
         supabase.from('comisiones').select('*').eq('beneficiario_id', user!.id).order('created_at', { ascending: false }),
-        supabase.from('pedidos').select('id').eq('distribuidor_id', user!.id).eq('estado', 'entregado').gte('total', 100).gte('created_at', startOfMonth).limit(1),
+        supabase.from('pedidos').select('id').eq('distribuidor_id', user!.id).in('estado', ['procesando', 'enviado', 'entregado']).gte('total', 100).gte('created_at', startOfMonth).limit(1),
       ]);
       setComisiones((data ?? []) as Comision[]);
       setCompraCalificada((compraData?.length ?? 0) > 0);
@@ -72,22 +72,28 @@ export default function MisComisiones() {
 
       {/* Banner elegibilidad */}
       {!loading && (
-        <div className={`flex items-center gap-3 rounded-xl px-5 py-3 mb-6 border text-sm font-medium ${
+        <div className={`rounded-xl px-5 py-4 mb-6 border ${
           compraCalificada
-            ? 'bg-[#EBF4ED] border-[#1A4E26]/20 text-[#1A4E26]'
-            : 'bg-amber-50 border-amber-200 text-amber-700'
+            ? 'bg-[#EBF4ED] border-[#1A4E26]/20'
+            : 'bg-amber-50 border-amber-200'
         }`}>
           {compraCalificada ? (
-            <>
-              <CheckCircle2 size={16} className="shrink-0" />
-              <span>Habilitado para recibir comisiones este mes</span>
-            </>
+            <div className="flex items-start gap-3">
+              <CheckCircle2 size={18} className="shrink-0 mt-0.5 text-[#1A4E26]" />
+              <div className="text-sm text-[#1A4E26]">
+                <p className="font-bold mb-1">Habilitado para recibir comisiones este mes</p>
+                <p className="text-[#1A4E26]/80 text-xs leading-relaxed">
+                  Recuerda: el contador se reinicia cada mes. Tienes todo el próximo mes para hacer
+                  una compra de $100 o más en un solo pedido y mantener tu cupo a comisiones.
+                </p>
+              </div>
+            </div>
           ) : (
-            <>
+            <div className="flex items-center gap-3 text-sm font-medium text-amber-700">
               <AlertCircle size={16} className="shrink-0" />
               <span>Debes realizar una <strong>compra de $100 o más en un solo pedido</strong> este mes para recibir comisiones</span>
               <Link to="/dashboard/pedido/nuevo" className="ml-auto shrink-0 underline text-xs">Comprar</Link>
-            </>
+            </div>
           )}
         </div>
       )}

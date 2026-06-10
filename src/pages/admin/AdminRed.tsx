@@ -124,45 +124,79 @@ export default function AdminRed() {
   useEffect(() => {
     async function load() {
       try {
+        // Cargar TODOS los profiles primero (no solo los que tienen nodo)
+        const { data: perfiles } = await supabaseAdmin.from('profiles').select('*');
+        const profileMap = new Map<string, Profile>();
+        for (const p of perfiles ?? []) profileMap.set(p.id, p as Profile);
+
+        const adminProfile = (perfiles ?? []).find((p) => p.rol === 'admin') as Profile | undefined;
+        if (!adminProfile) {
+          setLoading(false);
+          return;
+        }
+
+        // Cargar nodos binarios
         const { data: nodos } = await supabaseAdmin
           .from('red_binaria')
           .select('*')
           .order('nivel', { ascending: true })
           .limit(1000);
-        if (!nodos || nodos.length === 0) return;
-
-        const distIds = nodos.map((n) => n.distribuidor_id);
-        const { data: perfiles } = await supabaseAdmin.from('profiles').select('*').in('id', distIds);
-
-        const profileMap = new Map<string, Profile>();
-        for (const p of perfiles ?? []) profileMap.set(p.id, p as Profile);
 
         const nodeMap = new Map<string, TreeNode>();
-        for (const n of nodos) {
+        for (const n of nodos ?? []) {
           const profile = profileMap.get(n.distribuidor_id);
           if (!profile) continue;
           nodeMap.set(n.id, { ...(n as unknown as NodoBinario), profile, children: [] });
         }
 
+        // Asegurar que el admin tiene un nodo en red_binaria
+        let adminTreeNode: TreeNode | null = null;
         for (const [, node] of nodeMap) {
-          if (node.padre_id) {
-            const parent = nodeMap.get(node.padre_id);
-            if (parent) parent.children.push(node);
+          if (node.distribuidor_id === adminProfile.id) {
+            adminTreeNode = node;
+            break;
+          }
+        }
+        if (!adminTreeNode) {
+          // Crear nodo del admin sobre la marcha
+          const { data: newAdminNode } = await supabaseAdmin
+            .from('red_binaria')
+            .insert({ distribuidor_id: adminProfile.id, padre_id: null, posicion: null, nivel: 1 })
+            .select('*')
+            .single();
+          if (newAdminNode) {
+            adminTreeNode = { ...(newAdminNode as unknown as NodoBinario), profile: adminProfile, children: [] };
+            nodeMap.set(adminTreeNode.id, adminTreeNode);
           }
         }
 
-        const roots: TreeNode[] = [];
-        for (const [, node] of nodeMap) {
-          if (!node.padre_id) roots.push(node);
+        if (!adminTreeNode) {
+          setLoading(false);
+          return;
         }
 
-        const adminRoot = roots.find((r) => r.profile.rol === 'admin') ?? roots[0] ?? null;
+        // Construir relaciones padre/hijo
+        for (const [, node] of nodeMap) {
+          if (node.id === adminTreeNode.id) continue;
+          if (node.padre_id) {
+            const parent = nodeMap.get(node.padre_id);
+            if (parent) {
+              parent.children.push(node);
+              continue;
+            }
+          }
+          // Huérfanos no-admin → se cuelgan del admin como frontales
+          node.padre_id = adminTreeNode.id;
+          node.posicion = null;
+          adminTreeNode.children.push(node);
+        }
 
+        // Aplanar para tabla
         const flat: TreeNode[] = [];
         const collect = (n: TreeNode) => { flat.push(n); n.children.forEach(collect); };
-        if (adminRoot) collect(adminRoot);
+        collect(adminTreeNode);
 
-        setAdminNode(adminRoot);
+        setAdminNode(adminTreeNode);
         setAllNodes(flat);
       } finally {
         setLoading(false);

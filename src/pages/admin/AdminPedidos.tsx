@@ -1,12 +1,19 @@
 import { useEffect, useState } from 'react';
-import { X, Eye } from 'lucide-react';
+import { X, Eye, Image as ImageIcon, ExternalLink, AlertCircle } from 'lucide-react';
 import { supabaseAdmin } from '../../lib/supabase';
-import { levelCommissions } from '../../data';
 import type { Pedido, PedidoItem, EstadoPedido } from '../../lib/types';
 
 type FilterTab = 'todos' | EstadoPedido;
 
 const ESTADOS: EstadoPedido[] = ['pendiente', 'procesando', 'enviado', 'entregado', 'cancelado'];
+
+const ESTADO_LABELS: Record<EstadoPedido, string> = {
+  pendiente: 'Pendiente',
+  procesando: 'Procesado',
+  enviado: 'Enviado',
+  entregado: 'Entregado',
+  cancelado: 'Cancelado',
+};
 
 const TABS: { key: FilterTab; label: string }[] = [
   { key: 'todos', label: 'Todos' },
@@ -46,6 +53,7 @@ interface DetalleModalProps {
 function DetalleModal({ pedido, onClose }: DetalleModalProps) {
   const [items, setItems] = useState<PedidoItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [voucherUrl, setVoucherUrl] = useState<string | null>(null);
 
   useEffect(() => {
     supabaseAdmin
@@ -58,11 +66,24 @@ function DetalleModal({ pedido, onClose }: DetalleModalProps) {
       });
   }, [pedido.id]);
 
+  useEffect(() => {
+    let cancelled = false;
+    if (pedido.voucher_url) {
+      supabaseAdmin.storage
+        .from('pedidos-vouchers')
+        .createSignedUrl(pedido.voucher_url, 3600)
+        .then(({ data }) => {
+          if (!cancelled && data?.signedUrl) setVoucherUrl(data.signedUrl);
+        });
+    }
+    return () => { cancelled = true; };
+  }, [pedido.voucher_url]);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/40">
-      <div className="bg-white border border-[#C8D8CB] rounded-2xl w-full max-w-lg shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/40 overflow-y-auto py-8">
+      <div className="bg-white border border-[#C8D8CB] rounded-2xl w-full max-w-2xl shadow-2xl my-auto">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#C8D8CB]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#C8D8CB] sticky top-0 bg-white rounded-t-2xl">
           <div>
             <h3 className="font-heading font-bold text-lg text-[#111111]">Detalle del Pedido</h3>
             <p className="text-[#9CA3AF] text-xs font-mono mt-0.5">{pedido.id}</p>
@@ -84,8 +105,8 @@ function DetalleModal({ pedido, onClose }: DetalleModalProps) {
           </div>
           <div>
             <p className="text-[#9CA3AF] text-xs uppercase tracking-wider mb-0.5">Estado</p>
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${estadoBadge(pedido.estado)}`}>
-              {pedido.estado}
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${estadoBadge(pedido.estado)}`}>
+              {ESTADO_LABELS[pedido.estado]}
             </span>
           </div>
           <div>
@@ -93,6 +114,42 @@ function DetalleModal({ pedido, onClose }: DetalleModalProps) {
             <p className="text-[#D4AF37] font-semibold">★ {pedido.puntos_generados}</p>
           </div>
         </div>
+
+        {/* Voucher */}
+        <div className="px-6 py-4 border-b border-[#C8D8CB]">
+          <p className="text-[#9CA3AF] text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <ImageIcon size={12} /> Comprobante de pago
+          </p>
+          {pedido.voucher_url ? (
+            voucherUrl ? (
+              <a href={voucherUrl} target="_blank" rel="noopener noreferrer" className="block group">
+                <div className="relative bg-[#F4F7F5] border border-[#C8D8CB] rounded-xl overflow-hidden">
+                  <img src={voucherUrl} alt="Voucher" className="w-full max-h-72 object-contain" />
+                  <div className="absolute bottom-2 right-2 bg-white/95 border border-[#C8D8CB] rounded-lg px-2.5 py-1 text-[10px] font-semibold text-[#1A4E26] flex items-center gap-1">
+                    <ExternalLink size={11} /> Abrir
+                  </div>
+                </div>
+              </a>
+            ) : (
+              <div className="bg-[#F4F7F5] border border-[#C8D8CB] rounded-xl px-4 py-6 text-center text-[#9CA3AF] text-xs">
+                Cargando comprobante...
+              </div>
+            )
+          ) : (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center gap-2 text-amber-700 text-xs">
+              <AlertCircle size={14} />
+              Este pedido no tiene voucher adjunto (puede ser un pedido inicial o anterior a la actualización).
+            </div>
+          )}
+        </div>
+
+        {/* Notas */}
+        {pedido.notas && (
+          <div className="px-6 py-4 border-b border-[#C8D8CB]">
+            <p className="text-[#9CA3AF] text-xs font-semibold uppercase tracking-wider mb-2">Notas del distribuidor</p>
+            <p className="text-[#111111] text-sm leading-relaxed bg-[#F4F7F5] rounded-xl p-3">{pedido.notas}</p>
+          </div>
+        )}
 
         {/* Items */}
         <div className="px-6 py-4">
@@ -164,53 +221,9 @@ export default function AdminPedidos() {
     try {
       const pedido = pedidos.find((p) => p.id === pedidoId);
 
-      // Aprobación manual de un pedido no procesado aún (caso excepcional)
-      if (newEstado === 'entregado' && currentEstado !== 'entregado' && pedido) {
-        const puntos = pedido.puntos_generados;
-        const distribId = pedido.distribuidor_id;
-
-        if (puntos > 0) {
-          // Sumar puntos al comprador
-          const { data: dp } = await supabaseAdmin.from('profiles').select('puntos').eq('id', distribId).single();
-          if (dp) await supabaseAdmin.from('profiles').update({ puntos: Number(dp.puntos) + puntos }).eq('id', distribId);
-
-          // Comisiones por nivel con verificación de elegibilidad
-          const now = new Date();
-          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-          const { data: allProfiles } = await supabaseAdmin.from('profiles').select('id, patrocinador_id');
-          const profMap = new Map<string, string | null>();
-          for (const p of allProfiles ?? []) profMap.set(p.id, p.patrocinador_id);
-
-          const uplineChain: Array<{ id: string; nivel: number; porcentaje: number }> = [];
-          let upId: string | null = distribId;
-          for (const lc of levelCommissions) {
-            const sponsorId = profMap.get(upId!) ?? null;
-            if (!sponsorId) break;
-            upId = sponsorId;
-            uplineChain.push({ id: upId, nivel: lc.nivel, porcentaje: lc.porcentaje });
-          }
-
-          if (uplineChain.length > 0) {
-            const uplineIds = uplineChain.map((u) => u.id);
-            const { data: eligibleOrders } = await supabaseAdmin
-              .from('pedidos').select('distribuidor_id')
-              .in('distribuidor_id', uplineIds).eq('estado', 'entregado').gte('total', 100).gte('created_at', startOfMonth);
-            const eligibleSet = new Set((eligibleOrders ?? []).map((o: { distribuidor_id: string }) => o.distribuidor_id));
-
-            const inserts: object[] = [];
-            for (const entry of uplineChain) {
-              if (eligibleSet.has(entry.id)) {
-                const monto = parseFloat((puntos * entry.porcentaje / 100).toFixed(2));
-                if (monto > 0) inserts.push({ beneficiario_id: entry.id, origen_id: distribId, tipo: 'nivel', nivel_red: entry.nivel, monto, estado: 'pendiente', descripcion: `Comisión nivel ${entry.nivel}` });
-              }
-            }
-            if (inserts.length > 0) await supabaseAdmin.from('comisiones').insert(inserts);
-          }
-        }
-      }
-
       // Cancelación: revertir puntos y marcar comisiones relacionadas
-      if (newEstado === 'cancelado' && currentEstado === 'entregado' && pedido) {
+      // (aplica si el pedido ya estaba en cualquier estado activo)
+      if (newEstado === 'cancelado' && ['procesando', 'enviado', 'entregado'].includes(currentEstado) && pedido) {
         const puntos = pedido.puntos_generados;
         const distribId = pedido.distribuidor_id;
 
@@ -300,8 +313,8 @@ export default function AdminPedidos() {
                       {p.puntos_generados > 0 ? `★ ${p.puntos_generados}` : '—'}
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${estadoBadge(p.estado)}`}>
-                        {p.estado}
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${estadoBadge(p.estado)}`}>
+                        {ESTADO_LABELS[p.estado]}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-[#6B7280] whitespace-nowrap">
@@ -324,7 +337,7 @@ export default function AdminPedidos() {
                         className="bg-white border border-[#C8D8CB] rounded-lg px-3 py-1.5 text-[#111111] text-xs focus:outline-none focus:border-[#1A4E26] transition-colors disabled:opacity-50"
                       >
                         {ESTADOS.map((e) => (
-                          <option key={e} value={e} className="capitalize">{e}</option>
+                          <option key={e} value={e}>{ESTADO_LABELS[e]}</option>
                         ))}
                       </select>
                     </td>

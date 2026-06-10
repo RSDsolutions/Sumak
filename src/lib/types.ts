@@ -68,6 +68,7 @@ export interface Pedido {
   total: number;
   puntos_generados: number;
   notas: string | null;
+  voucher_url: string | null;
   created_at: string;
   updated_at: string;
   // joined

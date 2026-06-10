@@ -3,24 +3,32 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
   ShoppingCart, Plus, Minus, X, CheckCircle2, AlertCircle, TrendingUp,
-  ArrowLeft, ArrowRight, Trash2, Leaf, Sparkles,
+  ArrowLeft, ArrowRight, Trash2, Leaf, Sparkles, Upload, Image as ImageIcon,
+  CreditCard, Receipt,
 } from 'lucide-react';
-import { levelCommissions } from '../../data';
+import { levelCommissions, contactInfo } from '../../data';
 import { supabase, supabaseAdmin } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { useCart } from '../../lib/cart';
+
+type Step = 'cart' | 'checkout' | 'done';
 
 export default function NuevoPedido() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const { items, setQty, removeItem, clear, subtotal, savings, puntos } = useCart();
+  const [step, setStep] = useState<Step>('cart');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [done, setDone] = useState(false);
   const [earnedPuntos, setEarnedPuntos] = useState(0);
   const [compraCalificada, setCompraCalificada] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState(true);
   const [totalMes, setTotalMes] = useState(0);
+
+  // Checkout state
+  const [voucherFile, setVoucherFile] = useState<File | null>(null);
+  const [voucherPreview, setVoucherPreview] = useState<string | null>(null);
+  const [notes, setNotes] = useState('');
 
   const willQualify = subtotal >= 100;
   const total = subtotal;
@@ -32,46 +40,78 @@ export default function NuevoPedido() {
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
       const { data } = await supabase
         .from('pedidos')
-        .select('id, total')
+        .select('id, total, estado')
         .eq('distribuidor_id', user!.id)
-        .eq('estado', 'entregado')
+        .in('estado', ['procesando', 'enviado', 'entregado'])
         .gte('created_at', startOfMonth);
 
       const all = (data ?? []) as { id: string; total: number }[];
       const totalMesAcum = all.reduce((s, p) => s + Number(p.total), 0);
       setTotalMes(totalMesAcum);
-      // qualifying = at least one order ≥ $100
       setCompraCalificada(all.some((p) => Number(p.total) >= 100));
       setLoadingStatus(false);
     }
     checkMonthly();
   }, [user]);
 
-  async function handleSubmit() {
-    if (items.length === 0 || !user) return;
+  function onVoucherFile(file: File) {
+    if (file.size > 5 * 1024 * 1024) {
+      setError('La imagen no debe superar los 5 MB.');
+      return;
+    }
+    setError('');
+    setVoucherFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => setVoucherPreview(e.target?.result as string);
+    reader.readAsDataURL(file);
+  }
+
+  async function handleSubmitCheckout() {
+    if (items.length === 0 || !user || !voucherFile) {
+      setError('Debes subir la foto del voucher de pago para continuar.');
+      return;
+    }
     setSubmitting(true);
     setError('');
 
     try {
       const distribId = user.id;
 
+      // 1. Upload voucher to storage. Folder = user uid (RLS path check).
+      const ext = voucherFile.name.split('.').pop()?.toLowerCase() ?? 'jpg';
+      const voucherPath = `${distribId}/${Date.now()}-voucher.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('pedidos-vouchers')
+        .upload(voucherPath, voucherFile, { upsert: false });
+
+      if (uploadError) {
+        setError('Error al subir el voucher: ' + uploadError.message);
+        setSubmitting(false);
+        return;
+      }
+
+      // 2. Create pedido directly as 'procesando' (label: Procesado)
       const { data: pedidoData, error: pedidoError } = await supabase
         .from('pedidos')
         .insert({
           distribuidor_id: distribId,
-          estado: 'pendiente',
+          estado: 'procesando',
           tipo_precio: 'distribuidor',
           total: parseFloat(total.toFixed(2)),
           puntos_generados: puntos,
+          notas: notes || null,
+          voucher_url: voucherPath,
         })
         .select()
         .single();
 
       if (pedidoError || !pedidoData) {
         setError('Error al crear el pedido: ' + (pedidoError?.message ?? 'desconocido'));
+        setSubmitting(false);
         return;
       }
 
+      // 3. Insert items
       const itemsRows = items.map((item) => ({
         pedido_id: pedidoData.id,
         producto_codigo: item.codigo,
@@ -83,10 +123,11 @@ export default function NuevoPedido() {
       const { error: itemsError } = await supabase.from('pedido_items').insert(itemsRows);
       if (itemsError) {
         setError('Error al guardar los productos: ' + itemsError.message);
+        setSubmitting(false);
         return;
       }
 
-      // Sumar puntos al comprador
+      // 4. Sumar puntos al comprador
       if (puntos > 0) {
         const { data: myProfile } = await supabaseAdmin
           .from('profiles').select('puntos').eq('id', distribId).single();
@@ -98,7 +139,7 @@ export default function NuevoPedido() {
         }
       }
 
-      // Comisiones por nivel — solo upline con compra calificada del mes
+      // 5. Comisiones por nivel — upline con compra calificada del mes
       if (puntos > 0) {
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
@@ -121,7 +162,9 @@ export default function NuevoPedido() {
           const uplineIds = uplineChain.map((u) => u.id);
           const { data: eligibleOrders } = await supabaseAdmin
             .from('pedidos').select('distribuidor_id')
-            .in('distribuidor_id', uplineIds).eq('estado', 'entregado').gte('total', 100).gte('created_at', startOfMonth);
+            .in('distribuidor_id', uplineIds)
+            .in('estado', ['procesando', 'enviado', 'entregado'])
+            .gte('total', 100).gte('created_at', startOfMonth);
           const eligibleSet = new Set((eligibleOrders ?? []).map((o: { distribuidor_id: string }) => o.distribuidor_id));
 
           const comInserts: object[] = [];
@@ -145,12 +188,10 @@ export default function NuevoPedido() {
         }
       }
 
-      await supabaseAdmin.from('pedidos').update({ estado: 'entregado' }).eq('id', pedidoData.id);
-
       if (total >= 100) setCompraCalificada(true);
       setEarnedPuntos(puntos);
       clear();
-      setDone(true);
+      setStep('done');
     } catch (err) {
       setError('Error inesperado. Intenta de nuevo.');
       console.error(err);
@@ -159,7 +200,8 @@ export default function NuevoPedido() {
     }
   }
 
-  if (done) {
+  // ─── DONE ────────────────────────────────────────────
+  if (step === 'done') {
     return (
       <div className="flex items-center justify-center min-h-[70vh]">
         <motion.div
@@ -171,8 +213,11 @@ export default function NuevoPedido() {
           <div className="w-20 h-20 bg-gradient-to-br from-[#1A4E26] to-[#2B6E3A] rounded-full flex items-center justify-center mx-auto mb-5 shadow-[0_8px_24px_rgba(26,78,38,0.3)]">
             <CheckCircle2 size={40} className="text-white" />
           </div>
-          <h2 className="font-heading font-bold text-3xl text-[#111111] mb-2">¡Pedido confirmado!</h2>
-          <p className="text-[#6B7280] mb-6">Tu pedido fue procesado y aprobado automáticamente.</p>
+          <h2 className="font-heading font-bold text-3xl text-[#111111] mb-2">¡Pedido enviado!</h2>
+          <p className="text-[#6B7280] mb-6">
+            Tu pedido está marcado como <strong className="text-[#1A4E26]">Procesado</strong>.
+            El admin revisará tu pago y coordinará el envío.
+          </p>
 
           {earnedPuntos > 0 && (
             <div className="inline-flex items-center gap-2 bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-xl px-5 py-3 mb-4 w-full justify-center">
@@ -209,9 +254,201 @@ export default function NuevoPedido() {
     );
   }
 
+  // ─── CHECKOUT ────────────────────────────────────────
+  if (step === 'checkout') {
+    return (
+      <div>
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
+          <div>
+            <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#111111] flex items-center gap-2">
+              <Receipt size={24} className="text-[#1A4E26]" />
+              Checkout — Pago
+            </h1>
+            <p className="text-[#6B7280] text-sm mt-1">Sube el comprobante de pago para confirmar el pedido.</p>
+          </div>
+          <button
+            onClick={() => { setStep('cart'); setError(''); }}
+            className="inline-flex items-center gap-1.5 text-[#6B7280] text-sm font-semibold hover:text-[#1A4E26] transition-colors"
+          >
+            <ArrowLeft size={14} /> Volver al carrito
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left: payment info + voucher upload */}
+          <div className="lg:col-span-2 space-y-4">
+
+            {/* Datos de pago */}
+            <div className="bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden">
+              <div className="px-5 py-3 border-b border-[#C8D8CB] bg-[#F4F7F5] flex items-center gap-2">
+                <CreditCard size={15} className="text-[#1A4E26]" />
+                <h2 className="font-heading font-bold text-[#111111] text-sm">Datos para el pago</h2>
+              </div>
+              <div className="p-5">
+                <p className="text-[#6B7280] text-sm mb-4">
+                  Realiza la transferencia o depósito por el total del pedido a una de las siguientes opciones:
+                </p>
+                <div className="space-y-3 text-sm">
+                  <div className="bg-[#F4F7F5] rounded-xl p-4 border border-[#C8D8CB]">
+                    <p className="text-[10px] uppercase tracking-widest text-[#9CA3AF] font-bold mb-1">Cuenta bancaria</p>
+                    <p className="text-[#111111] font-semibold">Sumak Vida Ecuador S.A.</p>
+                    <p className="text-[#6B7280] text-xs">RUC: {contactInfo.ruc}</p>
+                    <p className="text-[#6B7280] text-xs mt-1">
+                      Solicita los datos bancarios actualizados al{' '}
+                      <a href={`https://wa.me/${contactInfo.whatsapp}`} target="_blank" rel="noopener noreferrer" className="text-[#1A4E26] underline">
+                        WhatsApp oficial
+                      </a>
+                    </p>
+                  </div>
+                  <div className="bg-[#EBF4ED] rounded-xl p-4 border border-[#1A4E26]/20">
+                    <p className="text-[10px] uppercase tracking-widest text-[#1A4E26] font-bold mb-1">Monto a pagar</p>
+                    <p className="font-heading font-bold text-2xl text-[#1A4E26]">${total.toFixed(2)}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Voucher upload */}
+            <div className="bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden">
+              <div className="px-5 py-3 border-b border-[#C8D8CB] bg-[#F4F7F5] flex items-center gap-2">
+                <Receipt size={15} className="text-[#1A4E26]" />
+                <h2 className="font-heading font-bold text-[#111111] text-sm">Comprobante de pago *</h2>
+              </div>
+              <div className="p-5">
+                <p className="text-[#6B7280] text-sm mb-4">
+                  Sube la foto o captura del voucher de transferencia/depósito.
+                  El admin verá esta imagen al revisar tu pedido.
+                </p>
+
+                {voucherPreview ? (
+                  <div className="relative rounded-xl overflow-hidden border border-[#C8D8CB] bg-[#F4F7F5]">
+                    <img src={voucherPreview} alt="Voucher" className="w-full max-h-80 object-contain" />
+                    <button
+                      onClick={() => { setVoucherFile(null); setVoucherPreview(null); }}
+                      className="absolute top-2 right-2 bg-white/95 border border-[#C8D8CB] rounded-lg px-3 py-1.5 text-xs font-semibold text-[#6B7280] hover:text-red-600 transition-colors inline-flex items-center gap-1"
+                    >
+                      <X size={12} /> Cambiar
+                    </button>
+                  </div>
+                ) : (
+                  <label className="relative flex flex-col items-center justify-center gap-3 border-2 border-dashed border-[#C8D8CB] hover:border-[#A8C2AD] rounded-xl p-10 cursor-pointer transition-all bg-[#F4F7F5]">
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,application/pdf"
+                      className="sr-only"
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) onVoucherFile(f); }}
+                    />
+                    <Upload size={32} className="text-[#9CA3AF]" />
+                    <div className="text-center">
+                      <p className="text-[#6B7280] text-sm font-medium">Sube tu voucher de pago</p>
+                      <p className="text-[#9CA3AF] text-xs mt-1">JPG, PNG o PDF · Máx 5 MB</p>
+                    </div>
+                  </label>
+                )}
+
+                {voucherFile && (
+                  <div className="mt-3 flex items-center gap-2 text-[#1A4E26] text-xs">
+                    <CheckCircle2 size={13} />
+                    <span className="font-medium">{voucherFile.name}</span>
+                    <span className="text-[#9CA3AF]">({(voucherFile.size / 1024).toFixed(0)} KB)</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Notas */}
+            <div className="bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden">
+              <div className="px-5 py-3 border-b border-[#C8D8CB] bg-[#F4F7F5]">
+                <h2 className="font-heading font-bold text-[#111111] text-sm">Notas para el admin (opcional)</h2>
+              </div>
+              <div className="p-5">
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Dirección de envío, indicaciones especiales, etc."
+                  rows={3}
+                  className="w-full bg-[#F4F7F5] border border-[#C8D8CB] rounded-xl px-4 py-3 text-[#111111] text-sm placeholder-[#9CA3AF] focus:outline-none focus:border-[#1A4E26] transition-colors resize-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Right: summary */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-6 bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-[#C8D8CB] bg-[#F4F7F5]">
+                <h2 className="font-heading font-bold text-[#111111] text-sm">Resumen del pedido</h2>
+              </div>
+
+              <div className="p-5 space-y-3">
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {items.map((item) => (
+                    <div key={item.codigo} className="flex justify-between items-start gap-2 text-xs">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[#111111] truncate font-medium">{item.nombre}</p>
+                        <p className="text-[#9CA3AF]">{item.cantidad} × ${item.precio.toFixed(2)}</p>
+                      </div>
+                      <p className="text-[#111111] font-semibold shrink-0">${(item.precio * item.cantidad).toFixed(2)}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="border-t border-[#C8D8CB] pt-3 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[#6B7280]">Subtotal</span>
+                    <span className="text-[#111111] font-semibold">${subtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-[#D4AF37]">Ahorro 50%</span>
+                    <span className="text-[#D4AF37] font-semibold">- ${savings.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-[#D4AF37]">★ Puntos a ganar</span>
+                    <span className="text-[#D4AF37] font-bold">{puntos} pts</span>
+                  </div>
+                </div>
+
+                <div className="border-t border-[#C8D8CB] pt-3 flex justify-between items-baseline">
+                  <span className="font-heading font-bold text-[#111111]">Total</span>
+                  <span className="font-heading font-bold text-2xl text-[#1A4E26]">${total.toFixed(2)}</span>
+                </div>
+
+                {error && (
+                  <div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2 text-red-600 text-xs">
+                    {error}
+                  </div>
+                )}
+
+                <button
+                  onClick={handleSubmitCheckout}
+                  disabled={submitting || !voucherFile}
+                  className="w-full py-4 rounded-xl bg-[#1A4E26] text-white font-bold text-sm hover:bg-[#163F1E] disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_8px_24px_rgba(26,78,38,0.25)] transition-all duration-200 flex items-center justify-center gap-2"
+                >
+                  {submitting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Procesando...
+                    </>
+                  ) : (
+                    <>
+                      Enviar pedido <ArrowRight size={15} />
+                    </>
+                  )}
+                </button>
+                <p className="text-[10px] text-[#9CA3AF] text-center leading-tight">
+                  Al confirmar, tu pedido quedará marcado como <strong>Procesado</strong> y el admin verá tu voucher.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── CART (default) ─────────────────────────────────
   return (
     <div>
-      {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-3 mb-6">
         <div>
           <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#111111] flex items-center gap-2">
@@ -221,7 +458,7 @@ export default function NuevoPedido() {
           <p className="text-[#6B7280] text-sm mt-1">
             {items.length === 0
               ? 'Tu carrito está vacío. Visita la tienda para añadir productos.'
-              : `Revisa tu pedido y confírmalo. Hola, ${profile?.nombre_completo?.split(' ')[0] ?? ''}.`}
+              : `Revisa tu pedido. Hola, ${profile?.nombre_completo?.split(' ')[0] ?? ''}.`}
           </p>
         </div>
         <Link
@@ -253,7 +490,7 @@ export default function NuevoPedido() {
             </p>
             <p className={`text-xs ${compraCalificada ? 'text-[#1A4E26]/80' : 'text-amber-600'}`}>
               {compraCalificada
-                ? `Has cumplido la meta de $100 en un solo pedido este mes. Total acumulado: $${totalMes.toFixed(2)}.`
+                ? `Has cumplido la meta de $100 en un solo pedido este mes. Total acumulado: $${totalMes.toFixed(2)}. Recuerda: el contador reinicia el próximo mes.`
                 : `Realiza al menos un pedido de $100 o más en un solo pedido este mes para mantener tu cupo de comisiones. Acumulado este mes: $${totalMes.toFixed(2)}.`}
             </p>
           </div>
@@ -295,7 +532,6 @@ export default function NuevoPedido() {
             <div className="divide-y divide-[#C8D8CB]">
               {items.map((item) => (
                 <div key={item.codigo} className="px-6 py-4 flex items-center gap-4">
-                  {/* Image */}
                   <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl shrink-0 overflow-hidden" style={{ background: 'linear-gradient(160deg, #EBF4ED 0%, #D5ECD9 100%)' }}>
                     {item.imagen ? (
                       <img src={item.imagen} alt={item.nombre} className="absolute inset-0 w-full h-full object-cover" />
@@ -306,7 +542,6 @@ export default function NuevoPedido() {
                     )}
                   </div>
 
-                  {/* Info */}
                   <div className="flex-1 min-w-0">
                     <Link to={`/dashboard/tienda/${item.codigo}`} className="block">
                       <p className="text-[#111111] font-bold text-sm leading-tight truncate hover:text-[#1A4E26] transition-colors">
@@ -320,7 +555,6 @@ export default function NuevoPedido() {
                     </p>
                   </div>
 
-                  {/* Qty */}
                   <div className="flex items-center border border-[#C8D8CB] rounded-xl overflow-hidden shrink-0">
                     <button
                       onClick={() => setQty(item.codigo, item.cantidad - 1)}
@@ -339,7 +573,6 @@ export default function NuevoPedido() {
                     </button>
                   </div>
 
-                  {/* Subtotal */}
                   <div className="text-right shrink-0 w-20 sm:w-24">
                     <p className="font-heading font-bold text-[#111111] text-base">
                       ${(item.precio * item.cantidad).toFixed(2)}
@@ -365,11 +598,11 @@ export default function NuevoPedido() {
 
               <div className="p-5 space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-[#6B7280]">Subtotal ({items.length} producto{items.length !== 1 ? 's' : ''})</span>
+                  <span className="text-[#6B7280]">Subtotal ({items.length})</span>
                   <span className="text-[#111111] font-semibold">${subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-[#D4AF37]">Ahorro total (50% off)</span>
+                  <span className="text-[#D4AF37]">Ahorro total (50%)</span>
                   <span className="text-[#D4AF37] font-semibold">- ${savings.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
@@ -402,28 +635,16 @@ export default function NuevoPedido() {
                   </div>
                 )}
 
-                {error && (
-                  <div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2 text-red-600 text-xs">
-                    {error}
-                  </div>
-                )}
-
                 <button
-                  onClick={handleSubmit}
-                  disabled={submitting || items.length === 0}
+                  onClick={() => { setError(''); setStep('checkout'); }}
+                  disabled={items.length === 0}
                   className="w-full py-4 rounded-xl bg-[#1A4E26] text-white font-bold text-sm hover:bg-[#163F1E] disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_8px_24px_rgba(26,78,38,0.25)] transition-all duration-200 flex items-center justify-center gap-2"
                 >
-                  {submitting ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Procesando...
-                    </>
-                  ) : (
-                    <>
-                      Confirmar pedido <ArrowRight size={15} />
-                    </>
-                  )}
+                  Continuar al pago <ArrowRight size={15} />
                 </button>
+                <p className="text-[10px] text-[#9CA3AF] text-center flex items-center justify-center gap-1">
+                  <ImageIcon size={11} /> Tendrás que adjuntar tu voucher de pago
+                </p>
                 <Link
                   to="/dashboard/tienda"
                   className="w-full py-3 rounded-xl border border-[#C8D8CB] text-[#6B7280] text-sm font-semibold hover:border-[#A8C2AD] hover:text-[#111111] transition-all flex items-center justify-center gap-2"

@@ -30,6 +30,15 @@ function estadoBadge(estado: string) {
   return map[estado] ?? '';
 }
 
+const ESTADO_LABEL: Record<string, string> = {
+  pendiente: 'Pendiente',
+  procesando: 'Procesado',
+  enviado: 'Enviado',
+  entregado: 'Entregado',
+  cancelado: 'Cancelado',
+  pagado: 'Pagado',
+};
+
 interface Stats {
   comisionesPendientes: number;
   comisionesPagadas: number;
@@ -73,9 +82,9 @@ export default function Overview() {
       const pagadas = coms.filter((c) => c.estado === 'pagado').reduce((s, c) => s + Number(c.monto), 0);
 
       const pedidosMes = (pedidosMesData ?? []) as { id: string; total: number; estado: string; created_at: string }[];
-      const entregadosMes = pedidosMes.filter((p) => p.estado === 'entregado');
-      const totalMes = entregadosMes.reduce((s, p) => s + Number(p.total), 0);
-      const maxPedido = entregadosMes.length === 0 ? 0 : Math.max(...entregadosMes.map((p) => Number(p.total)));
+      const calificadosMes = pedidosMes.filter((p) => ['procesando', 'enviado', 'entregado'].includes(p.estado));
+      const totalMes = calificadosMes.reduce((s, p) => s + Number(p.total), 0);
+      const maxPedido = calificadosMes.length === 0 ? 0 : Math.max(...calificadosMes.map((p) => Number(p.total)));
       const calificada = maxPedido >= 100;
 
       setComisiones(coms);
@@ -159,7 +168,7 @@ export default function Overview() {
                     ? '¡Estás activo este mes!'
                     : 'Activa tu mes para cobrar comisiones'}
                 </h2>
-                <p className={`text-sm mb-4 leading-relaxed max-w-xl ${
+                <p className={`text-sm mb-3 leading-relaxed max-w-xl ${
                   stats?.compraCalificada ? 'text-white/75' : 'text-amber-700'
                 }`}>
                   {stats?.compraCalificada
@@ -167,6 +176,16 @@ export default function Overview() {
                     : `Para mantenerte activo y recibir comisiones, debes hacer al menos un pedido de $100 o más en un solo pedido cada mes.`
                   }
                 </p>
+
+                {stats?.compraCalificada && (
+                  <div className="flex items-start gap-2 bg-white/10 backdrop-blur-sm border border-[#D4AF37]/30 rounded-xl px-4 py-3 mb-4 max-w-xl">
+                    <Sparkles size={14} className="text-[#D4AF37] shrink-0 mt-0.5" />
+                    <p className="text-white/85 text-xs leading-relaxed">
+                      <span className="font-bold text-[#D4AF37]">Recuerda:</span>{' '}
+                      cada mes nuevo el contador empieza desde cero. Tienes todo el próximo mes para hacer una compra de $100 o más y mantener tu cupo a comisiones.
+                    </p>
+                  </div>
+                )}
 
                 {/* Progress bar */}
                 <div className="mb-3">
@@ -354,8 +373,8 @@ export default function Overview() {
                           </p>
                         )}
                       </div>
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium capitalize ${estadoBadge(p.estado)}`}>
-                        {p.estado}
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${estadoBadge(p.estado)}`}>
+                        {ESTADO_LABEL[p.estado] ?? p.estado}
                       </span>
                       <p className="font-heading font-bold text-[#1A4E26] text-sm whitespace-nowrap">
                         ${Number(p.total).toFixed(2)}

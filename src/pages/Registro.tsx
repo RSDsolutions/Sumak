@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence, type Variants } from 'motion/react';
-import { CheckCircle2, Upload, User, FileText, Package, AlertCircle } from 'lucide-react';
+import { CheckCircle2, Upload, User, FileText, Package, AlertCircle, Sparkles } from 'lucide-react';
 import { affiliatePackages } from '../data';
 import { supabase } from '../lib/supabase';
 import type { PaqueteKey } from '../lib/types';
@@ -128,10 +128,44 @@ async function uploadFile(file: File, cedula: string, name: string): Promise<str
 }
 
 export default function Registro() {
+  const [searchParams] = useSearchParams();
+  const refParam = searchParams.get('ref')?.trim() ?? '';
   const [step, setStep] = useState<Step>(1);
   const [personal, setPersonal] = useState<PersonalData>({
-    nombre: '', cedula: '', email: '', telefono: '', direccion: '', ciudad: '', patrocinador: '',
+    nombre: '', cedula: '', email: '', telefono: '', direccion: '', ciudad: '',
+    patrocinador: refParam ? refParam.toUpperCase() : '',
   });
+  const [refLocked, setRefLocked] = useState(!!refParam);
+  const [sponsorName, setSponsorName] = useState<string | null>(null);
+  const [sponsorChecking, setSponsorChecking] = useState(false);
+  const [sponsorInvalid, setSponsorInvalid] = useState(false);
+
+  useEffect(() => {
+    const code = personal.patrocinador.trim().toUpperCase();
+    if (!code) {
+      setSponsorName(null);
+      setSponsorInvalid(false);
+      return;
+    }
+    setSponsorChecking(true);
+    setSponsorInvalid(false);
+    const handle = setTimeout(async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('nombre_completo')
+        .eq('codigo_distribuidor', code)
+        .maybeSingle();
+      if (data) {
+        setSponsorName(data.nombre_completo);
+        setSponsorInvalid(false);
+      } else {
+        setSponsorName(null);
+        setSponsorInvalid(true);
+      }
+      setSponsorChecking(false);
+    }, 400);
+    return () => clearTimeout(handle);
+  }, [personal.patrocinador]);
   const [files, setFiles] = useState<UploadFiles>({
     cedulaFrente: null, cedulaReverso: null, planilla: null, voucher: null,
   });
@@ -269,17 +303,58 @@ export default function Registro() {
                   </div>
                 ))}
                 <div className="sm:col-span-2">
-                  <label className="block text-[#6B7280] text-xs font-semibold uppercase tracking-wider mb-2">
-                    Código del Patrocinador <span className="text-[#9CA3AF] font-normal">(opcional)</span>
+                  <label className="block text-[#6B7280] text-xs font-semibold uppercase tracking-wider mb-2 flex items-center justify-between">
+                    <span>Código del Patrocinador <span className="text-[#9CA3AF] font-normal">(opcional)</span></span>
+                    {refLocked && (
+                      <span className="inline-flex items-center gap-1 text-[#1A4E26] text-[10px] font-bold normal-case tracking-normal">
+                        <Sparkles size={11} /> Invitado por referido
+                      </span>
+                    )}
                   </label>
                   <input
                     name="patrocinador"
                     type="text"
                     placeholder="SUMAK-XXXXX"
                     value={personal.patrocinador}
-                    onChange={handlePersonalChange}
-                    className="w-full bg-white border border-[#C8D8CB] rounded-xl px-4 py-3 text-[#111111] text-sm placeholder-[#9CA3AF] focus:outline-none focus:border-[#1A4E26] transition-colors duration-200"
+                    onChange={(e) => setPersonal((prev) => ({ ...prev, patrocinador: e.target.value.toUpperCase() }))}
+                    readOnly={refLocked}
+                    className={`w-full border rounded-xl px-4 py-3 text-[#111111] text-sm placeholder-[#9CA3AF] focus:outline-none transition-colors duration-200 ${
+                      refLocked
+                        ? 'bg-[#EBF4ED] border-[#1A4E26]/30 cursor-not-allowed'
+                        : sponsorInvalid
+                        ? 'bg-white border-amber-300 focus:border-amber-500'
+                        : sponsorName
+                        ? 'bg-white border-[#1A4E26]/30 focus:border-[#1A4E26]'
+                        : 'bg-white border-[#C8D8CB] focus:border-[#1A4E26]'
+                    }`}
                   />
+                  {personal.patrocinador.trim() && (
+                    <div className="mt-2">
+                      {sponsorChecking ? (
+                        <p className="text-[#9CA3AF] text-xs flex items-center gap-1.5">
+                          <span className="w-3 h-3 border-2 border-[#9CA3AF] border-t-transparent rounded-full animate-spin" />
+                          Verificando código...
+                        </p>
+                      ) : sponsorName ? (
+                        <p className="text-[#1A4E26] text-xs flex items-center gap-1.5 font-medium">
+                          <CheckCircle2 size={13} /> Patrocinador: <strong>{sponsorName}</strong>
+                        </p>
+                      ) : sponsorInvalid ? (
+                        <p className="text-amber-600 text-xs flex items-center gap-1.5">
+                          <AlertCircle size={13} /> Código no encontrado. Verifica con tu patrocinador.
+                        </p>
+                      ) : null}
+                    </div>
+                  )}
+                  {refLocked && (
+                    <button
+                      type="button"
+                      onClick={() => { setRefLocked(false); }}
+                      className="mt-2 text-[#6B7280] text-[11px] underline hover:text-[#111111]"
+                    >
+                      Editar código manualmente
+                    </button>
+                  )}
                 </div>
               </div>
 

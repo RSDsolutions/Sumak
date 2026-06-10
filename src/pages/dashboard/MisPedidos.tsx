@@ -30,7 +30,7 @@ function estadoBadge(estado: string) {
 
 const ESTADO_LABELS: Record<string, string> = {
   pendiente: 'Pendiente',
-  procesando: 'Procesando',
+  procesando: 'Procesado',
   enviado: 'Enviado',
   entregado: 'Completado',
   cancelado: 'Cancelado',
@@ -85,13 +85,13 @@ function DetalleModal({ pedido, onClose }: DetalleModalProps) {
         {/* Status row */}
         <div className="px-6 py-4 bg-[#F4F7F5] border-b border-[#C8D8CB] flex flex-wrap items-center justify-between gap-3">
           <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${estadoBadge(pedido.estado)}`}>
-            {pedido.estado === 'entregado' && <CheckCircle2 size={12} className="mr-1.5" />}
+            {['procesando', 'enviado', 'entregado'].includes(pedido.estado) && <CheckCircle2 size={12} className="mr-1.5" />}
             {pedido.estado === 'pendiente' && <Clock size={12} className="mr-1.5" />}
             {ESTADO_LABELS[pedido.estado] ?? pedido.estado}
           </span>
           {pedido.puntos_generados > 0 && (
-            <span className={`text-sm font-bold ${pedido.estado === 'entregado' ? 'text-[#D4AF37]' : 'text-[#9CA3AF]'}`}>
-              ★ {pedido.puntos_generados} puntos {pedido.estado === 'entregado' ? 'ganados' : 'al confirmar'}
+            <span className={`text-sm font-bold ${pedido.estado === 'cancelado' || pedido.estado === 'pendiente' ? 'text-[#9CA3AF]' : 'text-[#D4AF37]'}`}>
+              ★ {pedido.puntos_generados} puntos {pedido.estado === 'cancelado' ? 'anulados' : pedido.estado === 'pendiente' ? 'al confirmar' : 'ganados'}
             </span>
           )}
         </div>
@@ -162,7 +162,7 @@ export default function MisPedidos() {
 
   // ── Stats summary ──
   const stats = useMemo(() => {
-    const completados = pedidos.filter((p) => p.estado === 'entregado');
+    const completados = pedidos.filter((p) => ['procesando', 'enviado', 'entregado'].includes(p.estado));
     const totalGastado = completados.reduce((s, p) => s + Number(p.total), 0);
     const ahorroEstimado = totalGastado;
     return {
@@ -329,7 +329,7 @@ export default function MisPedidos() {
                       {p.puntos_generados > 0 && (
                         <>
                           <span className="text-[#9CA3AF]">·</span>
-                          <span className={p.estado === 'entregado' ? 'text-[#D4AF37] font-semibold' : 'text-[#9CA3AF]'}>
+                          <span className={p.estado === 'cancelado' || p.estado === 'pendiente' ? 'text-[#9CA3AF]' : 'text-[#D4AF37] font-semibold'}>
                             ★ {p.puntos_generados} pts
                           </span>
                         </>

@@ -56,21 +56,37 @@ interface DistribuidorOption {
 function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
   const [padreProfileId, setPadreProfileId] = useState('');
   const [distribuidores, setDistribuidores] = useState<DistribuidorOption[]>([]);
+  const [adminProfile, setAdminProfile] = useState<DistribuidorOption | null>(null);
+  const [referidoProfile, setReferidoProfile] = useState<DistribuidorOption | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingDist, setLoadingDist] = useState(true);
   const [error, setError] = useState('');
 
-  // Load existing distributors for the dropdown
+  // Load existing distributors for the dropdown and auto-suggest placement
   useEffect(() => {
     supabaseAdmin
       .from('profiles')
       .select('id, codigo_distribuidor, nombre_completo, rol')
       .order('codigo_distribuidor', { ascending: true })
       .then(({ data }) => {
-        setDistribuidores((data as DistribuidorOption[]) ?? []);
+        const list = (data as DistribuidorOption[]) ?? [];
+        setDistribuidores(list);
+        const admin = list.find((d) => d.rol === 'admin') ?? null;
+        setAdminProfile(admin);
+
+        // Auto-suggest placement based on declared codigo_patrocinador
+        let suggested: DistribuidorOption | null = null;
+        if (afiliacion.codigo_patrocinador) {
+          suggested = list.find((d) => d.codigo_distribuidor === afiliacion.codigo_patrocinador) ?? null;
+          setReferidoProfile(suggested);
+        }
+        // Fallback: admin
+        const initial = suggested ?? admin;
+        if (initial) setPadreProfileId(initial.id);
+
         setLoadingDist(false);
       });
-  }, []);
+  }, [afiliacion.codigo_patrocinador]);
 
   async function handleApprove() {
     setLoading(true);
@@ -100,15 +116,20 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
 
       const userId = authData.user.id;
 
-      // 4. Resolve patrocinador: use the selected padre or look up by code in the form
-      let patrocinadorId: string | null = padreProfileId || null;
-      if (!patrocinadorId && afiliacion.codigo_patrocinador) {
+      // 4. Determinar el patrocinador del nuevo profile:
+      //    El patrocinador SIEMPRE es el dueño del código declarado por el afiliado.
+      //    Si no declaró código, el patrocinador es el admin (root de la red).
+      let patrocinadorId: string | null = null;
+      if (afiliacion.codigo_patrocinador) {
         const { data: pat } = await supabaseAdmin
           .from('profiles')
           .select('id')
           .eq('codigo_distribuidor', afiliacion.codigo_patrocinador)
-          .single();
+          .maybeSingle();
         patrocinadorId = pat?.id ?? null;
+      }
+      if (!patrocinadorId) {
+        patrocinadorId = adminProfile?.id ?? null;
       }
 
       const packagePuntos = PAQUETE_PUNTOS[afiliacion.paquete_seleccionado] ?? 0;
@@ -137,19 +158,35 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
         return;
       }
 
-      // 6. Find the parent's red_binaria node id and nivel
+      // 6. Determinar la ubicación en la red binaria.
+      //    Si el admin no escogió un padre explícito en el dropdown,
+      //    se ubica bajo el patrocinador resuelto (referido o admin).
+      const parentProfileId = padreProfileId || patrocinadorId;
       let padreNodoId: string | null = null;
       let padreNivel: number = 0;
-      const parentProfileId = padreProfileId || patrocinadorId;
       if (parentProfileId) {
         const { data: padreNodo } = await supabaseAdmin
           .from('red_binaria')
           .select('id, nivel')
           .eq('distribuidor_id', parentProfileId)
-          .single();
+          .maybeSingle();
         if (padreNodo) {
           padreNodoId = padreNodo.id;
           padreNivel = padreNodo.nivel;
+        } else {
+          // El padre no tiene nodo aún. Si es el admin, créalo como root.
+          const selectedParent = distribuidores.find((d) => d.id === parentProfileId);
+          if (selectedParent?.rol === 'admin') {
+            const { data: newAdminNode } = await supabaseAdmin
+              .from('red_binaria')
+              .insert({ distribuidor_id: parentProfileId, padre_id: null, posicion: null, nivel: 1 })
+              .select('id, nivel')
+              .single();
+            if (newAdminNode) {
+              padreNodoId = newAdminNode.id;
+              padreNivel = newAdminNode.nivel;
+            }
+          }
         }
       }
 
@@ -203,6 +240,35 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
         .update({ estado: 'aprobada' })
         .eq('id', afiliacion.id);
 
+      // 8.1 Pedido inicial procesado por el paquete (activa el mes automáticamente)
+      const packagePrice = PAQUETE_PRECIOS[afiliacion.paquete_seleccionado] ?? 0;
+      const packageName = afiliacion.paquete_seleccionado.charAt(0).toUpperCase() + afiliacion.paquete_seleccionado.slice(1);
+      if (packagePrice > 0) {
+        const { data: pkgPedido } = await supabaseAdmin
+          .from('pedidos')
+          .insert({
+            distribuidor_id: userId,
+            estado: 'procesando',
+            tipo_precio: 'distribuidor',
+            total: packagePrice,
+            puntos_generados: packagePuntos,
+            notas: `Pedido inicial — Paquete ${packageName} (afiliación)`,
+          })
+          .select()
+          .single();
+
+        if (pkgPedido) {
+          await supabaseAdmin.from('pedido_items').insert({
+            pedido_id: pkgPedido.id,
+            producto_codigo: `PKG-${afiliacion.paquete_seleccionado.toUpperCase()}`,
+            producto_nombre: `Paquete ${packageName}`,
+            cantidad: 1,
+            precio_unitario: packagePrice,
+            subtotal: packagePrice,
+          });
+        }
+      }
+
       // 9. Comisión de referido directa para el patrocinador (40% del precio del paquete)
       if (patrocinadorId) {
         const montoReferido = parseFloat(((PAQUETE_PRECIOS[afiliacion.paquete_seleccionado] ?? 0) * 0.40).toFixed(2));
@@ -245,7 +311,7 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
             .from('pedidos')
             .select('distribuidor_id')
             .in('distribuidor_id', uplineIds)
-            .eq('estado', 'entregado')
+            .in('estado', ['procesando', 'enviado', 'entregado'])
             .gte('total', 100)
             .gte('created_at', startOfMonth);
           const eligibleSet = new Set((eligibleOrders ?? []).map((o: { distribuidor_id: string }) => o.distribuidor_id));
@@ -291,10 +357,31 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
           </div>
         )}
 
-        {/* Parent distributor dropdown */}
+        {/* Patrocinador declarado (sponsor de comisión por referido) */}
+        <div className="mb-4 bg-[#EBF4ED] border border-[#1A4E26]/20 rounded-xl px-4 py-3">
+          <p className="text-[#1A4E26] text-xs font-bold uppercase tracking-wider mb-1.5">
+            Patrocinador (comisión por referido)
+          </p>
+          {referidoProfile ? (
+            <div>
+              <p className="text-[#111111] text-sm font-semibold">{referidoProfile.nombre_completo}</p>
+              <p className="text-[#1A4E26] text-xs font-mono mt-0.5">{referidoProfile.codigo_distribuidor}</p>
+            </div>
+          ) : afiliacion.codigo_patrocinador ? (
+            <p className="text-amber-700 text-sm">
+              Código declarado: <strong>{afiliacion.codigo_patrocinador}</strong> (no encontrado en la red — la comisión por referido irá al admin)
+            </p>
+          ) : (
+            <p className="text-[#6B7280] text-sm">
+              El afiliado no declaró patrocinador — la comisión por referido (40%) irá al admin.
+            </p>
+          )}
+        </div>
+
+        {/* Ubicación en la red binaria */}
         <div className="mb-4">
           <label className="block text-[#6B7280] text-xs font-semibold uppercase tracking-wider mb-2">
-            Ubicar bajo el distribuidor (partner)
+            Ubicar en la red binaria (puede diferir del patrocinador)
           </label>
           <select
             value={padreProfileId}
@@ -302,17 +389,16 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
             disabled={loadingDist}
             className="w-full bg-white border border-[#C8D8CB] rounded-xl px-4 py-3 text-[#111111] text-sm focus:outline-none focus:border-[#1A4E26] transition-colors appearance-none"
           >
-            <option value="">— Sin padre (nodo raíz) —</option>
             {distribuidores.map((d) => (
               <option key={d.id} value={d.id}>
                 {d.rol === 'admin' ? '★ ' : ''}{d.codigo_distribuidor} — {d.nombre_completo}{d.rol === 'admin' ? ' (Admin)' : ''}
               </option>
             ))}
           </select>
-          <p className="text-[#9CA3AF] text-xs mt-1">
-            {afiliacion.codigo_patrocinador
-              ? `Patrocinador declarado: ${afiliacion.codigo_patrocinador}`
-              : 'El afiliado no declaró patrocinador'}
+          <p className="text-[#9CA3AF] text-xs mt-1.5">
+            {referidoProfile
+              ? `Sugerido: bajo ${referidoProfile.codigo_distribuidor} (su patrocinador). Puedes reubicarlo si lo necesitas.`
+              : 'Sugerido: bajo el admin como frontal directo.'}
           </p>
         </div>
 
@@ -320,7 +406,7 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
         <div className="mb-6 bg-[#F4F7F5] border border-[#C8D8CB] rounded-xl px-4 py-3">
           <p className="text-[#6B7280] text-xs font-semibold uppercase tracking-wider mb-1">Posición en la red</p>
           {!padreProfileId ? (
-            <p className="text-[#9CA3AF] text-sm">Se definirá al seleccionar un partner</p>
+            <p className="text-[#9CA3AF] text-sm">Selecciona un partner para ver la posición</p>
           ) : distribuidores.find((d) => d.id === padreProfileId)?.rol === 'admin' ? (
             <p className="text-[#1A4E26] text-sm font-medium">Frontal directo del admin (sin posición izq/der)</p>
           ) : (
