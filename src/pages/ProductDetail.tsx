@@ -15,7 +15,7 @@ export default function ProductDetail() {
   const product = products.find((p) => p.slug === slug);
 
   const [qty, setQty] = useState(1);
-  const [activeTab, setActiveTab] = useState<TabKey>('beneficios');
+  const [activeTab, setActiveTab] = useState<TabKey>('ingredientes');
   const [revistaOpen, setRevistaOpen] = useState(false);
 
   if (!product) {
@@ -38,8 +38,8 @@ export default function ProductDetail() {
     .slice(0, 4);
 
   const tabs: { key: TabKey; label: string; available: boolean }[] = [
-    { key: 'beneficios', label: 'Beneficios', available: !!product.beneficios?.length },
     { key: 'ingredientes', label: 'Ingredientes', available: !!product.ingredientes?.length },
+    { key: 'beneficios', label: 'Beneficios', available: !!product.beneficios?.length },
     { key: 'modo-uso', label: 'Modo de uso', available: !!product.modoUso },
     { key: 'precauciones', label: 'Precauciones', available: !!product.precauciones },
   ].filter((t) => t.available);
@@ -370,31 +370,42 @@ export default function ProductDetail() {
                     <p className="text-[#6B7280] text-sm mb-6">Formulado con plantas, extractos y nutrientes seleccionados.</p>
 
                     {conImagen.length > 0 && (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 mb-6">
+                      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 gap-y-6 mb-8 px-2">
                         {conImagen.map((ing, i) => (
                           <motion.div
                             key={ing.name + i}
-                            initial={{ opacity: 0, y: 12 }}
-                            whileInView={{ opacity: 1, y: 0 }}
+                            initial={{ opacity: 0, scale: 0.85, y: 10 }}
+                            whileInView={{ opacity: 1, scale: 1, y: 0 }}
                             viewport={{ once: true }}
-                            transition={{ duration: 0.3, delay: Math.min(i * 0.02, 0.3) }}
-                            className="bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden hover:border-[#1A4E26]/40 hover:shadow-[0_8px_24px_rgba(26,78,38,0.15)] hover:-translate-y-0.5 transition-all duration-300 group cursor-default"
+                            transition={{ duration: 0.4, delay: Math.min(i * 0.03, 0.4), ease: [0.22, 1, 0.36, 1] }}
+                            whileHover={{ y: -4, scale: 1.05 }}
+                            className="flex flex-col items-center text-center group cursor-default"
                             title={ing.description}
                           >
-                            <div className="aspect-square relative overflow-hidden" style={{ background: 'radial-gradient(circle at 50% 40%, #FFFFFF 0%, #EBF4ED 70%, #D5ECD9 100%)' }}>
+                            {/* Imagen flotante con resplandor radial */}
+                            <div className="relative w-20 h-20 sm:w-24 sm:h-24 mb-2">
+                              {/* Glow radial detrás */}
+                              <div
+                                className="absolute inset-0 rounded-full opacity-60 group-hover:opacity-90 transition-opacity duration-500 blur-xl"
+                                style={{
+                                  background: 'radial-gradient(circle, rgba(26,78,38,0.18) 0%, rgba(212,175,55,0.08) 50%, transparent 75%)',
+                                }}
+                              />
+                              {/* Imagen */}
                               <img
                                 src={ing.image}
                                 alt={ing.name}
-                                className="absolute inset-0 w-full h-full object-contain p-3 sm:p-4 group-hover:scale-110 transition-transform duration-500"
                                 loading="lazy"
+                                className="relative w-full h-full object-contain"
+                                style={{
+                                  filter: 'drop-shadow(0 6px 10px rgba(26,78,38,0.18)) drop-shadow(0 2px 4px rgba(0,0,0,0.08))',
+                                }}
                               />
                             </div>
-                            <div className="px-2 py-2.5 border-t border-[#C8D8CB] text-center bg-white">
-                              <p className="text-[#111111] text-[11px] sm:text-xs font-bold leading-tight line-clamp-2">{ing.name}</p>
-                              {ing.description && (
-                                <p className="text-[#6B7280] text-[9px] mt-0.5 leading-snug line-clamp-1">{ing.description}</p>
-                              )}
-                            </div>
+                            <p className="text-[#111111] text-[11px] sm:text-xs font-bold leading-tight line-clamp-2 max-w-[7rem]">{ing.name}</p>
+                            {ing.description && (
+                              <p className="text-[#6B7280] text-[9px] mt-0.5 leading-snug line-clamp-2 max-w-[7rem]">{ing.description}</p>
+                            )}
                           </motion.div>
                         ))}
                       </div>

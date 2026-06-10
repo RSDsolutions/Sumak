@@ -18,7 +18,7 @@ export default function TiendaProducto() {
   const product = products.find((p) => p.slug === slug);
   const { addItem, items, setQty: setCartQty } = useCart();
   const [qty, setQty] = useState(1);
-  const [activeTab, setActiveTab] = useState<TabKey>('beneficios');
+  const [activeTab, setActiveTab] = useState<TabKey>('ingredientes');
   const [revistaOpen, setRevistaOpen] = useState(false);
 
   if (!product) {
@@ -43,8 +43,8 @@ export default function TiendaProducto() {
     .slice(0, 4);
 
   const tabs: { key: TabKey; label: string; available: boolean }[] = [
-    { key: 'beneficios', label: 'Beneficios', available: !!product.beneficios?.length },
     { key: 'ingredientes', label: 'Ingredientes', available: !!product.ingredientes?.length },
+    { key: 'beneficios', label: 'Beneficios', available: !!product.beneficios?.length },
     { key: 'modo-uso', label: 'Modo de uso', available: !!product.modoUso },
     { key: 'precauciones', label: 'Precauciones', available: !!product.precauciones },
   ].filter((t) => t.available);
@@ -301,25 +301,37 @@ export default function TiendaProducto() {
               return (
                 <div>
                   {conImagen.length > 0 && (
-                    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2.5 mb-5">
+                    <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-6 gap-x-3 gap-y-5 mb-6 px-1">
                       {conImagen.map((ing, i) => (
-                        <div
+                        <motion.div
                           key={ing.name + i}
-                          className="bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden hover:border-[#1A4E26]/40 hover:shadow-[0_6px_18px_rgba(26,78,38,0.12)] hover:-translate-y-0.5 transition-all duration-300 group"
+                          initial={{ opacity: 0, scale: 0.85, y: 8 }}
+                          whileInView={{ opacity: 1, scale: 1, y: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ duration: 0.35, delay: Math.min(i * 0.025, 0.35), ease: [0.22, 1, 0.36, 1] }}
+                          whileHover={{ y: -3, scale: 1.06 }}
+                          className="flex flex-col items-center text-center group cursor-default"
                           title={ing.description}
                         >
-                          <div className="aspect-square relative overflow-hidden" style={{ background: 'radial-gradient(circle at 50% 40%, #FFFFFF 0%, #EBF4ED 70%, #D5ECD9 100%)' }}>
+                          <div className="relative w-16 h-16 sm:w-20 sm:h-20 mb-1.5">
+                            <div
+                              className="absolute inset-0 rounded-full opacity-55 group-hover:opacity-85 transition-opacity duration-500 blur-xl"
+                              style={{
+                                background: 'radial-gradient(circle, rgba(26,78,38,0.18) 0%, rgba(212,175,55,0.08) 50%, transparent 75%)',
+                              }}
+                            />
                             <img
                               src={ing.image}
                               alt={ing.name}
-                              className="absolute inset-0 w-full h-full object-contain p-2.5 sm:p-3 group-hover:scale-110 transition-transform duration-500"
                               loading="lazy"
+                              className="relative w-full h-full object-contain"
+                              style={{
+                                filter: 'drop-shadow(0 4px 8px rgba(26,78,38,0.16)) drop-shadow(0 2px 3px rgba(0,0,0,0.08))',
+                              }}
                             />
                           </div>
-                          <div className="px-1.5 py-1.5 border-t border-[#C8D8CB] text-center bg-white">
-                            <p className="text-[#111111] text-[10px] font-bold leading-tight line-clamp-2">{ing.name}</p>
-                          </div>
-                        </div>
+                          <p className="text-[#111111] text-[10px] font-bold leading-tight line-clamp-2 max-w-[6rem]">{ing.name}</p>
+                        </motion.div>
                       ))}
                     </div>
                   )}
