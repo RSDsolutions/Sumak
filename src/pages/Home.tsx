@@ -196,16 +196,12 @@ export default function Home() {
                     <span className="text-white/50 text-[11px] font-mono">#{heroProduct.codigo}</span>
                   </div>
 
-                  {/* Floating product image */}
-                  <div className="relative h-[280px] sm:h-[340px] flex items-center justify-center mb-5">
-                    <div className="absolute inset-[-10%] rounded-full blur-2xl opacity-50" style={{ background: 'radial-gradient(circle, rgba(43,110,58,0.7) 0%, transparent 65%)' }} />
-                    <motion.img
+                  {/* Product image — fills the box */}
+                  <div className="relative h-[280px] sm:h-[340px] rounded-2xl overflow-hidden mb-5">
+                    <img
                       src={heroProduct.imagen}
                       alt={heroProduct.nombre}
-                      className="relative max-h-full max-w-full object-contain z-10"
-                      style={{ filter: 'drop-shadow(0 30px 40px rgba(0,0,0,0.5)) drop-shadow(0 0 30px rgba(212,175,55,0.2))' }}
-                      animate={{ y: [0, -10, 0] }}
-                      transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                      className="absolute inset-0 w-full h-full object-cover"
                     />
                   </div>
 
@@ -331,15 +327,17 @@ export default function Home() {
                   className="group block relative overflow-hidden rounded-2xl border border-[#C8D8CB] hover:border-[#1A4E26]/40 transition-all duration-300 h-full"
                   style={{ background: 'linear-gradient(160deg, #F4F7F5 0%, #E8F2EA 100%)' }}
                 >
-                  <div className="h-32 sm:h-40 flex items-center justify-center p-4 overflow-hidden">
+                  <div className="relative h-32 sm:h-40 overflow-hidden">
                     {cat.sample?.imagen ? (
                       <img
                         src={cat.sample.imagen}
                         alt={cat.label}
-                        className="max-h-full max-w-full object-contain group-hover:scale-110 transition-transform duration-500 drop-shadow-lg"
+                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
                     ) : (
-                      <Leaf size={40} className="text-[#1A4E26] opacity-30" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Leaf size={40} className="text-[#1A4E26] opacity-30" />
+                      </div>
                     )}
                   </div>
                   <div className="p-4 pt-2 border-t border-[#C8D8CB]/60 bg-white/60 backdrop-blur-sm">
@@ -390,7 +388,7 @@ export default function Home() {
                 className="bg-white rounded-3xl overflow-hidden border border-[#C8D8CB] hover:shadow-[0_25px_60px_rgba(26,78,38,0.15)] hover:-translate-y-1 transition-all duration-300 group flex flex-col"
               >
                 {/* Image area */}
-                <div className="relative h-72 flex items-center justify-center p-8 overflow-hidden" style={{ background: 'linear-gradient(160deg, #EBF4ED 0%, #D5ECD9 100%)' }}>
+                <div className="relative h-72 overflow-hidden" style={{ background: 'linear-gradient(160deg, #EBF4ED 0%, #D5ECD9 100%)' }}>
                   {/* Badges */}
                   <div className="absolute top-4 left-4 right-4 flex items-start justify-between z-10">
                     <span className="inline-flex items-center gap-1 bg-[#D4AF37] text-[#0B2913] text-[10px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full">
@@ -401,18 +399,16 @@ export default function Home() {
                     </span>
                   </div>
 
-                  {/* Glow */}
-                  <div className="absolute inset-[10%] rounded-full blur-2xl opacity-30" style={{ background: 'radial-gradient(circle, rgba(26,78,38,0.4) 0%, transparent 65%)' }} />
-
                   {product.imagen ? (
                     <img
                       src={product.imagen}
                       alt={product.nombre}
-                      className="relative max-h-full max-w-full object-contain group-hover:scale-110 transition-transform duration-500"
-                      style={{ filter: 'drop-shadow(0 20px 30px rgba(26,78,38,0.25))' }}
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
-                    <Leaf size={64} className="text-[#1A4E26] opacity-30 relative z-10" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Leaf size={64} className="text-[#1A4E26] opacity-30" />
+                    </div>
                   )}
                 </div>
 
@@ -480,35 +476,32 @@ export default function Home() {
               <Leaf size={32} className="text-[#0B2913]" />
             </div>
 
-            {/* Floating product 1 */}
-            <motion.img
-              src={featuredProducts[0]?.imagen}
-              alt={featuredProducts[0]?.nombre}
-              className="absolute top-12 right-8 w-44 h-44 object-contain"
-              style={{ filter: 'drop-shadow(0 25px 30px rgba(0,0,0,0.4))' }}
-              animate={{ y: [0, -12, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-            />
+            {/* Product 1 */}
+            <div className="absolute top-12 right-8 w-44 h-44 rounded-2xl overflow-hidden shadow-2xl">
+              <img
+                src={featuredProducts[0]?.imagen}
+                alt={featuredProducts[0]?.nombre}
+                className="w-full h-full object-cover"
+              />
+            </div>
 
-            {/* Floating product 2 */}
-            <motion.img
-              src={featuredProducts[1]?.imagen}
-              alt={featuredProducts[1]?.nombre}
-              className="absolute bottom-12 left-12 w-40 h-40 object-contain"
-              style={{ filter: 'drop-shadow(0 25px 30px rgba(0,0,0,0.4))' }}
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut', delay: 0.8 }}
-            />
+            {/* Product 2 */}
+            <div className="absolute bottom-12 left-12 w-40 h-40 rounded-2xl overflow-hidden shadow-2xl">
+              <img
+                src={featuredProducts[1]?.imagen}
+                alt={featuredProducts[1]?.nombre}
+                className="w-full h-full object-cover"
+              />
+            </div>
 
-            {/* Floating product 3 */}
-            <motion.img
-              src={featuredProducts[2]?.imagen}
-              alt={featuredProducts[2]?.nombre}
-              className="absolute bottom-20 right-16 w-32 h-32 object-contain"
-              style={{ filter: 'drop-shadow(0 20px 25px rgba(0,0,0,0.4))' }}
-              animate={{ y: [0, -8, 0] }}
-              transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1.5 }}
-            />
+            {/* Product 3 */}
+            <div className="absolute bottom-20 right-16 w-32 h-32 rounded-2xl overflow-hidden shadow-2xl">
+              <img
+                src={featuredProducts[2]?.imagen}
+                alt={featuredProducts[2]?.nombre}
+                className="w-full h-full object-cover"
+              />
+            </div>
 
             {/* Quote overlay */}
             <div className="absolute bottom-6 left-6 right-6 bg-black/40 backdrop-blur-md border border-white/15 rounded-2xl p-5">
@@ -621,15 +614,17 @@ export default function Home() {
                         )}
                       </div>
                     )}
-                    <div className="h-28 sm:h-32 flex items-center justify-center mb-3 overflow-hidden">
+                    <div className="relative h-28 sm:h-32 rounded-xl overflow-hidden mb-3">
                       {product.imagen ? (
                         <img
                           src={product.imagen}
                           alt={product.nombre}
-                          className="max-h-full max-w-full object-contain group-hover:scale-110 transition-transform duration-300 drop-shadow-lg"
+                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                         />
                       ) : (
-                        <Leaf size={36} className="text-white/35" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Leaf size={36} className="text-white/35" />
+                        </div>
                       )}
                     </div>
                     <p className="text-white text-center text-xs font-semibold leading-tight mb-1 line-clamp-2">{product.nombre}</p>
@@ -790,7 +785,9 @@ export default function Home() {
                   className="bg-white border border-[#C8D8CB] hover:border-[#1A4E26] rounded-2xl p-4 flex items-center gap-4 transition-all hover:shadow-md max-w-xs w-full"
                 >
                   {n.imagen && (
-                    <img src={n.imagen} alt={n.nombre} className="w-16 h-16 object-contain" />
+                    <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0">
+                      <img src={n.imagen} alt={n.nombre} className="w-full h-full object-cover" />
+                    </div>
                   )}
                   <div className="text-left">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-[#D4AF37] mb-0.5">Nuevo</p>

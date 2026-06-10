@@ -249,22 +249,18 @@ export default function Productos() {
                     </span>
                   </div>
 
-                  {/* Glow */}
-                  <div className="absolute inset-[15%] rounded-full blur-2xl opacity-25" style={{ background: 'radial-gradient(circle, rgba(26,78,38,0.4) 0%, transparent 65%)' }} />
-
                   {/* Image */}
-                  <div className="absolute inset-0 flex items-center justify-center p-7">
-                    {product.imagen ? (
-                      <img
-                        src={product.imagen}
-                        alt={product.nombre}
-                        className="max-h-full max-w-full object-contain group-hover:scale-110 transition-transform duration-500"
-                        style={{ filter: 'drop-shadow(0 15px 25px rgba(26,78,38,0.2))' }}
-                      />
-                    ) : (
+                  {product.imagen ? (
+                    <img
+                      src={product.imagen}
+                      alt={product.nombre}
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
                       <Leaf size={48} className="text-[#1A4E26] opacity-30" />
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </Link>
 
                 {/* Info */}

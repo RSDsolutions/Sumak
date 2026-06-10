@@ -73,10 +73,8 @@ export default function ProductDetail() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
           >
-            {/* Main image */}
-            <div className="relative bg-white rounded-3xl border border-[#C8D8CB] overflow-hidden aspect-square flex items-center justify-center p-10 shadow-[0_4px_24px_rgba(26,78,38,0.06)]" style={{ background: 'linear-gradient(160deg, #FFFFFF 0%, #EBF4ED 100%)' }}>
-              <div className="absolute inset-[15%] rounded-full blur-3xl opacity-20" style={{ background: 'radial-gradient(circle, rgba(26,78,38,0.6) 0%, transparent 65%)' }} />
-
+            {/* Main image — fills the box */}
+            <div className="relative rounded-3xl border border-[#C8D8CB] overflow-hidden aspect-square shadow-[0_4px_24px_rgba(26,78,38,0.06)]" style={{ background: 'linear-gradient(160deg, #FFFFFF 0%, #EBF4ED 100%)' }}>
               {/* Top badges */}
               <div className="absolute top-5 left-5 right-5 flex items-start justify-between gap-2 z-10">
                 <div className="flex flex-col gap-2">
@@ -102,16 +100,15 @@ export default function ProductDetail() {
               </div>
 
               {product.imagen ? (
-                <motion.img
+                <img
                   src={product.imagen}
                   alt={product.nombre}
-                  className="relative max-h-full max-w-full object-contain z-10"
-                  style={{ filter: 'drop-shadow(0 30px 40px rgba(26,78,38,0.25))' }}
-                  animate={{ y: [0, -10, 0] }}
-                  transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+                  className="absolute inset-0 w-full h-full object-cover"
                 />
               ) : (
-                <Leaf size={120} className="text-[#1A4E26] opacity-30 relative z-10" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Leaf size={120} className="text-[#1A4E26] opacity-30" />
+                </div>
               )}
             </div>
 
@@ -403,15 +400,17 @@ export default function ProductDetail() {
                   to={`/productos/${p.slug}`}
                   className="group bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden hover:border-[#1A4E26]/40 hover:shadow-[0_8px_28px_rgba(26,78,38,0.12)] hover:-translate-y-0.5 transition-all duration-300"
                 >
-                  <div className="h-44 sm:h-52 flex items-center justify-center p-5 overflow-hidden relative" style={{ background: 'linear-gradient(160deg, #EBF4ED 0%, #D5ECD9 100%)' }}>
+                  <div className="relative h-44 sm:h-52 overflow-hidden" style={{ background: 'linear-gradient(160deg, #EBF4ED 0%, #D5ECD9 100%)' }}>
                     {p.imagen ? (
                       <img
                         src={p.imagen}
                         alt={p.nombre}
-                        className="max-h-full max-w-full object-contain group-hover:scale-110 transition-transform duration-500 drop-shadow-md"
+                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
                     ) : (
-                      <Leaf size={40} className="text-[#1A4E26] opacity-30" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Leaf size={40} className="text-[#1A4E26] opacity-30" />
+                      </div>
                     )}
                   </div>
                   <div className="p-4">

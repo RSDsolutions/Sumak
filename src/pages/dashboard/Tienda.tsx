@@ -200,19 +200,17 @@ export default function Tienda() {
                   )}
                 </div>
 
-                <div className="absolute inset-[15%] rounded-full blur-2xl opacity-25" style={{ background: 'radial-gradient(circle, rgba(26,78,38,0.4) 0%, transparent 65%)' }} />
-                <div className="absolute inset-0 flex items-center justify-center p-6">
-                  {p.imagen ? (
-                    <img
-                      src={p.imagen}
-                      alt={p.nombre}
-                      className="max-h-full max-w-full object-contain group-hover:scale-110 transition-transform duration-500"
-                      style={{ filter: 'drop-shadow(0 12px 18px rgba(26,78,38,0.2))' }}
-                    />
-                  ) : (
+                {p.imagen ? (
+                  <img
+                    src={p.imagen}
+                    alt={p.nombre}
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center">
                     <Leaf size={36} className="text-[#1A4E26] opacity-30" />
-                  )}
-                </div>
+                  </div>
+                )}
               </Link>
 
               {/* Info */}

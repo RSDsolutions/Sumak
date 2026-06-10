@@ -83,9 +83,7 @@ export default function TiendaProducto() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <div className="relative bg-white rounded-3xl border border-[#C8D8CB] overflow-hidden aspect-square flex items-center justify-center p-10 shadow-[0_4px_24px_rgba(26,78,38,0.06)]" style={{ background: 'linear-gradient(160deg, #FFFFFF 0%, #EBF4ED 100%)' }}>
-            <div className="absolute inset-[15%] rounded-full blur-3xl opacity-20" style={{ background: 'radial-gradient(circle, rgba(26,78,38,0.6) 0%, transparent 65%)' }} />
-
+          <div className="relative rounded-3xl border border-[#C8D8CB] overflow-hidden aspect-square shadow-[0_4px_24px_rgba(26,78,38,0.06)]" style={{ background: 'linear-gradient(160deg, #FFFFFF 0%, #EBF4ED 100%)' }}>
             <div className="absolute top-5 left-5 right-5 flex items-start justify-between gap-2 z-10">
               <div className="flex flex-col gap-2">
                 {product.bestseller && (
@@ -105,16 +103,15 @@ export default function TiendaProducto() {
             </div>
 
             {product.imagen ? (
-              <motion.img
+              <img
                 src={product.imagen}
                 alt={product.nombre}
-                className="relative max-h-full max-w-full object-contain z-10"
-                style={{ filter: 'drop-shadow(0 30px 40px rgba(26,78,38,0.25))' }}
-                animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+                className="absolute inset-0 w-full h-full object-cover"
               />
             ) : (
-              <Leaf size={120} className="text-[#1A4E26] opacity-30 relative z-10" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Leaf size={120} className="text-[#1A4E26] opacity-30" />
+              </div>
             )}
           </div>
         </motion.div>
@@ -302,11 +299,13 @@ export default function TiendaProducto() {
                   to={`/dashboard/tienda/${p.slug}`}
                   className="bg-white border border-[#C8D8CB] hover:border-[#1A4E26]/40 rounded-xl overflow-hidden group transition-all"
                 >
-                  <div className="h-32 flex items-center justify-center p-4 overflow-hidden" style={{ background: 'linear-gradient(160deg, #EBF4ED 0%, #D5ECD9 100%)' }}>
+                  <div className="relative h-32 overflow-hidden" style={{ background: 'linear-gradient(160deg, #EBF4ED 0%, #D5ECD9 100%)' }}>
                     {p.imagen ? (
-                      <img src={p.imagen} alt={p.nombre} className="max-h-full max-w-full object-contain group-hover:scale-110 transition-transform duration-500" />
+                      <img src={p.imagen} alt={p.nombre} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                     ) : (
-                      <Leaf size={30} className="text-[#1A4E26] opacity-30" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Leaf size={30} className="text-[#1A4E26] opacity-30" />
+                      </div>
                     )}
                   </div>
                   <div className="p-3">
