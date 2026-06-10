@@ -1,5 +1,6 @@
+import { Link } from 'react-router-dom';
 import { motion, type Variants } from 'motion/react';
-import { Shield, Users, Heart, Lightbulb, Star, Zap, Leaf, FlaskConical } from 'lucide-react';
+import { Shield, Users, Heart, Lightbulb, Star, Zap, Leaf, FlaskConical, ScrollText, ArrowRight, ShieldCheck } from 'lucide-react';
 import { contactInfo } from '../data';
 
 const fadeUp: Variants = {
@@ -313,6 +314,73 @@ export default function Nosotros() {
                 <p className="text-[#111111] text-sm font-medium break-all">{item.value}</p>
               </motion.div>
             ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── CTA al Manual de Políticas ─────────────────────────── */}
+      <section className="py-20 px-4 sm:px-6 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #0B2913 0%, #133A1E 60%, #0F2E18 100%)' }}>
+        <div
+          className="absolute inset-0 opacity-[0.07] pointer-events-none"
+          style={{
+            backgroundImage: 'radial-gradient(circle at 1px 1px, #D4AF37 1px, transparent 1px)',
+            backgroundSize: '40px 40px',
+          }}
+        />
+        <div className="absolute top-0 right-0 w-[400px] h-[400px] rounded-full bg-[#D4AF37] opacity-[0.06] blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-[350px] h-[350px] rounded-full bg-[#2B6E3A] opacity-[0.20] blur-3xl pointer-events-none" />
+
+        <div className="relative max-w-5xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-80px' }}
+            transition={{ duration: 0.6 }}
+            className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-10 items-center"
+          >
+            <div className="lg:col-span-3">
+              <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-[#D4AF37]/30 rounded-full px-4 py-1.5 mb-5">
+                <ShieldCheck size={13} className="text-[#D4AF37]" />
+                <span className="text-white text-[10px] font-bold tracking-[0.2em] uppercase">Documento Oficial</span>
+              </div>
+              <h2 className="font-heading font-bold text-white text-3xl sm:text-4xl lg:text-5xl leading-[1.05] mb-5">
+                La integridad es nuestra{' '}
+                <span className="italic font-light text-gold-shimmer">base</span>.
+              </h2>
+              <p className="text-white/75 text-base sm:text-lg leading-relaxed mb-7 max-w-xl">
+                Conoce las políticas, procedimientos y código de ética que rigen
+                la relación entre Sumak y nuestros distribuidores independientes —
+                las reglas claras que protegen la integridad de toda la red.
+              </p>
+              <Link
+                to="/manual"
+                className="inline-flex items-center gap-2 px-7 py-4 rounded-full bg-[#D4AF37] text-[#0B2913] font-bold text-sm hover:bg-[#E8C94A] transition-all shadow-[0_8px_24px_rgba(212,175,55,0.35)]"
+              >
+                <ScrollText size={16} />
+                Leer el Manual de Políticas
+                <ArrowRight size={16} />
+              </Link>
+            </div>
+
+            <div className="lg:col-span-2">
+              <div className="relative bg-gradient-to-br from-white/[0.08] to-white/[0.02] backdrop-blur-sm border border-white/15 rounded-3xl p-6">
+                <ScrollText size={32} className="text-[#D4AF37] mb-4" />
+                <p className="text-[#D4AF37] text-[10px] font-bold uppercase tracking-[0.25em] mb-2">El manual contiene</p>
+                <ul className="space-y-2 text-white/85 text-sm">
+                  {[
+                    'Código de ética de 8 puntos',
+                    '29 políticas y procedimientos',
+                    'Reglas de patrocinio y red',
+                    'Términos y compromiso',
+                  ].map((item) => (
+                    <li key={item} className="flex items-start gap-2">
+                      <span className="text-[#D4AF37] mt-0.5">·</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           </motion.div>
         </div>
       </section>

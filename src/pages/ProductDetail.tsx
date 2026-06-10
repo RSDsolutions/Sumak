@@ -78,6 +78,11 @@ export default function ProductDetail() {
               {/* Top badges */}
               <div className="absolute top-5 left-5 right-5 flex items-start justify-between gap-2 z-10">
                 <div className="flex flex-col gap-2">
+                  {product.proximamente && (
+                    <span className="inline-flex items-center gap-1 bg-[#0B2913] text-[#D4AF37] text-[10px] font-bold tracking-widest uppercase px-3 py-1 rounded-full shadow-md border border-[#D4AF37]/40">
+                      Próximamente
+                    </span>
+                  )}
                   {product.bestseller && (
                     <span className="inline-flex items-center gap-1 bg-[#D4AF37] text-[#0B2913] text-[10px] font-bold tracking-widest uppercase px-3 py-1 rounded-full shadow-md">
                       <Star size={10} fill="currentColor" /> Más vendido
@@ -182,6 +187,49 @@ export default function ProductDetail() {
               </div>
             )}
 
+            {product.proximamente ? (
+              <>
+                <div className="bg-gradient-to-br from-[#0B2913] to-[#1A4E26] text-white rounded-2xl p-7 mb-5 text-center relative overflow-hidden">
+                  <div
+                    className="absolute inset-0 opacity-10 pointer-events-none"
+                    style={{
+                      backgroundImage: 'radial-gradient(circle at 2px 2px, #D4AF37 1.5px, transparent 1.5px)',
+                      backgroundSize: '24px 24px',
+                    }}
+                  />
+                  <div className="relative">
+                    <p className="text-[#D4AF37] text-[10px] font-bold uppercase tracking-[0.3em] mb-3">
+                      Disponible muy pronto
+                    </p>
+                    <h3 className="font-heading font-bold text-3xl text-white mb-2 leading-tight">
+                      Próximamente
+                    </h3>
+                    <p className="text-white/75 text-sm leading-relaxed max-w-xs mx-auto">
+                      Este producto estará disponible en nuestra tienda muy pronto.
+                      Contáctanos para que te avisemos en cuanto llegue.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <a
+                    href={`https://wa.me/${contactInfo.whatsapp}?text=Hola, me interesa ${product.nombre} cuando esté disponible. Por favor avísenme cuando llegue.`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-4 rounded-2xl bg-[#D4AF37] text-[#0B2913] font-bold text-base flex items-center justify-center gap-2 hover:bg-[#E8C94A] shadow-[0_8px_24px_rgba(212,175,55,0.3)] transition-all"
+                  >
+                    Avísenme cuando esté disponible
+                  </a>
+                  <Link
+                    to="/productos"
+                    className="w-full py-3 rounded-2xl border border-[#C8D8CB] text-[#6B7280] font-semibold text-sm flex items-center justify-center gap-2 hover:border-[#1A4E26] hover:text-[#1A4E26] transition-all bg-white"
+                  >
+                    Ver otros productos
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <>
             {/* Price block */}
             <div className="bg-white border border-[#C8D8CB] rounded-2xl p-6 mb-5">
               <div className="grid grid-cols-2 gap-4 pb-5 border-b border-[#C8D8CB]">
@@ -248,6 +296,8 @@ export default function ProductDetail() {
                 <Heart size={18} /> Únete y compra a ${distributorPrice.toFixed(2)}
               </Link>
             </div>
+              </>
+            )}
 
             {/* Contact */}
             <a

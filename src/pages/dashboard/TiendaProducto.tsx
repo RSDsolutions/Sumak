@@ -86,6 +86,11 @@ export default function TiendaProducto() {
           <div className="relative rounded-3xl border border-[#C8D8CB] overflow-hidden aspect-square shadow-[0_4px_24px_rgba(26,78,38,0.06)]" style={{ background: 'linear-gradient(160deg, #FFFFFF 0%, #EBF4ED 100%)' }}>
             <div className="absolute top-5 left-5 right-5 flex items-start justify-between gap-2 z-10">
               <div className="flex flex-col gap-2">
+                {product.proximamente && (
+                  <span className="inline-flex items-center gap-1 bg-[#0B2913] text-[#D4AF37] text-[10px] font-bold tracking-widest uppercase px-3 py-1 rounded-full shadow-md border border-[#D4AF37]/40">
+                    Próximamente
+                  </span>
+                )}
                 {product.bestseller && (
                   <span className="inline-flex items-center gap-1 bg-[#D4AF37] text-[#0B2913] text-[10px] font-bold tracking-widest uppercase px-3 py-1 rounded-full shadow-md">
                     <Star size={10} fill="currentColor" /> Más vendido
@@ -154,63 +159,96 @@ export default function TiendaProducto() {
             </p>
           )}
 
-          {/* Price + qty + actions */}
-          <div className="bg-white border border-[#C8D8CB] rounded-2xl p-5 mb-4">
-            <div className="grid grid-cols-2 gap-3 pb-4 border-b border-[#C8D8CB]">
-              <div>
-                <p className="text-[#9CA3AF] text-[10px] uppercase tracking-wider mb-1">Precio público</p>
-                <p className="font-heading font-bold text-xl text-[#6B7280] line-through leading-none">${product.pvp.toFixed(2)}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-[#9CA3AF] text-[10px] uppercase tracking-wider mb-1">Tu precio</p>
-                <p className="font-heading font-bold text-3xl text-[#1A4E26] leading-none">${precio.toFixed(2)}</p>
-                <p className="text-[10px] text-[#D4AF37] font-bold mt-1">50% OFF</p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between mt-4">
-              <div>
-                <p className="text-[#9CA3AF] text-[10px] uppercase tracking-wider mb-1">Cantidad</p>
-                <div className="flex items-center border border-[#C8D8CB] rounded-xl overflow-hidden">
-                  <button
-                    onClick={() => setQty((q) => Math.max(1, q - 1))}
-                    className="w-9 h-9 flex items-center justify-center hover:bg-[#F4F7F5] transition-colors"
-                    aria-label="Disminuir"
-                  >
-                    <Minus size={13} className="text-[#6B7280]" />
-                  </button>
-                  <span className="w-10 text-center font-bold text-[#111111]">{qty}</span>
-                  <button
-                    onClick={() => setQty((q) => q + 1)}
-                    className="w-9 h-9 flex items-center justify-center hover:bg-[#F4F7F5] transition-colors"
-                    aria-label="Aumentar"
-                  >
-                    <Plus size={13} className="text-[#6B7280]" />
-                  </button>
+          {product.proximamente ? (
+            <>
+              <div className="bg-gradient-to-br from-[#0B2913] to-[#1A4E26] text-white rounded-2xl p-6 mb-4 text-center relative overflow-hidden">
+                <div
+                  className="absolute inset-0 opacity-10 pointer-events-none"
+                  style={{
+                    backgroundImage: 'radial-gradient(circle at 2px 2px, #D4AF37 1.5px, transparent 1.5px)',
+                    backgroundSize: '24px 24px',
+                  }}
+                />
+                <div className="relative">
+                  <p className="text-[#D4AF37] text-[10px] font-bold uppercase tracking-[0.3em] mb-2">
+                    Disponible muy pronto
+                  </p>
+                  <h3 className="font-heading font-bold text-2xl text-white mb-2 leading-tight">
+                    Próximamente
+                  </h3>
+                  <p className="text-white/75 text-xs leading-relaxed max-w-xs mx-auto">
+                    Este producto estará disponible en tu tienda muy pronto.
+                  </p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-[#9CA3AF] text-[10px] uppercase tracking-wider mb-1">Total</p>
-                <p className="font-heading font-bold text-2xl text-[#1A4E26] leading-none">${total.toFixed(2)}</p>
-                <p className="text-[10px] text-[#D4AF37] font-bold mt-1">★ {Math.round(total)} pts</p>
-              </div>
-            </div>
-          </div>
+              <button
+                disabled
+                className="w-full py-3.5 rounded-2xl bg-[#F4F7F5] border border-[#C8D8CB] text-[#9CA3AF] font-bold text-sm cursor-not-allowed mb-4"
+              >
+                No disponible aún
+              </button>
+            </>
+          ) : (
+            <>
+              {/* Price + qty + actions */}
+              <div className="bg-white border border-[#C8D8CB] rounded-2xl p-5 mb-4">
+                <div className="grid grid-cols-2 gap-3 pb-4 border-b border-[#C8D8CB]">
+                  <div>
+                    <p className="text-[#9CA3AF] text-[10px] uppercase tracking-wider mb-1">Precio público</p>
+                    <p className="font-heading font-bold text-xl text-[#6B7280] line-through leading-none">${product.pvp.toFixed(2)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[#9CA3AF] text-[10px] uppercase tracking-wider mb-1">Tu precio</p>
+                    <p className="font-heading font-bold text-3xl text-[#1A4E26] leading-none">${precio.toFixed(2)}</p>
+                    <p className="text-[10px] text-[#D4AF37] font-bold mt-1">50% OFF</p>
+                  </div>
+                </div>
 
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <button
-              onClick={handleAddToCart}
-              className="py-3.5 rounded-2xl border-2 border-[#1A4E26] text-[#1A4E26] bg-white font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#1A4E26] hover:text-white transition-all"
-            >
-              <Plus size={16} /> Agregar al carrito
-            </button>
-            <button
-              onClick={handleBuyNow}
-              className="py-3.5 rounded-2xl bg-[#1A4E26] text-white font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#163F1E] shadow-[0_8px_24px_rgba(26,78,38,0.25)] transition-all"
-            >
-              <ShoppingCart size={16} /> Comprar ahora
-            </button>
-          </div>
+                <div className="flex items-center justify-between mt-4">
+                  <div>
+                    <p className="text-[#9CA3AF] text-[10px] uppercase tracking-wider mb-1">Cantidad</p>
+                    <div className="flex items-center border border-[#C8D8CB] rounded-xl overflow-hidden">
+                      <button
+                        onClick={() => setQty((q) => Math.max(1, q - 1))}
+                        className="w-9 h-9 flex items-center justify-center hover:bg-[#F4F7F5] transition-colors"
+                        aria-label="Disminuir"
+                      >
+                        <Minus size={13} className="text-[#6B7280]" />
+                      </button>
+                      <span className="w-10 text-center font-bold text-[#111111]">{qty}</span>
+                      <button
+                        onClick={() => setQty((q) => q + 1)}
+                        className="w-9 h-9 flex items-center justify-center hover:bg-[#F4F7F5] transition-colors"
+                        aria-label="Aumentar"
+                      >
+                        <Plus size={13} className="text-[#6B7280]" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[#9CA3AF] text-[10px] uppercase tracking-wider mb-1">Total</p>
+                    <p className="font-heading font-bold text-2xl text-[#1A4E26] leading-none">${total.toFixed(2)}</p>
+                    <p className="text-[10px] text-[#D4AF37] font-bold mt-1">★ {Math.round(total)} pts</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <button
+                  onClick={handleAddToCart}
+                  className="py-3.5 rounded-2xl border-2 border-[#1A4E26] text-[#1A4E26] bg-white font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#1A4E26] hover:text-white transition-all"
+                >
+                  <Plus size={16} /> Agregar al carrito
+                </button>
+                <button
+                  onClick={handleBuyNow}
+                  className="py-3.5 rounded-2xl bg-[#1A4E26] text-white font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#163F1E] shadow-[0_8px_24px_rgba(26,78,38,0.25)] transition-all"
+                >
+                  <ShoppingCart size={16} /> Comprar ahora
+                </button>
+              </div>
+            </>
+          )}
 
           <Link
             to="/dashboard/tienda"

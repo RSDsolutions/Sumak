@@ -17,6 +17,7 @@ export interface Product {
   destacado?: boolean;
   nuevo?: boolean;
   bestseller?: boolean;
+  proximamente?: boolean;
   beneficios?: string[];
   ingredientes?: string[];
   modoUso?: string;
@@ -133,6 +134,36 @@ export const products: Product[] = [
     detalleLargo: 'Una fórmula tropical pensada para reiniciar tu sistema digestivo. REGEN 24 combina frutas frescas con plantas depurativas que actúan en sinergia para liberar tu cuerpo de toxinas en sólo un día.',
   },
   {
+    codigo: '00016',
+    slug: 'colon-renova',
+    nombre: 'Fórmula Herbal Colon Renova',
+    categoria: 'Limpieza & Digestión',
+    categoriaKey: 'bebidas',
+    pvp: 25.00,
+    descripcion: 'Suplemento alimenticio con extractos de plantas y vegetales. Limpieza profunda y natural del colon.',
+    imagen: '/products/colon-renova.png',
+    tagline: 'Limpieza profunda y natural',
+    presentacion: 'Botellas de 1000 ml, 500 ml y 250 ml',
+    nuevo: true,
+    destacado: true,
+    beneficios: [
+      'Limpia el colon a profundidad de forma natural',
+      'Ayuda a expulsar parásitos, bichos y amebas',
+      'Mejora la digestión y la absorción de nutrientes',
+      'Apoya el tránsito intestinal saludable',
+      'Apto para adultos',
+    ],
+    ingredientes: [
+      'Hierbabuena', 'Papaya', 'Ciruela pasa', 'Sábila', 'Semilla de papaya',
+      'Paico', 'Ajenjo', 'Chía', 'Noni', 'Limón',
+      'Ampo', 'Jengibre', 'Linaza', 'Sen', 'Manzana verde',
+      'Edulcorante no calórico',
+    ],
+    modoUso: 'Tomar 30 ml por la mañana y 30 ml por la noche. Agitar bien antes de tomar. Conservar refrigerado una vez abierto.',
+    precauciones: 'Solo para adultos. No recomendado en embarazo, lactancia o casos de obstrucción intestinal. Si está bajo tratamiento médico, consulte a su especialista.',
+    detalleLargo: 'Fórmula herbal premium diseñada para una limpieza profunda y natural del colon. Combina 15 ingredientes botánicos seleccionados —entre hierbas, frutas y semillas tradicionalmente usadas en la medicina andina— para sacar parásitos, mejorar la digestión y apoyar el bienestar intestinal del día a día.',
+  },
+  {
     codigo: '00003',
     slug: 'bebida-andina',
     nombre: 'Bebida Andina',
@@ -218,6 +249,7 @@ export const products: Product[] = [
     categoriaKey: 'suplementos',
     pvp: 25.00,
     descripcion: 'Hojas de Moringa Oleifera 100% puras y deshidratadas. El árbol de la vida en polvo.',
+    imagen: '/products/moringa-en-polvo.png',
     presentacion: 'Frasco de 100 g — polvo',
     beneficios: [
       'Aporta 92 nutrientes esenciales',
@@ -291,6 +323,7 @@ export const products: Product[] = [
     categoriaKey: 'suplementos',
     pvp: 19.90,
     descripcion: 'Depurador y quemador de grasa natural. Reduce medidas y elimina retención.',
+    imagen: '/products/chupapanza.png',
     tagline: 'Adiós a la grasa abdominal',
     presentacion: 'Frasco de 250 ml — líquido',
     beneficios: [
@@ -315,6 +348,7 @@ export const products: Product[] = [
     categoriaKey: 'capsulas',
     pvp: 22.50,
     descripcion: '90 cápsulas vegetales de 500 mg de hojas de Moringa Oleifera puras.',
+    imagen: '/products/capsula-moringa.png',
     presentacion: '90 cápsulas vegetales · 500 mg c/u',
     beneficios: [
       'Práctica forma de consumir moringa diaria',
@@ -387,6 +421,7 @@ export const products: Product[] = [
     pvp: 5.00,
     descripcion: 'Tomatodo deportivo con logo de Sumak. Práctico y ecológico.',
     presentacion: 'Capacidad: 750 ml',
+    proximamente: true,
     beneficios: [
       'Material libre de BPA',
       'Diseño deportivo y elegante',
@@ -405,6 +440,7 @@ export const products: Product[] = [
     pvp: 15.00,
     descripcion: 'Mochila ejecutiva con logo Sumak. Ideal para distribuidores y representantes.',
     presentacion: 'Resistente, compartimento para laptop',
+    proximamente: true,
     beneficios: [
       'Tela resistente al agua',
       'Compartimento acolchado para laptop',
@@ -422,6 +458,7 @@ export const products: Product[] = [
     pvp: 10.00,
     descripcion: 'Catálogo físico impreso a todo color con productos, precios y oportunidad de negocio.',
     presentacion: 'Catálogo a color · papel premium',
+    proximamente: true,
     beneficios: [
       'Material profesional para presentaciones',
       'Información completa de productos y precios',

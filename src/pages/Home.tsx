@@ -568,12 +568,15 @@ export default function Home() {
                     to={`/productos/${product.slug}`}
                     className="group block bg-white/[0.06] hover:bg-white/[0.12] rounded-2xl p-4 border border-white/15 hover:border-[#D4AF37]/50 transition-all duration-300 h-full"
                   >
-                    {(product.bestseller || product.nuevo) && (
+                    {(product.bestseller || product.nuevo || product.proximamente) && (
                       <div className="flex justify-end mb-1">
-                        {product.bestseller && (
+                        {product.proximamente && (
+                          <span className="text-[9px] font-bold uppercase tracking-widest text-[#D4AF37]">Próximo</span>
+                        )}
+                        {product.bestseller && !product.proximamente && (
                           <span className="text-[9px] font-bold uppercase tracking-widest text-[#D4AF37]">Top</span>
                         )}
-                        {product.nuevo && (
+                        {product.nuevo && !product.proximamente && (
                           <span className="text-[9px] font-bold uppercase tracking-widest text-[#D4AF37]">Nuevo</span>
                         )}
                       </div>
@@ -592,7 +595,11 @@ export default function Home() {
                       )}
                     </div>
                     <p className="text-white text-center text-xs font-semibold leading-tight mb-1 line-clamp-2">{product.nombre}</p>
-                    <p className="text-[#D4AF37] text-center text-sm font-bold">${product.pvp.toFixed(2)}</p>
+                    {product.proximamente ? (
+                      <p className="text-[#D4AF37] text-center text-[10px] font-bold uppercase tracking-wider">Próximamente</p>
+                    ) : (
+                      <p className="text-[#D4AF37] text-center text-sm font-bold">${product.pvp.toFixed(2)}</p>
+                    )}
                   </Link>
                 </motion.div>
               ))}

@@ -182,6 +182,11 @@ export default function Tienda() {
               <Link to={`/dashboard/tienda/${p.slug}`} className="relative block h-48 overflow-hidden" style={{ background: 'linear-gradient(160deg, #EBF4ED 0%, #D5ECD9 100%)' }}>
                 <div className="absolute top-3 left-3 right-3 flex items-start justify-between z-10 gap-2">
                   <div className="flex flex-col gap-1">
+                    {p.proximamente && (
+                      <span className="inline-flex items-center gap-1 bg-[#0B2913] text-[#D4AF37] text-[9px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full border border-[#D4AF37]/40">
+                        Próximamente
+                      </span>
+                    )}
                     {p.bestseller && (
                       <span className="inline-flex items-center gap-1 bg-[#D4AF37] text-[#0B2913] text-[9px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full">
                         <Star size={9} fill="currentColor" /> Top
@@ -226,42 +231,55 @@ export default function Tienda() {
                 )}
 
                 <div className="mt-auto pt-3 border-t border-[#C8D8CB]">
-                  <div className="flex items-end justify-between mb-3">
+                  {p.proximamente ? (
                     <div>
-                      <p className="text-[10px] text-[#9CA3AF] line-through">PVP ${p.pvp.toFixed(2)}</p>
-                      <p className="font-heading font-bold text-[#1A4E26] text-xl leading-none">
-                        ${precio.toFixed(2)}
-                      </p>
-                      <p className="text-[9px] text-[#D4AF37] font-semibold mt-0.5">★ {Math.round(precio)} pts</p>
-                    </div>
-
-                    {inCart ? (
-                      <div className="flex items-center gap-1 bg-[#1A4E26] rounded-xl p-1">
-                        <button
-                          onClick={() => setQty(p.codigo, qty - 1)}
-                          className="w-7 h-7 rounded-lg flex items-center justify-center text-white hover:bg-white/15 transition-colors"
-                          aria-label="Disminuir"
-                        >
-                          <Minus size={13} />
-                        </button>
-                        <span className="text-white font-bold text-sm w-5 text-center">{qty}</span>
-                        <button
-                          onClick={() => setQty(p.codigo, qty + 1)}
-                          className="w-7 h-7 rounded-lg flex items-center justify-center text-white hover:bg-white/15 transition-colors"
-                          aria-label="Aumentar"
-                        >
-                          <Plus size={13} />
-                        </button>
-                      </div>
-                    ) : (
+                      <p className="font-heading font-bold text-[#0B2913] text-lg leading-none mb-1">Próximamente</p>
+                      <p className="text-[10px] text-[#6B7280] mb-3">Estará disponible pronto</p>
                       <button
-                        onClick={() => handleAdd(p)}
-                        className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-[#1A4E26] text-white text-xs font-bold hover:bg-[#163F1E] transition-all"
+                        disabled
+                        className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-[#F4F7F5] border border-[#C8D8CB] text-[#9CA3AF] text-xs font-bold cursor-not-allowed"
                       >
-                        <Plus size={13} /> Agregar
+                        No disponible aún
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-end justify-between mb-3">
+                      <div>
+                        <p className="text-[10px] text-[#9CA3AF] line-through">PVP ${p.pvp.toFixed(2)}</p>
+                        <p className="font-heading font-bold text-[#1A4E26] text-xl leading-none">
+                          ${precio.toFixed(2)}
+                        </p>
+                        <p className="text-[9px] text-[#D4AF37] font-semibold mt-0.5">★ {Math.round(precio)} pts</p>
+                      </div>
+
+                      {inCart ? (
+                        <div className="flex items-center gap-1 bg-[#1A4E26] rounded-xl p-1">
+                          <button
+                            onClick={() => setQty(p.codigo, qty - 1)}
+                            className="w-7 h-7 rounded-lg flex items-center justify-center text-white hover:bg-white/15 transition-colors"
+                            aria-label="Disminuir"
+                          >
+                            <Minus size={13} />
+                          </button>
+                          <span className="text-white font-bold text-sm w-5 text-center">{qty}</span>
+                          <button
+                            onClick={() => setQty(p.codigo, qty + 1)}
+                            className="w-7 h-7 rounded-lg flex items-center justify-center text-white hover:bg-white/15 transition-colors"
+                            aria-label="Aumentar"
+                          >
+                            <Plus size={13} />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleAdd(p)}
+                          className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-[#1A4E26] text-white text-xs font-bold hover:bg-[#163F1E] transition-all"
+                        >
+                          <Plus size={13} /> Agregar
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>

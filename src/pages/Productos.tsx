@@ -233,6 +233,11 @@ export default function Productos() {
                   {/* Badges */}
                   <div className="absolute top-3 left-3 right-3 flex items-start justify-between z-10 gap-2">
                     <div className="flex flex-col gap-1">
+                      {product.proximamente && (
+                        <span className="inline-flex items-center gap-1 bg-[#0B2913] text-[#D4AF37] text-[9px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full border border-[#D4AF37]/40">
+                          Próximamente
+                        </span>
+                      )}
                       {product.bestseller && (
                         <span className="inline-flex items-center gap-1 bg-[#D4AF37] text-[#0B2913] text-[9px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full">
                           <Star size={9} fill="currentColor" /> Top
@@ -281,33 +286,51 @@ export default function Productos() {
 
                   {/* Pricing + CTA */}
                   <div className="border-t border-[#C8D8CB] pt-4 mt-auto">
-                    <div className="flex items-end justify-between mb-3">
-                      <div>
-                        <p className="text-[10px] text-[#9CA3AF] mb-0.5 uppercase tracking-wider">Precio público</p>
-                        <p className="font-heading font-bold text-[#111111] text-xl leading-none">${product.pvp.toFixed(2)}</p>
-                        <p className="text-[10px] text-[#1A4E26] mt-1 font-medium">
-                          Distribuidor: ${(product.pvp / 2).toFixed(2)}
-                        </p>
-                      </div>
-                    </div>
+                    {product.proximamente ? (
+                      <>
+                        <div className="mb-3">
+                          <p className="text-[10px] text-[#9CA3AF] mb-0.5 uppercase tracking-wider">Disponibilidad</p>
+                          <p className="font-heading font-bold text-[#0B2913] text-xl leading-none">Próximamente</p>
+                          <p className="text-[10px] text-[#6B7280] mt-1">Estará disponible pronto en tienda</p>
+                        </div>
+                        <button
+                          disabled
+                          className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-[#F4F7F5] border border-[#C8D8CB] text-[#9CA3AF] text-xs font-bold cursor-not-allowed"
+                        >
+                          No disponible aún
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-end justify-between mb-3">
+                          <div>
+                            <p className="text-[10px] text-[#9CA3AF] mb-0.5 uppercase tracking-wider">Precio público</p>
+                            <p className="font-heading font-bold text-[#111111] text-xl leading-none">${product.pvp.toFixed(2)}</p>
+                            <p className="text-[10px] text-[#1A4E26] mt-1 font-medium">
+                              Distribuidor: ${(product.pvp / 2).toFixed(2)}
+                            </p>
+                          </div>
+                        </div>
 
-                    <div className="flex gap-2">
-                      <Link
-                        to={`/productos/${product.slug}`}
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-[#1A4E26] text-white text-xs font-bold hover:bg-[#163F1E] transition-all"
-                      >
-                        Ver Detalle <ArrowRight size={13} />
-                      </Link>
-                      <a
-                        href={`https://wa.me/${contactInfo.whatsapp}?text=Hola, quiero adquirir: ${product.nombre} (PVP: $${product.pvp.toFixed(2)})`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center w-10 h-10 rounded-xl border border-[#C8D8CB] text-[#1A4E26] hover:bg-[#1A4E26] hover:text-white hover:border-[#1A4E26] transition-all"
-                        aria-label={`Comprar ${product.nombre} por WhatsApp`}
-                      >
-                        <ShoppingBag size={15} />
-                      </a>
-                    </div>
+                        <div className="flex gap-2">
+                          <Link
+                            to={`/productos/${product.slug}`}
+                            className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-[#1A4E26] text-white text-xs font-bold hover:bg-[#163F1E] transition-all"
+                          >
+                            Ver Detalle <ArrowRight size={13} />
+                          </Link>
+                          <a
+                            href={`https://wa.me/${contactInfo.whatsapp}?text=Hola, quiero adquirir: ${product.nombre} (PVP: $${product.pvp.toFixed(2)})`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center w-10 h-10 rounded-xl border border-[#C8D8CB] text-[#1A4E26] hover:bg-[#1A4E26] hover:text-white hover:border-[#1A4E26] transition-all"
+                            aria-label={`Comprar ${product.nombre} por WhatsApp`}
+                          >
+                            <ShoppingBag size={15} />
+                          </a>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </motion.div>
