@@ -18,11 +18,6 @@ const stagger = {
 
 // ── Featured products (with imagery) ──
 const heroProduct = products.find((p) => p.slug === 'regen-24')!;
-const featuredSlugs = ['te-extractos-de-la-vida', 'colageno-hidrolizado', 'formula-1000'];
-const featuredProducts = featuredSlugs
-  .map((s) => products.find((p) => p.slug === s)!)
-  .filter(Boolean);
-
 const bestsellers = products.filter((p) => p.bestseller);
 const novelties = products.filter((p) => p.nuevo);
 
@@ -458,53 +453,22 @@ export default function Home() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.8 }}
-            className="relative h-[500px] order-2 lg:order-1"
+            className="relative h-[500px] order-2 lg:order-1 rounded-3xl overflow-hidden"
           >
-            <div className="absolute inset-0 rounded-3xl" style={{ background: 'linear-gradient(160deg, #0B2913 0%, #1A4E26 100%)' }} />
-
-            {/* Texture overlay */}
-            <div
-              className="absolute inset-0 rounded-3xl opacity-10"
-              style={{
-                backgroundImage: 'radial-gradient(circle at 2px 2px, #D4AF37 1.5px, transparent 1.5px)',
-                backgroundSize: '30px 30px',
-              }}
+            {/* Banner image fills the entire frame */}
+            <img
+              src="/productos-banner.png"
+              alt="Línea de productos Sumak — Fibramak, Madre Silvestre, Regen 24, Vive-Oxi-100"
+              className="absolute inset-0 w-full h-full object-cover"
             />
 
             {/* Gold corner accent */}
-            <div className="absolute top-6 left-6 w-16 h-16 rounded-2xl bg-[#D4AF37] flex items-center justify-center">
+            <div className="absolute top-6 left-6 w-16 h-16 rounded-2xl bg-[#D4AF37] flex items-center justify-center shadow-xl z-10">
               <Leaf size={32} className="text-[#0B2913]" />
             </div>
 
-            {/* Product 1 */}
-            <div className="absolute top-12 right-8 w-44 h-44 rounded-2xl overflow-hidden shadow-2xl">
-              <img
-                src={featuredProducts[0]?.imagen}
-                alt={featuredProducts[0]?.nombre}
-                className="w-full h-full object-cover"
-              />
-            </div>
-
-            {/* Product 2 */}
-            <div className="absolute bottom-12 left-12 w-40 h-40 rounded-2xl overflow-hidden shadow-2xl">
-              <img
-                src={featuredProducts[1]?.imagen}
-                alt={featuredProducts[1]?.nombre}
-                className="w-full h-full object-cover"
-              />
-            </div>
-
-            {/* Product 3 */}
-            <div className="absolute bottom-20 right-16 w-32 h-32 rounded-2xl overflow-hidden shadow-2xl">
-              <img
-                src={featuredProducts[2]?.imagen}
-                alt={featuredProducts[2]?.nombre}
-                className="w-full h-full object-cover"
-              />
-            </div>
-
             {/* Quote overlay */}
-            <div className="absolute bottom-6 left-6 right-6 bg-black/40 backdrop-blur-md border border-white/15 rounded-2xl p-5">
+            <div className="absolute bottom-6 left-6 right-6 bg-black/55 backdrop-blur-md border border-white/15 rounded-2xl p-5 z-10">
               <p className="text-[#D4AF37] text-[10px] font-bold uppercase tracking-widest mb-1">Sumak Jambi · Laboratorio Ancestral</p>
               <p className="text-white font-heading font-bold text-lg leading-tight">
                 Cada producto es un acto de respeto a la sabiduría andina.
