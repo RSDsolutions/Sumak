@@ -1,30 +1,29 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, Plus, Minus, CheckCircle2, AlertCircle, TrendingUp } from 'lucide-react';
-import { products, levelCommissions } from '../../data';
+import { useNavigate, Link } from 'react-router-dom';
+import { motion } from 'motion/react';
+import {
+  ShoppingCart, Plus, Minus, X, CheckCircle2, AlertCircle, TrendingUp,
+  ArrowLeft, ArrowRight, Trash2, Leaf, Sparkles,
+} from 'lucide-react';
+import { levelCommissions } from '../../data';
 import { supabase, supabaseAdmin } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
-
-interface CartItem {
-  codigo: string;
-  nombre: string;
-  pvp: number;
-  precio: number;
-  cantidad: number;
-}
+import { useCart } from '../../lib/cart';
 
 export default function NuevoPedido() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const { items, setQty, removeItem, clear, subtotal, savings, puntos } = useCart();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
   const [earnedPuntos, setEarnedPuntos] = useState(0);
   const [compraCalificada, setCompraCalificada] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState(true);
+  const [totalMes, setTotalMes] = useState(0);
 
-  const DISCOUNT = 0.5;
+  const willQualify = subtotal >= 100;
+  const total = subtotal;
 
   useEffect(() => {
     if (!user) return;
@@ -33,47 +32,29 @@ export default function NuevoPedido() {
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
       const { data } = await supabase
         .from('pedidos')
-        .select('id')
+        .select('id, total')
         .eq('distribuidor_id', user!.id)
         .eq('estado', 'entregado')
-        .gte('total', 100)
-        .gte('created_at', startOfMonth)
-        .limit(1);
-      setCompraCalificada((data?.length ?? 0) > 0);
+        .gte('created_at', startOfMonth);
+
+      const all = (data ?? []) as { id: string; total: number }[];
+      const totalMesAcum = all.reduce((s, p) => s + Number(p.total), 0);
+      setTotalMes(totalMesAcum);
+      // qualifying = at least one order ≥ $100
+      setCompraCalificada(all.some((p) => Number(p.total) >= 100));
       setLoadingStatus(false);
     }
     checkMonthly();
   }, [user]);
 
-  function setQty(codigo: string, qty: number) {
-    setQuantities((prev) => ({ ...prev, [codigo]: Math.max(0, qty) }));
-  }
-
-  const cartItems: CartItem[] = products
-    .filter((p) => (quantities[p.codigo] ?? 0) > 0)
-    .map((p) => ({
-      codigo: p.codigo,
-      nombre: p.nombre,
-      pvp: p.pvp,
-      precio: parseFloat((p.pvp * DISCOUNT).toFixed(2)),
-      cantidad: quantities[p.codigo],
-    }));
-
-  const total = cartItems.reduce((s, i) => s + i.precio * i.cantidad, 0);
-  const savingsTotal = cartItems.reduce((s, i) => s + (i.pvp - i.precio) * i.cantidad, 0);
-  const totalPuntos = cartItems.reduce((s, i) => s + Math.round(i.precio * i.cantidad), 0);
-  const willQualify = total >= 100;
-
   async function handleSubmit() {
-    if (cartItems.length === 0 || !user) return;
+    if (items.length === 0 || !user) return;
     setSubmitting(true);
     setError('');
 
     try {
-      const puntos = totalPuntos;
       const distribId = user.id;
 
-      // 1. Crear pedido
       const { data: pedidoData, error: pedidoError } = await supabase
         .from('pedidos')
         .insert({
@@ -91,8 +72,7 @@ export default function NuevoPedido() {
         return;
       }
 
-      // 2. Insertar ítems
-      const items = cartItems.map((item) => ({
+      const itemsRows = items.map((item) => ({
         pedido_id: pedidoData.id,
         producto_codigo: item.codigo,
         producto_nombre: item.nombre,
@@ -100,19 +80,16 @@ export default function NuevoPedido() {
         precio_unitario: item.precio,
         subtotal: parseFloat((item.precio * item.cantidad).toFixed(2)),
       }));
-      const { error: itemsError } = await supabase.from('pedido_items').insert(items);
+      const { error: itemsError } = await supabase.from('pedido_items').insert(itemsRows);
       if (itemsError) {
         setError('Error al guardar los productos: ' + itemsError.message);
         return;
       }
 
-      // 3. Sumar puntos al comprador inmediatamente
+      // Sumar puntos al comprador
       if (puntos > 0) {
         const { data: myProfile } = await supabaseAdmin
-          .from('profiles')
-          .select('puntos')
-          .eq('id', distribId)
-          .single();
+          .from('profiles').select('puntos').eq('id', distribId).single();
         if (myProfile) {
           await supabaseAdmin
             .from('profiles')
@@ -121,19 +98,16 @@ export default function NuevoPedido() {
         }
       }
 
-      // 4. Comisiones por nivel para upline elegible (requiere compra mensual ≥ $100)
+      // Comisiones por nivel — solo upline con compra calificada del mes
       if (puntos > 0) {
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
         const { data: allProfiles } = await supabaseAdmin
-          .from('profiles')
-          .select('id, patrocinador_id');
-
+          .from('profiles').select('id, patrocinador_id');
         const profMap = new Map<string, string | null>();
         for (const p of allProfiles ?? []) profMap.set(p.id, p.patrocinador_id);
 
-        // Construir cadena de upline (hasta 14 niveles)
         const uplineChain: Array<{ id: string; nivel: number; porcentaje: number }> = [];
         let upId: string | null = distribId;
         for (const lc of levelCommissions) {
@@ -144,19 +118,11 @@ export default function NuevoPedido() {
         }
 
         if (uplineChain.length > 0) {
-          // Verificar qué miembros del upline tienen compra mensual ≥ $100 (en una sola compra)
           const uplineIds = uplineChain.map((u) => u.id);
           const { data: eligibleOrders } = await supabaseAdmin
-            .from('pedidos')
-            .select('distribuidor_id')
-            .in('distribuidor_id', uplineIds)
-            .eq('estado', 'entregado')
-            .gte('total', 100)
-            .gte('created_at', startOfMonth);
-
-          const eligibleSet = new Set(
-            (eligibleOrders ?? []).map((o: { distribuidor_id: string }) => o.distribuidor_id)
-          );
+            .from('pedidos').select('distribuidor_id')
+            .in('distribuidor_id', uplineIds).eq('estado', 'entregado').gte('total', 100).gte('created_at', startOfMonth);
+          const eligibleSet = new Set((eligibleOrders ?? []).map((o: { distribuidor_id: string }) => o.distribuidor_id));
 
           const comInserts: object[] = [];
           for (const entry of uplineChain) {
@@ -179,12 +145,11 @@ export default function NuevoPedido() {
         }
       }
 
-      // 5. Marcar pedido como entregado (aprobación automática)
       await supabaseAdmin.from('pedidos').update({ estado: 'entregado' }).eq('id', pedidoData.id);
 
-      // Si esta compra califica ($100+), actualizar estado local
       if (total >= 100) setCompraCalificada(true);
       setEarnedPuntos(puntos);
+      clear();
       setDone(true);
     } catch (err) {
       setError('Error inesperado. Intenta de nuevo.');
@@ -196,204 +161,278 @@ export default function NuevoPedido() {
 
   if (done) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center max-w-sm">
-          <div className="w-20 h-20 bg-[#1A4E26]/10 rounded-full flex items-center justify-center mx-auto mb-5">
-            <CheckCircle2 size={40} className="text-[#1A4E26]" />
+      <div className="flex items-center justify-center min-h-[70vh]">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4 }}
+          className="text-center max-w-md bg-white border border-[#C8D8CB] rounded-3xl p-8 shadow-[0_15px_60px_rgba(26,78,38,0.1)]"
+        >
+          <div className="w-20 h-20 bg-gradient-to-br from-[#1A4E26] to-[#2B6E3A] rounded-full flex items-center justify-center mx-auto mb-5 shadow-[0_8px_24px_rgba(26,78,38,0.3)]">
+            <CheckCircle2 size={40} className="text-white" />
           </div>
-          <h2 className="font-heading font-bold text-2xl text-[#111111] mb-2">¡Pedido Procesado!</h2>
-          <p className="text-[#6B7280] mb-5">Tu pedido ha sido aprobado automáticamente.</p>
+          <h2 className="font-heading font-bold text-3xl text-[#111111] mb-2">¡Pedido confirmado!</h2>
+          <p className="text-[#6B7280] mb-6">Tu pedido fue procesado y aprobado automáticamente.</p>
 
           {earnedPuntos > 0 && (
             <div className="inline-flex items-center gap-2 bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-xl px-5 py-3 mb-4 w-full justify-center">
-              <span className="text-[#D4AF37] text-lg font-bold">★</span>
+              <Sparkles size={16} className="text-[#D4AF37]" />
               <span className="text-[#D4AF37] font-semibold text-sm">
-                Ganaste <span className="font-bold text-base">{earnedPuntos} puntos</span>
+                Ganaste <span className="font-bold">{earnedPuntos} puntos</span>
               </span>
             </div>
           )}
 
-          {willQualify && (
+          {compraCalificada && (
             <div className="flex items-center gap-2 bg-[#EBF4ED] border border-[#1A4E26]/20 rounded-xl px-5 py-3 mb-6 text-sm text-[#1A4E26] font-semibold">
               <TrendingUp size={16} />
-              Estás habilitado para recibir comisiones este mes
+              Estás habilitado para comisiones este mes
             </div>
           )}
 
-          <div className="flex gap-3 justify-center">
-            <button
-              onClick={() => { setDone(false); setQuantities({}); setEarnedPuntos(0); }}
-              className="px-6 py-3 rounded-xl border border-[#C8D8CB] text-[#6B7280] font-semibold text-sm hover:border-[#A8C2AD] hover:text-[#111111] transition-all duration-200"
+          <div className="grid grid-cols-2 gap-3">
+            <Link
+              to="/dashboard/tienda"
+              className="py-3 rounded-xl border border-[#C8D8CB] text-[#6B7280] font-semibold text-sm hover:border-[#A8C2AD] hover:text-[#111111] transition-all"
             >
-              Nuevo Pedido
-            </button>
+              Seguir comprando
+            </Link>
             <button
               onClick={() => navigate('/dashboard/pedidos')}
-              className="px-6 py-3 rounded-xl bg-[#1A4E26] text-white font-bold text-sm hover:bg-[#163F1E] transition-all duration-200 shadow-[0_0_12px_rgba(26,78,38,0.2)]"
+              className="py-3 rounded-xl bg-[#1A4E26] text-white font-bold text-sm hover:bg-[#163F1E] transition-all shadow-[0_4px_16px_rgba(26,78,38,0.2)]"
             >
-              Ver Mis Pedidos
+              Ver mis pedidos
             </button>
           </div>
-        </div>
+        </motion.div>
       </div>
     );
   }
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#111111]">Nuevo Pedido</h1>
-        <p className="text-[#6B7280] text-sm mt-1">Selecciona los productos que deseas ordenar a precio distribuidor</p>
+      {/* Header */}
+      <div className="flex items-start justify-between flex-wrap gap-3 mb-6">
+        <div>
+          <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#111111] flex items-center gap-2">
+            <ShoppingCart size={24} className="text-[#1A4E26]" />
+            Tu Carrito
+          </h1>
+          <p className="text-[#6B7280] text-sm mt-1">
+            {items.length === 0
+              ? 'Tu carrito está vacío. Visita la tienda para añadir productos.'
+              : `Revisa tu pedido y confírmalo. Hola, ${profile?.nombre_completo?.split(' ')[0] ?? ''}.`}
+          </p>
+        </div>
+        <Link
+          to="/dashboard/tienda"
+          className="inline-flex items-center gap-1.5 text-[#1A4E26] text-sm font-semibold hover:gap-2 transition-all"
+        >
+          <ArrowLeft size={14} /> Volver a la tienda
+        </Link>
       </div>
 
-      {/* Estado de compra mensual */}
+      {/* Activación mensual */}
       {!loadingStatus && (
-        <div className={`flex items-center gap-3 rounded-xl px-5 py-3 mb-6 border text-sm font-medium ${
+        <div className={`flex items-start gap-3 rounded-2xl px-5 py-4 mb-6 border ${
           compraCalificada
-            ? 'bg-[#EBF4ED] border-[#1A4E26]/20 text-[#1A4E26]'
-            : 'bg-amber-50 border-amber-200 text-amber-700'
+            ? 'bg-[#EBF4ED] border-[#1A4E26]/20'
+            : 'bg-amber-50 border-amber-200'
         }`}>
-          {compraCalificada ? (
-            <>
-              <CheckCircle2 size={16} className="shrink-0" />
-              <span>Compra mensual completada — estás habilitado para recibir comisiones este mes</span>
-            </>
-          ) : (
-            <>
-              <AlertCircle size={16} className="shrink-0" />
-              <span>
-                Para recibir comisiones este mes debes realizar <strong>una compra de $100 o más</strong> (en un solo pedido)
-              </span>
-            </>
-          )}
+          <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
+            compraCalificada ? 'bg-[#1A4E26]' : 'bg-amber-500'
+          }`}>
+            {compraCalificada ? <CheckCircle2 size={18} className="text-white" /> : <AlertCircle size={18} className="text-white" />}
+          </div>
+          <div className="flex-1">
+            <p className={`text-sm font-bold mb-1 ${compraCalificada ? 'text-[#1A4E26]' : 'text-amber-700'}`}>
+              {compraCalificada
+                ? '✓ Activo este mes — recibes comisiones'
+                : 'Aún no estás activo este mes'
+              }
+            </p>
+            <p className={`text-xs ${compraCalificada ? 'text-[#1A4E26]/80' : 'text-amber-600'}`}>
+              {compraCalificada
+                ? `Has cumplido la meta de $100 en un solo pedido este mes. Total acumulado: $${totalMes.toFixed(2)}.`
+                : `Realiza al menos un pedido de $100 o más en un solo pedido este mes para mantener tu cupo de comisiones. Acumulado este mes: $${totalMes.toFixed(2)}.`}
+            </p>
+          </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Catálogo de productos */}
-        <div className="xl:col-span-2">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {products.map((p) => {
-              const qty = quantities[p.codigo] ?? 0;
-              const precioDistribuidor = parseFloat((p.pvp * DISCOUNT).toFixed(2));
-              const ahorro = parseFloat((p.pvp - precioDistribuidor).toFixed(2));
-
-              return (
-                <div
-                  key={p.codigo}
-                  className={`bg-white border rounded-2xl p-5 transition-all duration-200 shadow-[0_0_8px_rgba(26,78,38,0.04)] ${
-                    qty > 0 ? 'border-[#1A4E26]/40 bg-[#EBF4ED]' : 'border-[#C8D8CB]'
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <p className="text-[#111111] font-semibold text-sm">{p.nombre}</p>
-                      <p className="text-[#6B7280] text-xs mt-0.5">{p.categoria}</p>
-                    </div>
-                    <span className="text-[#9CA3AF] text-xs font-mono ml-2">#{p.codigo}</span>
-                  </div>
-                  <p className="text-[#6B7280] text-xs mb-3 leading-relaxed">{p.descripcion}</p>
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <p className="text-[#9CA3AF] text-xs line-through">PVP: ${p.pvp.toFixed(2)}</p>
-                      <p className="text-[#1A4E26] font-bold">Tu precio: ${precioDistribuidor.toFixed(2)}</p>
-                      <p className="text-[#D4AF37] text-xs">Ahorras: ${ahorro.toFixed(2)}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setQty(p.codigo, qty - 1)}
-                        disabled={qty === 0}
-                        className="w-8 h-8 rounded-lg bg-[#F4F7F5] border border-[#C8D8CB] flex items-center justify-center text-[#6B7280] hover:text-[#111111] hover:border-[#A8C2AD] disabled:opacity-30 transition-all duration-200"
-                      >
-                        <Minus size={14} />
-                      </button>
-                      <span className="w-8 text-center text-[#111111] font-bold text-sm">{qty}</span>
-                      <button
-                        onClick={() => setQty(p.codigo, qty + 1)}
-                        className="w-8 h-8 rounded-lg bg-[#1A4E26]/10 border border-[#1A4E26]/30 flex items-center justify-center text-[#1A4E26] hover:bg-[#1A4E26]/20 transition-all duration-200"
-                      >
-                        <Plus size={14} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+      {items.length === 0 ? (
+        <div className="bg-white border border-[#C8D8CB] rounded-3xl p-16 text-center">
+          <div className="w-20 h-20 bg-[#F4F7F5] rounded-full flex items-center justify-center mx-auto mb-4">
+            <ShoppingCart size={32} className="text-[#9CA3AF]" />
           </div>
+          <h3 className="font-heading font-bold text-xl text-[#111111] mb-2">Tu carrito está vacío</h3>
+          <p className="text-[#6B7280] text-sm mb-6 max-w-sm mx-auto">
+            Explora el catálogo y agrega productos a tu precio distribuidor para empezar.
+          </p>
+          <Link
+            to="/dashboard/tienda"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#1A4E26] text-white font-bold text-sm hover:bg-[#163F1E] transition-all shadow-[0_8px_24px_rgba(26,78,38,0.25)]"
+          >
+            <Plus size={16} /> Ir a la tienda
+          </Link>
         </div>
-
-        {/* Resumen del carrito */}
-        <div className="xl:col-span-1">
-          <div className="sticky top-6 bg-white border border-[#C8D8CB] rounded-2xl p-6 shadow-[0_0_8px_rgba(26,78,38,0.04)]">
-            <div className="flex items-center gap-2 mb-5">
-              <ShoppingCart size={20} className="text-[#1A4E26]" />
-              <h2 className="font-heading font-semibold text-[#111111]">Tu Pedido</h2>
+      ) : (
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          {/* Items list */}
+          <div className="xl:col-span-2 bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-[#C8D8CB] flex items-center justify-between bg-[#F4F7F5]">
+              <h2 className="font-heading font-bold text-[#111111] text-sm">
+                {items.length} producto{items.length !== 1 ? 's' : ''} en tu carrito
+              </h2>
+              <button
+                onClick={clear}
+                className="text-[#6B7280] hover:text-red-600 text-xs flex items-center gap-1.5 transition-colors"
+              >
+                <Trash2 size={13} /> Vaciar carrito
+              </button>
             </div>
 
-            {cartItems.length === 0 ? (
-              <p className="text-[#9CA3AF] text-sm text-center py-6">
-                Selecciona productos del catálogo
-              </p>
-            ) : (
-              <>
-                <div className="space-y-3 mb-5 max-h-64 overflow-y-auto">
-                  {cartItems.map((item) => (
-                    <div key={item.codigo} className="flex justify-between items-start gap-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[#111111] text-sm truncate">{item.nombre}</p>
-                        <p className="text-[#6B7280] text-xs">{item.cantidad} × ${item.precio.toFixed(2)}</p>
-                      </div>
-                      <p className="text-[#111111] font-semibold text-sm shrink-0">
-                        ${(item.precio * item.cantidad).toFixed(2)}
+            <div className="divide-y divide-[#C8D8CB]">
+              {items.map((item) => (
+                <div key={item.codigo} className="px-6 py-4 flex items-center gap-4">
+                  {/* Image */}
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl flex items-center justify-center shrink-0 overflow-hidden" style={{ background: 'linear-gradient(160deg, #EBF4ED 0%, #D5ECD9 100%)' }}>
+                    {item.imagen ? (
+                      <img src={item.imagen} alt={item.nombre} className="max-h-full max-w-full object-contain p-2" />
+                    ) : (
+                      <Leaf size={20} className="text-[#1A4E26] opacity-40" />
+                    )}
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <Link to={`/dashboard/tienda/${item.codigo}`} className="block">
+                      <p className="text-[#111111] font-bold text-sm leading-tight truncate hover:text-[#1A4E26] transition-colors">
+                        {item.nombre}
                       </p>
-                    </div>
-                  ))}
+                    </Link>
+                    <p className="text-[#6B7280] text-xs mt-0.5">
+                      <span className="line-through">${item.pvp.toFixed(2)}</span>{' '}
+                      <span className="text-[#1A4E26] font-bold">${item.precio.toFixed(2)}</span>{' '}
+                      <span className="text-[#9CA3AF]">c/u</span>
+                    </p>
+                  </div>
+
+                  {/* Qty */}
+                  <div className="flex items-center border border-[#C8D8CB] rounded-xl overflow-hidden shrink-0">
+                    <button
+                      onClick={() => setQty(item.codigo, item.cantidad - 1)}
+                      className="w-8 h-8 flex items-center justify-center hover:bg-[#F4F7F5] transition-colors"
+                      aria-label="Disminuir"
+                    >
+                      <Minus size={12} className="text-[#6B7280]" />
+                    </button>
+                    <span className="w-9 text-center font-bold text-[#111111] text-sm">{item.cantidad}</span>
+                    <button
+                      onClick={() => setQty(item.codigo, item.cantidad + 1)}
+                      className="w-8 h-8 flex items-center justify-center hover:bg-[#F4F7F5] transition-colors"
+                      aria-label="Aumentar"
+                    >
+                      <Plus size={12} className="text-[#6B7280]" />
+                    </button>
+                  </div>
+
+                  {/* Subtotal */}
+                  <div className="text-right shrink-0 w-20 sm:w-24">
+                    <p className="font-heading font-bold text-[#111111] text-base">
+                      ${(item.precio * item.cantidad).toFixed(2)}
+                    </p>
+                    <button
+                      onClick={() => removeItem(item.codigo)}
+                      className="text-[#9CA3AF] hover:text-red-600 text-xs mt-1 transition-colors flex items-center gap-1 justify-end ml-auto"
+                    >
+                      <X size={11} /> Quitar
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Summary */}
+          <div className="xl:col-span-1">
+            <div className="sticky top-6 bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-[#C8D8CB] bg-[#F4F7F5]">
+                <h2 className="font-heading font-bold text-[#111111] text-sm">Resumen del pedido</h2>
+              </div>
+
+              <div className="p-5 space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#6B7280]">Subtotal ({items.length} producto{items.length !== 1 ? 's' : ''})</span>
+                  <span className="text-[#111111] font-semibold">${subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#D4AF37]">Ahorro total (50% off)</span>
+                  <span className="text-[#D4AF37] font-semibold">- ${savings.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#D4AF37]">★ Puntos a ganar</span>
+                  <span className="text-[#D4AF37] font-bold">{puntos} pts</span>
                 </div>
 
-                <div className="border-t border-[#C8D8CB] pt-4 space-y-2 mb-5">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#6B7280]">Subtotal</span>
-                    <span className="text-[#111111]">${total.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#D4AF37]">Ahorro total</span>
-                    <span className="text-[#D4AF37]">${savingsTotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#D4AF37]">★ Puntos a ganar</span>
-                    <span className="text-[#D4AF37] font-semibold">{totalPuntos} pts</span>
-                  </div>
-                  <div className="flex justify-between font-bold pt-2 border-t border-[#C8D8CB]">
-                    <span className="text-[#111111]">Total</span>
-                    <span className="text-[#1A4E26] text-lg">${total.toFixed(2)}</span>
-                  </div>
+                <div className="border-t border-[#C8D8CB] pt-3 flex justify-between items-baseline">
+                  <span className="font-heading font-bold text-[#111111]">Total</span>
+                  <span className="font-heading font-bold text-2xl text-[#1A4E26]">${total.toFixed(2)}</span>
                 </div>
 
                 {willQualify && !compraCalificada && (
-                  <div className="flex items-center gap-2 text-xs text-[#1A4E26] bg-[#EBF4ED] rounded-lg px-3 py-2 mb-4">
-                    <TrendingUp size={12} />
-                    Este pedido te habilitará para recibir comisiones este mes
+                  <div className="bg-[#EBF4ED] border border-[#1A4E26]/20 rounded-xl p-3 flex items-start gap-2 text-xs text-[#1A4E26]">
+                    <TrendingUp size={14} className="shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold">¡Este pedido te activa el mes!</p>
+                      <p className="text-[#1A4E26]/80 leading-snug">Superas los $100 — tendrás cupo a comisiones este mes.</p>
+                    </div>
                   </div>
                 )}
-              </>
-            )}
 
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm mb-4">
-                {error}
+                {!willQualify && !compraCalificada && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2 text-xs text-amber-700">
+                    <AlertCircle size={14} className="shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold">Faltan ${(100 - subtotal).toFixed(2)} para activarte</p>
+                      <p className="text-amber-600 leading-snug">Necesitas $100 en un solo pedido para mantener tu cupo a comisiones este mes.</p>
+                    </div>
+                  </div>
+                )}
+
+                {error && (
+                  <div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2 text-red-600 text-xs">
+                    {error}
+                  </div>
+                )}
+
+                <button
+                  onClick={handleSubmit}
+                  disabled={submitting || items.length === 0}
+                  className="w-full py-4 rounded-xl bg-[#1A4E26] text-white font-bold text-sm hover:bg-[#163F1E] disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_8px_24px_rgba(26,78,38,0.25)] transition-all duration-200 flex items-center justify-center gap-2"
+                >
+                  {submitting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Procesando...
+                    </>
+                  ) : (
+                    <>
+                      Confirmar pedido <ArrowRight size={15} />
+                    </>
+                  )}
+                </button>
+                <Link
+                  to="/dashboard/tienda"
+                  className="w-full py-3 rounded-xl border border-[#C8D8CB] text-[#6B7280] text-sm font-semibold hover:border-[#A8C2AD] hover:text-[#111111] transition-all flex items-center justify-center gap-2"
+                >
+                  <ShoppingCart size={14} /> Seguir comprando
+                </Link>
               </div>
-            )}
-
-            <button
-              onClick={handleSubmit}
-              disabled={cartItems.length === 0 || submitting}
-              className="w-full py-4 rounded-xl bg-[#1A4E26] text-white font-bold text-sm hover:bg-[#163F1E] disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(26,78,38,0.2)] transition-all duration-200"
-            >
-              {submitting ? 'Procesando...' : `Realizar Pedido ($${total.toFixed(2)})`}
-            </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

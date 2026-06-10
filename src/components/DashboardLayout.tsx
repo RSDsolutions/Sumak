@@ -5,33 +5,39 @@ import {
   Network,
   DollarSign,
   ShoppingCart,
-  Plus,
+  Store,
   User,
   Menu,
   X,
   LogOut,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
+import { useCart } from '../lib/cart';
 
 interface NavItem {
   label: string;
   to: string;
   icon: React.ReactNode;
   end?: boolean;
+  showBadge?: boolean;
 }
 
 const navItems: NavItem[] = [
   { label: 'Mi Panel', to: '/dashboard', icon: <LayoutDashboard size={18} />, end: true },
+  { label: 'Tienda', to: '/dashboard/tienda', icon: <Store size={18} /> },
+  { label: 'Mi Carrito', to: '/dashboard/pedido/nuevo', icon: <ShoppingCart size={18} />, showBadge: true },
+  { label: 'Mis Pedidos', to: '/dashboard/pedidos', icon: <ShoppingCart size={18} /> },
   { label: 'Mi Red', to: '/dashboard/red', icon: <Network size={18} /> },
   { label: 'Comisiones', to: '/dashboard/comisiones', icon: <DollarSign size={18} /> },
-  { label: 'Pedidos', to: '/dashboard/pedidos', icon: <ShoppingCart size={18} /> },
-  { label: 'Nuevo Pedido', to: '/dashboard/pedido/nuevo', icon: <Plus size={18} /> },
   { label: 'Mi Perfil', to: '/dashboard/perfil', icon: <User size={18} /> },
 ];
 
 function SidebarContent({ onClose }: { onClose?: () => void }) {
   const { profile, signOut } = useAuth();
+  const { items } = useCart();
   const navigate = useNavigate();
+
+  const cartCount = items.reduce((s, i) => s + i.cantidad, 0);
 
   async function handleSignOut() {
     await signOut();
@@ -86,7 +92,12 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
             }
           >
             {item.icon}
-            {item.label}
+            <span className="flex-1">{item.label}</span>
+            {item.showBadge && cartCount > 0 && (
+              <span className="bg-[#D4AF37] text-[#0B2913] text-[10px] font-bold rounded-full px-2 py-0.5 min-w-[20px] text-center">
+                {cartCount}
+              </span>
+            )}
           </NavLink>
         ))}
       </nav>
@@ -108,10 +119,12 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { items } = useCart();
+  const cartCount = items.reduce((s, i) => s + i.cantidad, 0);
 
   return (
     <div className="flex min-h-screen bg-[#F4F7F5]">
-      {/* Desktop sidebar — dark green */}
+      {/* Desktop sidebar */}
       <aside className="hidden lg:flex flex-col w-60 bg-[#1A4E26] fixed inset-y-0 left-0 z-30">
         <SidebarContent />
       </aside>
@@ -124,7 +137,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         />
       )}
 
-      {/* Mobile drawer — dark green */}
+      {/* Mobile drawer */}
       <aside
         style={{ transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)' }}
         className="fixed inset-y-0 left-0 z-50 w-64 bg-[#1A4E26] transition-transform duration-300 lg:hidden"
@@ -138,9 +151,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="lg:hidden flex items-center gap-3 px-4 py-4 border-b border-[#C8D8CB] bg-white shadow-sm">
           <button
             onClick={() => setMobileOpen(true)}
-            className="text-[#6B7280] hover:text-[#111111] transition-colors"
+            className="text-[#6B7280] hover:text-[#111111] transition-colors relative"
           >
             <Menu size={22} />
+            {cartCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-[#D4AF37] text-[#0B2913] text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                {cartCount}
+              </span>
+            )}
           </button>
           <img src="/LOGO_SUMAK.png" alt="Sumak Vida" className="h-9 w-auto object-contain" />
         </div>

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { AuthProvider } from './lib/auth';
+import { CartProvider } from './lib/cart';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -28,6 +29,8 @@ import MisComisiones from './pages/dashboard/MisComisiones';
 import MisPedidos from './pages/dashboard/MisPedidos';
 import NuevoPedido from './pages/dashboard/NuevoPedido';
 import MiPerfil from './pages/dashboard/MiPerfil';
+import Tienda from './pages/dashboard/Tienda';
+import TiendaProducto from './pages/dashboard/TiendaProducto';
 
 // Admin pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -81,6 +84,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <CartProvider>
         <ScrollToTop />
         <Routes>
           {/* ── PUBLIC ROUTES ─────────────────────────────── */}
@@ -210,6 +214,26 @@ export default function App() {
             }
           />
           <Route
+            path="/dashboard/tienda"
+            element={
+              <ProtectedRoute allowedRoles={['distribuidor']}>
+                <DashboardLayout>
+                  <Tienda />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/tienda/:slug"
+            element={
+              <ProtectedRoute allowedRoles={['distribuidor']}>
+                <DashboardLayout>
+                  <TiendaProducto />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/dashboard/perfil"
             element={
               <ProtectedRoute allowedRoles={['distribuidor']}>
@@ -302,6 +326,7 @@ export default function App() {
             }
           />
         </Routes>
+        </CartProvider>
       </AuthProvider>
     </BrowserRouter>
   );
