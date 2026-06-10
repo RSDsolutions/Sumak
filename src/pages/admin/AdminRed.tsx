@@ -180,55 +180,106 @@ const paqueteStyles: Record<string, { border: string; bg: string; text: string; 
   lider: { border: 'border-[#D4AF37]/60', bg: 'bg-[#FFFDF0]', text: 'text-[#D4AF37]', label: 'Líder' },
 };
 
-// ── Recursive card: shows binary descendants for a non-admin node ──
-function BinaryNodeCard({ node, depth, maxDepth }: { node: TreeNode; depth: number; maxDepth: number }) {
-  if (depth > maxDepth) return null;
+// ── Tree branches helper: draws horizontal bus + vertical drops to each child ──
+// Renders an array of child elements with a "tree" connector pattern above them
+function TreeBranches({ children, gap = 32, drop = 28 }: { children: React.ReactNode[]; gap?: number; drop?: number }) {
+  if (children.length === 0) return null;
+
+  if (children.length === 1) {
+    // Single child: just a vertical line
+    return (
+      <div className="flex justify-center">
+        <div className="relative" style={{ paddingTop: drop }}>
+          <div
+            className="absolute top-0 left-1/2 -translate-x-1/2 w-px bg-[#C8D8CB]"
+            style={{ height: drop }}
+          />
+          {children[0]}
+        </div>
+      </div>
+    );
+  }
+
+  // Multiple children: horizontal bus + per-child vertical drop
+  return (
+    <div className="flex justify-center" style={{ gap }}>
+      {children.map((child, i) => {
+        const isFirst = i === 0;
+        const isLast = i === children.length - 1;
+        return (
+          <div key={i} className="relative" style={{ paddingTop: drop }}>
+            {/* Horizontal segment (half if at edge, full if middle) */}
+            <div
+              className="absolute top-0 h-px bg-[#C8D8CB]"
+              style={{
+                left: isFirst ? '50%' : 0,
+                right: isLast ? '50%' : 0,
+              }}
+            />
+            {/* Vertical drop from bus to child */}
+            <div
+              className="absolute top-0 left-1/2 -translate-x-1/2 w-px bg-[#C8D8CB]"
+              style={{ height: drop }}
+            />
+            {child}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Distributor card (no children rendered here, just the box) ──
+function DistribCard({ node }: { node: TreeNode }) {
   const pkg = node.profile.paquete ?? 'basico';
   const style = paqueteStyles[pkg] ?? paqueteStyles.basico;
-  const isFrontal = depth === 0 && !node.posicion;
   const total = countNodes(node) - 1;
 
   return (
-    <div className="flex flex-col items-center">
-      <Link
-        to={`/admin/distribuidores/${node.profile.id}`}
-        className={`group block border-2 rounded-2xl p-3 w-44 text-center hover:shadow-[0_8px_24px_rgba(26,78,38,0.15)] transition-all ${style.border} ${style.bg}`}
-      >
-        <div className={`w-9 h-9 rounded-xl mx-auto mb-2 flex items-center justify-center bg-white ${style.text} border ${style.border}`}>
-          <User size={16} />
-        </div>
-        <p className={`font-mono text-[11px] font-bold mb-0.5 ${style.text}`}>
-          {node.profile.codigo_distribuidor ?? '—'}
+    <Link
+      to={`/admin/distribuidores/${node.profile.id}`}
+      className={`group block border-2 rounded-2xl p-3 w-44 text-center hover:shadow-[0_8px_24px_rgba(26,78,38,0.15)] transition-all ${style.border} ${style.bg}`}
+    >
+      <div className={`w-9 h-9 rounded-xl mx-auto mb-2 flex items-center justify-center bg-white ${style.text} border ${style.border}`}>
+        <User size={16} />
+      </div>
+      <p className={`font-mono text-[11px] font-bold mb-0.5 ${style.text}`}>
+        {node.profile.codigo_distribuidor ?? '—'}
+      </p>
+      <p className="text-[#111111] text-[11px] font-bold leading-tight line-clamp-2 mb-1" title={node.profile.nombre_completo}>
+        {node.profile.nombre_completo}
+      </p>
+      <p className="text-[#D4AF37] text-[10px] font-bold">★ {node.profile.puntos ?? 0} pts</p>
+      <div className={`mt-1 inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${style.text} bg-white/70`}>
+        {style.label}
+      </div>
+      {node.posicion && (
+        <p className="text-[9px] mt-1 text-[#9CA3AF] uppercase tracking-wider">
+          {node.posicion === 'izquierda' ? '← Izq' : 'Der →'}
         </p>
-        <p className="text-[#111111] text-[11px] font-bold leading-tight line-clamp-2 mb-1" title={node.profile.nombre_completo}>
-          {node.profile.nombre_completo}
-        </p>
-        <p className="text-[#D4AF37] text-[10px] font-bold">★ {node.profile.puntos ?? 0} pts</p>
-        <div className={`mt-1 inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${style.text} bg-white/70`}>
-          {style.label}
-        </div>
-        {isFrontal ? (
-          <p className="text-[9px] mt-1 text-[#1A4E26] font-bold uppercase tracking-wider">Frontal</p>
-        ) : node.posicion && (
-          <p className="text-[9px] mt-1 text-[#9CA3AF] uppercase tracking-wider">
-            {node.posicion === 'izquierda' ? '← Izq' : 'Der →'}
-          </p>
-        )}
-        {total > 0 && (
-          <p className="text-[9px] mt-1 text-[#9CA3AF]">+{total} en su red</p>
-        )}
-      </Link>
+      )}
+      {total > 0 && (
+        <p className="text-[9px] mt-1 text-[#9CA3AF]">+{total} en su red</p>
+      )}
+    </Link>
+  );
+}
 
-      {node.children.length > 0 && depth < maxDepth && (
-        <div className="flex gap-5 mt-5 relative">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-5 h-5 w-px bg-[#C8D8CB]" />
+// ── Recursive subtree: card + its children with proper tree branches ──
+function BinaryNodeCard({ node, depth, maxDepth }: { node: TreeNode; depth: number; maxDepth: number }) {
+  if (depth > maxDepth) return null;
+
+  const showChildren = node.children.length > 0 && depth < maxDepth;
+
+  return (
+    <div className="flex flex-col items-center">
+      <DistribCard node={node} />
+      {showChildren && (
+        <TreeBranches gap={24}>
           {node.children.map((child) => (
-            <div key={child.id} className="flex flex-col items-center relative">
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-5 h-5 w-px bg-[#C8D8CB]" />
-              <BinaryNodeCard node={child} depth={depth + 1} maxDepth={maxDepth} />
-            </div>
+            <BinaryNodeCard key={child.id} node={child} depth={depth + 1} maxDepth={maxDepth} />
           ))}
-        </div>
+        </TreeBranches>
       )}
     </div>
   );
@@ -237,22 +288,45 @@ function BinaryNodeCard({ node, depth, maxDepth }: { node: TreeNode; depth: numb
 // ── Empty slot card (placeholder for incomplete pair) ──
 function EmptySlot({ position }: { position: 'izquierda' | 'derecha' }) {
   return (
-    <div className="flex flex-col items-center">
-      <div className="border-2 border-dashed border-[#C8D8CB] rounded-2xl p-3 w-44 text-center bg-white/40">
-        <div className="w-9 h-9 rounded-xl mx-auto mb-2 flex items-center justify-center bg-[#F4F7F5] text-[#9CA3AF]">
-          <Users size={16} />
-        </div>
-        <p className="text-[10px] uppercase tracking-widest text-[#9CA3AF] font-bold mb-1">Disponible</p>
-        <p className="text-[#9CA3AF] text-[11px]">Sin asignar</p>
-        <p className="text-[9px] mt-1 text-[#9CA3AF] uppercase tracking-wider">
-          {position === 'izquierda' ? '← Izq' : 'Der →'}
-        </p>
+    <div className="border-2 border-dashed border-[#C8D8CB] rounded-2xl p-3 w-44 text-center bg-white/40">
+      <div className="w-9 h-9 rounded-xl mx-auto mb-2 flex items-center justify-center bg-[#F4F7F5] text-[#9CA3AF]">
+        <Users size={16} />
       </div>
+      <p className="text-[10px] uppercase tracking-widest text-[#9CA3AF] font-bold mb-1">Disponible</p>
+      <p className="text-[#9CA3AF] text-[11px]">Sin asignar</p>
+      <p className="text-[9px] mt-1 text-[#9CA3AF] uppercase tracking-wider">
+        {position === 'izquierda' ? '← Izq' : 'Der →'}
+      </p>
     </div>
   );
 }
 
-// ── Frontal PAIR: muestra izquierda + derecha del admin como un slot ──
+// ── Frontal label "node" — virtual pivot between admin and its L+R children ──
+function FrontalHeader({ idx, completo }: { idx: number; completo: boolean }) {
+  return (
+    <div
+      className={`rounded-xl px-3 py-2 text-center w-44 shadow-sm ${
+        completo ? 'bg-[#D4AF37]/15 border border-[#D4AF37]/40' : 'bg-amber-50 border border-amber-300'
+      }`}
+    >
+      <div className="flex items-center justify-center gap-1.5">
+        <Star size={11} className={completo ? 'text-[#D4AF37]' : 'text-amber-600'} fill="currentColor" />
+        <span className={`text-[10px] uppercase tracking-widest font-bold ${
+          completo ? 'text-[#D4AF37]' : 'text-amber-700'
+        }`}>
+          Frontal {idx + 1}
+        </span>
+      </div>
+      <p className={`text-[9px] font-bold uppercase tracking-wider mt-0.5 ${
+        completo ? 'text-[#1A4E26]/70' : 'text-amber-600/80'
+      }`}>
+        {completo ? 'Par completo' : 'En construcción'}
+      </p>
+    </div>
+  );
+}
+
+// ── Frontal PAIR: header + ramas a izquierda y derecha ──
 function FrontalPair({ izquierda, derecha, maxDepth, idx }: {
   izquierda: TreeNode | null;
   derecha: TreeNode | null;
@@ -266,55 +340,21 @@ function FrontalPair({ izquierda, derecha, maxDepth, idx }: {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: idx * 0.05 }}
-      className={`bg-[#FAFBFA] border-2 rounded-2xl p-5 shrink-0 ${
-        completo ? 'border-[#D4AF37]/40' : 'border-[#C8D8CB]'
-      }`}
+      className="flex flex-col items-center shrink-0"
     >
-      <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[#C8D8CB]">
-        <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-          completo ? 'bg-[#D4AF37]/15 text-[#D4AF37]' : 'bg-amber-50 text-amber-600'
-        }`}>
-          <Star size={13} fill="currentColor" />
-        </div>
-        <div>
-          <p className={`text-[9px] uppercase tracking-widest font-bold ${
-            completo ? 'text-[#D4AF37]' : 'text-amber-600'
-          }`}>
-            Frontal {idx + 1} {completo ? '· Completo' : '· Incompleto'}
-          </p>
-          <p className="text-[#111111] text-xs font-bold">
-            {izquierda && derecha
-              ? `${izquierda.profile.codigo_distribuidor} + ${derecha.profile.codigo_distribuidor}`
-              : (izquierda?.profile.codigo_distribuidor ?? derecha?.profile.codigo_distribuidor ?? '—')}
-          </p>
-        </div>
-      </div>
+      <FrontalHeader idx={idx} completo={completo} />
 
-      {/* Pareja izquierda / derecha */}
-      <div className="flex gap-4 items-start justify-center">
-        {/* IZQUIERDA */}
-        <div className="flex flex-col items-center">
-          <span className="text-[9px] uppercase tracking-widest text-[#1A4E26] font-bold mb-2 px-2 py-0.5 rounded-full bg-[#EBF4ED]">
-            ← Izquierda
-          </span>
-          {izquierda ? (
-            <BinaryNodeCard node={izquierda} depth={0} maxDepth={maxDepth} />
-          ) : (
-            <EmptySlot position="izquierda" />
-          )}
-        </div>
-        {/* DERECHA */}
-        <div className="flex flex-col items-center">
-          <span className="text-[9px] uppercase tracking-widest text-[#1A4E26] font-bold mb-2 px-2 py-0.5 rounded-full bg-[#EBF4ED]">
-            Derecha →
-          </span>
-          {derecha ? (
-            <BinaryNodeCard node={derecha} depth={0} maxDepth={maxDepth} />
-          ) : (
-            <EmptySlot position="derecha" />
-          )}
-        </div>
-      </div>
+      {/* Ramas: izquierda + derecha como hijos del header */}
+      <TreeBranches gap={24}>
+        {[
+          izquierda
+            ? <BinaryNodeCard key="izq" node={izquierda} depth={0} maxDepth={maxDepth} />
+            : <EmptySlot key="izq-empty" position="izquierda" />,
+          derecha
+            ? <BinaryNodeCard key="der" node={derecha} depth={0} maxDepth={maxDepth} />
+            : <EmptySlot key="der-empty" position="derecha" />,
+        ]}
+      </TreeBranches>
     </motion.div>
   );
 }
@@ -655,9 +695,9 @@ export default function AdminRed() {
           </div>
         ) : (
           <ZoomPanContainer height={640}>
-            <div className="p-8 min-w-[600px]">
-              {/* Admin root card */}
-              <div className="flex justify-center mb-2">
+            <div className="p-10 inline-block">
+              <div className="flex flex-col items-center">
+                {/* Admin root card */}
                 <div className="border-2 border-[#0B2913] bg-gradient-to-br from-[#0F2E18] to-[#1A4E26] rounded-2xl p-4 w-60 text-center shadow-[0_15px_40px_rgba(26,78,38,0.25)] relative">
                   <div className="absolute -top-2 -right-2 bg-[#D4AF37] text-[#0B2913] text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full">
                     Admin
@@ -676,34 +716,24 @@ export default function AdminRed() {
                     ROOT · {Math.ceil(frontales.length / 2)} frontal{Math.ceil(frontales.length / 2) !== 1 ? 'es' : ''}
                   </p>
                 </div>
-              </div>
 
-              {/* Connector down + horizontal */}
-              {frontales.length > 0 && (
-                <>
-                  <div className="flex justify-center">
-                    <div className="h-6 w-px bg-[#C8D8CB]" />
-                  </div>
-                  <p className="text-center text-[10px] uppercase tracking-widest text-[#9CA3AF] font-bold mb-3">
-                    ↓ Frontales del admin · cada uno con su izquierda y derecha ↓
-                  </p>
-
-                  {/* Frontales agrupados en pares (izq + der) por orden de creación */}
-                  <div className="flex gap-5 justify-center pb-4 flex-wrap">
-                    {(() => {
-                      // Ordenar frontales por created_at ascendente para pareo estable
-                      const ordered = [...frontales].sort((a, b) =>
-                        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-                      );
-                      // Agrupar en pares: [izq, der]
-                      const pairs: { izq: TreeNode | null; der: TreeNode | null }[] = [];
-                      for (let i = 0; i < ordered.length; i += 2) {
-                        pairs.push({
-                          izq: ordered[i] ?? null,
-                          der: ordered[i + 1] ?? null,
-                        });
-                      }
-                      return pairs.map((pair, idx) => (
+                {/* Tree branches from admin to all FrontalPairs */}
+                {frontales.length > 0 && (() => {
+                  // Sort by created_at ascendente para pareo estable
+                  const ordered = [...frontales].sort((a, b) =>
+                    new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+                  );
+                  // Agrupar en pares
+                  const pairs: { izq: TreeNode | null; der: TreeNode | null }[] = [];
+                  for (let i = 0; i < ordered.length; i += 2) {
+                    pairs.push({
+                      izq: ordered[i] ?? null,
+                      der: ordered[i + 1] ?? null,
+                    });
+                  }
+                  return (
+                    <TreeBranches gap={56} drop={36}>
+                      {pairs.map((pair, idx) => (
                         <FrontalPair
                           key={pair.izq?.id ?? pair.der?.id ?? idx}
                           izquierda={pair.izq}
@@ -711,18 +741,18 @@ export default function AdminRed() {
                           maxDepth={maxDepth - 1}
                           idx={idx}
                         />
-                      ));
-                    })()}
-                  </div>
-                </>
-              )}
+                      ))}
+                    </TreeBranches>
+                  );
+                })()}
 
-              {frontales.length === 0 && (
-                <div className="text-center mt-6 py-8 text-[#9CA3AF] text-sm">
-                  <Users size={32} className="mx-auto mb-2 opacity-40" />
-                  Aún no hay frontales asignados. Al aprobar una solicitud, puedes ubicarla directamente bajo el admin como frontal.
-                </div>
-              )}
+                {frontales.length === 0 && (
+                  <div className="mt-8 text-center py-8 text-[#9CA3AF] text-sm max-w-md">
+                    <Users size={32} className="mx-auto mb-2 opacity-40" />
+                    Aún no hay frontales asignados. Al aprobar una solicitud, puedes ubicarla directamente bajo el admin como frontal.
+                  </div>
+                )}
+              </div>
             </div>
           </ZoomPanContainer>
         )}
