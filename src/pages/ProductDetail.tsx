@@ -6,7 +6,7 @@ import {
   Truck, Award, ShieldCheck, Heart, Share2, Minus, Plus,
   Sparkles, AlertCircle, Phone, BookOpen, X, Maximize2, Download,
 } from 'lucide-react';
-import { products, contactInfo } from '../data';
+import { products, contactInfo, parseIngredient } from '../data';
 
 type TabKey = 'beneficios' | 'ingredientes' | 'modo-uso' | 'precauciones';
 
@@ -359,22 +359,83 @@ export default function ProductDetail() {
                 </div>
               )}
 
-              {currentTab?.key === 'ingredientes' && product.ingredientes && (
-                <div>
-                  <h2 className="font-heading font-bold text-2xl text-[#111111] mb-2">Ingredientes naturales</h2>
-                  <p className="text-[#6B7280] text-sm mb-6">Formulado con plantas y extractos seleccionados.</p>
-                  <div className="flex flex-wrap gap-2">
-                    {product.ingredientes.map((ing) => (
-                      <span
-                        key={ing}
-                        className="inline-flex items-center gap-1.5 bg-[#1A4E26]/10 border border-[#1A4E26]/20 text-[#1A4E26] font-semibold px-3 py-2 rounded-xl text-sm"
-                      >
-                        <Leaf size={13} /> {ing}
-                      </span>
-                    ))}
+              {currentTab?.key === 'ingredientes' && product.ingredientes && (() => {
+                const parsed = product.ingredientes.map(parseIngredient);
+                const conImagen = parsed.filter((i) => i.image);
+                const nutrientes = parsed.filter((i) => i.isNutrient);
+                const otros = parsed.filter((i) => !i.image && !i.isNutrient);
+                return (
+                  <div>
+                    <h2 className="font-heading font-bold text-2xl text-[#111111] mb-2">Ingredientes naturales</h2>
+                    <p className="text-[#6B7280] text-sm mb-6">Formulado con plantas, extractos y nutrientes seleccionados.</p>
+
+                    {conImagen.length > 0 && (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-6">
+                        {conImagen.map((ing, i) => (
+                          <motion.div
+                            key={ing.name + i}
+                            initial={{ opacity: 0, y: 12 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.3, delay: Math.min(i * 0.02, 0.3) }}
+                            className="bg-gradient-to-br from-[#F4F7F5] to-[#EBF4ED] border border-[#C8D8CB] rounded-2xl p-3 text-center hover:border-[#1A4E26]/40 hover:shadow-[0_4px_16px_rgba(26,78,38,0.10)] transition-all"
+                            title={ing.description}
+                          >
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-2 rounded-full bg-white border border-[#C8D8CB] overflow-hidden flex items-center justify-center">
+                              <img
+                                src={ing.image}
+                                alt={ing.name}
+                                className="w-full h-full object-contain p-1.5"
+                                loading="lazy"
+                              />
+                            </div>
+                            <p className="text-[#111111] text-[11px] font-bold leading-tight line-clamp-2">{ing.name}</p>
+                            {ing.description && (
+                              <p className="text-[#6B7280] text-[9px] mt-1 leading-snug line-clamp-2">{ing.description}</p>
+                            )}
+                          </motion.div>
+                        ))}
+                      </div>
+                    )}
+
+                    {otros.length > 0 && (
+                      <div className="mb-6">
+                        <p className="text-[10px] uppercase tracking-widest text-[#6B7280] font-bold mb-3">Otros componentes</p>
+                        <div className="flex flex-wrap gap-2">
+                          {otros.map((ing, i) => (
+                            <span
+                              key={ing.name + i}
+                              className="inline-flex items-center gap-1.5 bg-[#1A4E26]/10 border border-[#1A4E26]/20 text-[#1A4E26] font-semibold px-3 py-1.5 rounded-xl text-xs"
+                            >
+                              <Leaf size={11} /> {ing.name}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {nutrientes.length > 0 && (
+                      <div>
+                        <p className="text-[10px] uppercase tracking-widest text-[#D4AF37] font-bold mb-3">Vitaminas y minerales</p>
+                        <div className="flex flex-col gap-2">
+                          {nutrientes.map((ing, i) => (
+                            <div
+                              key={ing.name + i}
+                              className="bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#0B2913] rounded-xl px-3 py-2 text-xs"
+                            >
+                              <span className="text-[#D4AF37] font-bold mr-1.5">★</span>
+                              <span className="font-semibold">{ing.name}</span>
+                              {ing.description && (
+                                <span className="text-[#6B7280] ml-1">— {ing.description}</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {currentTab?.key === 'modo-uso' && product.modoUso && (
                 <div>

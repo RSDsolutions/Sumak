@@ -3,6 +3,131 @@
 // All data extracted from official company PDFs
 // ============================================================
 
+// ── Ingredient image resolver ───────────────────────────────
+// Mapea texto libre del ingrediente (con prefijos como "Extracto de",
+// "Polvo de", etc.) a una imagen en /ingredientes/. Si no hay match,
+// devuelve null y la UI lo muestra como chip de texto.
+const ingredientPatterns: Array<{ slug: string; patterns: RegExp[] }> = [
+  // Plantas medicinales
+  { slug: 'aloe-vera', patterns: [/\baloe\b/, /\bsabila\b/] },
+  { slug: 'ajenjo', patterns: [/\bajenjo\b/] },
+  { slug: 'alfalfa', patterns: [/\balfalfa\b/] },
+  { slug: 'apio', patterns: [/\bapio\b/] },
+  { slug: 'borrajas', patterns: [/\bborraj/] },
+  { slug: 'canchalagua', patterns: [/\bcanchalagua\b/] },
+  { slug: 'cardamomo', patterns: [/\bcardamomo\b/] },
+  { slug: 'chancapiedra', patterns: [/\bchancapiedra\b/] },
+  { slug: 'cola-de-caballo', patterns: [/cola de caballo/] },
+  { slug: 'curcuma', patterns: [/\bcurcuma\b/] },
+  { slug: 'diente-de-leon', patterns: [/diente de leon/] },
+  { slug: 'flor-blanca', patterns: [/flor blanca/] },
+  { slug: 'flor-de-arenilla', patterns: [/arenilla/] },
+  { slug: 'flor-de-jamaica', patterns: [/jamaica/] },
+  { slug: 'jengibre', patterns: [/\bjengibre\b/] },
+  { slug: 'malva', patterns: [/\bmalva\b/] },
+  { slug: 'manzanilla', patterns: [/\bmanzanilla\b/, /\bcamomila\b/] },
+  { slug: 'menta', patterns: [/\bmenta\b/] },
+  { slug: 'moringa', patterns: [/\bmoringa\b/] },
+  { slug: 'ortiga', patterns: [/\bortiga\b/] },
+  { slug: 'perejil', patterns: [/\bperejil\b/] },
+  { slug: 'romero', patterns: [/\bromero\b/] },
+  { slug: 'sangre-de-drago', patterns: [/sangre de drago/] },
+  { slug: 'sen', patterns: [/hoja de sen/, /\bsen\b(?! )/, /^sen$/] },
+  { slug: 'te-del-indio', patterns: [/te del indio/] },
+  { slug: 'te-rojo', patterns: [/te rojo/] },
+  { slug: 'te-verde', patterns: [/te verde/] },
+  { slug: 'toronjil', patterns: [/\btoronjil\b/] },
+  // Frutas y semillas
+  { slug: 'arandano', patterns: [/\barandano\b/] },
+  { slug: 'avena', patterns: [/\bavena\b/] },
+  { slug: 'cacao', patterns: [/\bcacao\b/] },
+  { slug: 'chia', patterns: [/\bchia\b/] },
+  { slug: 'guanabana', patterns: [/\bguanabana\b/] },
+  { slug: 'guarana', patterns: [/\bguarana\b/] },
+  { slug: 'guayaba', patterns: [/\bguayaba\b/] },
+  { slug: 'limon', patterns: [/\blimon\b/] },
+  { slug: 'linaza', patterns: [/\blinaza\b/] },
+  { slug: 'manzana-verde', patterns: [/manzana verde/] },
+  { slug: 'naranja', patterns: [/\bnaranja\b/] },
+  { slug: 'noni', patterns: [/\bnoni\b/] },
+  { slug: 'papaya', patterns: [/\bpapaya\b/] },
+  { slug: 'pina', patterns: [/\bpina\b/, /bromelina/] },
+  { slug: 'tamarindo', patterns: [/\btamarindo\b/] },
+  { slug: 'uva', patterns: [/\buvas?\b/, /resveratrol/] },
+  // Andinos / tubérculos
+  { slug: 'maiz-morado', patterns: [/maiz morado/] },
+  { slug: 'mashua', patterns: [/\bmashua\b/] },
+  { slug: 'nogal', patterns: [/\bnogal\b/] },
+  { slug: 'nopal', patterns: [/\bnopal\b/] },
+  { slug: 'quinua', patterns: [/\bquinua\b/, /\bquinoa\b/] },
+  // Especiales
+  { slug: 'argan', patterns: [/\bargan\b/] },
+  { slug: 'coco', patterns: [/\bcoco\b/] },
+  { slug: 'ajo', patterns: [/\bajo\b/] },
+  { slug: 'alcachofa', patterns: [/\balcachofa\b/] },
+  { slug: 'una-de-gato', patterns: [/una de gato/] },
+  { slug: 'shitake', patterns: [/shitake/, /shiitake/] },
+  { slug: 'agaricus', patterns: [/agaricus/] },
+  // Origen animal / lab
+  { slug: 'miel', patterns: [/\bmiel\b/] },
+  { slug: 'calostro', patterns: [/\bcalostro\b/] },
+  { slug: 'colageno', patterns: [/\bcolageno\b/] },
+  { slug: 'acido-hialuronico', patterns: [/hialuronico/] },
+  { slug: 'glucosamina', patterns: [/\bglucosamina\b/] },
+  // Compuestos
+  { slug: 'celulas-madres', patterns: [/celulas madres/, /celula madre/] },
+  { slug: 'probioticos', patterns: [/probiotico/] },
+];
+
+// Categorías que NO tienen imagen — se renderizan como pill de texto
+const nutrientPattern = /^(vitamina|minerales?|aminoacid|fibra|antioxidante|proteina|proteinas|endulzante|edulcorante|complejo)/;
+
+export interface IngredientDisplay {
+  name: string;          // nombre principal sin descripción
+  description?: string;  // texto tras " — "
+  image?: string;        // ruta a la imagen si existe
+  isNutrient?: boolean;  // vitamina / mineral / nutriente sin imagen
+}
+
+function normalizeIngredient(raw: string): string {
+  return raw
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '');
+}
+
+export function parseIngredient(raw: string): IngredientDisplay {
+  // Separar nombre y descripción si tiene " — "
+  let name = raw;
+  let description: string | undefined;
+  if (raw.includes(' — ')) {
+    const parts = raw.split(' — ');
+    name = parts[0].trim();
+    description = parts.slice(1).join(' — ').trim();
+  } else if (raw.includes(' - ')) {
+    const parts = raw.split(' - ');
+    name = parts[0].trim();
+    description = parts.slice(1).join(' - ').trim();
+  }
+
+  const normalized = normalizeIngredient(name);
+
+  // Detectar nutrientes (vitaminas, minerales, etc.)
+  if (nutrientPattern.test(normalized)) {
+    return { name, description, isNutrient: true };
+  }
+
+  // Buscar match en patterns
+  for (const { slug, patterns } of ingredientPatterns) {
+    if (patterns.some((p) => p.test(normalized))) {
+      return { name, description, image: `/ingredientes/${slug}.png` };
+    }
+  }
+
+  // Sin match: chip de texto
+  return { name, description };
+}
+
 export interface Product {
   codigo: string;
   slug: string;
