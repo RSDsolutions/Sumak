@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ArrowRight, Trophy, Plane, Globe, MapPin, Gem, Crown, Star } from 'lucide-react';
+import {
+  ArrowRight, Trophy, Plane, Globe, MapPin, Gem, Crown, Star,
+  ChefHat, Snowflake, Tv, Laptop, Bike, Car, Home,
+} from 'lucide-react';
 import { tramo1Ranks, tramo2Ranks } from '../data';
 
 function getPrizeIcon(text: string) {
@@ -8,6 +11,20 @@ function getPrizeIcon(text: string) {
   if (text.includes('Nacional')) return <Plane size={14} className="flex-shrink-0" />;
   if (text.includes('Local')) return <MapPin size={14} className="flex-shrink-0" />;
   return null;
+}
+
+// Premios físicos del Tramo 2
+function getExtraIcon(text: string, size = 12) {
+  const t = text.toLowerCase();
+  if (t.includes('viaje') || t.includes('internacional')) return <Globe size={size} className="flex-shrink-0" />;
+  if (t.includes('cocina')) return <ChefHat size={size} className="flex-shrink-0" />;
+  if (t.includes('nevera')) return <Snowflake size={size} className="flex-shrink-0" />;
+  if (t.includes('proyector')) return <Tv size={size} className="flex-shrink-0" />;
+  if (t.includes('laptop')) return <Laptop size={size} className="flex-shrink-0" />;
+  if (t.includes('moto')) return <Bike size={size} className="flex-shrink-0" />;
+  if (t.includes('carro')) return <Car size={size} className="flex-shrink-0" />;
+  if (t.includes('casa')) return <Home size={size} className="flex-shrink-0" />;
+  return <Trophy size={size} className="flex-shrink-0" />;
 }
 
 function getT2Icon(rango: string) {
@@ -278,8 +295,8 @@ export default function Escaleras() {
                         {rank.recompensa}
                       </p>
                       {rank.extras && (
-                        <p className="text-[8px] text-[#D4AF37]/70 mt-0.5 flex items-center justify-center gap-0.5">
-                          <Globe size={8} /> {rank.extras}
+                        <p className="text-[9px] text-[#D4AF37] mt-1 flex items-center justify-center gap-1 font-semibold">
+                          {getExtraIcon(rank.extras, 10)} {rank.extras}
                         </p>
                       )}
                     </div>
@@ -350,7 +367,11 @@ export default function Escaleras() {
                             <p className="text-white/50 text-xs mt-0.5">
                               {rank.nivelesActivos} niveles · {rank.personasEnRed.toLocaleString()} personas
                             </p>
-                            {rank.extras && <p className="text-[#D4AF37] text-xs mt-0.5 flex items-center gap-1"><Globe size={10} /> {rank.extras}</p>}
+                            {rank.extras && (
+                              <p className="text-[#D4AF37] text-xs mt-1 inline-flex items-center gap-1 font-semibold bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-full px-2 py-0.5">
+                                {getExtraIcon(rank.extras, 11)} {rank.extras}
+                              </p>
+                            )}
                           </div>
                           <p className={`font-bold text-sm text-right ${isFounder ? 'text-[#FFE066]' : isDiamond ? 'text-[#D4AF37]' : 'text-white/90'}`}>
                             {rank.recompensa}

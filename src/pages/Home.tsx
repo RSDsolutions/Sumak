@@ -684,18 +684,18 @@ export default function Home() {
 
             <motion.div
               variants={fadeUp}
-              className="relative h-[420px] rounded-3xl overflow-hidden"
+              className="relative rounded-3xl overflow-hidden"
               style={{ background: 'linear-gradient(135deg, #0F2E18 0%, #1A4E26 50%, #2B6E3A 100%)' }}
             >
               <div
-                className="absolute inset-0 opacity-10"
+                className="absolute inset-0 opacity-10 pointer-events-none"
                 style={{
                   backgroundImage: 'radial-gradient(circle at 2px 2px, #D4AF37 1.5px, transparent 1.5px)',
                   backgroundSize: '24px 24px',
                 }}
               />
 
-              <div className="relative h-full p-10 flex flex-col justify-between text-white">
+              <div className="relative p-8 sm:p-10 flex flex-col gap-6 text-white">
                 <div>
                   <p className="text-[#D4AF37] text-xs font-semibold uppercase tracking-[0.3em] mb-2">3 Paquetes</p>
                   <h3 className="font-heading font-bold text-3xl leading-tight mb-1">Comienza desde $125</h3>

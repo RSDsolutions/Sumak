@@ -566,16 +566,16 @@ export function getNextRango(directos: number): Tramo1Rank | null {
 
 // ── Tramo 2 Ranks ────────────────────────────────────────────
 export const tramo2Ranks: Tramo2Rank[] = [
-  { rango: 'Gerente', nivelesActivos: '1–5', personasEnRed: 50, recompensa: '$5,000.00' },
-  { rango: 'Gerente', nivelesActivos: '1–6', personasEnRed: 100, recompensa: '$10,000.00', extras: 'Viaje Internacional' },
-  { rango: 'Gerente', nivelesActivos: '1–7', personasEnRed: 200, recompensa: '$20,000.00' },
-  { rango: 'Gerente', nivelesActivos: '1–8', personasEnRed: 500, recompensa: '$50,000.00' },
-  { rango: 'Diamante', nivelesActivos: '1–9', personasEnRed: 1000, recompensa: '$100,000.00' },
-  { rango: 'Diamante Bronce', nivelesActivos: '1–10', personasEnRed: 2000, recompensa: '$200,000.00' },
-  { rango: 'Diamante Plata', nivelesActivos: '1–11', personasEnRed: 3000, recompensa: '$300,000.00' },
-  { rango: 'Diamante Oro', nivelesActivos: '1–12', personasEnRed: 5000, recompensa: '$500,000.00' },
-  { rango: 'Fundador Nacional', nivelesActivos: '1–13', personasEnRed: 7000, recompensa: '$700,000.00' },
-  { rango: 'Fundador Internacional', nivelesActivos: '1–14', personasEnRed: 10000, recompensa: '$1,000,000.00' },
+  { rango: 'Gerente', nivelesActivos: '1–5', personasEnRed: 50, recompensa: '$5,000.00', extras: 'Viaje Internacional' },
+  { rango: 'Gerente', nivelesActivos: '1–6', personasEnRed: 100, recompensa: '$10,000.00', extras: 'Cocina' },
+  { rango: 'Gerente', nivelesActivos: '1–7', personasEnRed: 200, recompensa: '$20,000.00', extras: 'Nevera' },
+  { rango: 'Gerente', nivelesActivos: '1–8', personasEnRed: 500, recompensa: '$50,000.00', extras: 'Proyector' },
+  { rango: 'Diamante', nivelesActivos: '1–9', personasEnRed: 1000, recompensa: '$100,000.00', extras: 'Laptop' },
+  { rango: 'Diamante Bronce', nivelesActivos: '1–10', personasEnRed: 2000, recompensa: '$200,000.00', extras: 'Moto' },
+  { rango: 'Diamante Plata', nivelesActivos: '1–11', personasEnRed: 3000, recompensa: '$300,000.00', extras: 'Carro' },
+  { rango: 'Diamante Oro', nivelesActivos: '1–12', personasEnRed: 5000, recompensa: '$500,000.00', extras: 'Carro' },
+  { rango: 'Fundador Nacional', nivelesActivos: '1–13', personasEnRed: 7000, recompensa: '$700,000.00', extras: 'Carro' },
+  { rango: 'Fundador Internacional', nivelesActivos: '1–14', personasEnRed: 10000, recompensa: '$1,000,000.00', extras: 'Casa' },
 ];
 
 // ── Contact Info ─────────────────────────────────────────────
