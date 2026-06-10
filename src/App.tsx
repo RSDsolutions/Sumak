@@ -21,6 +21,7 @@ import Escaleras from './pages/Escaleras';
 import Contacto from './pages/Contacto';
 import Registro from './pages/Registro';
 import Login from './pages/Login';
+import Manual from './pages/Manual';
 
 // Distribuidor dashboard pages
 import Overview from './pages/dashboard/Overview';
@@ -157,6 +158,14 @@ export default function App() {
             element={
               <PublicLayout>
                 <PageTransition><Registro /></PageTransition>
+              </PublicLayout>
+            }
+          />
+          <Route
+            path="/manual"
+            element={
+              <PublicLayout>
+                <PageTransition><Manual /></PageTransition>
               </PublicLayout>
             }
           />

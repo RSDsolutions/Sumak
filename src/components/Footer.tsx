@@ -120,7 +120,10 @@ export default function Footer() {
           <p className="text-[#9CA3AF] text-xs text-center sm:text-left">
             RUC: {contactInfo.ruc} &nbsp;|&nbsp; © 2026 Sumak Vida Ecuador S.A. &nbsp;|&nbsp; Todos los derechos reservados
           </p>
-          <div className="flex gap-5">
+          <div className="flex gap-5 flex-wrap justify-center">
+            <Link to="/manual" className="text-[#9CA3AF] text-xs hover:text-[#6B7280] transition-colors">
+              Manual de Políticas
+            </Link>
             <Link to="/login" className="text-[#9CA3AF] text-xs hover:text-[#6B7280] transition-colors">
               Acceso Distribuidores
             </Link>
