@@ -1,17 +1,27 @@
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { products } from '../data';
-import { CheckCircle2, ShoppingBag, Leaf, ArrowLeft } from 'lucide-react';
-import { contactInfo } from '../data';
+import {
+  CheckCircle2, ShoppingBag, Leaf, ArrowLeft, ArrowRight, Star,
+  Truck, Award, ShieldCheck, Heart, Share2, Minus, Plus,
+  Sparkles, AlertCircle, Phone,
+} from 'lucide-react';
+import { products, contactInfo } from '../data';
+
+type TabKey = 'beneficios' | 'ingredientes' | 'modo-uso' | 'precauciones';
 
 export default function ProductDetail() {
   const { slug } = useParams<{ slug: string }>();
   const product = products.find((p) => p.slug === slug);
 
+  const [qty, setQty] = useState(1);
+  const [activeTab, setActiveTab] = useState<TabKey>('beneficios');
+
   if (!product) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-white gap-4">
-        <p className="text-[#111111] text-xl font-heading font-bold">Producto no encontrado.</p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white gap-4 pt-20">
+        <Leaf size={60} className="text-[#1A4E26] opacity-30" />
+        <p className="text-[#111111] text-2xl font-heading font-bold">Producto no encontrado.</p>
         <Link to="/productos" className="text-[#1A4E26] font-semibold hover:underline flex items-center gap-2">
           <ArrowLeft size={16} /> Ver todos los productos
         </Link>
@@ -20,120 +30,411 @@ export default function ProductDetail() {
   }
 
   const distributorPrice = product.pvp / 2;
+  const totalPrice = product.pvp * qty;
+
+  const relatedProducts = products
+    .filter((p) => p.categoriaKey === product.categoriaKey && p.slug !== product.slug)
+    .slice(0, 4);
+
+  const tabs: { key: TabKey; label: string; available: boolean }[] = [
+    { key: 'beneficios', label: 'Beneficios', available: !!product.beneficios?.length },
+    { key: 'ingredientes', label: 'Ingredientes', available: !!product.ingredientes?.length },
+    { key: 'modo-uso', label: 'Modo de uso', available: !!product.modoUso },
+    { key: 'precauciones', label: 'Precauciones', available: !!product.precauciones },
+  ].filter((t) => t.available);
+
+  // Default active tab to first available
+  const currentTab = tabs.find((t) => t.key === activeTab) ?? tabs[0];
+
+  const whatsappMsg = `Hola, quiero adquirir: ${product.nombre} (PVP: $${product.pvp.toFixed(2)})${qty > 1 ? ` × ${qty} = $${totalPrice.toFixed(2)}` : ''}`;
+  const whatsappUrl = `https://wa.me/${contactInfo.whatsapp}?text=${encodeURIComponent(whatsappMsg)}`;
 
   return (
-    <div className="bg-white min-h-screen pt-24 pb-20">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        {/* Back link */}
-        <Link
-          to="/productos"
-          className="inline-flex items-center gap-2 text-[#6B7280] text-sm hover:text-[#1A4E26] transition-colors mb-8"
-        >
-          <ArrowLeft size={15} /> Volver a Productos
-        </Link>
+    <div className="bg-[#FAFBFA] min-h-screen pt-24 pb-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-          {/* Product visual */}
+        {/* ── Breadcrumbs ─────────────────────────────────────── */}
+        <nav className="text-xs sm:text-sm text-[#6B7280] mb-6 flex items-center gap-1.5 flex-wrap">
+          <Link to="/" className="hover:text-[#1A4E26]">Inicio</Link>
+          <span>/</span>
+          <Link to="/productos" className="hover:text-[#1A4E26]">Tienda</Link>
+          <span>/</span>
+          <Link to={`/productos?cat=${product.categoriaKey}`} className="hover:text-[#1A4E26]">{product.categoria}</Link>
+          <span>/</span>
+          <span className="text-[#111111] font-semibold truncate">{product.nombre}</span>
+        </nav>
+
+        {/* ── Top grid: gallery + buy box ─────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+
+          {/* LEFT: Product visual */}
           <motion.div
-            initial={{ opacity: 0, x: -24 }}
+            initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <div className="w-full aspect-square max-w-sm mx-auto lg:mx-0 rounded-2xl bg-gradient-to-br from-[#EBF4ED] to-[#F4F7F5] border border-[#C8D8CB] flex items-center justify-center shadow-[0_0_60px_rgba(26,78,38,0.08)]">
-              <Leaf size={80} className="text-[#1A4E26] opacity-40" />
+            {/* Main image */}
+            <div className="relative bg-white rounded-3xl border border-[#C8D8CB] overflow-hidden aspect-square flex items-center justify-center p-10 shadow-[0_4px_24px_rgba(26,78,38,0.06)]" style={{ background: 'linear-gradient(160deg, #FFFFFF 0%, #EBF4ED 100%)' }}>
+              <div className="absolute inset-[15%] rounded-full blur-3xl opacity-20" style={{ background: 'radial-gradient(circle, rgba(26,78,38,0.6) 0%, transparent 65%)' }} />
+
+              {/* Top badges */}
+              <div className="absolute top-5 left-5 right-5 flex items-start justify-between gap-2 z-10">
+                <div className="flex flex-col gap-2">
+                  {product.bestseller && (
+                    <span className="inline-flex items-center gap-1 bg-[#D4AF37] text-[#0B2913] text-[10px] font-bold tracking-widest uppercase px-3 py-1 rounded-full shadow-md">
+                      <Star size={10} fill="currentColor" /> Más vendido
+                    </span>
+                  )}
+                  {product.nuevo && (
+                    <span className="inline-flex items-center gap-1 bg-[#1A4E26] text-white text-[10px] font-bold tracking-widest uppercase px-3 py-1 rounded-full shadow-md">
+                      <Sparkles size={10} /> Nuevo
+                    </span>
+                  )}
+                  {product.destacado && !product.bestseller && (
+                    <span className="inline-flex items-center gap-1 bg-white text-[#1A4E26] border border-[#1A4E26]/30 text-[10px] font-bold tracking-widest uppercase px-3 py-1 rounded-full shadow-sm">
+                      Destacado
+                    </span>
+                  )}
+                </div>
+                <span className="text-[10px] font-mono text-[#6B7280] bg-white/80 backdrop-blur-sm px-2 py-1 rounded">
+                  #{product.codigo}
+                </span>
+              </div>
+
+              {product.imagen ? (
+                <motion.img
+                  src={product.imagen}
+                  alt={product.nombre}
+                  className="relative max-h-full max-w-full object-contain z-10"
+                  style={{ filter: 'drop-shadow(0 30px 40px rgba(26,78,38,0.25))' }}
+                  animate={{ y: [0, -10, 0] }}
+                  transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+                />
+              ) : (
+                <Leaf size={120} className="text-[#1A4E26] opacity-30 relative z-10" />
+              )}
             </div>
 
-            <div className="mt-6 bg-[#F4F7F5] border border-[#C8D8CB] rounded-xl p-5">
-              <h3 className="font-heading font-semibold text-[#111111] text-sm mb-3">Información del Producto</h3>
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div>
-                  <span className="text-[#9CA3AF] block mb-0.5">Código</span>
-                  <span className="text-[#111111] font-mono font-medium">#{product.codigo}</span>
+            {/* Trust badges row */}
+            <div className="grid grid-cols-3 gap-3 mt-4">
+              {[
+                { icon: <Truck size={18} />, label: 'Envío Ecuador', sub: '24-72 h' },
+                { icon: <ShieldCheck size={18} />, label: 'Compra segura', sub: 'Garantizada' },
+                { icon: <Award size={18} />, label: 'Calidad', sub: 'Certificada' },
+              ].map((b) => (
+                <div key={b.label} className="bg-white border border-[#C8D8CB] rounded-2xl p-3 text-center">
+                  <div className="text-[#1A4E26] flex justify-center mb-1.5">{b.icon}</div>
+                  <p className="text-[#111111] font-semibold text-xs leading-tight">{b.label}</p>
+                  <p className="text-[#9CA3AF] text-[10px] leading-tight mt-0.5">{b.sub}</p>
                 </div>
-                <div>
-                  <span className="text-[#9CA3AF] block mb-0.5">Categoría</span>
-                  <span className="text-[#111111] font-medium">{product.categoria}</span>
-                </div>
-                <div>
-                  <span className="text-[#9CA3AF] block mb-0.5">PVP Público</span>
-                  <span className="text-[#111111] font-bold text-base">${product.pvp.toFixed(2)}</span>
-                </div>
-                <div>
-                  <span className="text-[#9CA3AF] block mb-0.5">Precio Distribuidor</span>
-                  <span className="text-[#1A4E26] font-bold text-base">${distributorPrice.toFixed(2)}</span>
-                </div>
-              </div>
+              ))}
             </div>
           </motion.div>
 
-          {/* Product info */}
+          {/* RIGHT: Buy box */}
           <motion.div
-            initial={{ opacity: 0, x: 24 }}
+            initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
-            className="flex flex-col gap-5"
+            className="flex flex-col"
           >
-            <div>
-              <span className="inline-block text-xs font-semibold uppercase tracking-widest text-[#1A4E26] bg-[#1A4E26]/10 border border-[#1A4E26]/20 px-3 py-1.5 rounded-full mb-3">
+            {/* Category + share */}
+            <div className="flex items-center justify-between mb-3">
+              <Link
+                to={`/productos?cat=${product.categoriaKey}`}
+                className="inline-block text-xs font-semibold uppercase tracking-[0.2em] text-[#1A4E26] bg-[#1A4E26]/10 border border-[#1A4E26]/20 px-3 py-1.5 rounded-full hover:bg-[#1A4E26] hover:text-white transition-colors"
+              >
                 {product.categoria}
-              </span>
-              <h1 className="font-heading font-bold text-3xl sm:text-4xl text-[#111111] mb-3 leading-tight">
-                {product.nombre}
-              </h1>
-              <p className="text-[#6B7280] text-base leading-relaxed">{product.descripcion}</p>
+              </Link>
+              <button
+                aria-label="Compartir"
+                className="w-9 h-9 rounded-full border border-[#C8D8CB] hover:border-[#1A4E26] flex items-center justify-center text-[#6B7280] hover:text-[#1A4E26] transition-colors"
+              >
+                <Share2 size={16} />
+              </button>
             </div>
 
-            {/* Pricing */}
-            <div className="bg-[#F4F7F5] border border-[#C8D8CB] rounded-xl p-6">
-              <div className="flex items-center justify-between mb-4 pb-4 border-b border-[#C8D8CB]">
+            {/* Name + tagline */}
+            <h1 className="font-heading font-bold text-3xl sm:text-4xl lg:text-5xl text-[#111111] mb-2 leading-[1.1]">
+              {product.nombre}
+            </h1>
+            {product.tagline && (
+              <p className="text-[#1A4E26] text-base sm:text-lg italic mb-3 font-medium">{product.tagline}</p>
+            )}
+
+            {/* Rating placeholder */}
+            <div className="flex items-center gap-3 mb-5">
+              <div className="flex items-center gap-0.5 text-[#D4AF37]">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <Star key={i} size={16} fill="currentColor" />
+                ))}
+              </div>
+              <span className="text-xs text-[#6B7280]">5.0 · Calidad ancestral</span>
+            </div>
+
+            {/* Description */}
+            <p className="text-[#6B7280] text-base leading-relaxed mb-6">
+              {product.detalleLargo ?? product.descripcion}
+            </p>
+
+            {/* Presentation */}
+            {product.presentacion && (
+              <div className="flex items-center gap-2 text-sm text-[#6B7280] mb-6 pb-6 border-b border-[#C8D8CB]">
+                <span className="font-semibold text-[#111111]">Presentación:</span>
+                <span>{product.presentacion}</span>
+              </div>
+            )}
+
+            {/* Price block */}
+            <div className="bg-white border border-[#C8D8CB] rounded-2xl p-6 mb-5">
+              <div className="grid grid-cols-2 gap-4 pb-5 border-b border-[#C8D8CB]">
                 <div>
-                  <p className="text-[#9CA3AF] text-xs mb-1">Precio Público</p>
-                  <p className="font-heading font-bold text-3xl text-[#111111]">${product.pvp.toFixed(2)}</p>
+                  <p className="text-[#9CA3AF] text-[10px] uppercase tracking-wider mb-1">Precio público</p>
+                  <p className="font-heading font-bold text-3xl text-[#111111] leading-none">
+                    ${product.pvp.toFixed(2)}
+                  </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[#9CA3AF] text-xs mb-1">Precio Distribuidor (50%)</p>
-                  <p className="font-heading font-bold text-3xl text-[#1A4E26]">${distributorPrice.toFixed(2)}</p>
+                  <p className="text-[#9CA3AF] text-[10px] uppercase tracking-wider mb-1">Precio distribuidor</p>
+                  <p className="font-heading font-bold text-3xl text-[#1A4E26] leading-none">
+                    ${distributorPrice.toFixed(2)}
+                  </p>
+                  <p className="text-[10px] text-[#D4AF37] font-semibold mt-1">50% OFF para socios</p>
                 </div>
               </div>
-              <p className="text-[#D4AF37] text-xs text-center">
-                Tu ganancia por venta directa: <strong>${distributorPrice.toFixed(2)}</strong>
-              </p>
-            </div>
 
-            {/* Benefits */}
-            <div>
-              <ul className="flex flex-col gap-3">
-                {[
-                  'Producto 100% natural elaborado en Sumak Jambi',
-                  'Fórmula con extractos de plantas medicinales ancestrales',
-                  '50% de descuento para distribuidores activos',
-                ].map((b) => (
-                  <li key={b} className="flex items-start gap-3">
-                    <CheckCircle2 size={16} className="text-[#1A4E26] mt-0.5 shrink-0" />
-                    <span className="text-[#6B7280] text-sm">{b}</span>
-                  </li>
-                ))}
-              </ul>
+              {/* Quantity selector */}
+              <div className="flex items-center justify-between mt-5">
+                <div>
+                  <p className="text-[#9CA3AF] text-[10px] uppercase tracking-wider mb-1">Cantidad</p>
+                  <div className="flex items-center border border-[#C8D8CB] rounded-xl overflow-hidden">
+                    <button
+                      onClick={() => setQty((q) => Math.max(1, q - 1))}
+                      className="w-10 h-10 flex items-center justify-center hover:bg-[#F4F7F5] transition-colors"
+                      aria-label="Disminuir cantidad"
+                    >
+                      <Minus size={14} className="text-[#6B7280]" />
+                    </button>
+                    <span className="w-12 text-center font-bold text-[#111111]">{qty}</span>
+                    <button
+                      onClick={() => setQty((q) => q + 1)}
+                      className="w-10 h-10 flex items-center justify-center hover:bg-[#F4F7F5] transition-colors"
+                      aria-label="Aumentar cantidad"
+                    >
+                      <Plus size={14} className="text-[#6B7280]" />
+                    </button>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-[#9CA3AF] text-[10px] uppercase tracking-wider mb-1">Total</p>
+                  <p className="font-heading font-bold text-2xl text-[#1A4E26] leading-none">
+                    ${totalPrice.toFixed(2)}
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* CTAs */}
-            <div className="flex flex-col gap-3 pt-2">
+            <div className="space-y-3">
               <a
-                href={`https://wa.me/${contactInfo.whatsapp}?text=Hola, quiero adquirir: ${product.nombre} (PVP: $${product.pvp.toFixed(2)})`}
+                href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full py-4 rounded-xl bg-[#1A4E26] text-white font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#163F1E] shadow-[0_0_20px_rgba(26,78,38,0.25)] transition-all duration-200"
+                className="w-full py-4 rounded-2xl bg-[#1A4E26] text-white font-bold text-base flex items-center justify-center gap-2 hover:bg-[#163F1E] shadow-[0_8px_24px_rgba(26,78,38,0.3)] transition-all duration-200"
               >
                 <ShoppingBag size={18} /> Comprar por WhatsApp
               </a>
               <Link
                 to="/registro"
-                className="w-full py-4 rounded-xl border-2 border-[#D4AF37] text-[#D4AF37] font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#D4AF37] hover:text-white transition-all duration-200"
+                className="w-full py-4 rounded-2xl border-2 border-[#D4AF37] text-[#1A4E26] font-bold text-base flex items-center justify-center gap-2 hover:bg-[#D4AF37] hover:text-[#0B2913] transition-all duration-200 bg-white"
               >
-                Únete y compra a ${distributorPrice.toFixed(2)}
+                <Heart size={18} /> Únete y compra a ${distributorPrice.toFixed(2)}
               </Link>
             </div>
+
+            {/* Contact */}
+            <a
+              href={`tel:${contactInfo.telefono1}`}
+              className="mt-4 flex items-center justify-center gap-2 text-[#6B7280] hover:text-[#1A4E26] text-sm transition-colors"
+            >
+              <Phone size={14} />
+              ¿Dudas? Llámanos al {contactInfo.telefono1}
+            </a>
           </motion.div>
+        </div>
+
+        {/* ── Tabbed info ─────────────────────────────────────── */}
+        {tabs.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.6 }}
+            className="mt-16 bg-white border border-[#C8D8CB] rounded-3xl overflow-hidden"
+          >
+            <div className="border-b border-[#C8D8CB] overflow-x-auto">
+              <div className="flex min-w-max">
+                {tabs.map((t) => (
+                  <button
+                    key={t.key}
+                    onClick={() => setActiveTab(t.key)}
+                    className={`px-6 py-5 text-sm font-semibold relative transition-colors whitespace-nowrap ${
+                      currentTab?.key === t.key
+                        ? 'text-[#1A4E26]'
+                        : 'text-[#6B7280] hover:text-[#111111]'
+                    }`}
+                  >
+                    {t.label}
+                    {currentTab?.key === t.key && (
+                      <motion.span
+                        layoutId="tabUnderline"
+                        className="absolute bottom-0 left-4 right-4 h-0.5 bg-[#1A4E26] rounded-full"
+                      />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-6 sm:p-10">
+              {currentTab?.key === 'beneficios' && product.beneficios && (
+                <div>
+                  <h2 className="font-heading font-bold text-2xl text-[#111111] mb-6">¿Qué hace este producto por ti?</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {product.beneficios.map((b) => (
+                      <div key={b} className="flex items-start gap-3 bg-[#F4F7F5] rounded-xl p-4">
+                        <CheckCircle2 size={20} className="text-[#1A4E26] mt-0.5 shrink-0" />
+                        <span className="text-[#111111] text-sm font-medium leading-snug">{b}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {currentTab?.key === 'ingredientes' && product.ingredientes && (
+                <div>
+                  <h2 className="font-heading font-bold text-2xl text-[#111111] mb-2">Ingredientes naturales</h2>
+                  <p className="text-[#6B7280] text-sm mb-6">Formulado con plantas y extractos seleccionados.</p>
+                  <div className="flex flex-wrap gap-2">
+                    {product.ingredientes.map((ing) => (
+                      <span
+                        key={ing}
+                        className="inline-flex items-center gap-1.5 bg-[#1A4E26]/10 border border-[#1A4E26]/20 text-[#1A4E26] font-semibold px-3 py-2 rounded-xl text-sm"
+                      >
+                        <Leaf size={13} /> {ing}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {currentTab?.key === 'modo-uso' && product.modoUso && (
+                <div>
+                  <h2 className="font-heading font-bold text-2xl text-[#111111] mb-4">Cómo usarlo</h2>
+                  <div className="bg-[#F4F7F5] border-l-4 border-[#1A4E26] rounded-r-xl p-5">
+                    <p className="text-[#111111] text-base leading-relaxed">{product.modoUso}</p>
+                  </div>
+                </div>
+              )}
+
+              {currentTab?.key === 'precauciones' && product.precauciones && (
+                <div>
+                  <h2 className="font-heading font-bold text-2xl text-[#111111] mb-4 flex items-center gap-2">
+                    <AlertCircle size={22} className="text-[#D4AF37]" />
+                    Precauciones
+                  </h2>
+                  <div className="bg-[#FFF8E6] border-l-4 border-[#D4AF37] rounded-r-xl p-5">
+                    <p className="text-[#111111] text-base leading-relaxed">{product.precauciones}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.section>
+        )}
+
+        {/* ── Product info table ──────────────────────────────── */}
+        <motion.section
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-60px' }}
+          transition={{ duration: 0.6 }}
+          className="mt-10 bg-white border border-[#C8D8CB] rounded-3xl p-6 sm:p-10"
+        >
+          <h2 className="font-heading font-bold text-2xl text-[#111111] mb-6">Ficha técnica</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-[#9CA3AF] mb-1">Código</p>
+              <p className="text-[#111111] font-mono font-semibold">#{product.codigo}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-[#9CA3AF] mb-1">Categoría</p>
+              <p className="text-[#111111] font-semibold">{product.categoria}</p>
+            </div>
+            {product.presentacion && (
+              <div>
+                <p className="text-[10px] uppercase tracking-widest text-[#9CA3AF] mb-1">Presentación</p>
+                <p className="text-[#111111] font-semibold">{product.presentacion}</p>
+              </div>
+            )}
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-[#9CA3AF] mb-1">Laboratorio</p>
+              <p className="text-[#111111] font-semibold">Sumak Jambi</p>
+            </div>
+          </div>
+        </motion.section>
+
+        {/* ── Related products ────────────────────────────────── */}
+        {relatedProducts.length > 0 && (
+          <section className="mt-20">
+            <div className="flex items-end justify-between mb-8 flex-wrap gap-3">
+              <div>
+                <p className="text-[#1A4E26] text-xs font-semibold uppercase tracking-[0.3em] mb-2">También te puede gustar</p>
+                <h2 className="font-heading font-bold text-2xl sm:text-3xl text-[#111111]">Productos relacionados</h2>
+              </div>
+              <Link to={`/productos?cat=${product.categoriaKey}`} className="inline-flex items-center gap-2 text-[#1A4E26] font-semibold text-sm hover:gap-3 transition-all">
+                Ver categoría <ArrowRight size={16} />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+              {relatedProducts.map((p) => (
+                <Link
+                  key={p.codigo}
+                  to={`/productos/${p.slug}`}
+                  className="group bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden hover:border-[#1A4E26]/40 hover:shadow-[0_8px_28px_rgba(26,78,38,0.12)] hover:-translate-y-0.5 transition-all duration-300"
+                >
+                  <div className="h-44 sm:h-52 flex items-center justify-center p-5 overflow-hidden relative" style={{ background: 'linear-gradient(160deg, #EBF4ED 0%, #D5ECD9 100%)' }}>
+                    {p.imagen ? (
+                      <img
+                        src={p.imagen}
+                        alt={p.nombre}
+                        className="max-h-full max-w-full object-contain group-hover:scale-110 transition-transform duration-500 drop-shadow-md"
+                      />
+                    ) : (
+                      <Leaf size={40} className="text-[#1A4E26] opacity-30" />
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#1A4E26] mb-1">{p.categoria}</p>
+                    <h3 className="font-heading font-bold text-[#111111] text-sm mb-2 leading-tight line-clamp-2 group-hover:text-[#1A4E26] transition-colors">
+                      {p.nombre}
+                    </h3>
+                    <p className="font-heading font-bold text-[#111111] text-lg">${p.pvp.toFixed(2)}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── Back link ───────────────────────────────────────── */}
+        <div className="mt-16 text-center">
+          <Link
+            to="/productos"
+            className="inline-flex items-center gap-2 text-[#6B7280] hover:text-[#1A4E26] text-sm transition-colors"
+          >
+            <ArrowLeft size={15} /> Volver a la tienda
+          </Link>
         </div>
       </div>
     </div>
