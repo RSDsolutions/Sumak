@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   ArrowLeft, ArrowRight, CheckCircle2, ShoppingCart, Leaf, Star,
-  Sparkles, AlertCircle, Plus, Minus, Check,
+  Sparkles, AlertCircle, Plus, Minus, Check, BookOpen, X, Maximize2, Download, Heart,
 } from 'lucide-react';
 import { products } from '../../data';
 import { useCart } from '../../lib/cart';
@@ -19,6 +19,7 @@ export default function TiendaProducto() {
   const { addItem, items, setQty: setCartQty } = useCart();
   const [qty, setQty] = useState(1);
   const [activeTab, setActiveTab] = useState<TabKey>('beneficios');
+  const [revistaOpen, setRevistaOpen] = useState(false);
 
   if (!product) {
     return (
@@ -315,6 +316,108 @@ export default function TiendaProducto() {
           </div>
         </div>
       )}
+
+      {/* ── Ficha de Revista ─────────────────────────────────── */}
+      {product.revistaPagina && (
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="mt-10 bg-gradient-to-br from-[#0B2913] to-[#1A4E26] rounded-2xl overflow-hidden relative"
+        >
+          <div
+            className="absolute inset-0 opacity-[0.08] pointer-events-none"
+            style={{
+              backgroundImage: 'radial-gradient(circle at 1px 1px, #D4AF37 1px, transparent 1px)',
+              backgroundSize: '40px 40px',
+            }}
+          />
+          <div className="relative grid grid-cols-1 lg:grid-cols-5 gap-5 p-5 sm:p-6 items-center">
+            <div className="lg:col-span-2 text-white">
+              <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-[#D4AF37]/30 rounded-full px-3 py-1 mb-3">
+                <BookOpen size={12} className="text-[#D4AF37]" />
+                <span className="text-white text-[10px] font-bold tracking-[0.2em] uppercase">Revista Sumak 2026</span>
+              </div>
+              <h2 className="font-heading font-bold text-xl text-white leading-tight mb-2">Ficha oficial</h2>
+              <p className="text-white/75 text-xs leading-relaxed mb-4">
+                Página oficial del producto con ingredientes ilustrados, beneficios y modo de uso completo.
+              </p>
+              <button
+                onClick={() => setRevistaOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#D4AF37] text-[#0B2913] font-bold text-xs hover:bg-[#E8C94A] transition-all shadow-[0_4px_16px_rgba(212,175,55,0.3)]"
+              >
+                <Maximize2 size={12} />
+                Ver completa
+              </button>
+            </div>
+            <div className="lg:col-span-3">
+              <button
+                onClick={() => setRevistaOpen(true)}
+                className="group block w-full rounded-xl overflow-hidden border-2 border-[#D4AF37]/30 hover:border-[#D4AF37] transition-all shadow-xl bg-white"
+              >
+                <img
+                  src={product.revistaPagina}
+                  alt={`Ficha de ${product.nombre}`}
+                  className="w-full h-auto block group-hover:scale-[1.02] transition-transform duration-500"
+                  loading="lazy"
+                />
+              </button>
+            </div>
+          </div>
+        </motion.section>
+      )}
+
+      {/* Lightbox de la revista */}
+      <AnimatePresence>
+        {revistaOpen && product.revistaPagina && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
+            onClick={() => setRevistaOpen(false)}
+          >
+            <div className="fixed top-4 right-4 z-10 flex items-center gap-2">
+              <a
+                href={product.revistaPagina}
+                download={`sumak-${product.slug}.jpg`}
+                onClick={(e) => e.stopPropagation()}
+                className="p-2.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20 transition-colors"
+                title="Descargar"
+                aria-label="Descargar imagen"
+              >
+                <Download size={18} />
+              </a>
+              <button
+                onClick={() => setRevistaOpen(false)}
+                className="p-2.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20 transition-colors"
+                title="Cerrar"
+                aria-label="Cerrar"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.92, opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              onClick={(e) => e.stopPropagation()}
+              className="max-w-4xl w-full"
+            >
+              <img
+                src={product.revistaPagina}
+                alt={`Ficha oficial de ${product.nombre}`}
+                className="w-full h-auto rounded-2xl shadow-2xl"
+              />
+              <p className="text-center text-white/65 text-xs mt-4">
+                Ficha de la Revista Sumak 2026 · {product.nombre}
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Related */}
       {related.length > 0 && (
