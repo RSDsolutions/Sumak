@@ -1,9 +1,14 @@
 import { useEffect, useState } from 'react';
-import { DollarSign, TrendingUp, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { motion } from 'motion/react';
+import {
+  DollarSign, TrendingUp, Clock, CheckCircle2, AlertCircle, X, Eye,
+  ArrowUp, ArrowDown, Calendar, Hash, Layers, Sparkles,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import { supabase, supabaseAdmin } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
-import type { Comision } from '../../lib/types';
+import { levelCommissions } from '../../data';
+import type { Comision, Profile } from '../../lib/types';
 
 function Spinner() {
   return (
@@ -32,16 +37,197 @@ function tipoBadge(tipo: string) {
 }
 
 const TIPO_LABELS: Record<string, string> = {
-  afiliacion: 'Referido',
+  afiliacion: 'Referido directo',
   nivel: 'Por nivel',
   binaria: 'Binaria',
 };
 
+const ESTADO_LABEL: Record<string, string> = {
+  pendiente: 'Pendiente',
+  pagado: 'Pagado',
+  cancelado: 'Cancelado',
+};
+
+// ── DETAIL MODAL ──────────────────────────────────────────
+function DetalleModal({ comision, onClose }: { comision: Comision; onClose: () => void }) {
+  const [origen, setOrigen] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      if (!comision.origen_id) { setLoading(false); return; }
+      const { data } = await supabaseAdmin.from('profiles').select('*').eq('id', comision.origen_id).maybeSingle();
+      if (data) setOrigen(data as Profile);
+      setLoading(false);
+    }
+    load();
+  }, [comision.origen_id]);
+
+  const porcentaje =
+    comision.tipo === 'afiliacion' ? 40 :
+    comision.tipo === 'nivel' && comision.nivel_red !== null
+      ? (levelCommissions.find((l) => l.nivel === comision.nivel_red)?.porcentaje ?? null)
+      : comision.tipo === 'binaria' ? 50 : null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/50 backdrop-blur-sm overflow-y-auto py-8" onClick={onClose}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.25 }}
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white border border-[#C8D8CB] rounded-3xl w-full max-w-xl shadow-2xl my-auto"
+      >
+        {/* Header */}
+        <div className="relative px-6 py-5 border-b border-[#C8D8CB] sticky top-0 bg-white rounded-t-3xl">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-[#1A4E26] font-bold mb-1 flex items-center gap-1.5">
+                <Sparkles size={11} /> Mi comisión
+              </p>
+              <h3 className="font-heading font-bold text-2xl text-[#111111]">
+                ${Number(comision.monto).toFixed(2)}
+              </h3>
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${tipoBadge(comision.tipo)}`}>
+                  {TIPO_LABELS[comision.tipo] ?? comision.tipo}
+                </span>
+                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${estadoBadge(comision.estado)}`}>
+                  {comision.estado === 'pagado' && <CheckCircle2 size={10} />}
+                  {comision.estado === 'pendiente' && <Clock size={10} />}
+                  {comision.estado === 'cancelado' && <AlertCircle size={10} />}
+                  {ESTADO_LABEL[comision.estado] ?? comision.estado}
+                </span>
+                {porcentaje !== null && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/30">
+                    <Layers size={10} /> {porcentaje}%
+                    {comision.tipo === 'nivel' && comision.nivel_red !== null && ` · Nivel ${comision.nivel_red}`}
+                  </span>
+                )}
+              </div>
+            </div>
+            <button onClick={onClose} className="text-[#9CA3AF] hover:text-[#111111] transition-colors p-1">
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6">
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <div className="w-6 h-6 border-2 border-[#1A4E26] border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            <>
+              {/* Origen */}
+              {origen && (
+                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-4">
+                  <p className="text-[10px] uppercase tracking-widest text-blue-700 font-bold mb-2 flex items-center gap-1.5">
+                    <ArrowUp size={11} /> De dónde viene esta comisión
+                  </p>
+                  <p className="text-[#111111] text-sm font-bold leading-tight">{origen.nombre_completo}</p>
+                  <p className="text-blue-700 text-xs font-mono mt-1">{origen.codigo_distribuidor ?? '—'}</p>
+                  <p className="text-[#6B7280] text-xs mt-2 leading-relaxed">
+                    {comision.tipo === 'afiliacion'
+                      ? 'Te corresponde como patrocinador directo de este distribuidor (40% del precio de su paquete).'
+                      : comision.tipo === 'nivel'
+                      ? `Te corresponde por su pedido — está en tu red al nivel ${comision.nivel_red}${porcentaje !== null ? ` (${porcentaje}% sobre los puntos del pedido)` : ''}.`
+                      : 'Te corresponde por volumen binario pareado.'}
+                  </p>
+                </div>
+              )}
+
+              {/* Beneficiario (yo) */}
+              <div className="bg-[#EBF4ED] border border-[#1A4E26]/20 rounded-2xl p-4 mb-4">
+                <p className="text-[10px] uppercase tracking-widest text-[#1A4E26] font-bold mb-2 flex items-center gap-1.5">
+                  <ArrowDown size={11} /> Para ti
+                </p>
+                <p className="text-[#111111] text-sm leading-relaxed">
+                  {comision.estado === 'pagado'
+                    ? 'Esta comisión ya fue marcada como pagada por el administrador.'
+                    : comision.estado === 'cancelado'
+                    ? 'Esta comisión fue cancelada (por ejemplo, si el pedido origen fue anulado).'
+                    : 'Esta comisión está pendiente de pago por parte del administrador.'}
+                </p>
+              </div>
+
+              {/* Descripción */}
+              {comision.descripcion && (
+                <div className="bg-[#F4F7F5] rounded-2xl p-4 mb-4">
+                  <p className="text-[10px] uppercase tracking-widest text-[#6B7280] font-bold mb-2">Descripción</p>
+                  <p className="text-[#111111] text-sm leading-relaxed">{comision.descripcion}</p>
+                </div>
+              )}
+
+              {/* Fechas */}
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="bg-white border border-[#C8D8CB] rounded-xl p-3">
+                  <p className="text-[10px] uppercase tracking-widest text-[#9CA3AF] font-bold mb-1 flex items-center gap-1">
+                    <Calendar size={10} /> Generada
+                  </p>
+                  <p className="text-[#111111] text-xs font-bold">
+                    {new Date(comision.created_at).toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  </p>
+                  <p className="text-[#6B7280] text-[11px]">
+                    {new Date(comision.created_at).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+                <div className="bg-white border border-[#C8D8CB] rounded-xl p-3">
+                  <p className="text-[10px] uppercase tracking-widest text-[#9CA3AF] font-bold mb-1 flex items-center gap-1">
+                    <CheckCircle2 size={10} /> Pagada
+                  </p>
+                  {comision.pagado_at ? (
+                    <>
+                      <p className="text-[#111111] text-xs font-bold">
+                        {new Date(comision.pagado_at).toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </p>
+                      <p className="text-[#6B7280] text-[11px]">
+                        {new Date(comision.pagado_at).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-[#9CA3AF] text-xs italic">Aún no pagada</p>
+                  )}
+                </div>
+              </div>
+
+              {/* ID */}
+              <div className="bg-[#FAFBFA] border border-[#C8D8CB] rounded-xl p-3">
+                <p className="text-[10px] uppercase tracking-widest text-[#9CA3AF] font-bold mb-1 flex items-center gap-1.5">
+                  <Hash size={10} /> ID
+                </p>
+                <p className="text-[#6B7280] text-[10px] font-mono break-all">{comision.id}</p>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Total */}
+        <div className="flex justify-between items-center px-6 py-4 bg-gradient-to-r from-[#0F2E18] to-[#1A4E26] rounded-b-3xl">
+          <div>
+            <p className="text-[#D4AF37] text-[9px] uppercase tracking-widest font-bold">Monto</p>
+            {porcentaje !== null && (
+              <p className="text-white/65 text-[10px]">
+                {comision.tipo === 'afiliacion' ? '40% del paquete' :
+                 comision.tipo === 'nivel' ? `${porcentaje}% (nivel ${comision.nivel_red})` :
+                 '50% del pareado'}
+              </p>
+            )}
+          </div>
+          <span className="font-heading font-bold text-2xl text-[#D4AF37]">${Number(comision.monto).toFixed(2)}</span>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+// ── PAGE ──────────────────────────────────────────────────
 export default function MisComisiones() {
   const { user } = useAuth();
   const [comisiones, setComisiones] = useState<Comision[]>([]);
   const [loading, setLoading] = useState(true);
   const [compraCalificada, setCompraCalificada] = useState(false);
+  const [detalle, setDetalle] = useState<Comision | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -67,7 +253,7 @@ export default function MisComisiones() {
     <div>
       <div className="mb-6">
         <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#111111]">Mis Comisiones</h1>
-        <p className="text-[#6B7280] text-sm mt-1">Historial completo de tus comisiones y ganancias</p>
+        <p className="text-[#6B7280] text-sm mt-1">Historial completo de tus comisiones y ganancias · toca cualquier fila para ver el detalle</p>
       </div>
 
       {/* Banner elegibilidad */}
@@ -137,40 +323,72 @@ export default function MisComisiones() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#C8D8CB] bg-[#F4F7F5]">
-                  {['Tipo', 'Descripción', 'Monto', 'Estado', 'Fecha'].map((h) => (
-                    <th key={h} className="px-6 py-3 text-left text-[#9CA3AF] text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
+                  {['Tipo', 'Descripción', 'Monto', 'Estado', 'Fecha y hora', ''].map((h) => (
+                    <th key={h} className="px-6 py-3 text-left text-[#9CA3AF] text-[10px] font-bold uppercase tracking-wider whitespace-nowrap">
                       {h}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {comisiones.map((c) => (
-                  <tr key={c.id} className="border-b border-[#C8D8CB] hover:bg-[#F4F7F5] transition-colors">
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${tipoBadge(c.tipo)}`}>
-                        {TIPO_LABELS[c.tipo] ?? c.tipo}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-[#6B7280] max-w-[250px] truncate">{c.descripcion ?? '—'}</td>
-                    <td className="px-6 py-4 text-[#111111] font-semibold whitespace-nowrap">
-                      ${Number(c.monto).toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${estadoBadge(c.estado)}`}>
-                        {c.estado}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-[#6B7280] whitespace-nowrap">
-                      {new Date(c.created_at).toLocaleDateString('es-EC')}
-                    </td>
-                  </tr>
-                ))}
+                {comisiones.map((c) => {
+                  const porc = c.tipo === 'afiliacion' ? 40 :
+                    c.tipo === 'nivel' && c.nivel_red !== null
+                      ? levelCommissions.find((l) => l.nivel === c.nivel_red)?.porcentaje
+                      : c.tipo === 'binaria' ? 50 : null;
+                  return (
+                    <tr
+                      key={c.id}
+                      onClick={() => setDetalle(c)}
+                      className="border-b border-[#C8D8CB] hover:bg-[#FAFBFA] transition-colors cursor-pointer"
+                    >
+                      <td className="px-6 py-3">
+                        <div className="flex flex-col gap-1">
+                          <span className={`inline-flex items-center w-fit px-2 py-0.5 rounded-full text-[10px] font-bold ${tipoBadge(c.tipo)}`}>
+                            {TIPO_LABELS[c.tipo] ?? c.tipo}
+                          </span>
+                          {porc !== null && porc !== undefined && (
+                            <span className="text-[9px] text-[#9CA3AF] font-mono">
+                              {porc}%{c.tipo === 'nivel' && c.nivel_red !== null ? ` · N${c.nivel_red}` : ''}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-3 text-[#6B7280] text-xs max-w-[250px] truncate">{c.descripcion ?? '—'}</td>
+                      <td className="px-6 py-3 text-[#111111] font-bold whitespace-nowrap">
+                        ${Number(c.monto).toFixed(2)}
+                      </td>
+                      <td className="px-6 py-3">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${estadoBadge(c.estado)}`}>
+                          {ESTADO_LABEL[c.estado] ?? c.estado}
+                        </span>
+                      </td>
+                      <td className="px-6 py-3 whitespace-nowrap">
+                        <p className="text-[#111111] text-xs font-medium">
+                          {new Date(c.created_at).toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </p>
+                        <p className="text-[#9CA3AF] text-[10px]">
+                          {new Date(c.created_at).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </td>
+                      <td className="px-6 py-3" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => setDetalle(c)}
+                          className="inline-flex items-center gap-1.5 text-[#1A4E26] text-[11px] font-bold hover:underline"
+                        >
+                          <Eye size={12} /> Detalle
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </div>
+
+      {detalle && <DetalleModal comision={detalle} onClose={() => setDetalle(null)} />}
     </div>
   );
 }

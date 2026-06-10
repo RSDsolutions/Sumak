@@ -323,9 +323,14 @@ export default function MisPedidos() {
                     <p className="text-[#6B7280] text-xs truncate">
                       {productNames}{hasMore && '...'}
                     </p>
-                    <p className="text-[#9CA3AF] text-[10px] mt-0.5 flex items-center gap-1.5">
+                    <p className="text-[#9CA3AF] text-[10px] mt-0.5 flex items-center gap-1.5 flex-wrap">
                       <Calendar size={10} />
-                      {new Date(p.created_at).toLocaleDateString('es-EC', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      <span>
+                        {new Date(p.created_at).toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        <span className="ml-1 text-[#9CA3AF]">
+                          {new Date(p.created_at).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </span>
                       {p.puntos_generados > 0 && (
                         <>
                           <span className="text-[#9CA3AF]">·</span>

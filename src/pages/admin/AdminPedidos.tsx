@@ -317,8 +317,13 @@ export default function AdminPedidos() {
                         {ESTADO_LABELS[p.estado]}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-[#6B7280] whitespace-nowrap">
-                      {new Date(p.created_at).toLocaleDateString('es-EC')}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <p className="text-[#111111] text-xs font-medium">
+                        {new Date(p.created_at).toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </p>
+                      <p className="text-[#9CA3AF] text-[10px]">
+                        {new Date(p.created_at).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
                     </td>
                     <td className="px-6 py-4">
                       <button
