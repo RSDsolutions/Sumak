@@ -365,7 +365,7 @@ export default function Productos() {
                       alt={product.nombre}
                       loading="lazy"
                       decoding="async"
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="absolute inset-0 w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center">

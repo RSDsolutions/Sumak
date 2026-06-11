@@ -625,27 +625,36 @@ export default function Home() {
                     to={`/productos/${product.slug}`}
                     className="group block bg-white/[0.06] hover:bg-white/[0.12] rounded-2xl p-4 border border-white/15 hover:border-[#D4AF37]/50 transition-all duration-300 h-full"
                   >
-                    {(product.bestseller || product.nuevo || product.proximamente) && (
-                      <div className="flex justify-end mb-1">
-                        {product.proximamente && (
-                          <span className="text-[9px] font-bold uppercase tracking-widest text-[#D4AF37]">Próximo</span>
-                        )}
-                        {product.bestseller && !product.proximamente && (
-                          <span className="text-[9px] font-bold uppercase tracking-widest text-[#D4AF37]">Top</span>
-                        )}
-                        {product.nuevo && !product.proximamente && (
-                          <span className="text-[9px] font-bold uppercase tracking-widest text-[#D4AF37]">Nuevo</span>
-                        )}
-                      </div>
-                    )}
-                    <div className="relative h-28 sm:h-32 rounded-xl overflow-hidden mb-3">
+                    {/* Imagen siempre con misma altura; badge va como overlay flotante */}
+                    <div className="relative h-32 sm:h-36 rounded-xl overflow-hidden mb-3 bg-white/5">
+                      {/* Badge esquina sup. derecha como icono pill */}
+                      {(product.bestseller || product.nuevo || product.proximamente) && (
+                        <span
+                          className={`absolute top-2 right-2 z-10 inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded-full shadow-md backdrop-blur-sm ${
+                            product.proximamente
+                              ? 'bg-[#0B2913]/85 text-[#D4AF37] border border-[#D4AF37]/40'
+                              : product.bestseller
+                              ? 'bg-[#D4AF37] text-[#0B2913]'
+                              : 'bg-[#1A4E26] text-white'
+                          }`}
+                        >
+                          {product.bestseller && !product.proximamente && (
+                            <Star size={9} fill="currentColor" />
+                          )}
+                          {product.proximamente
+                            ? 'Próximo'
+                            : product.bestseller
+                            ? 'Top'
+                            : 'Nuevo'}
+                        </span>
+                      )}
                       {product.imagen ? (
                         <img
                           src={product.imagen}
                           alt={product.nombre}
                           loading="lazy"
                           decoding="async"
-                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          className="absolute inset-0 w-full h-full object-contain p-2 group-hover:scale-110 transition-transform duration-300"
                         />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center">
