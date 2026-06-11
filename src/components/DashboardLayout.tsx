@@ -55,7 +55,9 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-6 border-b border-white/20">
         <div>
-          <img src="/LOGO_SUMAK.png" alt="Sumak Vida" className="h-12 w-auto object-contain brightness-0 invert" />
+          <div className="bg-white rounded-xl px-3 py-2 inline-block shadow-md">
+            <img src="/LOGO_SUMAK.png" alt="Sumak Vida" className="h-10 w-auto object-contain" />
+          </div>
           <div className="mt-2">
             <span className="text-[10px] font-bold uppercase tracking-widest text-white bg-white/20 border border-white/30 rounded px-2 py-0.5">
               {paqueteBadge}
