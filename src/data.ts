@@ -485,7 +485,7 @@ export const products: Product[] = [
     categoriaKey: 'suplementos',
     pvp: 60.00,
     descripcion: 'Bebida nutritiva orgánica con quinua, calostro de bovino, hongos y más. Sabor a vainilla.',
-    imagen: '/products/formula-1000.png',
+    imagen: '/products/formula-1000-v3.png',
     tagline: 'Más nutrientes y vitaminas',
     presentacion: 'Polvo · sabor a vainilla',
     destacado: true,
@@ -757,7 +757,7 @@ export const affiliatePackages: AffiliatePackage[] = [
     productos: 41,
     destacado: false,
     beneficios: packageBenefits,
-    imagen: '/packs/pack-lider-v2.png',
+    imagen: '/packs/pack-lider-v3.png',
     tagline: 'El kit completo para líderes de red',
     descripcion:
       'Pensado para distribuidores que quieren maximizar su rango desde el inicio. 41 productos a tu elección, máxima activación de puntos y posicionamiento como líder.',
