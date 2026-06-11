@@ -182,7 +182,7 @@ function DetalleModal({ pedido, onClose }: DetalleModalProps) {
             voucherUrl ? (
               <a href={voucherUrl} target="_blank" rel="noopener noreferrer" className="block group">
                 <div className="relative bg-[#F4F7F5] border border-[#C8D8CB] rounded-xl overflow-hidden">
-                  <img src={voucherUrl} alt="Voucher" className="w-full max-h-72 object-contain" />
+                  <img src={voucherUrl} alt="Voucher" loading="lazy" decoding="async" className="w-full max-h-72 object-contain" />
                   <div className="absolute bottom-2 right-2 bg-white/95 border border-[#C8D8CB] rounded-lg px-2.5 py-1 text-[10px] font-semibold text-[#1A4E26] flex items-center gap-1">
                     <ExternalLink size={11} /> Abrir
                   </div>

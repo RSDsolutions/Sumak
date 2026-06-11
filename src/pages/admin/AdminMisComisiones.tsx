@@ -77,18 +77,9 @@ function Spinner() {
 
 // ── DETAIL MODAL ──────────────────────────────────────────
 function DetalleModal({ comision, onClose }: { comision: ComisionRow; onClose: () => void }) {
-  const [origen, setOrigen] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function load() {
-      if (!comision.origen_id) { setLoading(false); return; }
-      const { data } = await supabaseAdmin.from('profiles').select('*').eq('id', comision.origen_id).maybeSingle();
-      if (data) setOrigen(data as Profile);
-      setLoading(false);
-    }
-    load();
-  }, [comision.origen_id]);
+  // PERF-004: el origen ya viene joineado desde la query principal.
+  const origen = (comision.origen ?? null) as Profile | null;
+  const loading = false;
 
   const porcentaje =
     comision.tipo === 'afiliacion' ? 40 :

@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { AuthProvider } from './lib/auth';
 import { CartProvider } from './lib/cart';
@@ -8,43 +8,50 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import WhatsAppButton from './components/WhatsAppButton';
-import AdminLayout from './components/AdminLayout';
-import DashboardLayout from './components/DashboardLayout';
+
+// PERF-002: code-splitting por ruta. Cada page se descarga bajo demanda
+// la primera vez que el usuario la visita. Reduce el bundle inicial
+// significativamente. Vite genera un chunk por cada lazy() import.
+//
+// Los layouts son livianos pero también los importamos sincrónicamente
+// porque envuelven páginas autenticadas que ya pagan el costo de auth.
 
 // Public pages
-import Home from './pages/Home';
-import Nosotros from './pages/Nosotros';
-import Productos from './pages/Productos';
-import ProductDetail from './pages/ProductDetail';
-import Oportunidad from './pages/Oportunidad';
-import Plan from './pages/Plan';
-import Escaleras from './pages/Escaleras';
-import Contacto from './pages/Contacto';
-import Registro from './pages/Registro';
-import Login from './pages/Login';
-import Manual from './pages/Manual';
+const Home = lazy(() => import('./pages/Home'));
+const Nosotros = lazy(() => import('./pages/Nosotros'));
+const Productos = lazy(() => import('./pages/Productos'));
+const ProductDetail = lazy(() => import('./pages/ProductDetail'));
+const Oportunidad = lazy(() => import('./pages/Oportunidad'));
+const Plan = lazy(() => import('./pages/Plan'));
+const Escaleras = lazy(() => import('./pages/Escaleras'));
+const Contacto = lazy(() => import('./pages/Contacto'));
+const Registro = lazy(() => import('./pages/Registro'));
+const Login = lazy(() => import('./pages/Login'));
+const Manual = lazy(() => import('./pages/Manual'));
 
 // Distribuidor dashboard pages
-import Overview from './pages/dashboard/Overview';
-import MiRed from './pages/dashboard/MiRed';
-import MisComisiones from './pages/dashboard/MisComisiones';
-import MisPedidos from './pages/dashboard/MisPedidos';
-import NuevoPedido from './pages/dashboard/NuevoPedido';
-import MiPerfil from './pages/dashboard/MiPerfil';
-import MiEscalera from './pages/dashboard/MiEscalera';
-import Tienda from './pages/dashboard/Tienda';
-import TiendaProducto from './pages/dashboard/TiendaProducto';
+const AdminLayout = lazy(() => import('./components/AdminLayout'));
+const DashboardLayout = lazy(() => import('./components/DashboardLayout'));
+const Overview = lazy(() => import('./pages/dashboard/Overview'));
+const MiRed = lazy(() => import('./pages/dashboard/MiRed'));
+const MisComisiones = lazy(() => import('./pages/dashboard/MisComisiones'));
+const MisPedidos = lazy(() => import('./pages/dashboard/MisPedidos'));
+const NuevoPedido = lazy(() => import('./pages/dashboard/NuevoPedido'));
+const MiPerfil = lazy(() => import('./pages/dashboard/MiPerfil'));
+const MiEscalera = lazy(() => import('./pages/dashboard/MiEscalera'));
+const Tienda = lazy(() => import('./pages/dashboard/Tienda'));
+const TiendaProducto = lazy(() => import('./pages/dashboard/TiendaProducto'));
 
 // Admin pages
-import AdminDashboard from './pages/admin/AdminDashboard';
-import Solicitudes from './pages/admin/Solicitudes';
-import SolicitudDetalle from './pages/admin/SolicitudDetalle';
-import Distribuidores from './pages/admin/Distribuidores';
-import DistribuidorDetalle from './pages/admin/DistribuidorDetalle';
-import AdminComisiones from './pages/admin/AdminComisiones';
-import AdminMisComisiones from './pages/admin/AdminMisComisiones';
-import AdminPedidos from './pages/admin/AdminPedidos';
-import AdminRed from './pages/admin/AdminRed';
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const Solicitudes = lazy(() => import('./pages/admin/Solicitudes'));
+const SolicitudDetalle = lazy(() => import('./pages/admin/SolicitudDetalle'));
+const Distribuidores = lazy(() => import('./pages/admin/Distribuidores'));
+const DistribuidorDetalle = lazy(() => import('./pages/admin/DistribuidorDetalle'));
+const AdminComisiones = lazy(() => import('./pages/admin/AdminComisiones'));
+const AdminMisComisiones = lazy(() => import('./pages/admin/AdminMisComisiones'));
+const AdminPedidos = lazy(() => import('./pages/admin/AdminPedidos'));
+const AdminRed = lazy(() => import('./pages/admin/AdminRed'));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -84,6 +91,22 @@ function PublicLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Fallback global para `<Suspense>` mientras se descarga el chunk de la ruta.
+ * Usa la paleta de marca, igual que el spinner del ProtectedRoute.
+ */
+function RouteFallback() {
+  return (
+    <div
+      role="status"
+      aria-label="Cargando página"
+      className="min-h-screen bg-[#F4F7F5] flex items-center justify-center"
+    >
+      <div className="w-10 h-10 border-2 border-[#1A4E26] border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -91,6 +114,7 @@ export default function App() {
         <CartProvider>
         <ToastProvider>
         <ScrollToTop />
+        <Suspense fallback={<RouteFallback />}>
         <Routes>
           {/* ── PUBLIC ROUTES ─────────────────────────────── */}
           <Route
@@ -359,6 +383,7 @@ export default function App() {
             }
           />
         </Routes>
+        </Suspense>
         </ToastProvider>
         </CartProvider>
       </AuthProvider>

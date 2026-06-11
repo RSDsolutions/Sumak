@@ -780,6 +780,8 @@ export default function ProductDetail() {
                       <img
                         src={p.imagen}
                         alt={p.nombre}
+                        loading="lazy"
+                        decoding="async"
                         className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
                     ) : (
@@ -857,6 +859,8 @@ export default function ProductDetail() {
               <img
                 src={product.revistaPagina}
                 alt={`Ficha oficial de ${product.nombre}`}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-auto rounded-2xl shadow-2xl"
               />
               <p className="text-center text-white/65 text-xs mt-4">

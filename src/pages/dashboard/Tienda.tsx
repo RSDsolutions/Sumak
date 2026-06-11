@@ -213,6 +213,8 @@ export default function Tienda() {
                   <img
                     src={p.imagen}
                     alt={p.nombre}
+                    loading="lazy"
+                    decoding="async"
                     className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 ) : (

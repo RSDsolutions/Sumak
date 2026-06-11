@@ -611,6 +611,8 @@ export default function TiendaProducto() {
               <img
                 src={product.revistaPagina}
                 alt={`Ficha oficial de ${product.nombre}`}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-auto rounded-2xl shadow-2xl"
               />
               <p className="text-center text-white/65 text-xs mt-4">
@@ -644,7 +646,7 @@ export default function TiendaProducto() {
                 >
                   <div className="relative h-32 overflow-hidden" style={{ background: 'linear-gradient(160deg, #EBF4ED 0%, #D5ECD9 100%)' }}>
                     {p.imagen ? (
-                      <img src={p.imagen} alt={p.nombre} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                      <img src={p.imagen} alt={p.nombre} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <Leaf size={30} className="text-[#1A4E26] opacity-30" />

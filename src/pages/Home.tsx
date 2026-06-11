@@ -453,6 +453,8 @@ export default function Home() {
                     <img
                       src={product.imagen}
                       alt={product.nombre}
+                      loading="lazy"
+                      decoding="async"
                       className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
@@ -641,6 +643,8 @@ export default function Home() {
                         <img
                           src={product.imagen}
                           alt={product.nombre}
+                          loading="lazy"
+                          decoding="async"
                           className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                         />
                       ) : (
@@ -829,6 +833,8 @@ export default function Home() {
                         <img
                           src={n.imagen}
                           alt={n.nombre}
+                          loading="lazy"
+                          decoding="async"
                           className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       )}

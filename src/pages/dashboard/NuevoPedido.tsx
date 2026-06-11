@@ -931,7 +931,7 @@ export default function NuevoPedido() {
                 <div key={item.codigo} className="px-6 py-4 flex items-center gap-4">
                   <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl shrink-0 overflow-hidden" style={{ background: 'linear-gradient(160deg, #EBF4ED 0%, #D5ECD9 100%)' }}>
                     {item.imagen ? (
-                      <img src={item.imagen} alt={item.nombre} className="absolute inset-0 w-full h-full object-cover" />
+                      <img src={item.imagen} alt={item.nombre} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover" />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <Leaf size={20} className="text-[#1A4E26] opacity-40" />

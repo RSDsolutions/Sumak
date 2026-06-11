@@ -5,7 +5,7 @@ import {
   ArrowUp, ArrowDown, Calendar, Hash, Layers, Sparkles,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { supabase, supabaseAdmin } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { levelCommissions } from '../../data';
 import type { Comision, Profile } from '../../lib/types';
@@ -50,18 +50,10 @@ const ESTADO_LABEL: Record<string, string> = {
 
 // ── DETAIL MODAL ──────────────────────────────────────────
 function DetalleModal({ comision, onClose }: { comision: Comision; onClose: () => void }) {
-  const [origen, setOrigen] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function load() {
-      if (!comision.origen_id) { setLoading(false); return; }
-      const { data } = await supabaseAdmin.from('profiles').select('*').eq('id', comision.origen_id).maybeSingle();
-      if (data) setOrigen(data as Profile);
-      setLoading(false);
-    }
-    load();
-  }, [comision.origen_id]);
+  // PERF-004: el origen viene ya joineado desde la query principal,
+  // no hace falta otro fetch por modal abierto. Eliminamos N+1.
+  const origen = (comision.origen ?? null) as Profile | null;
+  const loading = false;
 
   const porcentaje =
     comision.tipo === 'afiliacion' ? 40 :
@@ -235,7 +227,14 @@ export default function MisComisiones() {
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
       const [{ data }, { data: compraData }] = await Promise.all([
-        supabase.from('comisiones').select('*').eq('beneficiario_id', user!.id).order('created_at', { ascending: false }),
+        // PERF-004: join al origen en la misma query para evitar N+1
+        // al abrir el modal de detalle. Sólo traemos campos no sensibles
+        // del origen para reducir payload.
+        supabase
+          .from('comisiones')
+          .select('*, origen:profiles!origen_id(id, nombre_completo, codigo_distribuidor, paquete, puntos)')
+          .eq('beneficiario_id', user!.id)
+          .order('created_at', { ascending: false }),
         supabase.from('pedidos').select('id').eq('distribuidor_id', user!.id).in('estado', ['procesando', 'enviado', 'entregado']).gte('total', 100).gte('created_at', startOfMonth).limit(1),
       ]);
       setComisiones((data ?? []) as Comision[]);

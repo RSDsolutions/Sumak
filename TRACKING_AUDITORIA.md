@@ -34,13 +34,13 @@ Distribución por severidad:
 
 ---
 
-## Estado tras Fase 1 + Tanda 2 + Tanda 3
+## Estado tras Fase 1 + Tanda 2 + Tanda 3 + Tanda 4
 
 | Estado | # | Significado |
 |---|---|---|
-| ✅ Resuelto | **16** | Código activo aplica el fix; el flujo afectado YA se comporta correctamente |
+| ✅ Resuelto | **19** | Código activo aplica el fix; el flujo afectado YA se comporta correctamente |
 | 🔄 Mitigado / Infra disponible | **6** | La infraestructura ya existe; adopción completa en próxima tanda |
-| ⏳ Pendiente | **56** | Sin trabajo todavía |
+| ⏳ Pendiente | **53** | Sin trabajo todavía |
 | **Total** | **78** | |
 
 ### Lo que está ✅ Resuelto
@@ -75,6 +75,14 @@ Distribución por severidad:
 | SEO-002 | 🟡 Media | Sitemap y robots | [public/robots.txt](public/robots.txt) bloquea /dashboard, /admin y /login + bots agresivos. [public/sitemap.xml](public/sitemap.xml) lista 9 rutas + 16 slugs de productos |
 | SEO-003 | 🟡 Media | Schema.org en productos | [ProductDetail.tsx](src/pages/ProductDetail.tsx) inyecta JSON-LD `@type: Product` con name, image, description, brand, sku, offers. `Organization` también en `index.html` |
 | SEO-005 | 🟢 Baja | OG image | `index.html` y hook usan `LOGO_SUMAK.png` por defecto; cada ProductDetail usa la imagen propia del producto para previews ricos en WhatsApp / FB |
+
+**Tanda 4 (Performance, sin tocar BD):**
+
+| ID | Severidad | Asunto | Cómo se confirmó |
+|---|---|---|---|
+| PERF-002 | 🟡 Media | Code-splitting + vendor chunks | [App.tsx](src/App.tsx) usa `lazy()` por ruta + `<Suspense fallback>`. [vite.config.ts](vite.config.ts) `manualChunks` separa `vendor-react`, `vendor-motion`, `vendor-supabase`, `vendor-icons`. Bundle inicial: 87 kB gzip (antes 295 kB en un solo chunk de 1.16 MB). Sin warnings de tamaño |
+| PERF-003 | 🟡 Media | Lazy loading de imágenes | Atributos `loading="lazy" decoding="async"` en imágenes no-hero: catálogo (Home, Productos, Tienda), relacionados (ProductDetail, TiendaProducto), revista zoom, carrito y voucher en admin. Hero del Home, Login y producto siguen `eager` para LCP. |
+| PERF-004 | 🟡 Media | N+1 en MisComisiones eliminado | Query principal hace join `origen:profiles!origen_id(...)`. DetalleModal lee `comision.origen` directo (antes: 1 fetch por modal). Aplicado en `MisComisiones.tsx` y `AdminMisComisiones.tsx` |
 
 ### Lo que está 🔄 Mitigado (infra lista, cliente no la adopta del todo)
 
@@ -256,25 +264,25 @@ ARQ-007 (React Query), PERF-001 (paginación), COD-006 (descomponer componentes)
 ## Indicador de avance
 
 ```
-Resueltos:  ████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 16/78  (21%)
+Resueltos:  █████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 19/78  (24%)
 Mitigados:  ███░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  6/78  (8%)
-Pendientes: ████████████████████████████░░░░░░░░░░░ 56/78  (71%)
+Pendientes: ███████████████████████████░░░░░░░░░░░░ 53/78  (68%)
 ```
 
 Por severidad:
 - 🔴 Crítica: **1 pendiente** (SEC-001)
 - 🟠 Alta: **4 pendientes** (BIZ-009, BIZ-010, PERF-001, UX-015) + 4 mitigados
-- 🟡 Media: **37 pendientes** (de 46 totales — 9 resueltos + 2 mitigados)
+- 🟡 Media: **34 pendientes** (de 46 totales — 12 resueltos + 2 mitigados)
 - 🟢 Baja: **14 pendientes** (de 21 totales — 3 resueltos)
 
-### Pendientes ⏳ — restantes tras Tanda 3
+### Pendientes ⏳ — restantes tras Tanda 4
 
-**🟡 Media restantes (37):**
-SEC-006, SEC-007, SEC-008, BIZ-003, BIZ-004, BIZ-006, BIZ-007, BIZ-008, BIZ-011, BIZ-012, ARQ-007, PERF-002, PERF-003, PERF-004, UX-003, UX-007, UX-008, UX-009, UX-012, SEO-004, COD-001, COD-002, COD-003, COD-004, COD-005, COD-006, COD-008, OPS-001, OPS-002, OPS-003, OPS-004, OPS-005, OPS-007.
+**🟡 Media restantes (34):**
+SEC-006, SEC-007, SEC-008, BIZ-003, BIZ-004, BIZ-006, BIZ-007, BIZ-008, BIZ-011, BIZ-012, ARQ-007, UX-003, UX-007, UX-008, UX-009, UX-012, SEO-004, COD-001, COD-002, COD-003, COD-004, COD-005, COD-006, COD-008, OPS-001, OPS-002, OPS-003, OPS-004, OPS-005, OPS-007.
 
 **🟢 Baja restantes (14):**
 SEC-008, BIZ-013, BIZ-014, ARQ-003, ARQ-004, ARQ-005, PERF-005, PERF-006, UX-011, UX-014, A11Y-003, A11Y-004, A11Y-005, COD-007, COD-009, COD-010, COD-011, OPS-006.
 
 ---
 
-*Última actualización: Tanda 3 (SEO básico) — useSEO, sitemap, robots, JSON-LD aplicados.*
+*Última actualización: Tanda 4 (Performance) — code-splitting, lazy images, N+1 fix.*
