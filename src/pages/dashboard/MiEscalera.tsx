@@ -2,13 +2,14 @@ import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
-  Trophy, Crown, Star, Lock, CheckCircle2, ArrowRight, TrendingUp,
+  Trophy, Crown, Star, ArrowRight, TrendingUp,
   Sparkles, Globe, ChefHat, Snowflake, Tv, Laptop, Bike, Car, Home,
-  Plane, MapPin, Gem, Users,
+  Plane, MapPin, Users,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { tramo1Ranks, tramo2Ranks, getRangoActual, getNextRango } from '../../data';
+import StaircaseVisual, { type StaircaseRank } from '../../components/StaircaseVisual';
 
 function Spinner() {
   return (
@@ -116,6 +117,33 @@ export default function MiEscalera() {
     ? Math.min(100, (redTotal / nextT2.personasEnRed) * 100)
     : 100;
   const faltanT2 = nextT2 ? Math.max(0, nextT2.personasEnRed - redTotal) : 0;
+  const indiceT2 = rangoT2Actual
+    ? tramo2Ranks.findIndex(
+        (r) => r.rango === rangoT2Actual.rango && r.personasEnRed === rangoT2Actual.personasEnRed,
+      )
+    : -1;
+
+  const t1RanksForStair: StaircaseRank[] = useMemo(
+    () => tramo1Ranks.map((r) => ({
+      rango: r.rango,
+      requirement: `${r.personasDirectas} direct${r.personasDirectas === 1 ? 'o' : 'os'}`,
+      reward: r.bono.split(' +')[0],
+      extra: r.bono.includes(' + ')
+        ? { icon: getPrizeIcon(r.bono, 10), label: r.bono.split(' + ')[1] }
+        : undefined,
+    })),
+    [],
+  );
+
+  const t2RanksForStair: StaircaseRank[] = useMemo(
+    () => tramo2Ranks.map((r) => ({
+      rango: r.rango,
+      requirement: `${r.personasEnRed.toLocaleString('es-EC')} red · Niv ${r.nivelesActivos}`,
+      reward: r.recompensa,
+      extra: r.extras ? { icon: getExtraIcon(r.extras, 10), label: r.extras } : undefined,
+    })),
+    [],
+  );
 
   if (loading) return <Spinner />;
 
@@ -266,212 +294,57 @@ export default function MiEscalera() {
         </motion.div>
       </div>
 
-      {/* ── Tramo 1: lista completa de rangos ───────────────────── */}
+      {/* ── Tramo 1: escalera visual ───────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.4 }}
-        className="bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden mb-6"
+        className="bg-gradient-to-br from-white to-[#F4F7F5] border border-[#C8D8CB] rounded-3xl overflow-hidden mb-6"
       >
-        <div className="px-5 py-4 bg-[#F4F7F5] border-b border-[#C8D8CB] flex items-center justify-between flex-wrap gap-2">
+        <div className="px-5 py-4 bg-white border-b border-[#C8D8CB] flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <Trophy size={16} className="text-[#1A4E26]" />
             <h2 className="font-heading font-bold text-[#111111] text-sm">Tramo 1 · Camino del Socio al Gerente</h2>
           </div>
           <span className="text-[10px] text-[#9CA3AF] font-medium">
-            {indiceT1 + 1} de {tramo1Ranks.length} rangos
+            Escalón {indiceT1 + 1} de {tramo1Ranks.length}
           </span>
         </div>
-
-        <div className="divide-y divide-[#C8D8CB]">
-          {tramo1Ranks.map((rank, i) => {
-            const isCurrent = i === indiceT1;
-            const isAchieved = i <= indiceT1;
-            const isNext = i === indiceT1 + 1;
-            const prizeIcon = getPrizeIcon(rank.bono);
-
-            return (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, x: -10 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true, margin: '-40px' }}
-                transition={{ duration: 0.3, delay: Math.min(i * 0.04, 0.4) }}
-                className={`flex items-center gap-3 px-5 py-3.5 transition-colors ${
-                  isCurrent
-                    ? 'bg-gradient-to-r from-[#EBF4ED] to-[#FFFDF0]'
-                    : isAchieved
-                    ? 'bg-white'
-                    : 'bg-[#FAFBFA]'
-                }`}
-              >
-                {/* Indicador */}
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
-                  isCurrent
-                    ? 'bg-[#D4AF37] text-[#0B2913] ring-4 ring-[#D4AF37]/25'
-                    : isAchieved
-                    ? 'bg-[#1A4E26] text-white'
-                    : 'bg-[#F4F7F5] text-[#9CA3AF] border border-[#C8D8CB]'
-                }`}>
-                  {isCurrent ? (
-                    <Star size={16} fill="currentColor" />
-                  ) : isAchieved ? (
-                    <CheckCircle2 size={16} />
-                  ) : (
-                    <Lock size={13} />
-                  )}
-                </div>
-
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className={`font-bold text-sm ${isAchieved ? 'text-[#111111]' : 'text-[#6B7280]'}`}>
-                      {rank.rango}
-                    </p>
-                    {isCurrent && (
-                      <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-[#D4AF37] bg-[#D4AF37]/15 px-1.5 py-0.5 rounded">
-                        Aquí estás
-                      </span>
-                    )}
-                    {isNext && (
-                      <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-[#1A4E26] bg-[#EBF4ED] px-1.5 py-0.5 rounded">
-                        Próximo
-                      </span>
-                    )}
-                  </div>
-                  <p className={`text-xs flex items-center gap-1 mt-0.5 ${isAchieved ? 'text-[#6B7280]' : 'text-[#9CA3AF]'}`}>
-                    <Users size={10} />
-                    {rank.personasDirectas} afiliado{rank.personasDirectas !== 1 ? 's' : ''} directo{rank.personasDirectas !== 1 ? 's' : ''}
-                  </p>
-                </div>
-
-                {/* Bono */}
-                <div className="text-right shrink-0">
-                  <p className={`font-bold text-sm flex items-center justify-end gap-1 ${
-                    isCurrent ? 'text-[#D4AF37]' : isAchieved ? 'text-[#1A4E26]' : 'text-[#9CA3AF]'
-                  }`}>
-                    {prizeIcon} {rank.bono}
-                  </p>
-                </div>
-              </motion.div>
-            );
-          })}
+        <div className="p-5 sm:p-6">
+          <StaircaseVisual
+            ranks={t1RanksForStair}
+            currentIndex={indiceT1}
+            variant="light"
+            tier={1}
+          />
         </div>
       </motion.div>
 
-      {/* ── Tramo 2: rangos avanzados con premios ───────────────────── */}
+      {/* ── Tramo 2: escalera visual ───────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.4 }}
-        className="bg-white border border-[#D4AF37]/30 rounded-2xl overflow-hidden mb-6"
+        className="rounded-3xl overflow-hidden mb-6 bg-gradient-to-br from-[#0F2E18] via-[#1A4E26] to-[#0F2E18]"
       >
-        <div className="px-5 py-4 bg-gradient-to-r from-[#FFFDF5] to-[#FFFEF7] border-b border-[#D4AF37]/30 flex items-center justify-between flex-wrap gap-2">
+        <div className="px-5 py-4 bg-black/30 border-b border-white/10 flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <Crown size={16} className="text-[#D4AF37]" />
-            <h2 className="font-heading font-bold text-[#111111] text-sm">Tramo 2 · Del Gerente al Fundador Internacional</h2>
+            <h2 className="font-heading font-bold text-white text-sm">Tramo 2 · Del Gerente al Fundador Internacional</h2>
           </div>
-          <span className="text-[10px] text-[#9CA3AF] font-medium">
-            {rangoT2Actual ? tramo2Ranks.findIndex((r) => r.rango === rangoT2Actual.rango && r.personasEnRed === rangoT2Actual.personasEnRed) + 1 : 0} de {tramo2Ranks.length} rangos
+          <span className="text-[10px] text-white/60 font-medium">
+            {indiceT2 >= 0 ? `Escalón ${indiceT2 + 1} de ${tramo2Ranks.length}` : `Aún no inicias el Tramo 2`}
           </span>
         </div>
-
-        <div className="divide-y divide-[#D4AF37]/20">
-          {tramo2Ranks.map((rank, i) => {
-            const currentIdx = rangoT2Actual
-              ? tramo2Ranks.findIndex((r) => r.rango === rangoT2Actual.rango && r.personasEnRed === rangoT2Actual.personasEnRed)
-              : -1;
-            const isCurrent = i === currentIdx;
-            const isAchieved = i <= currentIdx;
-            const isNext = i === currentIdx + 1;
-            const isDiamond = rank.rango.includes('Diamante');
-            const isFounder = rank.rango.includes('Fundador');
-
-            return (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, x: -10 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true, margin: '-40px' }}
-                transition={{ duration: 0.3, delay: Math.min(i * 0.04, 0.4) }}
-                className={`flex items-center gap-3 px-5 py-4 transition-colors ${
-                  isCurrent
-                    ? 'bg-gradient-to-r from-[#FFFDF0] to-[#FFFCEB]'
-                    : isAchieved
-                    ? 'bg-white'
-                    : 'bg-[#FAFBFA]'
-                }`}
-              >
-                {/* Indicador */}
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                  isCurrent
-                    ? 'bg-[#D4AF37] text-[#0B2913] ring-4 ring-[#D4AF37]/25'
-                    : isAchieved
-                    ? isFounder
-                      ? 'bg-gradient-to-br from-[#FFE066] to-[#D4AF37] text-[#0B2913]'
-                      : isDiamond
-                      ? 'bg-[#D4AF37] text-white'
-                      : 'bg-[#1A4E26] text-white'
-                    : 'bg-[#F4F7F5] text-[#9CA3AF] border border-[#C8D8CB]'
-                }`}>
-                  {isFounder && isAchieved ? (
-                    <Crown size={17} />
-                  ) : isDiamond && isAchieved ? (
-                    <Gem size={16} />
-                  ) : isCurrent ? (
-                    <Star size={17} fill="currentColor" />
-                  ) : isAchieved ? (
-                    <CheckCircle2 size={16} />
-                  ) : (
-                    <Lock size={13} />
-                  )}
-                </div>
-
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className={`font-bold text-sm ${isAchieved ? 'text-[#111111]' : 'text-[#6B7280]'}`}>
-                      {rank.rango}
-                    </p>
-                    {isCurrent && (
-                      <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-[#D4AF37] bg-[#D4AF37]/15 px-1.5 py-0.5 rounded">
-                        Aquí estás
-                      </span>
-                    )}
-                    {isNext && (
-                      <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-[#1A4E26] bg-[#EBF4ED] px-1.5 py-0.5 rounded">
-                        Próximo
-                      </span>
-                    )}
-                  </div>
-                  <p className={`text-xs flex items-center gap-1 mt-0.5 ${isAchieved ? 'text-[#6B7280]' : 'text-[#9CA3AF]'}`}>
-                    <Users size={10} />
-                    {rank.personasEnRed.toLocaleString('es-EC')} personas · Niveles {rank.nivelesActivos}
-                  </p>
-                </div>
-
-                {/* Recompensa + premio */}
-                <div className="text-right shrink-0">
-                  <p className={`font-bold text-sm ${
-                    isCurrent ? 'text-[#D4AF37]' : isAchieved ? (isFounder ? 'text-[#D4AF37]' : '[#1A4E26]') : 'text-[#9CA3AF]'
-                  }`}>
-                    {rank.recompensa}
-                  </p>
-                  {rank.extras && (
-                    <p className={`text-[10px] font-bold inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded ${
-                      isAchieved
-                        ? 'bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/30'
-                        : 'bg-[#F4F7F5] text-[#9CA3AF] border border-[#C8D8CB]'
-                    }`}>
-                      {getExtraIcon(rank.extras, 10)} {rank.extras}
-                    </p>
-                  )}
-                </div>
-              </motion.div>
-            );
-          })}
+        <div className="p-5 sm:p-6">
+          <StaircaseVisual
+            ranks={t2RanksForStair}
+            currentIndex={indiceT2}
+            variant="dark"
+            tier={2}
+          />
         </div>
       </motion.div>
 

@@ -8,6 +8,7 @@ import {
   ShoppingCart,
   Network,
   Crown,
+  Trophy,
   Menu,
   X,
   LogOut,
@@ -29,6 +30,7 @@ const navItems: NavItem[] = [
   { label: 'Mis Comisiones', to: '/admin/mis-comisiones', icon: <Crown size={18} /> },
   { label: 'Pedidos', to: '/admin/pedidos', icon: <ShoppingCart size={18} /> },
   { label: 'Red Binaria', to: '/admin/red', icon: <Network size={18} /> },
+  { label: 'Escalera del Éxito', to: '/admin/escalera', icon: <Trophy size={18} /> },
 ];
 
 function SidebarContent({ onClose }: { onClose?: () => void }) {

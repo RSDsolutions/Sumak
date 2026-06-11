@@ -52,6 +52,7 @@ const AdminComisiones = lazy(() => import('./pages/admin/AdminComisiones'));
 const AdminMisComisiones = lazy(() => import('./pages/admin/AdminMisComisiones'));
 const AdminPedidos = lazy(() => import('./pages/admin/AdminPedidos'));
 const AdminRed = lazy(() => import('./pages/admin/AdminRed'));
+const AdminEscalera = lazy(() => import('./pages/admin/AdminEscalera'));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -378,6 +379,16 @@ export default function App() {
               <ProtectedRoute allowedRoles={['admin']}>
                 <AdminLayout>
                   <AdminRed />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/escalera"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminLayout>
+                  <AdminEscalera />
                 </AdminLayout>
               </ProtectedRoute>
             }
