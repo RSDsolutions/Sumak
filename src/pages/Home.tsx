@@ -6,6 +6,7 @@ import {
   Sparkles, Heart, Award, TrendingUp, Truck, Lock,
 } from 'lucide-react';
 import { products, categoryFilters } from '../data';
+import { useSEO } from '../lib/seo';
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 30 },
@@ -75,6 +76,13 @@ const trustBadges = [
 ];
 
 export default function Home() {
+  useSEO({
+    title: 'Sumak Vida Ecuador — Productos Naturales y Oportunidad Multinivel',
+    description:
+      'Descubre productos naturales formulados con plantas medicinales ecuatorianas. Tés, jarabes, suplementos y más. Únete a la red Sumak y construye tu negocio de bienestar.',
+    url: '/',
+  });
+
   // Carousel del hero — cambia de producto cada 4 segundos
   const [heroIndex, setHeroIndex] = useState(0);
   const heroProduct = heroProducts[heroIndex] ?? heroProducts[0];

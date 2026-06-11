@@ -7,6 +7,7 @@ import {
   Sparkles, AlertCircle, Phone, BookOpen, X, Maximize2, Download,
 } from 'lucide-react';
 import { products, contactInfo, parseIngredient } from '../data';
+import { useSEO } from '../lib/seo';
 
 type TabKey = 'beneficios' | 'ingredientes' | 'modo-uso' | 'precauciones';
 
@@ -17,6 +18,46 @@ export default function ProductDetail() {
   const [qty, setQty] = useState(1);
   const [activeTab, setActiveTab] = useState<TabKey>('ingredientes');
   const [revistaOpen, setRevistaOpen] = useState(false);
+
+  // SEO-001/003: metadatos por producto + JSON-LD Schema.org Product.
+  // El hook se llama incondicionalmente (regla de hooks); el contenido
+  // varía según haya o no producto.
+  useSEO(
+    product
+      ? {
+          title: `${product.nombre} — Sumak Vida Ecuador`,
+          description:
+            product.descripcion?.slice(0, 200) ??
+            `${product.nombre}: producto natural de Sumak Vida Ecuador.`,
+          image: product.imagen,
+          type: 'product',
+          url: `/productos/${product.slug}`,
+          jsonLd: {
+            '@context': 'https://schema.org/',
+            '@type': 'Product',
+            name: product.nombre,
+            image: product.imagen ? `https://sumak.com.ec${product.imagen}` : undefined,
+            description: product.descripcion,
+            category: product.categoria,
+            sku: product.codigo,
+            brand: { '@type': 'Brand', name: 'Sumak Vida Ecuador' },
+            offers: {
+              '@type': 'Offer',
+              url: `https://sumak.com.ec/productos/${product.slug}`,
+              priceCurrency: 'USD',
+              price: product.pvp.toFixed(2),
+              availability: product.proximamente
+                ? 'https://schema.org/PreOrder'
+                : 'https://schema.org/InStock',
+            },
+          },
+        }
+      : {
+          title: 'Producto no encontrado — Sumak Vida Ecuador',
+          description: 'El producto que buscas no existe o fue retirado del catálogo.',
+          noindex: true,
+        }
+  );
 
   if (!product) {
     return (

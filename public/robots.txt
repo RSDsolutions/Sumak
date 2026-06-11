@@ -1,0 +1,22 @@
+# Sumak Vida Ecuador S.A. — robots.txt
+# Atiende SEO-002 de la auditoría interna.
+
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /dashboard/
+Disallow: /admin
+Disallow: /admin/
+Disallow: /login
+
+# Bloquea bots de scraping agresivos para ahorrar ancho de banda.
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+Sitemap: https://sumak.com.ec/sitemap.xml

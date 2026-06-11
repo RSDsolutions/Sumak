@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { affiliatePackages, bankAccounts } from '../data';
 import { supabase } from '../lib/supabase';
+import { useSEO } from '../lib/seo';
 import type { PaqueteKey } from '../lib/types';
 
 type Step = 1 | 2 | 3 | 'done';
@@ -286,6 +287,13 @@ async function uploadFile(file: File, cedula: string, name: string): Promise<str
 }
 
 export default function Registro() {
+  useSEO({
+    title: 'Solicitud de Afiliación — Sumak Vida Ecuador',
+    description:
+      'Únete a la red Sumak Vida Ecuador. Completa tu solicitud de afiliación con paquetes desde $125 y comienza tu negocio de bienestar natural.',
+    url: '/registro',
+  });
+
   const [searchParams] = useSearchParams();
   const refParam = searchParams.get('ref')?.trim() ?? '';
   const [step, setStep] = useState<Step>(1);

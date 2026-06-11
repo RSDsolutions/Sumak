@@ -5,6 +5,7 @@ import {
   ChefHat, Snowflake, Tv, Laptop, Bike, Car, Home,
 } from 'lucide-react';
 import { tramo1Ranks, tramo2Ranks } from '../data';
+import { useSEO } from '../lib/seo';
 
 function getPrizeIcon(text: string) {
   if (text.includes('Internacional')) return <Globe size={14} className="flex-shrink-0" />;
@@ -38,6 +39,13 @@ const T1_MAX = tramo1Ranks.length;
 const T2_MAX = tramo2Ranks.length;
 
 export default function Escaleras() {
+  useSEO({
+    title: 'Escaleras de Rangos — Sumak Vida Ecuador',
+    description:
+      'Carrera de rangos SUMAK con dos tramos: bonos económicos, viajes locales/nacionales/internacionales, electrodomésticos, vehículos y hasta una casa al alcanzar Fundador Internacional.',
+    url: '/escaleras',
+  });
+
   return (
     <div className="bg-white">
 

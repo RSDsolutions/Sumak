@@ -13,6 +13,7 @@ import {
   LogOut,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
+import { useSEO } from '../lib/seo';
 
 interface NavItem {
   label: string;
@@ -96,6 +97,13 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
 }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  // SEO-001: páginas autenticadas no deben indexarse.
+  useSEO({
+    title: 'Administración — Sumak Vida Ecuador',
+    description: 'Panel de administración SUMAK.',
+    noindex: true,
+  });
+
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (

@@ -2,6 +2,7 @@ import { motion, type Variants } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { levelCommissions } from '../data';
+import { useSEO } from '../lib/seo';
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 30 },
@@ -46,6 +47,13 @@ function TreeHLine({ wide = false }: { wide?: boolean }) {
 }
 
 export default function Plan() {
+  useSEO({
+    title: 'Plan Multinivel — Sumak Vida Ecuador',
+    description:
+      'Plan multinivel SUMAK con sistema binario, comisiones por nivel hasta 14 niveles, bonos por afiliación y carrera de rangos con bonos económicos.',
+    url: '/plan-multinivel',
+  });
+
   return (
     <div className="bg-white">
       {/* Hero */}

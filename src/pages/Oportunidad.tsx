@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { motion, type Variants } from 'motion/react';
 import { CheckCircle2, ArrowRight, Package, TrendingUp, DollarSign, FileText, User } from 'lucide-react';
 import { affiliatePackages } from '../data';
+import { useSEO } from '../lib/seo';
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 30 },
@@ -46,6 +47,13 @@ const whatYouReceive = [
 ];
 
 export default function Oportunidad() {
+  useSEO({
+    title: 'Oportunidad de Negocio — Sumak Vida Ecuador',
+    description:
+      '4 fuentes de ingreso con SUMAK: venta directa 50%, bono de afiliación $50, comisiones binarias y comisiones por nivel hasta 14 niveles. Conoce los paquetes Básico, Emprendedor y Líder.',
+    url: '/oportunidad',
+  });
+
   return (
     <div className="bg-white">
       {/* Hero */}

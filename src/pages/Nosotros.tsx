@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { motion, type Variants } from 'motion/react';
 import { Shield, Users, Heart, Lightbulb, Star, Zap, Leaf, FlaskConical, ScrollText, ArrowRight, ShieldCheck } from 'lucide-react';
 import { contactInfo } from '../data';
+import { useSEO } from '../lib/seo';
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 30 },
@@ -41,6 +42,13 @@ const values = [
 ];
 
 export default function Nosotros() {
+  useSEO({
+    title: 'Nosotros — Sumak Vida Ecuador S.A.',
+    description:
+      'Sumak Vida Ecuador S.A. es una empresa de productos naturales con sede en Babahoyo, Los Ríos. Conoce nuestra misión, valores y compromiso con el bienestar.',
+    url: '/nosotros',
+  });
+
   return (
     <div className="bg-white">
       {/* Hero */}

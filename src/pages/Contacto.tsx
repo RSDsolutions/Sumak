@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, type Variants } from 'motion/react';
 import { Phone, Mail, MapPin, Facebook, Instagram, CheckCircle2, Send } from 'lucide-react';
 import { contactInfo } from '../data';
+import { useSEO } from '../lib/seo';
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 30 },
@@ -21,6 +22,13 @@ interface FormState {
 }
 
 export default function Contacto() {
+  useSEO({
+    title: 'Contacto — Sumak Vida Ecuador',
+    description:
+      'Contáctanos. Oficinas en Babahoyo, Los Ríos. WhatsApp 0988447019. Email sumak.vida1979@gmail.com. Atención en horario de oficina.',
+    url: '/contacto',
+  });
+
   const [form, setForm] = useState<FormState>({ nombre: '', email: '', telefono: '', mensaje: '' });
   const [submitted, setSubmitted] = useState(false);
 

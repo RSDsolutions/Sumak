@@ -3,6 +3,7 @@ import { motion, type Variants } from 'motion/react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Leaf, Search, Star, ArrowRight, ShoppingBag, Sparkles, X, SlidersHorizontal } from 'lucide-react';
 import { products, categoryFilters, contactInfo } from '../data';
+import { useSEO } from '../lib/seo';
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 20 },
@@ -28,6 +29,13 @@ export default function Productos() {
   const [activeCategory, setActiveCategory] = useState(params.get('cat') ?? 'todos');
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<SortKey>('destacado');
+
+  useSEO({
+    title: 'Catálogo de Productos — Sumak Vida Ecuador',
+    description:
+      'Catálogo completo de productos naturales: tés de plantas medicinales, jarabes detox, cremas regeneradoras, suplementos de moringa, colágeno hidrolizado y más.',
+    url: '/productos',
+  });
 
   // Sync URL with active category
   useEffect(() => {

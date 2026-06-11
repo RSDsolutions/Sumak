@@ -34,13 +34,13 @@ Distribución por severidad:
 
 ---
 
-## Estado tras Fase 1 + Tanda 2
+## Estado tras Fase 1 + Tanda 2 + Tanda 3
 
 | Estado | # | Significado |
 |---|---|---|
-| ✅ Resuelto | **12** | Código activo aplica el fix; el flujo afectado YA se comporta correctamente |
+| ✅ Resuelto | **16** | Código activo aplica el fix; el flujo afectado YA se comporta correctamente |
 | 🔄 Mitigado / Infra disponible | **6** | La infraestructura ya existe; adopción completa en próxima tanda |
-| ⏳ Pendiente | **60** | Sin trabajo todavía |
+| ⏳ Pendiente | **56** | Sin trabajo todavía |
 | **Total** | **78** | |
 
 ### Lo que está ✅ Resuelto
@@ -66,6 +66,15 @@ Distribución por severidad:
 | UX-010 | 🟡 Media | Toast al añadir al carrito | `ToastProvider` in-house; Tienda y TiendaProducto disparan `toast.success` |
 | UX-013 | 🟢 Baja | Empty state con CTAs | Overview muestra "Ver mi código" / "Ver mi red" cuando no hay comisiones |
 | A11Y-002 | 🟡 Media | Focus ring global visible | [index.css](src/index.css) `@layer base { :focus-visible {...} }` con `box-shadow` para no chocar con `focus:outline-none` |
+
+**Tanda 3 (SEO, sin tocar BD):**
+
+| ID | Severidad | Asunto | Cómo se confirmó |
+|---|---|---|---|
+| SEO-001 | 🟡 Media | Metadata dinámica por ruta | Hook [src/lib/seo.tsx](src/lib/seo.tsx) inyecta `<title>`, description, OG, Twitter, canonical. Integrado en las 11 páginas públicas y como `noindex` en `DashboardLayout` y `AdminLayout` |
+| SEO-002 | 🟡 Media | Sitemap y robots | [public/robots.txt](public/robots.txt) bloquea /dashboard, /admin y /login + bots agresivos. [public/sitemap.xml](public/sitemap.xml) lista 9 rutas + 16 slugs de productos |
+| SEO-003 | 🟡 Media | Schema.org en productos | [ProductDetail.tsx](src/pages/ProductDetail.tsx) inyecta JSON-LD `@type: Product` con name, image, description, brand, sku, offers. `Organization` también en `index.html` |
+| SEO-005 | 🟢 Baja | OG image | `index.html` y hook usan `LOGO_SUMAK.png` por defecto; cada ProductDetail usa la imagen propia del producto para previews ricos en WhatsApp / FB |
 
 ### Lo que está 🔄 Mitigado (infra lista, cliente no la adopta del todo)
 
@@ -247,25 +256,25 @@ ARQ-007 (React Query), PERF-001 (paginación), COD-006 (descomponer componentes)
 ## Indicador de avance
 
 ```
-Resueltos:  ██████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 12/78  (15%)
+Resueltos:  ████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 16/78  (21%)
 Mitigados:  ███░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  6/78  (8%)
-Pendientes: ██████████████████████████████░░░░░░░░░ 60/78  (77%)
+Pendientes: ████████████████████████████░░░░░░░░░░░ 56/78  (71%)
 ```
 
 Por severidad:
 - 🔴 Crítica: **1 pendiente** (SEC-001)
 - 🟠 Alta: **4 pendientes** (BIZ-009, BIZ-010, PERF-001, UX-015) + 4 mitigados
-- 🟡 Media: **40 pendientes** (de 46 totales — 6 resueltos + 2 mitigados en Tanda 2)
-- 🟢 Baja: **15 pendientes** (de 21 totales — 2 resueltos en Tanda 2)
+- 🟡 Media: **37 pendientes** (de 46 totales — 9 resueltos + 2 mitigados)
+- 🟢 Baja: **14 pendientes** (de 21 totales — 3 resueltos)
 
-### Pendientes ⏳ — restantes tras Tanda 2
+### Pendientes ⏳ — restantes tras Tanda 3
 
-**🟡 Media restantes (40):**
-SEC-006, SEC-007, SEC-008, BIZ-003, BIZ-004, BIZ-006, BIZ-007, BIZ-008, BIZ-011, BIZ-012, ARQ-007, PERF-002, PERF-003, PERF-004, UX-003, UX-007, UX-008, UX-009, UX-012, SEO-001, SEO-002, SEO-003, SEO-004, COD-001, COD-002, COD-003, COD-004, COD-005, COD-006, COD-008, OPS-001, OPS-002, OPS-003, OPS-004, OPS-005, OPS-007.
+**🟡 Media restantes (37):**
+SEC-006, SEC-007, SEC-008, BIZ-003, BIZ-004, BIZ-006, BIZ-007, BIZ-008, BIZ-011, BIZ-012, ARQ-007, PERF-002, PERF-003, PERF-004, UX-003, UX-007, UX-008, UX-009, UX-012, SEO-004, COD-001, COD-002, COD-003, COD-004, COD-005, COD-006, COD-008, OPS-001, OPS-002, OPS-003, OPS-004, OPS-005, OPS-007.
 
-**🟢 Baja restantes (15):**
-SEC-008, BIZ-013, BIZ-014, ARQ-003, ARQ-004, ARQ-005, PERF-005, PERF-006, UX-011, UX-014, A11Y-003, A11Y-004, A11Y-005, SEO-005, COD-007, COD-009, COD-010, COD-011, OPS-006.
+**🟢 Baja restantes (14):**
+SEC-008, BIZ-013, BIZ-014, ARQ-003, ARQ-004, ARQ-005, PERF-005, PERF-006, UX-011, UX-014, A11Y-003, A11Y-004, A11Y-005, COD-007, COD-009, COD-010, COD-011, OPS-006.
 
 ---
 
-*Última actualización: Tanda 2 (commit pendiente) — UX/A11Y aplicada en código.*
+*Última actualización: Tanda 3 (SEO básico) — useSEO, sitemap, robots, JSON-LD aplicados.*

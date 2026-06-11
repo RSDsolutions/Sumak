@@ -6,6 +6,7 @@ import {
   Phone, Mail, FileText,
 } from 'lucide-react';
 import { contactInfo } from '../data';
+import { useSEO } from '../lib/seo';
 
 // ── Code of ethics ────────────────────────────────────────────
 const codigoEtica = [
@@ -248,6 +249,13 @@ const tocGroups = [
 ];
 
 export default function Manual() {
+  useSEO({
+    title: 'Manual del Distribuidor — Sumak Vida Ecuador',
+    description:
+      'Manual oficial del distribuidor SUMAK: 29 puntos sobre afiliación, compras, reventa, vigencia mensual, publicidad y reglas del sistema.',
+    url: '/manual',
+  });
+
   const [showTopButton, setShowTopButton] = useState(false);
 
   useEffect(() => {

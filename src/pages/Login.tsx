@@ -4,8 +4,16 @@ import { motion } from 'motion/react';
 import { Lock, Mail, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
+import { useSEO } from '../lib/seo';
 
 export default function Login() {
+  useSEO({
+    title: 'Acceso Distribuidor — Sumak Vida Ecuador',
+    description: 'Inicia sesión con tu código de distribuidor SUMAK.',
+    url: '/login',
+    noindex: true,
+  });
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
