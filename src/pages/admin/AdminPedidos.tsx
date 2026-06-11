@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import {
   X, Eye, Image as ImageIcon, ExternalLink, AlertCircle, Search, Calendar,
   Package, Clock, Truck, CheckCircle2, XCircle, ShoppingBag, DollarSign,
-  Star, TrendingUp, Filter,
+  Star, TrendingUp, Filter, Landmark, Receipt,
 } from 'lucide-react';
 import { supabaseAdmin } from '../../lib/supabase';
 import type { Pedido, PedidoItem, EstadoPedido } from '../../lib/types';
@@ -138,6 +138,39 @@ function DetalleModal({ pedido, onClose }: DetalleModalProps) {
           </div>
         </div>
 
+        {/* Datos de pago */}
+        {(pedido.banco_destino || pedido.voucher_numero) && (
+          <div className="px-6 py-4 border-b border-[#C8D8CB]">
+            <p className="text-[#9CA3AF] text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-1.5">
+              <Receipt size={12} /> Datos del pago
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {pedido.banco_destino && (
+                <div className="bg-[#F4F7F5] border border-[#C8D8CB] rounded-xl p-3 flex items-start gap-2.5">
+                  <div className="w-8 h-8 bg-[#1A4E26] rounded-lg flex items-center justify-center shrink-0">
+                    <Landmark size={14} className="text-white" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] uppercase tracking-widest text-[#9CA3AF] font-bold">Banco destino</p>
+                    <p className="text-[#111111] font-semibold text-sm truncate">{pedido.banco_destino}</p>
+                  </div>
+                </div>
+              )}
+              {pedido.voucher_numero && (
+                <div className="bg-[#F4F7F5] border border-[#C8D8CB] rounded-xl p-3 flex items-start gap-2.5">
+                  <div className="w-8 h-8 bg-[#D4AF37] rounded-lg flex items-center justify-center shrink-0">
+                    <Receipt size={14} className="text-white" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] uppercase tracking-widest text-[#9CA3AF] font-bold">N° comprobante</p>
+                    <p className="text-[#111111] font-semibold font-mono text-sm truncate">{pedido.voucher_numero}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Voucher */}
         <div className="px-6 py-4 border-b border-[#C8D8CB]">
           <p className="text-[#9CA3AF] text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-1.5">
@@ -264,7 +297,9 @@ export default function AdminPedidos() {
         (p.distribuidor_nombre ?? '').toLowerCase().includes(q) ||
         (p.distribuidor_codigo ?? '').toLowerCase().includes(q) ||
         p.id.toLowerCase().includes(q) ||
-        (p.notas ?? '').toLowerCase().includes(q)
+        (p.notas ?? '').toLowerCase().includes(q) ||
+        (p.voucher_numero ?? '').toLowerCase().includes(q) ||
+        (p.banco_destino ?? '').toLowerCase().includes(q)
       );
     }
 
@@ -482,7 +517,7 @@ export default function AdminPedidos() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por distribuidor, código, ID o notas..."
+              placeholder="Buscar por distribuidor, código, ID, banco o N° voucher..."
               className="w-full pl-9 pr-3 py-2 bg-[#FAFBFA] border border-[#C8D8CB] rounded-xl text-xs text-[#111111] placeholder:text-[#9CA3AF] focus:outline-none focus:border-[#1A4E26] transition-colors"
             />
           </div>

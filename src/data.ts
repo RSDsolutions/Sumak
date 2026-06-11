@@ -200,6 +200,15 @@ export interface ContactInfo {
   whatsapp: string;
 }
 
+export interface BankAccount {
+  banco: string;
+  tipo: string;
+  numero: string;
+  titular: string;
+  identificacion: string;
+  email?: string;
+}
+
 export interface CategoryFilter {
   label: string;
   key: string;
@@ -809,3 +818,26 @@ export const contactInfo: ContactInfo = {
   web: 'www.sumak.com.ec',
   whatsapp: '593988447019',
 };
+
+// ── Bank Accounts (transferencias / depósitos) ───────────────
+// Cuentas a las que el distribuidor debe transferir el total del
+// pedido durante el checkout. La info se muestra en NuevoPedido.tsx
+// y también se reporta al admin como parte del pedido.
+export const bankAccounts: BankAccount[] = [
+  {
+    banco: 'Banco Pichincha',
+    tipo: 'Cuenta de Ahorros',
+    numero: '2210123456',
+    titular: 'Sumak Vida Ecuador S.A.',
+    identificacion: 'RUC 1291781000001',
+    email: 'sumak.vida1979@gmail.com',
+  },
+  {
+    banco: 'Banco Guayaquil',
+    tipo: 'Cuenta Corriente',
+    numero: '0034567890',
+    titular: 'Sumak Vida Ecuador S.A.',
+    identificacion: 'RUC 1291781000001',
+    email: 'sumak.vida1979@gmail.com',
+  },
+];

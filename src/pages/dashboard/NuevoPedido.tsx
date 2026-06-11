@@ -1,17 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
   ShoppingCart, Plus, Minus, X, CheckCircle2, AlertCircle, TrendingUp,
-  ArrowLeft, ArrowRight, Trash2, Leaf, Sparkles, Upload, Image as ImageIcon,
-  CreditCard, Receipt,
+  ArrowLeft, ArrowRight, Trash2, Leaf, Sparkles, Upload,
+  CreditCard, Receipt, Landmark, Clock, Copy, Check,
 } from 'lucide-react';
-import { levelCommissions, contactInfo } from '../../data';
+import { levelCommissions, contactInfo, bankAccounts } from '../../data';
 import { supabase, supabaseAdmin } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { useCart } from '../../lib/cart';
 
-type Step = 'cart' | 'checkout' | 'done';
+type Step = 'cart' | 'pay' | 'voucher' | 'done';
+
+const PAY_WINDOW_SECONDS = 15 * 60;
+
+function formatMMSS(s: number) {
+  if (s < 0) s = 0;
+  const m = Math.floor(s / 60);
+  const ss = s % 60;
+  return `${m.toString().padStart(2, '0')}:${ss.toString().padStart(2, '0')}`;
+}
 
 export default function NuevoPedido() {
   const { user, profile } = useAuth();
@@ -25,13 +34,23 @@ export default function NuevoPedido() {
   const [loadingStatus, setLoadingStatus] = useState(true);
   const [totalMes, setTotalMes] = useState(0);
 
-  // Checkout state
+  // Pay step state
+  const [selectedBanco, setSelectedBanco] = useState<string>('');
+  const [voucherNumero, setVoucherNumero] = useState('');
+  const [copiedField, setCopiedField] = useState<string>('');
+
+  // Voucher step state
   const [voucherFile, setVoucherFile] = useState<File | null>(null);
   const [voucherPreview, setVoucherPreview] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
 
+  // Countdown
+  const [secondsLeft, setSecondsLeft] = useState(PAY_WINDOW_SECONDS);
+  const expiresAtRef = useRef<number | null>(null);
+
   const willQualify = subtotal >= 100;
   const total = subtotal;
+  const selectedBancoData = bankAccounts.find((b) => b.banco === selectedBanco);
 
   useEffect(() => {
     if (!user) return;
@@ -54,6 +73,44 @@ export default function NuevoPedido() {
     checkMonthly();
   }, [user]);
 
+  // Countdown logic — corre mientras estamos en pay o voucher
+  useEffect(() => {
+    if (step !== 'pay' && step !== 'voucher') {
+      expiresAtRef.current = null;
+      return;
+    }
+    if (expiresAtRef.current === null) {
+      expiresAtRef.current = Date.now() + PAY_WINDOW_SECONDS * 1000;
+    }
+    const tick = () => {
+      const remaining = Math.max(0, Math.round((expiresAtRef.current! - Date.now()) / 1000));
+      setSecondsLeft(remaining);
+      if (remaining <= 0) {
+        setError('Se agotó el tiempo para completar el pago. Por favor, vuelve al carrito y vuelve a intentarlo.');
+        setStep('cart');
+        setSelectedBanco('');
+        setVoucherNumero('');
+        setVoucherFile(null);
+        setVoucherPreview(null);
+        expiresAtRef.current = null;
+      }
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [step]);
+
+  function startPayStep() {
+    setError('');
+    setSelectedBanco('');
+    setVoucherNumero('');
+    setVoucherFile(null);
+    setVoucherPreview(null);
+    expiresAtRef.current = Date.now() + PAY_WINDOW_SECONDS * 1000;
+    setSecondsLeft(PAY_WINDOW_SECONDS);
+    setStep('pay');
+  }
+
   function onVoucherFile(file: File) {
     if (file.size > 5 * 1024 * 1024) {
       setError('La imagen no debe superar los 5 MB.');
@@ -66,9 +123,32 @@ export default function NuevoPedido() {
     reader.readAsDataURL(file);
   }
 
-  async function handleSubmitCheckout() {
+  async function copyToClipboard(text: string, key: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(key);
+      setTimeout(() => setCopiedField(''), 1500);
+    } catch {
+      // ignore
+    }
+  }
+
+  function handleAcceptPayment() {
+    if (!selectedBanco) {
+      setError('Selecciona el banco al que realizaste la transferencia.');
+      return;
+    }
+    if (voucherNumero.trim().length < 4) {
+      setError('Ingresa el número de comprobante de la transferencia (mínimo 4 caracteres).');
+      return;
+    }
+    setError('');
+    setStep('voucher');
+  }
+
+  async function handleSubmitFinal() {
     if (items.length === 0 || !user || !voucherFile) {
-      setError('Debes subir la foto del voucher de pago para continuar.');
+      setError('Debes subir la foto del voucher de pago para finalizar.');
       return;
     }
     setSubmitting(true);
@@ -108,6 +188,8 @@ export default function NuevoPedido() {
           puntos_generados: puntos,
           notas: notes || null,
           voucher_url: voucherPath,
+          voucher_numero: voucherNumero.trim(),
+          banco_destino: selectedBanco,
         })
         .select()
         .single();
@@ -198,6 +280,7 @@ export default function NuevoPedido() {
       if (total >= 100) setCompraCalificada(true);
       setEarnedPuntos(puntos);
       clear();
+      expiresAtRef.current = null;
       setStep('done');
     } catch (err) {
       setError('Error inesperado. Intenta de nuevo.');
@@ -261,70 +344,91 @@ export default function NuevoPedido() {
     );
   }
 
-  // ─── CHECKOUT ────────────────────────────────────────
-  if (step === 'checkout') {
+  // ─── COUNTDOWN BANNER (compartido por pay y voucher) ──
+  const countdownBanner = (step === 'pay' || step === 'voucher') && (
+    <div className={`flex items-center justify-between gap-4 rounded-2xl px-5 py-4 mb-6 border ${
+      secondsLeft <= 120
+        ? 'bg-red-50 border-red-200'
+        : secondsLeft <= 300
+          ? 'bg-amber-50 border-amber-200'
+          : 'bg-[#EBF4ED] border-[#1A4E26]/20'
+    }`}>
+      <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+          secondsLeft <= 120 ? 'bg-red-500' : secondsLeft <= 300 ? 'bg-amber-500' : 'bg-[#1A4E26]'
+        }`}>
+          <Clock size={18} className="text-white" />
+        </div>
+        <div className="min-w-0">
+          <p className={`text-sm font-bold ${
+            secondsLeft <= 120 ? 'text-red-700' : secondsLeft <= 300 ? 'text-amber-700' : 'text-[#1A4E26]'
+          }`}>
+            Tienes {formatMMSS(secondsLeft)} para completar el pago
+          </p>
+          <p className={`text-xs ${
+            secondsLeft <= 120 ? 'text-red-600' : secondsLeft <= 300 ? 'text-amber-600' : 'text-[#1A4E26]/80'
+          }`}>
+            Si no envías el comprobante a tiempo, el pedido se cancela automáticamente para liberar el cupo.
+          </p>
+        </div>
+      </div>
+      <div className={`shrink-0 font-heading font-bold text-2xl sm:text-3xl tabular-nums ${
+        secondsLeft <= 120 ? 'text-red-600' : secondsLeft <= 300 ? 'text-amber-600' : 'text-[#1A4E26]'
+      }`}>
+        {formatMMSS(secondsLeft)}
+      </div>
+    </div>
+  );
+
+  // ─── VOUCHER UPLOAD STEP ─────────────────────────────
+  if (step === 'voucher') {
     return (
       <div>
         <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
           <div>
             <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#111111] flex items-center gap-2">
               <Receipt size={24} className="text-[#1A4E26]" />
-              Checkout — Pago
+              Sube tu comprobante
             </h1>
-            <p className="text-[#6B7280] text-sm mt-1">Sube el comprobante de pago para confirmar el pedido.</p>
+            <p className="text-[#6B7280] text-sm mt-1">Adjunta la foto o captura del voucher para enviar tu pedido al admin.</p>
           </div>
           <button
-            onClick={() => { setStep('cart'); setError(''); }}
+            onClick={() => { setStep('pay'); setError(''); }}
             className="inline-flex items-center gap-1.5 text-[#6B7280] text-sm font-semibold hover:text-[#1A4E26] transition-colors"
           >
-            <ArrowLeft size={14} /> Volver al carrito
+            <ArrowLeft size={14} /> Volver a datos de pago
           </button>
         </div>
 
+        {countdownBanner}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left: payment info + voucher upload */}
+          {/* Left: voucher upload + notes */}
           <div className="lg:col-span-2 space-y-4">
-
-            {/* Datos de pago */}
-            <div className="bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden">
-              <div className="px-5 py-3 border-b border-[#C8D8CB] bg-[#F4F7F5] flex items-center gap-2">
-                <CreditCard size={15} className="text-[#1A4E26]" />
-                <h2 className="font-heading font-bold text-[#111111] text-sm">Datos para el pago</h2>
-              </div>
-              <div className="p-5">
-                <p className="text-[#6B7280] text-sm mb-4">
-                  Realiza la transferencia o depósito por el total del pedido a una de las siguientes opciones:
-                </p>
-                <div className="space-y-3 text-sm">
-                  <div className="bg-[#F4F7F5] rounded-xl p-4 border border-[#C8D8CB]">
-                    <p className="text-[10px] uppercase tracking-widest text-[#9CA3AF] font-bold mb-1">Cuenta bancaria</p>
-                    <p className="text-[#111111] font-semibold">Sumak Vida Ecuador S.A.</p>
-                    <p className="text-[#6B7280] text-xs">RUC: {contactInfo.ruc}</p>
-                    <p className="text-[#6B7280] text-xs mt-1">
-                      Solicita los datos bancarios actualizados al{' '}
-                      <a href={`https://wa.me/${contactInfo.whatsapp}`} target="_blank" rel="noopener noreferrer" className="text-[#1A4E26] underline">
-                        WhatsApp oficial
-                      </a>
-                    </p>
-                  </div>
-                  <div className="bg-[#EBF4ED] rounded-xl p-4 border border-[#1A4E26]/20">
-                    <p className="text-[10px] uppercase tracking-widest text-[#1A4E26] font-bold mb-1">Monto a pagar</p>
-                    <p className="font-heading font-bold text-2xl text-[#1A4E26]">${total.toFixed(2)}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Voucher upload */}
             <div className="bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden">
               <div className="px-5 py-3 border-b border-[#C8D8CB] bg-[#F4F7F5] flex items-center gap-2">
                 <Receipt size={15} className="text-[#1A4E26]" />
                 <h2 className="font-heading font-bold text-[#111111] text-sm">Comprobante de pago *</h2>
               </div>
               <div className="p-5">
+                <div className="bg-[#F4F7F5] border border-[#C8D8CB] rounded-xl p-4 mb-4 text-xs space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#9CA3AF] uppercase tracking-widest font-bold text-[10px]">Banco destino</span>
+                    <span className="text-[#111111] font-semibold">{selectedBanco}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#9CA3AF] uppercase tracking-widest font-bold text-[10px]">N° comprobante</span>
+                    <span className="text-[#111111] font-semibold font-mono">{voucherNumero}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#9CA3AF] uppercase tracking-widest font-bold text-[10px]">Monto</span>
+                    <span className="text-[#1A4E26] font-bold">${total.toFixed(2)}</span>
+                  </div>
+                </div>
+
                 <p className="text-[#6B7280] text-sm mb-4">
                   Sube la foto o captura del voucher de transferencia/depósito.
-                  El admin verá esta imagen al revisar tu pedido.
+                  El admin verá esta imagen junto al N° de comprobante para verificar tu pago.
                 </p>
 
                 {voucherPreview ? (
@@ -363,7 +467,6 @@ export default function NuevoPedido() {
               </div>
             </div>
 
-            {/* Notas */}
             <div className="bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden">
               <div className="px-5 py-3 border-b border-[#C8D8CB] bg-[#F4F7F5]">
                 <h2 className="font-heading font-bold text-[#111111] text-sm">Notas para el admin (opcional)</h2>
@@ -427,7 +530,7 @@ export default function NuevoPedido() {
                 )}
 
                 <button
-                  onClick={handleSubmitCheckout}
+                  onClick={handleSubmitFinal}
                   disabled={submitting || !voucherFile}
                   className="w-full py-4 rounded-xl bg-[#1A4E26] text-white font-bold text-sm hover:bg-[#163F1E] disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_8px_24px_rgba(26,78,38,0.25)] transition-all duration-200 flex items-center justify-center gap-2"
                 >
@@ -443,7 +546,190 @@ export default function NuevoPedido() {
                   )}
                 </button>
                 <p className="text-[10px] text-[#9CA3AF] text-center leading-tight">
-                  Al confirmar, tu pedido quedará marcado como <strong>Procesado</strong> y el admin verá tu voucher.
+                  Al confirmar, el admin recibirá el N° de comprobante, banco, voucher e items del pedido.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── PAY STEP (bancos + N° comprobante + countdown) ──
+  if (step === 'pay') {
+    return (
+      <div>
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
+          <div>
+            <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#111111] flex items-center gap-2">
+              <Landmark size={24} className="text-[#1A4E26]" />
+              Datos de Pago
+            </h1>
+            <p className="text-[#6B7280] text-sm mt-1">
+              Transfiere el total a una de nuestras cuentas y registra el número del comprobante.
+            </p>
+          </div>
+          <button
+            onClick={() => { setStep('cart'); setError(''); expiresAtRef.current = null; }}
+            className="inline-flex items-center gap-1.5 text-[#6B7280] text-sm font-semibold hover:text-[#1A4E26] transition-colors"
+          >
+            <ArrowLeft size={14} /> Volver al carrito
+          </button>
+        </div>
+
+        {countdownBanner}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left: bancos + voucher numero */}
+          <div className="lg:col-span-2 space-y-4">
+            <div className="bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden">
+              <div className="px-5 py-3 border-b border-[#C8D8CB] bg-[#F4F7F5] flex items-center gap-2">
+                <CreditCard size={15} className="text-[#1A4E26]" />
+                <h2 className="font-heading font-bold text-[#111111] text-sm">Selecciona la cuenta de destino *</h2>
+              </div>
+              <div className="p-5 space-y-3">
+                {bankAccounts.map((b) => {
+                  const selected = selectedBanco === b.banco;
+                  return (
+                    <div
+                      key={b.banco}
+                      className={`rounded-2xl border-2 transition-all overflow-hidden ${
+                        selected ? 'border-[#1A4E26] bg-[#EBF4ED] shadow-[0_8px_24px_rgba(26,78,38,0.15)]' : 'border-[#C8D8CB] bg-white hover:border-[#A8C2AD]'
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setSelectedBanco(b.banco)}
+                        className="w-full flex items-center justify-between gap-3 p-4 text-left"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${selected ? 'bg-[#1A4E26]' : 'bg-[#F4F7F5] border border-[#C8D8CB]'}`}>
+                            <Landmark size={18} className={selected ? 'text-white' : 'text-[#1A4E26]'} />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-heading font-bold text-[#111111] text-base leading-tight">{b.banco}</p>
+                            <p className="text-[#6B7280] text-xs mt-0.5">{b.tipo}</p>
+                          </div>
+                        </div>
+                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${selected ? 'bg-[#1A4E26] border-[#1A4E26]' : 'border-[#C8D8CB]'}`}>
+                          {selected && <Check size={14} className="text-white" />}
+                        </div>
+                      </button>
+
+                      {selected && (
+                        <div className="px-4 pb-4 pt-1 space-y-2 text-xs">
+                          {[
+                            { label: 'Número de cuenta', value: b.numero, key: `${b.banco}-num` },
+                            { label: 'Titular', value: b.titular, key: `${b.banco}-tit` },
+                            { label: 'Identificación', value: b.identificacion, key: `${b.banco}-id` },
+                            ...(b.email ? [{ label: 'Email', value: b.email, key: `${b.banco}-em` }] : []),
+                          ].map((row) => (
+                            <div key={row.key} className="flex items-center justify-between gap-3 bg-white border border-[#C8D8CB] rounded-xl px-3 py-2">
+                              <div className="min-w-0">
+                                <p className="text-[10px] uppercase tracking-widest text-[#9CA3AF] font-bold">{row.label}</p>
+                                <p className="text-[#111111] font-mono font-semibold truncate">{row.value}</p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => copyToClipboard(row.value, row.key)}
+                                className="shrink-0 inline-flex items-center gap-1 text-[#1A4E26] hover:bg-[#EBF4ED] rounded-lg px-2 py-1.5 text-[11px] font-semibold transition-colors"
+                              >
+                                {copiedField === row.key ? (
+                                  <>
+                                    <Check size={12} /> Copiado
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy size={12} /> Copiar
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden">
+              <div className="px-5 py-3 border-b border-[#C8D8CB] bg-[#F4F7F5] flex items-center gap-2">
+                <Receipt size={15} className="text-[#1A4E26]" />
+                <h2 className="font-heading font-bold text-[#111111] text-sm">Número del comprobante *</h2>
+              </div>
+              <div className="p-5">
+                <p className="text-[#6B7280] text-sm mb-3">
+                  Una vez realizada la transferencia, escribe aquí el número o referencia que figura en tu voucher.
+                </p>
+                <input
+                  type="text"
+                  value={voucherNumero}
+                  onChange={(e) => setVoucherNumero(e.target.value)}
+                  placeholder="Ej: 0123456789"
+                  className="w-full bg-[#F4F7F5] border border-[#C8D8CB] rounded-xl px-4 py-3 text-[#111111] font-mono text-base placeholder-[#9CA3AF] focus:outline-none focus:border-[#1A4E26] transition-colors"
+                  autoComplete="off"
+                />
+                <p className="text-[11px] text-[#9CA3AF] mt-2 flex items-start gap-1.5">
+                  <AlertCircle size={12} className="mt-0.5 shrink-0" />
+                  Este número debe coincidir con la foto del voucher que subirás en el siguiente paso.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 text-xs text-amber-700 flex items-start gap-2">
+              <AlertCircle size={14} className="shrink-0 mt-0.5" />
+              <p>
+                Si tienes dudas con el pago, contacta al admin por WhatsApp{' '}
+                <a href={`https://wa.me/${contactInfo.whatsapp}`} target="_blank" rel="noopener noreferrer" className="underline font-semibold">
+                  {contactInfo.telefono1}
+                </a>.
+              </p>
+            </div>
+          </div>
+
+          {/* Right: summary + accept */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-6 bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-[#C8D8CB] bg-[#F4F7F5]">
+                <h2 className="font-heading font-bold text-[#111111] text-sm">Resumen del pedido</h2>
+              </div>
+
+              <div className="p-5 space-y-3">
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {items.map((item) => (
+                    <div key={item.codigo} className="flex justify-between items-start gap-2 text-xs">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[#111111] truncate font-medium">{item.nombre}</p>
+                        <p className="text-[#9CA3AF]">{item.cantidad} × ${item.precio.toFixed(2)}</p>
+                      </div>
+                      <p className="text-[#111111] font-semibold shrink-0">${(item.precio * item.cantidad).toFixed(2)}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="bg-[#EBF4ED] rounded-xl p-4 border border-[#1A4E26]/20">
+                  <p className="text-[10px] uppercase tracking-widest text-[#1A4E26] font-bold mb-1">Monto a transferir</p>
+                  <p className="font-heading font-bold text-3xl text-[#1A4E26]">${total.toFixed(2)}</p>
+                </div>
+
+                {error && (
+                  <div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2 text-red-600 text-xs">
+                    {error}
+                  </div>
+                )}
+
+                <button
+                  onClick={handleAcceptPayment}
+                  className="w-full py-4 rounded-xl bg-[#1A4E26] text-white font-bold text-sm hover:bg-[#163F1E] shadow-[0_8px_24px_rgba(26,78,38,0.25)] transition-all duration-200 flex items-center justify-center gap-2"
+                >
+                  Aceptar y subir voucher <ArrowRight size={15} />
+                </button>
+
+                <p className="text-[10px] text-[#9CA3AF] text-center leading-tight">
+                  Tras aceptar podrás subir la foto del voucher. El pedido se enviará al admin solo cuando subas el comprobante.
                 </p>
               </div>
             </div>
@@ -475,6 +761,13 @@ export default function NuevoPedido() {
           <ArrowLeft size={14} /> Volver a la tienda
         </Link>
       </div>
+
+      {/* Mensaje de expiración si vienen de un pay step caducado */}
+      {error && items.length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl px-5 py-4 mb-6 text-red-700 text-sm flex items-start gap-2">
+          <AlertCircle size={16} className="shrink-0 mt-0.5" /> {error}
+        </div>
+      )}
 
       {/* Activación mensual */}
       {!loadingStatus && (
@@ -643,14 +936,14 @@ export default function NuevoPedido() {
                 )}
 
                 <button
-                  onClick={() => { setError(''); setStep('checkout'); }}
+                  onClick={startPayStep}
                   disabled={items.length === 0}
                   className="w-full py-4 rounded-xl bg-[#1A4E26] text-white font-bold text-sm hover:bg-[#163F1E] disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_8px_24px_rgba(26,78,38,0.25)] transition-all duration-200 flex items-center justify-center gap-2"
                 >
                   Continuar al pago <ArrowRight size={15} />
                 </button>
                 <p className="text-[10px] text-[#9CA3AF] text-center flex items-center justify-center gap-1">
-                  <ImageIcon size={11} /> Tendrás que adjuntar tu voucher de pago
+                  <Clock size={11} /> Tendrás 15 minutos para transferir y subir el voucher
                 </p>
                 <Link
                   to="/dashboard/tienda"

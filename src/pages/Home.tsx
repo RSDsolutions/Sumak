@@ -785,34 +785,68 @@ export default function Home() {
       ────────────────────────────────────────────────────────── */}
       <section className="py-20 px-4 sm:px-6 bg-[#F4F7F5] border-t border-[#C8D8CB]">
         {novelties.length > 0 && (
-          <div className="max-w-3xl mx-auto text-center mb-16">
+          <div className="max-w-6xl mx-auto mb-20">
             <motion.div
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
+              className="text-center"
             >
               <p className="text-[#D4AF37] text-xs font-semibold uppercase tracking-[0.3em] mb-3">Novedades</p>
-              <h3 className="font-heading font-bold text-2xl sm:text-3xl text-[#111111] mb-4">Lo más nuevo</h3>
+              <h3 className="font-heading font-bold text-3xl sm:text-4xl text-[#111111] mb-4">Lo más nuevo</h3>
+              <p className="text-[#6B7280] max-w-xl mx-auto text-sm sm:text-base">
+                Descubre los lanzamientos más recientes de SUMAK, formulados con lo mejor de la naturaleza.
+              </p>
             </motion.div>
-            <div className="flex justify-center gap-4 mt-8 flex-wrap">
-              {novelties.map((n) => (
-                <Link
+            <div className={`mt-10 grid gap-6 sm:gap-7 ${
+              novelties.length === 1 ? 'grid-cols-1 max-w-sm mx-auto' :
+              novelties.length === 2 ? 'grid-cols-1 sm:grid-cols-2 max-w-3xl mx-auto' :
+              'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+            }`}>
+              {novelties.map((n, idx) => (
+                <motion.div
                   key={n.codigo}
-                  to={`/productos/${n.slug}`}
-                  className="bg-white border border-[#C8D8CB] hover:border-[#1A4E26] rounded-2xl p-4 flex items-center gap-4 transition-all hover:shadow-md max-w-xs w-full"
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: idx * 0.1 }}
                 >
-                  {n.imagen && (
-                    <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0">
-                      <img src={n.imagen} alt={n.nombre} className="w-full h-full object-cover" />
+                  <Link
+                    to={`/productos/${n.slug}`}
+                    className="group block bg-white border border-[#C8D8CB] hover:border-[#1A4E26] rounded-3xl overflow-hidden transition-all hover:shadow-[0_20px_60px_rgba(26,78,38,0.15)] hover:-translate-y-1 h-full"
+                  >
+                    <div className="relative aspect-square overflow-hidden" style={{ background: 'linear-gradient(160deg, #EBF4ED 0%, #D5ECD9 100%)' }}>
+                      {n.imagen && (
+                        <img
+                          src={n.imagen}
+                          alt={n.nombre}
+                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      )}
+                      <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 bg-[#D4AF37] text-[#0B2913] text-[10px] font-bold uppercase tracking-widest rounded-full px-3 py-1.5 shadow-md">
+                        <Star size={11} fill="currentColor" /> Nuevo
+                      </div>
                     </div>
-                  )}
-                  <div className="text-left">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-[#D4AF37] mb-0.5">Nuevo</p>
-                    <p className="font-heading font-bold text-[#111111] text-sm leading-tight">{n.nombre}</p>
-                    <p className="text-[#1A4E26] text-sm font-bold">${n.pvp.toFixed(2)}</p>
-                  </div>
-                </Link>
+                    <div className="p-6">
+                      <h4 className="font-heading font-bold text-[#111111] text-lg sm:text-xl leading-tight mb-2 group-hover:text-[#1A4E26] transition-colors">
+                        {n.nombre}
+                      </h4>
+                      {n.categoria && (
+                        <p className="text-[#6B7280] text-xs mb-4">{n.categoria}</p>
+                      )}
+                      <div className="flex items-end justify-between">
+                        <div>
+                          <p className="text-[10px] uppercase tracking-widest text-[#9CA3AF] font-bold">PVP</p>
+                          <p className="font-heading font-bold text-2xl text-[#1A4E26]">${n.pvp.toFixed(2)}</p>
+                        </div>
+                        <span className="inline-flex items-center gap-1 text-[#1A4E26] text-sm font-bold group-hover:gap-2 transition-all">
+                          Ver más <ArrowRight size={14} />
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
               ))}
             </div>
           </div>
