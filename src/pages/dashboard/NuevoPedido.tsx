@@ -233,11 +233,17 @@ export default function NuevoPedido() {
         pedidoError = res.error;
         if (!pedidoError) break;
 
-        // 42703 = undefined_column → migración pendiente para esa columna.
-        if (pedidoError.code === '42703') {
+        // Migración pendiente para esa columna. Postgres devuelve 42703
+        // ("column \"X\" of relation \"pedidos\" does not exist"). PostgREST
+        // antepone su propio PGRST204 ("Could not find the 'X' column of
+        // 'pedidos' in the schema cache") cuando el cache aún no la vio.
+        // Detectamos ambos formatos: comillas dobles o simples.
+        const code = pedidoError.code;
+        if (code === '42703' || code === 'PGRST204') {
           const msg = String(pedidoError.message ?? '');
-          // Mensaje típico: column "idempotency_key" of relation "pedidos" does not exist
-          const offending = optionalCols.find((c) => msg.includes(`"${c}"`));
+          const offending = optionalCols.find(
+            (c) => msg.includes(`"${c}"`) || msg.includes(`'${c}'`)
+          );
           if (offending && payload[offending] !== undefined) {
             delete payload[offending];
             droppedCols.push(offending);
