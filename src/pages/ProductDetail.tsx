@@ -347,13 +347,42 @@ export default function ProductDetail() {
             <div className="p-6 sm:p-10">
               {currentTab?.key === 'beneficios' && product.beneficios && (
                 <div>
-                  <h2 className="font-heading font-bold text-2xl text-[#111111] mb-6">¿Qué hace este producto por ti?</h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {product.beneficios.map((b) => (
-                      <div key={b} className="flex items-start gap-3 bg-[#F4F7F5] rounded-xl p-4">
-                        <CheckCircle2 size={20} className="text-[#1A4E26] mt-0.5 shrink-0" />
-                        <span className="text-[#111111] text-sm font-medium leading-snug">{b}</span>
-                      </div>
+                  <div className="flex items-baseline justify-between mb-2 flex-wrap gap-2">
+                    <h2 className="font-heading font-bold text-2xl text-[#111111] flex items-center gap-2">
+                      <Sparkles size={20} className="text-[#1A4E26]" />
+                      ¿Qué hace este producto por ti?
+                    </h2>
+                    <span className="text-[10px] uppercase tracking-widest text-[#1A4E26] font-bold bg-[#EBF4ED] border border-[#1A4E26]/20 rounded-full px-2.5 py-1">
+                      {product.beneficios.length} beneficios
+                    </span>
+                  </div>
+                  <p className="text-[#6B7280] text-sm mb-6">Resultados que vas a notar al incluir este producto en tu rutina.</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {product.beneficios.map((b, idx) => (
+                      <motion.div
+                        key={b}
+                        initial={{ opacity: 0, y: 12 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.35, delay: Math.min(idx * 0.05, 0.4), ease: [0.22, 1, 0.36, 1] }}
+                        whileHover={{ y: -3, scale: 1.005 }}
+                        className="group relative overflow-hidden rounded-2xl border border-[#C8D8CB] bg-gradient-to-br from-white via-white to-[#EBF4ED] p-4 hover:border-[#1A4E26]/40 hover:shadow-[0_8px_24px_rgba(26,78,38,0.10)] transition-all duration-300 cursor-default"
+                      >
+                        {/* Big background number */}
+                        <span
+                          aria-hidden
+                          className="absolute top-0 right-2 font-heading font-bold text-6xl leading-none select-none pointer-events-none text-[#1A4E26]/[0.05] group-hover:text-[#1A4E26]/[0.10] transition-colors duration-500"
+                        >
+                          {String(idx + 1).padStart(2, '0')}
+                        </span>
+
+                        <div className="relative flex items-start gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1A4E26] to-[#2B6E3A] flex items-center justify-center shrink-0 shadow-[0_4px_10px_rgba(26,78,38,0.25)] group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+                            <CheckCircle2 size={16} className="text-white" />
+                          </div>
+                          <p className="text-[#111111] text-sm font-medium leading-snug pt-1.5">{b}</p>
+                        </div>
+                      </motion.div>
                     ))}
                   </div>
                 </div>
@@ -450,24 +479,148 @@ export default function ProductDetail() {
                 );
               })()}
 
-              {currentTab?.key === 'modo-uso' && product.modoUso && (
-                <div>
-                  <h2 className="font-heading font-bold text-2xl text-[#111111] mb-4">Cómo usarlo</h2>
-                  <div className="bg-[#F4F7F5] border-l-4 border-[#1A4E26] rounded-r-xl p-5">
-                    <p className="text-[#111111] text-base leading-relaxed">{product.modoUso}</p>
+              {currentTab?.key === 'modo-uso' && product.modoUso && (() => {
+                // Detectar pasos numerados del tipo "1) ... 2) ... 3) ..."
+                const stepRegex = /(\d+)[\)\.]\s+([^\d][^\)]*?)(?=\s+\d+[\)\.]|$)/gs;
+                const matches = [...product.modoUso.matchAll(stepRegex)];
+                const isSteps = matches.length >= 2;
+                const steps = isSteps ? matches.map((m) => m[2].trim().replace(/\.$/, '')) : [];
+
+                return (
+                  <div>
+                    <h2 className="font-heading font-bold text-2xl text-[#111111] mb-2 flex items-center gap-2">
+                      <CheckCircle2 size={20} className="text-[#1A4E26]" />
+                      Cómo usarlo
+                    </h2>
+                    <p className="text-[#6B7280] text-sm mb-6">
+                      {isSteps ? 'Sigue estos pasos en orden para mejores resultados' : 'Indicación de uso recomendada por el fabricante'}
+                    </p>
+
+                    {isSteps ? (
+                      <div className="space-y-3">
+                        {steps.map((step, idx) => (
+                          <motion.div
+                            key={idx}
+                            initial={{ opacity: 0, x: -20 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.4, delay: idx * 0.1, ease: [0.22, 1, 0.36, 1] }}
+                            className="flex items-start gap-4 group"
+                          >
+                            <div className="relative shrink-0 flex flex-col items-center">
+                              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#1A4E26] to-[#2B6E3A] text-white font-heading font-bold text-lg flex items-center justify-center shadow-[0_8px_20px_rgba(26,78,38,0.30)] group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+                                {idx + 1}
+                              </div>
+                              {idx < steps.length - 1 && (
+                                <div className="w-px h-8 bg-gradient-to-b from-[#1A4E26]/40 to-transparent mt-1" />
+                              )}
+                            </div>
+                            <div className="flex-1 bg-gradient-to-br from-white to-[#F4F7F5] border border-[#C8D8CB] rounded-2xl p-4 group-hover:border-[#1A4E26]/40 group-hover:shadow-md transition-all duration-300 mt-1">
+                              <p className="text-[10px] uppercase tracking-widest text-[#1A4E26] font-bold mb-1">Paso {idx + 1}</p>
+                              <p className="text-[#111111] text-sm font-medium leading-relaxed">{step}</p>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    ) : (
+                      <motion.div
+                        initial={{ opacity: 0, y: 12 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                        className="relative bg-gradient-to-br from-[#EBF4ED] via-white to-[#F4F7F5] border border-[#1A4E26]/20 rounded-2xl p-6 sm:p-7 overflow-hidden"
+                      >
+                        {/* Decorative checkmark in background */}
+                        <CheckCircle2
+                          aria-hidden
+                          size={140}
+                          className="absolute -top-6 -right-6 text-[#1A4E26]/[0.05] pointer-events-none"
+                        />
+                        <div className="absolute -top-3 -left-3 w-12 h-12 rounded-2xl bg-gradient-to-br from-[#1A4E26] to-[#2B6E3A] flex items-center justify-center shadow-[0_8px_20px_rgba(26,78,38,0.30)]">
+                          <CheckCircle2 size={20} className="text-white" />
+                        </div>
+                        <div className="relative pt-3">
+                          <p className="text-[10px] uppercase tracking-widest text-[#1A4E26] font-bold mb-2">Indicación de uso</p>
+                          <p className="text-[#111111] text-base sm:text-lg leading-relaxed font-medium">{product.modoUso}</p>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* Tip footer */}
+                    <div className="mt-5 flex items-start gap-3 p-4 bg-[#FFFDF5] border border-[#D4AF37]/30 rounded-xl">
+                      <Sparkles size={16} className="text-[#D4AF37] shrink-0 mt-0.5" />
+                      <p className="text-[#6B7280] text-xs leading-relaxed">
+                        <span className="font-bold text-[#0B2913]">Consejo:</span> mantén la consistencia para resultados visibles. Acompaña con una alimentación balanceada y suficiente hidratación.
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {currentTab?.key === 'precauciones' && product.precauciones && (
                 <div>
-                  <h2 className="font-heading font-bold text-2xl text-[#111111] mb-4 flex items-center gap-2">
-                    <AlertCircle size={22} className="text-[#D4AF37]" />
-                    Precauciones
+                  <h2 className="font-heading font-bold text-2xl text-[#111111] mb-2 flex items-center gap-2">
+                    <AlertCircle size={20} className="text-[#D4AF37]" />
+                    Precauciones importantes
                   </h2>
-                  <div className="bg-[#FFF8E6] border-l-4 border-[#D4AF37] rounded-r-xl p-5">
-                    <p className="text-[#111111] text-base leading-relaxed">{product.precauciones}</p>
-                  </div>
+                  <p className="text-[#6B7280] text-sm mb-6">Información a tener en cuenta antes de consumir el producto.</p>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                    className="relative bg-gradient-to-br from-[#FFFDF5] via-white to-[#FFF8E6] border border-[#D4AF37]/30 rounded-2xl p-6 sm:p-7 overflow-hidden"
+                  >
+                    {/* Decorative pattern */}
+                    <div
+                      className="absolute inset-0 opacity-[0.04] pointer-events-none"
+                      style={{
+                        backgroundImage: 'radial-gradient(circle at 1px 1px, #D4AF37 1.5px, transparent 1.5px)',
+                        backgroundSize: '24px 24px',
+                      }}
+                    />
+                    <AlertCircle
+                      aria-hidden
+                      size={140}
+                      className="absolute -top-6 -right-6 text-[#D4AF37]/[0.08] pointer-events-none"
+                    />
+                    <div className="absolute -top-3 -left-3 w-12 h-12 rounded-2xl bg-gradient-to-br from-[#D4AF37] to-[#E8C94A] flex items-center justify-center shadow-[0_8px_20px_rgba(212,175,55,0.30)]">
+                      <AlertCircle size={20} className="text-[#0B2913]" />
+                    </div>
+                    <div className="relative pt-3">
+                      <p className="text-[10px] uppercase tracking-widest text-[#D4AF37] font-bold mb-2">Lee con atención</p>
+                      <p className="text-[#111111] text-base sm:text-lg leading-relaxed font-medium">{product.precauciones}</p>
+                    </div>
+                  </motion.div>
+
+                  {/* General medical advice */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.45, delay: 0.15 }}
+                    className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-5"
+                  >
+                    <div className="bg-white border border-[#C8D8CB] rounded-xl p-4 flex gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-[#EBF4ED] text-[#1A4E26] flex items-center justify-center shrink-0">
+                        <Sparkles size={16} />
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-widest text-[#1A4E26] font-bold mb-1">Suplemento natural</p>
+                        <p className="text-[#6B7280] text-xs leading-relaxed">Este producto es un suplemento alimenticio. No reemplaza una dieta equilibrada.</p>
+                      </div>
+                    </div>
+                    <div className="bg-white border border-[#C8D8CB] rounded-xl p-4 flex gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                        <ShieldCheck size={16} />
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-widest text-blue-600 font-bold mb-1">Consulta médica</p>
+                        <p className="text-[#6B7280] text-xs leading-relaxed">Si estás bajo tratamiento, embarazo o lactancia, consulta con tu profesional de salud.</p>
+                      </div>
+                    </div>
+                  </motion.div>
                 </div>
               )}
             </div>

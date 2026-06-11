@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   ArrowLeft, ArrowRight, CheckCircle2, ShoppingCart, Leaf, Star,
   Sparkles, AlertCircle, Plus, Minus, Check, BookOpen, X, Maximize2, Download, Heart,
+  ShieldCheck,
 } from 'lucide-react';
 import { products, parseIngredient } from '../../data';
 import { useCart } from '../../lib/cart';
@@ -284,13 +285,41 @@ export default function TiendaProducto() {
 
           <div className="p-6">
             {currentTab?.key === 'beneficios' && product.beneficios && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {product.beneficios.map((b) => (
-                  <div key={b} className="flex items-start gap-2.5 bg-[#F4F7F5] rounded-xl p-3.5">
-                    <CheckCircle2 size={17} className="text-[#1A4E26] mt-0.5 shrink-0" />
-                    <span className="text-[#111111] text-sm font-medium leading-snug">{b}</span>
-                  </div>
-                ))}
+              <div>
+                <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                  <p className="text-[10px] uppercase tracking-widest text-[#1A4E26] font-bold flex items-center gap-1.5">
+                    <Sparkles size={12} /> Lo que vas a notar
+                  </p>
+                  <span className="text-[9px] uppercase tracking-widest text-[#1A4E26] font-bold bg-[#EBF4ED] border border-[#1A4E26]/20 rounded-full px-2 py-0.5">
+                    {product.beneficios.length} beneficios
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {product.beneficios.map((b, idx) => (
+                    <motion.div
+                      key={b}
+                      initial={{ opacity: 0, y: 8 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.3, delay: Math.min(idx * 0.04, 0.3), ease: [0.22, 1, 0.36, 1] }}
+                      whileHover={{ y: -2 }}
+                      className="group relative overflow-hidden rounded-xl border border-[#C8D8CB] bg-gradient-to-br from-white via-white to-[#EBF4ED] p-3 hover:border-[#1A4E26]/40 hover:shadow-[0_6px_16px_rgba(26,78,38,0.10)] transition-all duration-300"
+                    >
+                      <span
+                        aria-hidden
+                        className="absolute top-0 right-1.5 font-heading font-bold text-4xl leading-none select-none pointer-events-none text-[#1A4E26]/[0.05] group-hover:text-[#1A4E26]/[0.10] transition-colors duration-500"
+                      >
+                        {String(idx + 1).padStart(2, '0')}
+                      </span>
+                      <div className="relative flex items-start gap-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#1A4E26] to-[#2B6E3A] flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+                          <CheckCircle2 size={13} className="text-white" />
+                        </div>
+                        <p className="text-[#111111] text-xs font-medium leading-snug pt-1">{b}</p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
               </div>
             )}
             {currentTab?.key === 'ingredientes' && product.ingredientes && (() => {
@@ -364,15 +393,118 @@ export default function TiendaProducto() {
                 </div>
               );
             })()}
-            {currentTab?.key === 'modo-uso' && product.modoUso && (
-              <div className="bg-[#F4F7F5] border-l-4 border-[#1A4E26] rounded-r-xl p-4">
-                <p className="text-[#111111] text-sm leading-relaxed">{product.modoUso}</p>
-              </div>
-            )}
+            {currentTab?.key === 'modo-uso' && product.modoUso && (() => {
+              const stepRegex = /(\d+)[\)\.]\s+([^\d][^\)]*?)(?=\s+\d+[\)\.]|$)/gs;
+              const matches = [...product.modoUso.matchAll(stepRegex)];
+              const isSteps = matches.length >= 2;
+              const steps = isSteps ? matches.map((m) => m[2].trim().replace(/\.$/, '')) : [];
+
+              return (
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest text-[#1A4E26] font-bold flex items-center gap-1.5 mb-3">
+                    <CheckCircle2 size={12} /> {isSteps ? 'Sigue estos pasos' : 'Indicación de uso'}
+                  </p>
+
+                  {isSteps ? (
+                    <div className="space-y-2.5">
+                      {steps.map((step, idx) => (
+                        <motion.div
+                          key={idx}
+                          initial={{ opacity: 0, x: -12 }}
+                          whileInView={{ opacity: 1, x: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ duration: 0.35, delay: idx * 0.08 }}
+                          className="flex items-start gap-3 group"
+                        >
+                          <div className="relative shrink-0 flex flex-col items-center">
+                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1A4E26] to-[#2B6E3A] text-white font-heading font-bold text-sm flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                              {idx + 1}
+                            </div>
+                            {idx < steps.length - 1 && (
+                              <div className="w-px h-6 bg-gradient-to-b from-[#1A4E26]/40 to-transparent mt-1" />
+                            )}
+                          </div>
+                          <div className="flex-1 bg-gradient-to-br from-white to-[#F4F7F5] border border-[#C8D8CB] rounded-xl p-3 group-hover:border-[#1A4E26]/40 transition-colors mt-0.5">
+                            <p className="text-[#111111] text-xs font-medium leading-relaxed">{step}</p>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  ) : (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      className="relative bg-gradient-to-br from-[#EBF4ED] via-white to-[#F4F7F5] border border-[#1A4E26]/20 rounded-xl p-5 overflow-hidden"
+                    >
+                      <CheckCircle2 aria-hidden size={100} className="absolute -top-4 -right-4 text-[#1A4E26]/[0.05] pointer-events-none" />
+                      <div className="absolute -top-2 -left-2 w-9 h-9 rounded-xl bg-gradient-to-br from-[#1A4E26] to-[#2B6E3A] flex items-center justify-center shadow-md">
+                        <CheckCircle2 size={16} className="text-white" />
+                      </div>
+                      <p className="relative text-[#111111] text-sm leading-relaxed font-medium pt-3">{product.modoUso}</p>
+                    </motion.div>
+                  )}
+
+                  <div className="mt-3 flex items-start gap-2 p-3 bg-[#FFFDF5] border border-[#D4AF37]/30 rounded-lg">
+                    <Sparkles size={13} className="text-[#D4AF37] shrink-0 mt-0.5" />
+                    <p className="text-[#6B7280] text-[11px] leading-relaxed">
+                      <span className="font-bold text-[#0B2913]">Tip:</span> mantén la rutina para resultados visibles.
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
+
             {currentTab?.key === 'precauciones' && product.precauciones && (
-              <div className="bg-[#FFF8E6] border-l-4 border-[#D4AF37] rounded-r-xl p-4 flex gap-3">
-                <AlertCircle size={20} className="text-[#D4AF37] shrink-0 mt-0.5" />
-                <p className="text-[#111111] text-sm leading-relaxed">{product.precauciones}</p>
+              <div>
+                <p className="text-[10px] uppercase tracking-widest text-[#D4AF37] font-bold flex items-center gap-1.5 mb-3">
+                  <AlertCircle size={12} /> Antes de consumir
+                </p>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  className="relative bg-gradient-to-br from-[#FFFDF5] via-white to-[#FFF8E6] border border-[#D4AF37]/30 rounded-xl p-5 overflow-hidden"
+                >
+                  <div
+                    className="absolute inset-0 opacity-[0.04] pointer-events-none"
+                    style={{
+                      backgroundImage: 'radial-gradient(circle at 1px 1px, #D4AF37 1.5px, transparent 1.5px)',
+                      backgroundSize: '20px 20px',
+                    }}
+                  />
+                  <AlertCircle aria-hidden size={100} className="absolute -top-4 -right-4 text-[#D4AF37]/[0.08] pointer-events-none" />
+                  <div className="absolute -top-2 -left-2 w-9 h-9 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#E8C94A] flex items-center justify-center shadow-md">
+                    <AlertCircle size={16} className="text-[#0B2913]" />
+                  </div>
+                  <p className="relative text-[#111111] text-sm leading-relaxed font-medium pt-3">{product.precauciones}</p>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.12 }}
+                  className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3"
+                >
+                  <div className="bg-white border border-[#C8D8CB] rounded-lg p-3 flex gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-[#EBF4ED] text-[#1A4E26] flex items-center justify-center shrink-0">
+                      <Sparkles size={13} />
+                    </div>
+                    <p className="text-[#6B7280] text-[11px] leading-relaxed">
+                      <span className="font-bold text-[#0B2913]">Suplemento natural.</span> No reemplaza una dieta equilibrada.
+                    </p>
+                  </div>
+                  <div className="bg-white border border-[#C8D8CB] rounded-lg p-3 flex gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                      <ShieldCheck size={13} />
+                    </div>
+                    <p className="text-[#6B7280] text-[11px] leading-relaxed">
+                      <span className="font-bold text-[#0B2913]">Consulta médica</span> si estás bajo tratamiento, embarazo o lactancia.
+                    </p>
+                  </div>
+                </motion.div>
               </div>
             )}
           </div>
