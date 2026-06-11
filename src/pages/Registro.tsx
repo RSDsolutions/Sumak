@@ -52,6 +52,148 @@ function EcuadorFlag({ className = '' }: { className?: string }) {
   );
 }
 
+function GlobeSVG({ className = '' }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 240 240"
+      fill="none"
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <defs>
+        <radialGradient id="globeGlow" cx="35%" cy="30%" r="70%">
+          <stop offset="0%" stopColor="#FFDD00" stopOpacity="0.35" />
+          <stop offset="60%" stopColor="#FFDD00" stopOpacity="0.05" />
+          <stop offset="100%" stopColor="#FFDD00" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      {/* Glow de fondo */}
+      <circle cx="120" cy="120" r="115" fill="url(#globeGlow)" />
+      {/* Esfera */}
+      <circle cx="120" cy="120" r="100" stroke="#FFFFFF" strokeOpacity="0.85" strokeWidth="2" />
+      {/* Paralelos (ecuador y trópicos) */}
+      <ellipse cx="120" cy="120" rx="100" ry="22" stroke="#FFDD00" strokeOpacity="0.7" strokeWidth="1.5" />
+      <ellipse cx="120" cy="120" rx="95" ry="55" stroke="#FFFFFF" strokeOpacity="0.4" strokeWidth="1.2" />
+      <ellipse cx="120" cy="120" rx="95" ry="85" stroke="#FFFFFF" strokeOpacity="0.3" strokeWidth="1.2" />
+      {/* Meridianos */}
+      <ellipse cx="120" cy="120" rx="35" ry="100" stroke="#FFFFFF" strokeOpacity="0.55" strokeWidth="1.5" />
+      <ellipse cx="120" cy="120" rx="70" ry="100" stroke="#FFFFFF" strokeOpacity="0.35" strokeWidth="1.2" />
+      <line x1="120" y1="20" x2="120" y2="220" stroke="#FFFFFF" strokeOpacity="0.55" strokeWidth="1.5" />
+      {/* Sudamérica estilizada (Ecuador resaltado) */}
+      <path
+        d="M 108 95 Q 118 90 128 100 Q 134 112 132 128 Q 130 148 122 168 Q 116 178 108 175 Q 100 165 102 148 Q 98 130 104 115 Z"
+        fill="#FFDD00"
+        fillOpacity="0.55"
+        stroke="#FFDD00"
+        strokeOpacity="0.9"
+        strokeWidth="1.2"
+      />
+      {/* Pin Ecuador */}
+      <circle cx="113" cy="120" r="4" fill="#E2002A" />
+      <circle cx="113" cy="120" r="7" fill="none" stroke="#E2002A" strokeOpacity="0.6" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+function HandSVG({ className = '' }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 200 240"
+      fill="none"
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id="handFill" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.18" />
+          <stop offset="100%" stopColor="#FFDD00" stopOpacity="0.15" />
+        </linearGradient>
+      </defs>
+      {/* Resplandor sobre la palma */}
+      <ellipse cx="100" cy="60" rx="50" ry="30" fill="#FFDD00" fillOpacity="0.18" />
+      {/* Palma + brazo (mano abierta hacia arriba ofreciendo) */}
+      <path
+        d="M 55 220
+           L 55 150
+           Q 55 130 65 120
+           L 65 80
+           Q 65 70 75 70
+           Q 85 70 85 80
+           L 85 115
+           L 88 115
+           L 88 55
+           Q 88 45 98 45
+           Q 108 45 108 55
+           L 108 115
+           L 112 115
+           L 112 50
+           Q 112 40 122 40
+           Q 132 40 132 50
+           L 132 115
+           L 136 115
+           L 136 65
+           Q 136 55 146 55
+           Q 156 55 156 65
+           L 156 130
+           Q 156 145 148 155
+           L 148 220
+           Z"
+        fill="url(#handFill)"
+        stroke="#FFFFFF"
+        strokeOpacity="0.85"
+        strokeWidth="2.5"
+        strokeLinejoin="round"
+      />
+      {/* Líneas de la palma */}
+      <path
+        d="M 75 175 Q 100 185 130 170"
+        stroke="#FFFFFF"
+        strokeOpacity="0.35"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <path
+        d="M 80 195 Q 105 200 125 192"
+        stroke="#FFFFFF"
+        strokeOpacity="0.25"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        fill="none"
+      />
+      {/* Hoja brotando de la palma (símbolo de crecimiento) */}
+      <g transform="translate(100 110)">
+        <path
+          d="M 0 20 Q -2 0 0 -25"
+          stroke="#FFDD00"
+          strokeOpacity="0.9"
+          strokeWidth="2"
+          strokeLinecap="round"
+          fill="none"
+        />
+        <path
+          d="M 0 -5 Q -12 -8 -16 -22 Q -8 -22 0 -15 Z"
+          fill="#FFDD00"
+          fillOpacity="0.55"
+          stroke="#FFDD00"
+          strokeOpacity="0.9"
+          strokeWidth="1.5"
+        />
+        <path
+          d="M 0 -15 Q 10 -20 14 -32 Q 6 -32 0 -25 Z"
+          fill="#FFDD00"
+          fillOpacity="0.4"
+          stroke="#FFDD00"
+          strokeOpacity="0.85"
+          strokeWidth="1.5"
+        />
+      </g>
+    </svg>
+  );
+}
+
 function StepIndicator({ current }: { current: Step }) {
   const steps = [
     { num: 1, label: 'Datos Personales' },
@@ -284,6 +426,37 @@ export default function Registro() {
           <div className="flex-1 bg-[#0247FE]" />
           <div className="flex-1 bg-[#E2002A]" />
         </div>
+
+        {/* SVG decorativos: globo a la izquierda, mano a la derecha */}
+        <motion.div
+          initial={{ opacity: 0, x: -40, rotate: -8 }}
+          animate={{ opacity: 1, x: 0, rotate: 0 }}
+          transition={{ duration: 0.9, ease: 'easeOut' }}
+          className="hidden md:block absolute left-2 lg:left-10 top-1/2 -translate-y-1/2 w-44 lg:w-64 pointer-events-none"
+          aria-hidden="true"
+        >
+          <motion.div
+            animate={{ y: [0, -12, 0] }}
+            transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+          >
+            <GlobeSVG className="w-full h-auto drop-shadow-[0_0_30px_rgba(255,221,0,0.25)]" />
+          </motion.div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, x: 40, rotate: 8 }}
+          animate={{ opacity: 1, x: 0, rotate: 0 }}
+          transition={{ duration: 0.9, ease: 'easeOut', delay: 0.15 }}
+          className="hidden md:block absolute right-2 lg:right-10 top-1/2 -translate-y-1/2 w-40 lg:w-56 pointer-events-none"
+          aria-hidden="true"
+        >
+          <motion.div
+            animate={{ y: [0, -10, 0] }}
+            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
+          >
+            <HandSVG className="w-full h-auto drop-shadow-[0_0_30px_rgba(255,221,0,0.25)]" />
+          </motion.div>
+        </motion.div>
 
         <div className="relative max-w-6xl mx-auto">
           <motion.div
