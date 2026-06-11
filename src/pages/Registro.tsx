@@ -75,11 +75,29 @@ function EcuadorRibbon({
   const isTop = variant === 'top-left';
   const id = isTop ? 'tl' : 'br';
 
-  // Path "S" suave que entra por una esquina y sale por la otra.
-  // ViewBox 800x300, la cinta tiene altura ~120.
+  // Path en forma de cinta con punta (V) en el extremo "interior".
+  // El otro extremo sale fuera del viewport para simular que la cinta entra
+  // desde la esquina. La punta es un pico triangular: la cinta sube hasta el
+  // pico, hace un quiebre hacia afuera, y baja de regreso.
+  // ViewBox 800x300, altura aproximada de la cinta ~120.
   const ribbonPath = isTop
-    ? 'M -60 20 C 200 60, 380 220, 880 130 L 880 250 C 380 340, 200 180, -60 140 Z'
-    : 'M -60 80 C 280 -10, 480 140, 880 30 L 880 150 C 480 260, 280 110, -60 200 Z';
+    ? // Top-left: entra por arriba-izquierda, termina en punta hacia la derecha.
+      'M -60 20 ' +
+      'C 200 60, 380 220, 680 130 ' +     // curva descendente
+      'L 770 188 ' +                       // diagonal a la punta exterior
+      'L 680 250 ' +                       // diagonal de vuelta
+      'C 380 340, 200 180, -60 140 Z'      // curva ascendente de regreso
+    : // Bottom-right: entra por abajo-derecha, termina en punta hacia la izquierda.
+      'M 860 80 ' +
+      'C 580 -10, 380 140, 120 30 ' +      // curva ascendente
+      'L 30 95 ' +                         // diagonal a la punta exterior izquierda
+      'L 120 150 ' +                       // diagonal de vuelta
+      'C 380 260, 580 110, 860 200 Z';     // curva descendente de regreso
+
+  // Línea de brillo (sigue solo el borde superior, hasta la punta).
+  const shinePath = isTop
+    ? 'M -60 22 C 200 62, 380 222, 680 132 L 770 188'
+    : 'M 860 82 C 580 -8, 380 142, 120 32 L 30 95';
 
   return (
     <svg
@@ -137,17 +155,14 @@ function EcuadorRibbon({
       <path d={ribbonPath} fill={`url(#shade-${id})`} />
       {/* Capa 3: brillo metálico que viaja a lo largo */}
       <path d={ribbonPath} fill={`url(#shine-${id})`} opacity="0.9" />
-      {/* Capa 4: línea de luz superior para brillo extra */}
+      {/* Capa 4: línea de luz superior para brillo extra (se detiene en la punta) */}
       <path
-        d={
-          isTop
-            ? 'M -60 22 C 200 62, 380 222, 880 132'
-            : 'M -60 82 C 280 -8, 480 142, 880 32'
-        }
+        d={shinePath}
         stroke="#FFFFFF"
         strokeOpacity="0.55"
         strokeWidth="1.5"
         fill="none"
+        strokeLinejoin="round"
       />
     </svg>
   );
