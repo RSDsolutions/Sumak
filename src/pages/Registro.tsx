@@ -9,6 +9,8 @@ import {
 import { affiliatePackages, bankAccounts } from '../data';
 import { supabase } from '../lib/supabase';
 import { useSEO } from '../lib/seo';
+import { explicarCedulaInvalida, validarCedulaEcuatoriana } from '../lib/validators';
+import { logger } from '../lib/logger';
 import type { PaqueteKey } from '../lib/types';
 
 type Step = 1 | 2 | 3 | 'done';
@@ -352,8 +354,22 @@ export default function Registro() {
   }
 
   function step1Valid(): boolean {
-    return !!(personal.nombre && personal.cedula && personal.email && personal.telefono && personal.direccion && personal.ciudad);
+    return !!(
+      personal.nombre &&
+      personal.cedula &&
+      validarCedulaEcuatoriana(personal.cedula) &&
+      personal.email &&
+      personal.telefono &&
+      personal.direccion &&
+      personal.ciudad
+    );
   }
+
+  // BIZ-014: feedback en tiempo real bajo el input de cédula.
+  // Solo se muestra cuando el usuario ha escrito al menos 10 dígitos
+  // (longitud completa de cédula EC) para no marcar inválido mientras escribe.
+  const cedulaError =
+    personal.cedula.length >= 10 ? explicarCedulaInvalida(personal.cedula) : null;
 
   async function handleSubmit() {
     if (!selectedPkg) return;
@@ -412,7 +428,7 @@ export default function Registro() {
       setStep('done');
     } catch (err) {
       setSubmitError('Ocurrió un error inesperado. Inténtalo de nuevo.');
-      console.error(err);
+      logger.error('Afiliación submit unexpected error', err);
     } finally {
       setSubmitting(false);
       setUploadProgress('');
@@ -559,22 +575,46 @@ export default function Registro() {
                         { name: 'telefono', label: 'Teléfono', required: true, placeholder: '09XXXXXXXX', type: 'tel' },
                         { name: 'direccion', label: 'Dirección', required: true, placeholder: 'Av. Principal 123' },
                         { name: 'ciudad', label: 'Ciudad', required: true, placeholder: 'Babahoyo' },
-                      ].map((field) => (
-                        <div key={field.name}>
-                          <label className="block text-[#6B7280] text-xs font-semibold uppercase tracking-wider mb-2">
-                            {field.label} {field.required && <span className="text-[#1A4E26]">*</span>}
-                          </label>
-                          <input
-                            name={field.name}
-                            type={field.type ?? 'text'}
-                            required={field.required}
-                            placeholder={field.placeholder}
-                            value={personal[field.name as keyof PersonalData]}
-                            onChange={handlePersonalChange}
-                            className="w-full bg-white border border-[#C8D8CB] rounded-xl px-4 py-3 text-[#111111] text-sm placeholder-[#9CA3AF] focus:outline-none focus:border-[#1A4E26] transition-colors duration-200"
-                          />
-                        </div>
-                      ))}
+                      ].map((field) => {
+                        const isCedula = field.name === 'cedula';
+                        const showCedulaError = isCedula && cedulaError;
+                        const inputClasses = `w-full bg-white border rounded-xl px-4 py-3 text-[#111111] text-sm placeholder-[#9CA3AF] focus:outline-none transition-colors duration-200 ${
+                          showCedulaError
+                            ? 'border-red-300 focus:border-red-500'
+                            : 'border-[#C8D8CB] focus:border-[#1A4E26]'
+                        }`;
+                        return (
+                          <div key={field.name}>
+                            <label className="block text-[#6B7280] text-xs font-semibold uppercase tracking-wider mb-2">
+                              {field.label} {field.required && <span className="text-[#1A4E26]">*</span>}
+                            </label>
+                            <input
+                              name={field.name}
+                              type={field.type ?? 'text'}
+                              required={field.required}
+                              placeholder={field.placeholder}
+                              value={personal[field.name as keyof PersonalData]}
+                              onChange={handlePersonalChange}
+                              inputMode={isCedula ? 'numeric' : undefined}
+                              maxLength={isCedula ? 10 : undefined}
+                              aria-invalid={showCedulaError ? 'true' : undefined}
+                              aria-describedby={showCedulaError ? 'cedula-error' : undefined}
+                              className={inputClasses}
+                            />
+                            {/* BIZ-014: feedback validación cédula */}
+                            {showCedulaError && (
+                              <p id="cedula-error" className="mt-1.5 text-red-600 text-xs flex items-center gap-1.5">
+                                <AlertCircle size={12} aria-hidden="true" /> {cedulaError}
+                              </p>
+                            )}
+                            {isCedula && !cedulaError && personal.cedula.length === 10 && (
+                              <p className="mt-1.5 text-[#1A4E26] text-xs flex items-center gap-1.5 font-medium">
+                                <CheckCircle2 size={12} aria-hidden="true" /> Cédula válida
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
                       <div className="sm:col-span-2">
                         <label className="block text-[#6B7280] text-xs font-semibold uppercase tracking-wider mb-2 flex items-center justify-between">
                           <span>Código del Patrocinador <span className="text-[#9CA3AF] font-normal">(opcional)</span></span>

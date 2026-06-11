@@ -8,18 +8,15 @@ import { supabaseAdmin } from '../../lib/supabase';
 import type { Pedido, PedidoItem, EstadoPedido } from '../../lib/types';
 import Modal from '../../components/Modal';
 import { useToast } from '../../lib/toast';
+import { logger } from '../../lib/logger';
+import { ESTADO_PEDIDO_LABELS, pedidoBadgeClass } from '../../lib/badges';
 
 type FilterTab = 'todos' | EstadoPedido;
 
 const ESTADOS: EstadoPedido[] = ['pendiente', 'procesando', 'enviado', 'entregado', 'cancelado'];
 
-const ESTADO_LABELS: Record<EstadoPedido, string> = {
-  pendiente: 'Pendiente',
-  procesando: 'Procesado',
-  enviado: 'Enviado',
-  entregado: 'Entregado',
-  cancelado: 'Cancelado',
-};
+// COD-001: usar el catálogo central para no duplicar.
+const ESTADO_LABELS = ESTADO_PEDIDO_LABELS;
 
 const STAT_CARDS: { key: EstadoPedido; label: string; icon: React.ReactNode; iconBg: string; iconColor: string; border: string; activeBorder: string; activeShadow: string }[] = [
   { key: 'procesando', label: 'Procesados', icon: <Package size={20} />, iconBg: 'bg-blue-50', iconColor: 'text-blue-600', border: 'hover:border-blue-200', activeBorder: 'border-blue-400', activeShadow: 'shadow-[0_8px_24px_rgba(59,130,246,0.15)]' },
@@ -51,16 +48,8 @@ interface PedidoRow extends Pedido {
   distribuidor_nombre?: string;
 }
 
-function estadoBadge(estado: string) {
-  const map: Record<string, string> = {
-    pendiente: 'bg-amber-50 text-amber-600',
-    procesando: 'bg-blue-50 text-blue-600',
-    enviado: 'bg-purple-50 text-purple-600',
-    entregado: 'bg-[#EBF4ED] text-[#1A4E26]',
-    cancelado: 'bg-red-50 text-red-600',
-  };
-  return map[estado] ?? 'bg-[#F4F7F5] text-[#6B7280]';
-}
+// COD-001: delegamos al catálogo central.
+const estadoBadge = pedidoBadgeClass;
 
 function Spinner() {
   return (
@@ -439,7 +428,7 @@ export default function AdminPedidos() {
           : 'Estado del pedido actualizado.'
       );
     } catch (err) {
-      console.error('updateEstado error:', err);
+      logger.error('updateEstado error', err);
       toast.error('No pudimos actualizar el pedido. Intenta de nuevo.');
     } finally {
       setUpdatingId(null);

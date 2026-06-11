@@ -9,6 +9,13 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { levelCommissions } from '../../data';
 import type { Comision, Profile } from '../../lib/types';
+// COD-001: catálogo central de badges/labels.
+import {
+  comisionBadgeClass as estadoBadge,
+  tipoComisionBadgeClass as tipoBadge,
+  TIPO_COMISION_LABELS as TIPO_LABELS,
+  ESTADO_COMISION_LABELS as ESTADO_LABEL,
+} from '../../lib/badges';
 
 function Spinner() {
   return (
@@ -17,36 +24,6 @@ function Spinner() {
     </div>
   );
 }
-
-function estadoBadge(estado: string) {
-  const map: Record<string, string> = {
-    pendiente: 'bg-amber-50 text-amber-600 border border-amber-200',
-    pagado: 'bg-[#EBF4ED] text-[#1A4E26] border border-[#1A4E26]/30',
-    cancelado: 'bg-red-50 text-red-600 border border-red-200',
-  };
-  return map[estado] ?? '';
-}
-
-function tipoBadge(tipo: string) {
-  const map: Record<string, string> = {
-    afiliacion: 'bg-blue-50 text-blue-600',
-    binaria: 'bg-purple-50 text-purple-600',
-    nivel: 'bg-[#D4AF37]/10 text-[#D4AF37]',
-  };
-  return map[tipo] ?? 'bg-[#F4F7F5] text-[#6B7280]';
-}
-
-const TIPO_LABELS: Record<string, string> = {
-  afiliacion: 'Referido directo',
-  nivel: 'Por nivel',
-  binaria: 'Binaria',
-};
-
-const ESTADO_LABEL: Record<string, string> = {
-  pendiente: 'Pendiente',
-  pagado: 'Pagado',
-  cancelado: 'Cancelado',
-};
 
 // ── DETAIL MODAL ──────────────────────────────────────────
 function DetalleModal({ comision, onClose }: { comision: Comision; onClose: () => void }) {

@@ -34,13 +34,13 @@ Distribución por severidad:
 
 ---
 
-## Estado tras Fase 1 + Tanda 2 + Tanda 3 + Tanda 4
+## Estado tras Fase 1 + Tandas 2, 3, 4, 5
 
 | Estado | # | Significado |
 |---|---|---|
-| ✅ Resuelto | **19** | Código activo aplica el fix; el flujo afectado YA se comporta correctamente |
+| ✅ Resuelto | **25** | Código activo aplica el fix; el flujo afectado YA se comporta correctamente |
 | 🔄 Mitigado / Infra disponible | **6** | La infraestructura ya existe; adopción completa en próxima tanda |
-| ⏳ Pendiente | **53** | Sin trabajo todavía |
+| ⏳ Pendiente | **47** | Sin trabajo todavía |
 | **Total** | **78** | |
 
 ### Lo que está ✅ Resuelto
@@ -83,6 +83,17 @@ Distribución por severidad:
 | PERF-002 | 🟡 Media | Code-splitting + vendor chunks | [App.tsx](src/App.tsx) usa `lazy()` por ruta + `<Suspense fallback>`. [vite.config.ts](vite.config.ts) `manualChunks` separa `vendor-react`, `vendor-motion`, `vendor-supabase`, `vendor-icons`. Bundle inicial: 87 kB gzip (antes 295 kB en un solo chunk de 1.16 MB). Sin warnings de tamaño |
 | PERF-003 | 🟡 Media | Lazy loading de imágenes | Atributos `loading="lazy" decoding="async"` en imágenes no-hero: catálogo (Home, Productos, Tienda), relacionados (ProductDetail, TiendaProducto), revista zoom, carrito y voucher en admin. Hero del Home, Login y producto siguen `eager` para LCP. |
 | PERF-004 | 🟡 Media | N+1 en MisComisiones eliminado | Query principal hace join `origen:profiles!origen_id(...)`. DetalleModal lee `comision.origen` directo (antes: 1 fetch por modal). Aplicado en `MisComisiones.tsx` y `AdminMisComisiones.tsx` |
+
+**Tanda 5 (Limpieza y DX, sin tocar BD):**
+
+| ID | Severidad | Asunto | Cómo se confirmó |
+|---|---|---|---|
+| COD-001 | 🟡 Media | Badges/labels centralizados | [src/lib/badges.ts](src/lib/badges.ts) expone `ESTADO_PEDIDO_*`, `ESTADO_COMISION_*`, `ESTADO_AFILIACION_*`, `TIPO_COMISION_*`. Migrados en `AdminPedidos`, `MisPedidos`, `MisComisiones`, `AdminMisComisiones`. Las páginas restantes pueden migrar gradualmente sin urgencia |
+| COD-002 | 🟡 Media | planConfig central | [src/data.ts](src/data.ts) exporta `planConfig` con `descuentoDistribuidor`, `puntosPorDolar`, `minActivacionMensual`, `porcentajeReferido`, `payWindowMinutes`, `paquetes`. Tienda, TiendaProducto, NuevoPedido, Overview y SolicitudDetalle leen de ahí en lugar de hardcodear |
+| COD-008 | 🟡 Media | README técnico | [README.md](README.md) reemplaza el scaffold AI Studio. Incluye stack, setup, env vars, scripts, estructura, convenciones, deploy y enlaces a auditoría |
+| COD-009 | 🟢 Baja | Logger wrapper | [src/lib/logger.ts](src/lib/logger.ts) con `error/warn/info`. Reemplaza `console.error` en NuevoPedido, AdminPedidos, Registro. Punto único para integrar Sentry/LogRocket en el futuro |
+| BIZ-014 | 🟢 Baja | Validador cédula EC | [src/lib/validators.ts](src/lib/validators.ts) con algoritmo mod-10 oficial. Wireado en Registro: chip verde "Cédula válida" / amber "dígito verificador incorrecto". Bloquea avanzar al paso 2 si inválida |
+| OPS-006 | 🟢 Baja | .gitignore de PDFs/material | `*.pdf`, `GUIA_PLATAFORMA.md`, `INGREDIENTES_LISTA.md`, `Productos/`, `img/` ahora ignorados. Verificado: assets reales del catálogo están en `public/products/` (lowercase, slug-named) y siguen sirviéndose |
 
 ### Lo que está 🔄 Mitigado (infra lista, cliente no la adopta del todo)
 
@@ -264,25 +275,25 @@ ARQ-007 (React Query), PERF-001 (paginación), COD-006 (descomponer componentes)
 ## Indicador de avance
 
 ```
-Resueltos:  █████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 19/78  (24%)
+Resueltos:  ████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 25/78  (32%)
 Mitigados:  ███░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  6/78  (8%)
-Pendientes: ███████████████████████████░░░░░░░░░░░░ 53/78  (68%)
+Pendientes: ████████████████████████░░░░░░░░░░░░░░░ 47/78  (60%)
 ```
 
 Por severidad:
 - 🔴 Crítica: **1 pendiente** (SEC-001)
 - 🟠 Alta: **4 pendientes** (BIZ-009, BIZ-010, PERF-001, UX-015) + 4 mitigados
-- 🟡 Media: **34 pendientes** (de 46 totales — 12 resueltos + 2 mitigados)
-- 🟢 Baja: **14 pendientes** (de 21 totales — 3 resueltos)
+- 🟡 Media: **31 pendientes** (de 46 totales — 15 resueltos + 2 mitigados)
+- 🟢 Baja: **11 pendientes** (de 21 totales — 6 resueltos)
 
-### Pendientes ⏳ — restantes tras Tanda 4
+### Pendientes ⏳ — restantes tras Tanda 5
 
-**🟡 Media restantes (34):**
-SEC-006, SEC-007, SEC-008, BIZ-003, BIZ-004, BIZ-006, BIZ-007, BIZ-008, BIZ-011, BIZ-012, ARQ-007, UX-003, UX-007, UX-008, UX-009, UX-012, SEO-004, COD-001, COD-002, COD-003, COD-004, COD-005, COD-006, COD-008, OPS-001, OPS-002, OPS-003, OPS-004, OPS-005, OPS-007.
+**🟡 Media restantes (31):**
+SEC-006, SEC-007, SEC-008, BIZ-003, BIZ-004, BIZ-006, BIZ-007, BIZ-008, BIZ-011, BIZ-012, ARQ-007, UX-003, UX-007, UX-008, UX-009, UX-012, SEO-004, COD-003, COD-004, COD-005, COD-006, OPS-001, OPS-002, OPS-003, OPS-004, OPS-005, OPS-007.
 
-**🟢 Baja restantes (14):**
-SEC-008, BIZ-013, BIZ-014, ARQ-003, ARQ-004, ARQ-005, PERF-005, PERF-006, UX-011, UX-014, A11Y-003, A11Y-004, A11Y-005, COD-007, COD-009, COD-010, COD-011, OPS-006.
+**🟢 Baja restantes (11):**
+SEC-008, BIZ-013, ARQ-003, ARQ-004, ARQ-005, PERF-005, PERF-006, UX-011, UX-014, A11Y-003, A11Y-004, A11Y-005, COD-007, COD-010, COD-011.
 
 ---
 
-*Última actualización: Tanda 4 (Performance) — code-splitting, lazy images, N+1 fix.*
+*Última actualización: Tanda 5 (Limpieza y DX) — badges centralizados, planConfig, validador cédula, logger, README, gitignore.*

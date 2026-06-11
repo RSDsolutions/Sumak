@@ -6,14 +6,16 @@ import {
   ArrowLeft, ArrowRight, Trash2, Leaf, Sparkles, Upload,
   CreditCard, Receipt, Landmark, Clock, Copy, Check,
 } from 'lucide-react';
-import { levelCommissions, contactInfo, bankAccounts } from '../../data';
+import { levelCommissions, contactInfo, bankAccounts, planConfig } from '../../data';
 import { supabase, supabaseAdmin } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { useCart } from '../../lib/cart';
+import { logger } from '../../lib/logger';
 
 type Step = 'cart' | 'pay' | 'voucher' | 'done';
 
-const PAY_WINDOW_SECONDS = 15 * 60;
+// COD-002: ventana de pago viene del catálogo central del plan.
+const PAY_WINDOW_SECONDS = planConfig.payWindowMinutes * 60;
 
 function formatMMSS(s: number) {
   if (s < 0) s = 0;
@@ -53,7 +55,9 @@ export default function NuevoPedido() {
   // falla con 23505 (unique violation) y se trata como éxito sin duplicar.
   const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
 
-  const willQualify = subtotal >= 100;
+  // COD-002: umbral de activación viene del catálogo central del plan.
+  const MIN_ACTIVACION = planConfig.minActivacionMensual;
+  const willQualify = subtotal >= MIN_ACTIVACION;
   const total = subtotal;
   const selectedBancoData = bankAccounts.find((b) => b.banco === selectedBanco);
 
@@ -72,7 +76,7 @@ export default function NuevoPedido() {
       const all = (data ?? []) as { id: string; total: number }[];
       const totalMesAcum = all.reduce((s, p) => s + Number(p.total), 0);
       setTotalMes(totalMesAcum);
-      setCompraCalificada(all.some((p) => Number(p.total) >= 100));
+      setCompraCalificada(all.some((p) => Number(p.total) >= MIN_ACTIVACION));
       setLoadingStatus(false);
     }
     checkMonthly();
@@ -174,7 +178,7 @@ export default function NuevoPedido() {
       if (uploadError) {
         // UX-004: mensaje genérico para el usuario; detalle técnico también visible
         // mientras depuramos. Quitar el detalle una vez identificada la causa.
-        console.error('Voucher upload error:', uploadError);
+        logger.error('Voucher upload error', uploadError);
         const detail = uploadError.message ? ` — ${uploadError.message}` : '';
         setError(
           'No pudimos guardar tu comprobante. Por favor, intenta de nuevo o contacta a soporte si el problema persiste.' + detail
@@ -272,7 +276,7 @@ export default function NuevoPedido() {
           }
         }
         // UX-004: mensaje amable para el usuario; detalle técnico a consola.
-        console.error('Pedido insert error:', pedidoError);
+        logger.error('Pedido insert error', pedidoError);
         const code = pedidoError?.code ?? '?';
         const msg = pedidoError?.message ?? 'sin mensaje';
         const hint = pedidoError?.hint ? ` Hint: ${pedidoError.hint}.` : '';
@@ -302,7 +306,7 @@ export default function NuevoPedido() {
       const { error: itemsError } = await supabase.from('pedido_items').insert(itemsRows);
       if (itemsError) {
         // UX-004: mensaje amable; detalle a consola.
-        console.error('Pedido items insert error:', itemsError);
+        logger.error('Pedido items insert error', itemsError);
         const code = itemsError.code ?? '?';
         const msg = itemsError.message ?? 'sin mensaje';
         setError(`No pudimos guardar los productos del pedido. [${code}] ${msg}. Contacta a soporte con este mensaje.`);
@@ -347,7 +351,7 @@ export default function NuevoPedido() {
             .from('pedidos').select('distribuidor_id')
             .in('distribuidor_id', uplineIds)
             .in('estado', ['procesando', 'enviado', 'entregado'])
-            .gte('total', 100).gte('created_at', startOfMonth);
+            .gte('total', MIN_ACTIVACION).gte('created_at', startOfMonth);
           const eligibleSet = new Set((eligibleOrders ?? []).map((o: { distribuidor_id: string }) => o.distribuidor_id));
 
           const comInserts: object[] = [];
@@ -372,14 +376,14 @@ export default function NuevoPedido() {
         }
       }
 
-      if (total >= 100) setCompraCalificada(true);
+      if (total >= MIN_ACTIVACION) setCompraCalificada(true);
       setEarnedPuntos(puntos);
       clear();
       expiresAtRef.current = null;
       setStep('done');
     } catch (err) {
       // UX-004: el catch puede atrapar errores de red u otros.
-      console.error('Pedido submission unexpected error:', err);
+      logger.error('Pedido submission unexpected error', err);
       const msg = err instanceof Error ? err.message : String(err);
       setError(`Tuvimos un problema inesperado al enviar tu pedido: ${msg}`);
     } finally {
@@ -1026,7 +1030,7 @@ export default function NuevoPedido() {
                   <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2 text-xs text-amber-700">
                     <AlertCircle size={14} className="shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-bold">Faltan ${(100 - subtotal).toFixed(2)} para activarte</p>
+                      <p className="font-bold">Faltan ${(MIN_ACTIVACION - subtotal).toFixed(2)} para activarte</p>
                       <p className="text-amber-600 leading-snug">Necesitas $100 en un solo pedido para mantener tu cupo a comisiones este mes.</p>
                     </div>
                   </div>

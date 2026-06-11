@@ -6,13 +6,14 @@ import {
   Sparkles, AlertCircle, Plus, Minus, Check, BookOpen, X, Maximize2, Download, Heart,
   ShieldCheck,
 } from 'lucide-react';
-import { products, parseIngredient } from '../../data';
+import { products, parseIngredient, planConfig } from '../../data';
 import { useCart } from '../../lib/cart';
 import { useToast } from '../../lib/toast';
 
 type TabKey = 'beneficios' | 'ingredientes' | 'modo-uso' | 'precauciones';
 
-const DISCOUNT = 0.5;
+// COD-002: viene del catálogo central del plan.
+const DISCOUNT = planConfig.descuentoDistribuidor;
 
 export default function TiendaProducto() {
   const { slug } = useParams<{ slug: string }>();

@@ -8,6 +8,7 @@ import {
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import type { Pedido, PedidoItem, EstadoPedido } from '../../lib/types';
+import { pedidoBadgeClass } from '../../lib/badges';
 
 function Spinner() {
   return (
@@ -17,16 +18,9 @@ function Spinner() {
   );
 }
 
-function estadoBadge(estado: string) {
-  const map: Record<string, string> = {
-    pendiente: 'bg-amber-50 text-amber-600 border border-amber-200',
-    procesando: 'bg-blue-50 text-blue-600 border border-blue-200',
-    enviado: 'bg-purple-50 text-purple-600 border border-purple-200',
-    entregado: 'bg-[#EBF4ED] text-[#1A4E26] border border-[#1A4E26]/30',
-    cancelado: 'bg-red-50 text-red-600 border border-red-200',
-  };
-  return map[estado] ?? 'bg-[#F4F7F5] text-[#6B7280]';
-}
+// COD-001: badge centralizado; labels propios porque MisPedidos
+// usa "Completado" en vez de "Entregado" para el distribuidor.
+const estadoBadge = pedidoBadgeClass;
 
 const ESTADO_LABELS: Record<string, string> = {
   pendiente: 'Pendiente',

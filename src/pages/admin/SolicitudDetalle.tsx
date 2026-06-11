@@ -2,20 +2,16 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText, CheckCircle, XCircle, ExternalLink, Copy } from 'lucide-react';
 import { supabaseAdmin } from '../../lib/supabase';
-import { levelCommissions } from '../../data';
+import { levelCommissions, planConfig } from '../../data';
 import type { Afiliacion, PaqueteKey } from '../../lib/types';
 
-const PAQUETE_PUNTOS: Record<string, number> = {
-  basico: 125,
-  emprendedor: 225,
-  lider: 525,
-};
-
-const PAQUETE_PRECIOS: Record<string, number> = {
-  basico: 125,
-  emprendedor: 225,
-  lider: 525,
-};
+// COD-002: derivar de planConfig en lugar de duplicar la tabla.
+const PAQUETE_PUNTOS: Record<string, number> = Object.fromEntries(
+  Object.entries(planConfig.paquetes).map(([k, v]) => [k, v.puntos]),
+);
+const PAQUETE_PRECIOS: Record<string, number> = Object.fromEntries(
+  Object.entries(planConfig.paquetes).map(([k, v]) => [k, v.precio]),
+);
 
 function Spinner() {
   return (
@@ -328,7 +324,7 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
 
       // 9. Comisión de referido directa para el patrocinador (40% del precio del paquete)
       if (patrocinadorId) {
-        const montoReferido = parseFloat(((PAQUETE_PRECIOS[afiliacion.paquete_seleccionado] ?? 0) * 0.40).toFixed(2));
+        const montoReferido = parseFloat(((PAQUETE_PRECIOS[afiliacion.paquete_seleccionado] ?? 0) * planConfig.porcentajeReferido).toFixed(2));
         await supabaseAdmin.from('comisiones').insert({
           beneficiario_id: patrocinadorId,
           origen_id: userId,

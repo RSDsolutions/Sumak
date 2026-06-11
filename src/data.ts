@@ -819,6 +819,29 @@ export const contactInfo: ContactInfo = {
   whatsapp: '593988447019',
 };
 
+// ── Plan Config (COD-002) ────────────────────────────────────
+// Constantes del plan de negocio en un solo lugar para evitar
+// magic numbers regados por la app. Cuando una regla del plan
+// cambie, se cambia aquí y todo el sistema lo refleja.
+export const planConfig = {
+  /** Porcentaje sobre PVP que paga el distribuidor (0.5 = 50% off). */
+  descuentoDistribuidor: 0.5,
+  /** Puntos generados por cada dólar del subtotal distribuidor. */
+  puntosPorDolar: 1,
+  /** Mínimo en un solo pedido para activar el mes y recibir comisiones nivel. */
+  minActivacionMensual: 100,
+  /** % del precio del paquete inicial que cobra el patrocinador directo. */
+  porcentajeReferido: 0.40,
+  /** Minutos que tiene el distribuidor para subir su voucher de pago. */
+  payWindowMinutes: 15,
+  /** Paquetes de afiliación: precio y puntos generados al aprobarse. */
+  paquetes: {
+    basico: { precio: 125, puntos: 125, etiqueta: 'Básico' },
+    emprendedor: { precio: 225, puntos: 225, etiqueta: 'Emprendedor' },
+    lider: { precio: 525, puntos: 525, etiqueta: 'Líder' },
+  },
+} as const;
+
 // ── Bank Accounts (transferencias / depósitos) ───────────────
 // Cuentas a las que el distribuidor debe transferir el total del
 // pedido durante el checkout. La info se muestra en NuevoPedido.tsx

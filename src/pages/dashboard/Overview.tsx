@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
-import { getRangoActual, getNextRango } from '../../data';
+import { getRangoActual, getNextRango, planConfig } from '../../data';
 import type { Comision, Pedido } from '../../lib/types';
 
 function Spinner() {
@@ -85,7 +85,7 @@ export default function Overview() {
       const calificadosMes = pedidosMes.filter((p) => ['procesando', 'enviado', 'entregado'].includes(p.estado));
       const totalMes = calificadosMes.reduce((s, p) => s + Number(p.total), 0);
       const maxPedido = calificadosMes.length === 0 ? 0 : Math.max(...calificadosMes.map((p) => Number(p.total)));
-      const calificada = maxPedido >= 100;
+      const calificada = maxPedido >= planConfig.minActivacionMensual;
 
       setComisiones(coms);
       setStats({
@@ -106,7 +106,10 @@ export default function Overview() {
   const directos = stats?.afiliadosDirectos ?? 0;
   const rangoActual = getRangoActual(directos);
   const nextRango = getNextRango(directos);
-  const progressToActivation = Math.min(100, ((stats?.maxPedido ?? 0) / 100) * 100);
+  const progressToActivation = Math.min(
+    100,
+    ((stats?.maxPedido ?? 0) / planConfig.minActivacionMensual) * 100,
+  );
 
   const monthName = new Date().toLocaleString('es-EC', { month: 'long' });
 
@@ -194,7 +197,7 @@ export default function Overview() {
                       Progreso a tu cupo
                     </span>
                     <span className={`font-bold ${stats?.compraCalificada ? 'text-[#D4AF37]' : 'text-amber-700'}`}>
-                      ${(stats?.maxPedido ?? 0).toFixed(2)} / $100.00
+                      ${(stats?.maxPedido ?? 0).toFixed(2)} / ${planConfig.minActivacionMensual.toFixed(2)}
                     </span>
                   </div>
                   <div className={`w-full h-2 rounded-full overflow-hidden ${stats?.compraCalificada ? 'bg-white/20' : 'bg-amber-100'}`}>

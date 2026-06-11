@@ -5,7 +5,7 @@ import {
   Search, X, SlidersHorizontal, ShoppingCart, Plus, Minus,
   Star, ArrowRight, Leaf, Check, Sparkles,
 } from 'lucide-react';
-import { products, categoryFilters } from '../../data';
+import { products, categoryFilters, planConfig } from '../../data';
 import { useCart } from '../../lib/cart';
 import { useToast } from '../../lib/toast';
 
@@ -18,7 +18,8 @@ const sortOptions: { key: SortKey; label: string }[] = [
   { key: 'nombre', label: 'Nombre (A-Z)' },
 ];
 
-const DISCOUNT = 0.5;
+// COD-002: viene del catálogo central del plan.
+const DISCOUNT = planConfig.descuentoDistribuidor;
 
 export default function Tienda() {
   const [search, setSearch] = useState('');
