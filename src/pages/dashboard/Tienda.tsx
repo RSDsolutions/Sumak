@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { products, categoryFilters } from '../../data';
 import { useCart } from '../../lib/cart';
+import { useToast } from '../../lib/toast';
 
 type SortKey = 'destacado' | 'precio-asc' | 'precio-desc' | 'nombre';
 
@@ -24,6 +25,7 @@ export default function Tienda() {
   const [activeCategory, setActiveCategory] = useState('todos');
   const [sortBy, setSortBy] = useState<SortKey>('destacado');
   const { items, addItem, setQty } = useCart();
+  const toast = useToast();
 
   const filtered = useMemo(() => {
     let list = activeCategory === 'todos'
@@ -59,6 +61,8 @@ export default function Tienda() {
   function handleAdd(p: typeof products[number]) {
     const precio = parseFloat((p.pvp * DISCOUNT).toFixed(2));
     addItem({ codigo: p.codigo, nombre: p.nombre, pvp: p.pvp, precio, imagen: p.imagen }, 1);
+    // UX-010: confirmación discreta de que se añadió al carrito.
+    toast.success(`${p.nombre} añadido al carrito`);
   }
 
   return (

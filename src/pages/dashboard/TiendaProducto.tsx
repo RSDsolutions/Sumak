@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { products, parseIngredient } from '../../data';
 import { useCart } from '../../lib/cart';
+import { useToast } from '../../lib/toast';
 
 type TabKey = 'beneficios' | 'ingredientes' | 'modo-uso' | 'precauciones';
 
@@ -18,6 +19,7 @@ export default function TiendaProducto() {
   const navigate = useNavigate();
   const product = products.find((p) => p.slug === slug);
   const { addItem, items, setQty: setCartQty } = useCart();
+  const toast = useToast();
   const [qty, setQty] = useState(1);
   const [activeTab, setActiveTab] = useState<TabKey>('ingredientes');
   const [revistaOpen, setRevistaOpen] = useState(false);
@@ -56,6 +58,12 @@ export default function TiendaProducto() {
       codigo: product!.codigo, nombre: product!.nombre, pvp: product!.pvp,
       precio, imagen: product!.imagen,
     }, qty);
+    // UX-010: confirmación discreta de que se añadió al carrito.
+    toast.success(
+      qty === 1
+        ? `${product!.nombre} añadido al carrito`
+        : `${qty} × ${product!.nombre} añadidos al carrito`
+    );
     setQty(1);
   }
 

@@ -398,8 +398,29 @@ export default function Overview() {
               </Link>
             </div>
             {comisiones.length === 0 ? (
-              <div className="px-5 py-10 text-center text-[#6B7280] text-sm">
-                Aún no tienes comisiones registradas.
+              <div className="px-5 py-10 text-center">
+                <div className="w-14 h-14 bg-[#F4F7F5] rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Sparkles size={22} className="text-[#9CA3AF]" aria-hidden="true" />
+                </div>
+                <p className="text-[#111111] text-sm font-bold mb-1">Aún no tienes comisiones</p>
+                <p className="text-[#6B7280] text-xs mb-4 max-w-xs mx-auto leading-relaxed">
+                  Las comisiones aparecen aquí cuando tu red genera ventas calificadas.
+                  Comparte tu código de patrocinador para empezar.
+                </p>
+                <div className="flex gap-2 justify-center flex-wrap">
+                  <Link
+                    to="/dashboard/perfil"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#1A4E26] text-white text-xs font-bold hover:bg-[#163F1E] transition-all"
+                  >
+                    <Hash size={13} aria-hidden="true" /> Ver mi código
+                  </Link>
+                  <Link
+                    to="/dashboard/red"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-[#C8D8CB] text-[#6B7280] text-xs font-semibold hover:border-[#A8C2AD] hover:text-[#111111] transition-all"
+                  >
+                    <Users size={13} aria-hidden="true" /> Ver mi red
+                  </Link>
+                </div>
               </div>
             ) : (
               <div className="overflow-x-auto">

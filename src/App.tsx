@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { AuthProvider } from './lib/auth';
 import { CartProvider } from './lib/cart';
+import { ToastProvider } from './lib/toast';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -88,6 +89,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <CartProvider>
+        <ToastProvider>
         <ScrollToTop />
         <Routes>
           {/* ── PUBLIC ROUTES ─────────────────────────────── */}
@@ -357,6 +359,7 @@ export default function App() {
             }
           />
         </Routes>
+        </ToastProvider>
         </CartProvider>
       </AuthProvider>
     </BrowserRouter>

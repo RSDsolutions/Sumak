@@ -7,9 +7,15 @@ interface ProtectedRouteProps {
 }
 
 function Spinner() {
+  // UX-005: paleta de marca (verde Sumak) sobre fondo claro,
+  // consistente con el resto del dashboard.
   return (
-    <div className="min-h-screen bg-[#0F0F0F] flex items-center justify-center">
-      <div className="w-10 h-10 border-2 border-[#00A86B] border-t-transparent rounded-full animate-spin" />
+    <div
+      role="status"
+      aria-label="Cargando"
+      className="min-h-screen bg-[#F4F7F5] flex items-center justify-center"
+    >
+      <div className="w-10 h-10 border-2 border-[#1A4E26] border-t-transparent rounded-full animate-spin" />
     </div>
   );
 }

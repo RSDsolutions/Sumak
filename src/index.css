@@ -67,3 +67,31 @@ body {
 h1, h2, h3, h4, h5, h6, .font-heading {
   font-family: var(--font-heading);
 }
+
+/*
+ * A11Y-002 — Focus ring visible solo en navegación por teclado.
+ * Usa :focus-visible (no :focus) para que los clics con mouse no
+ * muestren el anillo, pero los usuarios que tabulan sí lo vean.
+ *
+ * Usa box-shadow en lugar de outline para que NO entre en conflicto
+ * con las clases Tailwind focus:border-* ya existentes en el código:
+ * outline sería sobrescrito por focus:outline-none, box-shadow no.
+ */
+@layer base {
+  button:focus-visible,
+  a:focus-visible,
+  [role="button"]:focus-visible,
+  [tabindex="0"]:focus-visible {
+    outline: 2px solid #1A4E26;
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(26, 78, 38, 0.22);
+    border-color: #1A4E26;
+  }
+}

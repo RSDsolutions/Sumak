@@ -172,14 +172,11 @@ export default function NuevoPedido() {
         .upload(voucherPath, voucherFile, { upsert: false });
 
       if (uploadError) {
-        const msg = uploadError.message.toLowerCase();
-        if (msg.includes('bucket not found') || msg.includes('not found')) {
-          setError('El sistema aún no está configurado para recibir vouchers. Contacta al administrador para que ejecute la migración SQL "004b_voucher_bucket_fix.sql".');
-        } else if (msg.includes('row-level security') || msg.includes('rls') || msg.includes('policy')) {
-          setError('No tienes permisos para subir vouchers. Pide al administrador que verifique las políticas del bucket "pedidos-vouchers".');
-        } else {
-          setError('Error al subir el voucher: ' + uploadError.message);
-        }
+        // UX-004: mensaje genérico para el usuario; detalle técnico solo a consola.
+        console.error('Voucher upload error:', uploadError);
+        setError(
+          'No pudimos guardar tu comprobante. Por favor, intenta de nuevo o contacta a soporte si el problema persiste.'
+        );
         setSubmitting(false);
         return;
       }
@@ -220,7 +217,9 @@ export default function NuevoPedido() {
             return;
           }
         }
-        setError('Error al crear el pedido: ' + (pedidoError?.message ?? 'desconocido'));
+        // UX-004: mensaje amable para el usuario; detalle técnico a consola.
+        console.error('Pedido insert error:', pedidoError);
+        setError('No pudimos registrar tu pedido. Intenta nuevamente o contacta a soporte.');
         setSubmitting(false);
         return;
       }
@@ -236,7 +235,9 @@ export default function NuevoPedido() {
       }));
       const { error: itemsError } = await supabase.from('pedido_items').insert(itemsRows);
       if (itemsError) {
-        setError('Error al guardar los productos: ' + itemsError.message);
+        // UX-004: mensaje amable; detalle a consola.
+        console.error('Pedido items insert error:', itemsError);
+        setError('No pudimos guardar los productos del pedido. Contacta a soporte indicando la fecha y hora.');
         setSubmitting(false);
         return;
       }
@@ -309,8 +310,9 @@ export default function NuevoPedido() {
       expiresAtRef.current = null;
       setStep('done');
     } catch (err) {
-      setError('Error inesperado. Intenta de nuevo.');
-      console.error(err);
+      // UX-004: el catch puede atrapar errores de red u otros.
+      console.error('Pedido submission unexpected error:', err);
+      setError('Tuvimos un problema inesperado al enviar tu pedido. Intenta de nuevo en un momento.');
     } finally {
       setSubmitting(false);
     }

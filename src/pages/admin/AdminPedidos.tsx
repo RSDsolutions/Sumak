@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import { supabaseAdmin } from '../../lib/supabase';
 import type { Pedido, PedidoItem, EstadoPedido } from '../../lib/types';
+import Modal from '../../components/Modal';
+import { useToast } from '../../lib/toast';
 
 type FilterTab = 'todos' | EstadoPedido;
 
@@ -252,6 +254,15 @@ export default function AdminPedidos() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [selectedPedido, setSelectedPedido] = useState<PedidoRow | null>(null);
 
+  // UX-001: confirmación final antes de cancelar un pedido (irreversible
+  // por sus efectos colaterales: revierte puntos y cancela comisiones).
+  const [pendingCancel, setPendingCancel] = useState<{
+    pedido: PedidoRowExt;
+    fromEstado: EstadoPedido;
+  } | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const toast = useToast();
+
   // Filtros
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<SortKey>('fecha-desc');
@@ -365,7 +376,19 @@ export default function AdminPedidos() {
     setSortBy('fecha-desc');
   }
 
-  async function updateEstado(pedidoId: string, newEstado: EstadoPedido, currentEstado: EstadoPedido) {
+  // UX-001: si el admin cambia el estado a "cancelado" abrimos confirmación;
+  // cualquier otro cambio se aplica directo.
+  function handleEstadoChange(pedido: PedidoRowExt, newEstado: EstadoPedido) {
+    if (newEstado === pedido.estado) return;
+    if (newEstado === 'cancelado') {
+      setPendingCancel({ pedido, fromEstado: pedido.estado });
+      setCancelReason('');
+      return;
+    }
+    void updateEstado(pedido.id, newEstado, pedido.estado);
+  }
+
+  async function updateEstado(pedidoId: string, newEstado: EstadoPedido, currentEstado: EstadoPedido, motivo?: string) {
     if (newEstado === currentEstado) return;
     setUpdatingId(pedidoId);
 
@@ -400,10 +423,28 @@ export default function AdminPedidos() {
           .eq('estado', 'pendiente');
       }
 
-      await supabaseAdmin.from('pedidos').update({ estado: newEstado }).eq('id', pedidoId);
-      setPedidos((prev) => prev.map((p) => p.id === pedidoId ? { ...p, estado: newEstado } : p));
+      // Si hay motivo (cancelación), lo dejamos en notas para audit ligero.
+      const updates: { estado: EstadoPedido; notas?: string } = { estado: newEstado };
+      if (motivo && pedido) {
+        const prev = pedido.notas ?? '';
+        updates.notas = (prev ? prev + ' | ' : '') + 'Cancelado: ' + motivo;
+      }
+
+      const { error: updErr } = await supabaseAdmin.from('pedidos').update(updates).eq('id', pedidoId);
+      if (updErr) throw updErr;
+      setPedidos((prev) => prev.map((p) => p.id === pedidoId ? { ...p, ...updates } : p));
+      toast.success(
+        newEstado === 'cancelado'
+          ? 'Pedido cancelado. Puntos y comisiones revertidos.'
+          : 'Estado del pedido actualizado.'
+      );
+    } catch (err) {
+      console.error('updateEstado error:', err);
+      toast.error('No pudimos actualizar el pedido. Intenta de nuevo.');
     } finally {
       setUpdatingId(null);
+      setPendingCancel(null);
+      setCancelReason('');
     }
   }
 
@@ -652,8 +693,9 @@ export default function AdminPedidos() {
                     <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
                       <select
                         value={p.estado}
-                        onChange={(e) => updateEstado(p.id, e.target.value as EstadoPedido, p.estado)}
+                        onChange={(e) => handleEstadoChange(p, e.target.value as EstadoPedido)}
                         disabled={updatingId === p.id}
+                        aria-label={`Cambiar estado del pedido de ${p.distribuidor_nombre ?? ''}`}
                         className="bg-white border border-[#C8D8CB] rounded-lg px-2.5 py-1 text-[#111111] text-[11px] focus:outline-none focus:border-[#1A4E26] transition-colors disabled:opacity-50 cursor-pointer"
                       >
                         {ESTADOS.map((e) => (
@@ -682,6 +724,78 @@ export default function AdminPedidos() {
           onClose={() => setSelectedPedido(null)}
         />
       )}
+
+      {/* UX-001: confirmación final al cancelar — acción irreversible. */}
+      <Modal
+        open={!!pendingCancel}
+        onClose={() => { if (updatingId === null) { setPendingCancel(null); setCancelReason(''); } }}
+        title="Confirmar cancelación"
+        subtitle="Esta acción revierte puntos y cancela comisiones del pedido."
+        size="md"
+        labelledById="cancel-pedido-title"
+      >
+        {pendingCancel && (
+          <div className="px-6 py-5">
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 flex items-start gap-3 text-sm">
+              <AlertCircle size={18} className="text-amber-600 shrink-0 mt-0.5" aria-hidden="true" />
+              <div className="text-amber-700">
+                Vas a cancelar el pedido de{' '}
+                <strong>{pendingCancel.pedido.distribuidor_nombre}</strong>{' '}
+                por <strong>${Number(pendingCancel.pedido.total).toFixed(2)}</strong>.
+                Esto restará <strong>{pendingCancel.pedido.puntos_generados} puntos</strong>{' '}
+                al distribuidor y cancelará sus comisiones por nivel asociadas.
+                <span className="block mt-1 text-xs">Esta operación no se puede deshacer desde la interfaz.</span>
+              </div>
+            </div>
+
+            <label htmlFor="cancel-reason" className="block text-[#6B7280] text-xs font-semibold uppercase tracking-wider mb-2">
+              Motivo de la cancelación <span className="text-[#9CA3AF] font-normal">(opcional, queda registrado en notas)</span>
+            </label>
+            <textarea
+              id="cancel-reason"
+              rows={3}
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="Ej: pago no acreditado, voucher inválido, solicitud del cliente…"
+              className="w-full bg-white border border-[#C8D8CB] rounded-xl px-4 py-3 text-[#111111] text-sm placeholder-[#9CA3AF] focus:outline-none focus:border-[#1A4E26] transition-colors resize-none"
+            />
+
+            <div className="flex gap-3 mt-5">
+              <button
+                type="button"
+                onClick={() => { setPendingCancel(null); setCancelReason(''); }}
+                disabled={updatingId !== null}
+                className="flex-1 py-3 rounded-xl border border-[#C8D8CB] text-[#6B7280] text-sm font-medium hover:border-[#A8C2AD] transition-all disabled:opacity-50"
+              >
+                No, mantener
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!pendingCancel) return;
+                  void updateEstado(
+                    pendingCancel.pedido.id,
+                    'cancelado',
+                    pendingCancel.fromEstado,
+                    cancelReason.trim() || undefined,
+                  );
+                }}
+                disabled={updatingId !== null}
+                className="flex-[1.5] py-3 rounded-xl bg-red-600 text-white text-sm font-bold hover:bg-red-700 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                {updatingId === pendingCancel.pedido.id ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Cancelando…
+                  </>
+                ) : (
+                  <>Sí, cancelar pedido</>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
