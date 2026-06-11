@@ -55,119 +55,6 @@ function EcuadorFlag({ className = '' }: { className?: string }) {
   );
 }
 
-/**
- * Cinta curva con los colores de la bandera del Ecuador. Va en las esquinas
- * del hero como un listón ondulado: la cinta superior-izquierda viene desde
- * arriba, hace una curva sobre el contenido y sale por la izquierda.
- * La cinta inferior-derecha hace lo opuesto (sale por la derecha-abajo).
- *
- * El "shape" es un rectángulo curvado relleno con un gradiente vertical que
- * crea las tres franjas (amarillo 50%, azul 25%, rojo 25%). Encima va una
- * capa con gradiente blanco→transparente para dar volumen / brillo.
- */
-function EcuadorRibbon({
-  variant,
-  className = '',
-}: {
-  variant: 'top-left' | 'bottom-right';
-  className?: string;
-}) {
-  const isTop = variant === 'top-left';
-  const id = isTop ? 'tl' : 'br';
-
-  // Path en forma de cinta con punta (V) en el extremo "interior".
-  // El otro extremo sale fuera del viewport para simular que la cinta entra
-  // desde la esquina. La punta es un pico triangular: la cinta sube hasta el
-  // pico, hace un quiebre hacia afuera, y baja de regreso.
-  // ViewBox 800x300, altura aproximada de la cinta ~120.
-  const ribbonPath = isTop
-    ? // Top-left: entra por arriba-izquierda, termina en punta hacia la derecha.
-      'M -60 20 ' +
-      'C 200 60, 380 220, 680 130 ' +     // curva descendente
-      'L 770 188 ' +                       // diagonal a la punta exterior
-      'L 680 250 ' +                       // diagonal de vuelta
-      'C 380 340, 200 180, -60 140 Z'      // curva ascendente de regreso
-    : // Bottom-right: entra por abajo-derecha, termina en punta hacia la izquierda.
-      'M 860 80 ' +
-      'C 580 -10, 380 140, 120 30 ' +      // curva ascendente
-      'L 30 95 ' +                         // diagonal a la punta exterior izquierda
-      'L 120 150 ' +                       // diagonal de vuelta
-      'C 380 260, 580 110, 860 200 Z';     // curva descendente de regreso
-
-  // Línea de brillo (sigue solo el borde superior, hasta la punta).
-  const shinePath = isTop
-    ? 'M -60 22 C 200 62, 380 222, 680 132 L 770 188'
-    : 'M 860 82 C 580 -8, 380 142, 120 32 L 30 95';
-
-  return (
-    <svg
-      viewBox="0 0 800 300"
-      preserveAspectRatio="none"
-      className={className}
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <defs>
-        {/* Gradiente bandera del Ecuador: amarillo (mitad), azul, rojo */}
-        <linearGradient id={`flag-${id}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#FFDD00" />
-          <stop offset="50%" stopColor="#FFDD00" />
-          <stop offset="50%" stopColor="#0247FE" />
-          <stop offset="75%" stopColor="#0247FE" />
-          <stop offset="75%" stopColor="#E2002A" />
-          <stop offset="100%" stopColor="#E2002A" />
-        </linearGradient>
-
-        {/* Brillo blanco que recorre la cinta longitudinalmente */}
-        <linearGradient id={`shine-${id}`} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0" />
-          <stop offset="30%" stopColor="#FFFFFF" stopOpacity="0.35" />
-          <stop offset="50%" stopColor="#FFFFFF" stopOpacity="0.05" />
-          <stop offset="70%" stopColor="#FFFFFF" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
-        </linearGradient>
-
-        {/* Sombra de profundidad */}
-        <filter id={`shadow-${id}`} x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur in="SourceAlpha" stdDeviation="6" />
-          <feOffset dx="0" dy="4" result="shadowOffset" />
-          <feComponentTransfer>
-            <feFuncA type="linear" slope="0.55" />
-          </feComponentTransfer>
-          <feMerge>
-            <feMergeNode />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-
-        {/* Sombra interior sutil para sugerir el "doblez" */}
-        <linearGradient id={`shade-${id}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#000000" stopOpacity="0.15" />
-          <stop offset="20%" stopColor="#000000" stopOpacity="0" />
-          <stop offset="80%" stopColor="#000000" stopOpacity="0" />
-          <stop offset="100%" stopColor="#000000" stopOpacity="0.25" />
-        </linearGradient>
-      </defs>
-
-      {/* Capa 1: la cinta con la bandera */}
-      <path d={ribbonPath} fill={`url(#flag-${id})`} filter={`url(#shadow-${id})`} />
-      {/* Capa 2: sombra interior (oscurece bordes superior e inferior) */}
-      <path d={ribbonPath} fill={`url(#shade-${id})`} />
-      {/* Capa 3: brillo metálico que viaja a lo largo */}
-      <path d={ribbonPath} fill={`url(#shine-${id})`} opacity="0.9" />
-      {/* Capa 4: línea de luz superior para brillo extra (se detiene en la punta) */}
-      <path
-        d={shinePath}
-        stroke="#FFFFFF"
-        strokeOpacity="0.55"
-        strokeWidth="1.5"
-        fill="none"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 function StepIndicator({ current }: { current: Step }) {
   const steps = [
     { num: 1, label: 'Datos Personales' },
@@ -414,55 +301,30 @@ export default function Registro() {
 
   return (
     <div className="bg-[#F4F7F5] min-h-screen">
-      {/* Hero llamativo con bandera de Ecuador */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#1A4E26] via-[#163F1E] to-[#0E2A14] pt-28 pb-32 px-4 sm:px-6">
-        {/* Acentos decorativos */}
-        <div className="absolute inset-0 opacity-[0.07]" style={{
-          backgroundImage: 'radial-gradient(circle at 20% 30%, #FFDD00 0%, transparent 40%), radial-gradient(circle at 80% 70%, #0247FE 0%, transparent 40%)',
-        }} />
-        <div className="absolute top-10 right-10 w-72 h-72 rounded-full bg-[#FFDD00]/5 blur-3xl" />
-        <div className="absolute bottom-10 left-10 w-72 h-72 rounded-full bg-[#E2002A]/5 blur-3xl" />
-
-        {/* Cinta de bandera del Ecuador en la esquina superior-izquierda */}
-        <motion.div
-          initial={{ opacity: 0, x: -40, y: -20 }}
-          animate={{ opacity: 1, x: 0, y: 0 }}
-          transition={{ duration: 1, ease: 'easeOut' }}
-          className="absolute -top-4 -left-4 w-[58%] md:w-[48%] lg:w-[42%] pointer-events-none z-[1]"
+      {/* Hero con imagen de fondo (cintas tricolor + mapa + destellos) */}
+      <section className="relative overflow-hidden bg-[#0E2A14] pt-28 pb-32 px-4 sm:px-6">
+        {/* Imagen de fondo */}
+        <div
+          className="absolute inset-0 bg-cover bg-center pointer-events-none"
+          style={{ backgroundImage: 'url(/hero-registro.png)' }}
           aria-hidden="true"
-        >
-          <motion.div
-            animate={{ y: [0, -6, 0], rotate: [0, 0.4, 0] }}
-            transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-          >
-            <EcuadorRibbon variant="top-left" className="w-full h-auto drop-shadow-[0_10px_25px_rgba(0,0,0,0.45)]" />
-          </motion.div>
-        </motion.div>
-
-        {/* Cinta de bandera del Ecuador en la esquina inferior-derecha */}
-        <motion.div
-          initial={{ opacity: 0, x: 40, y: 20 }}
-          animate={{ opacity: 1, x: 0, y: 0 }}
-          transition={{ duration: 1, ease: 'easeOut', delay: 0.15 }}
-          className="absolute -bottom-4 -right-4 w-[58%] md:w-[48%] lg:w-[42%] pointer-events-none z-[1]"
+        />
+        {/* Gradiente de oscurecimiento para mantener legibilidad del texto sobre el centro */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              'radial-gradient(ellipse at center, rgba(14,42,20,0.55) 0%, rgba(14,42,20,0.25) 50%, rgba(14,42,20,0.55) 100%)',
+          }}
           aria-hidden="true"
-        >
-          <motion.div
-            animate={{ y: [0, 6, 0], rotate: [0, -0.4, 0] }}
-            transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
-          >
-            <EcuadorRibbon variant="bottom-right" className="w-full h-auto drop-shadow-[0_10px_25px_rgba(0,0,0,0.45)]" />
-          </motion.div>
-        </motion.div>
+        />
 
-        {/* Destellos animados (sparkles) */}
+        {/* Destellos animados extras (encima de la imagen para sumarse a los del fondo) */}
         {[
-          { left: '12%', top: '28%', delay: 0.0, size: 4 },
-          { left: '88%', top: '20%', delay: 0.8, size: 3 },
-          { left: '20%', top: '70%', delay: 1.6, size: 3 },
-          { left: '78%', top: '78%', delay: 0.4, size: 4 },
-          { left: '50%', top: '15%', delay: 2.2, size: 3 },
-          { left: '35%', top: '85%', delay: 1.1, size: 3 },
+          { left: '46%', top: '18%', delay: 0.0, size: 4 },
+          { left: '60%', top: '78%', delay: 0.8, size: 3 },
+          { left: '50%', top: '50%', delay: 1.6, size: 3 },
+          { left: '38%', top: '38%', delay: 2.2, size: 3 },
         ].map((s, i) => (
           <motion.div
             key={i}
