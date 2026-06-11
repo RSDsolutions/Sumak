@@ -159,8 +159,8 @@ export default function Home() {
                 transition={{ duration: 0.7, delay: 0.2 }}
                 className="text-white/75 text-base sm:text-lg max-w-xl mb-10 leading-relaxed"
               >
-                Productos 100% naturales formulados con plantas medicinales andinas.
-                Más de 15 años de experiencia en medicina ancestral, ahora al alcance
+                Productos 100% naturales formulados con plantas medicinales andinas y amazónicas.
+                Más de 15 años de experiencia en medicina ancestral ecuatoriana, ahora al alcance
                 de tu salud y de tu libertad financiera.
               </motion.p>
 
@@ -528,7 +528,7 @@ export default function Home() {
             <div className="absolute bottom-6 left-6 right-6 bg-black/55 backdrop-blur-md border border-white/15 rounded-2xl p-5 z-10">
               <p className="text-[#D4AF37] text-[10px] font-bold uppercase tracking-widest mb-1">Sumak Jambi · Laboratorio Ancestral</p>
               <p className="text-white font-heading font-bold text-lg leading-tight">
-                Cada producto es un acto de respeto a la sabiduría andina.
+                Cada producto es un acto de respeto a la sabiduría andina y amazónica.
               </p>
             </div>
           </motion.div>

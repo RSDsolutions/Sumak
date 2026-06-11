@@ -4,9 +4,9 @@ import { motion, AnimatePresence, type Variants } from 'motion/react';
 import {
   CheckCircle2, Upload, User, FileText, Package, AlertCircle, Sparkles,
   TrendingUp, Users, Wallet, ShieldCheck, Rocket, Heart, Award, Leaf,
-  Landmark, Copy, Check, Info,
+  Landmark, Copy, Check, Info, MessageCircle, AlertTriangle,
 } from 'lucide-react';
-import { affiliatePackages, bankAccounts } from '../data';
+import { affiliatePackages, bankAccounts, contactInfo } from '../data';
 import { supabase } from '../lib/supabase';
 import { useSEO } from '../lib/seo';
 import { explicarCedulaInvalida, validarCedulaEcuatoriana } from '../lib/validators';
@@ -584,6 +584,21 @@ export default function Registro() {
                             ) : null}
                           </div>
                         )}
+                        {/* Aviso CRITICO: si no hay codigo, nadie cobra la comision */}
+                        {!personal.patrocinador.trim() && !refLocked && (
+                          <div className="mt-2 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5">
+                            <AlertTriangle size={15} className="text-amber-600 shrink-0 mt-0.5" />
+                            <div>
+                              <p className="text-amber-800 text-xs font-bold leading-tight">
+                                ¿Te invitó alguien? Ingresa su código.
+                              </p>
+                              <p className="text-amber-700 text-[11px] mt-0.5 leading-relaxed">
+                                Si te registras sin código, <strong>nadie recibe la comisión</strong> por tu afiliación.
+                                Pide a quien te invitó su código (formato SUMAK-XXXXX).
+                              </p>
+                            </div>
+                          </div>
+                        )}
                         {refLocked && (
                           <button
                             type="button"
@@ -953,6 +968,41 @@ export default function Registro() {
               </p>
             </motion.div>
 
+            {/* ASISTENCIA WHATSAPP - destacado */}
+            <motion.a
+              href={`https://wa.me/${contactInfo.whatsapp}?text=${encodeURIComponent(
+                'Hola Sumak, necesito ayuda con mi proceso de afiliación. ¿Pueden asesorarme?'
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              whileHover={{ scale: 1.02 }}
+              className="relative overflow-hidden block bg-gradient-to-br from-[#25D366] to-[#128C7E] text-white rounded-2xl p-5 shadow-[0_12px_28px_rgba(37,211,102,0.35)] hover:shadow-[0_15px_35px_rgba(37,211,102,0.5)] transition-shadow group"
+            >
+              <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white/10 blur-2xl" />
+              <div className="relative flex items-start gap-3">
+                <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                  <MessageCircle size={22} className="text-white" fill="white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-white/90 text-[10px] font-bold uppercase tracking-widest mb-0.5">
+                    ¿Necesitas ayuda?
+                  </p>
+                  <p className="font-heading font-bold text-base leading-tight mb-1">
+                    ¿Tienes dudas en el registro?
+                  </p>
+                  <p className="text-white/80 text-xs leading-relaxed">
+                    Chatea con un asesor de Sumak por WhatsApp y te guiamos en cada paso de la afiliación.
+                  </p>
+                  <div className="mt-3 inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-sm rounded-lg px-3 py-1.5 text-xs font-bold">
+                    Escribir por WhatsApp →
+                  </div>
+                </div>
+              </div>
+            </motion.a>
+
             {/* Login link */}
             <div className="text-center bg-white border border-[#C8D8CB] rounded-2xl p-5">
               <p className="text-[#6B7280] text-sm">¿Ya tienes cuenta?</p>
@@ -961,6 +1011,21 @@ export default function Registro() {
               </Link>
             </div>
           </aside>
+        </div>
+
+        {/* WhatsApp ayuda visible en mobile al pie */}
+        <div className="lg:hidden mt-6">
+          <a
+            href={`https://wa.me/${contactInfo.whatsapp}?text=${encodeURIComponent(
+              'Hola Sumak, necesito ayuda con mi proceso de afiliación.'
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block w-full bg-gradient-to-r from-[#25D366] to-[#128C7E] text-white text-center rounded-2xl px-5 py-4 font-bold shadow-[0_8px_24px_rgba(37,211,102,0.35)] active:scale-[0.98] transition-transform"
+          >
+            <MessageCircle size={18} className="inline mr-2" fill="white" />
+            ¿Dudas? Habla con un asesor por WhatsApp
+          </a>
         </div>
       </div>
     </div>

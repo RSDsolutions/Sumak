@@ -82,7 +82,7 @@ export default function Oportunidad() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-[#6B7280] text-lg max-w-2xl mx-auto"
           >
-            Construye tu libertad financiera vendiendo productos naturales de alta demanda
+            Construye tu libertad financiera vendiendo productos naturales y orgánicos de alta demanda
             y desarrollando tu red de distribuidores.
           </motion.p>
         </div>

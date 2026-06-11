@@ -3,12 +3,13 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
   ShoppingCart, Plus, X, Search, Calendar, ChevronRight,
-  Package, TrendingUp, CheckCircle2, Clock, AlertCircle, Leaf,
+  Package, TrendingUp, CheckCircle2, Clock, AlertCircle, Leaf, FileText,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import type { Pedido, PedidoItem, EstadoPedido } from '../../lib/types';
 import { pedidoBadgeClass } from '../../lib/badges';
+import NotaVenta, { type NotaVentaData } from '../../components/NotaVenta';
 
 function Spinner() {
   return (
@@ -40,12 +41,45 @@ const TABS: { key: FilterTab; label: string }[] = [
 
 interface DetalleModalProps {
   pedido: Pedido;
+  clienteNombre: string;
+  clienteCodigo?: string;
   onClose: () => void;
 }
 
-function DetalleModal({ pedido, onClose }: DetalleModalProps) {
+function DetalleModal({ pedido, clienteNombre, clienteCodigo, onClose }: DetalleModalProps) {
   const items: PedidoItem[] = pedido.items ?? [];
   const totalItems = items.reduce((s, i) => s + i.cantidad, 0);
+  const [showNota, setShowNota] = useState(false);
+  // La nota de venta solo se muestra cuando el admin marca el pedido
+  // como "enviado" o ya esta "entregado". Antes de eso es solo un
+  // comprobante interno de checkout.
+  const notaDisponible = ['enviado', 'entregado'].includes(pedido.estado);
+  const notaNumero = pedido.numero_pedido
+    ? `NV-${String(pedido.numero_pedido).padStart(6, '0')}`
+    : `NV-${pedido.id.slice(0, 8).toUpperCase()}`;
+
+  const notaData: NotaVentaData = {
+    numero: notaNumero,
+    fecha: pedido.created_at,
+    estado: pedido.estado,
+    cliente: {
+      nombre: clienteNombre,
+      codigo: clienteCodigo,
+    },
+    items: items.map((i) => ({
+      producto_codigo: i.producto_codigo,
+      producto_nombre: i.producto_nombre,
+      cantidad: i.cantidad,
+      precio_unitario: Number(i.precio_unitario),
+      subtotal: Number(i.subtotal),
+    })),
+    subtotal: Number(pedido.total),
+    total: Number(pedido.total),
+    puntos: pedido.puntos_generados ?? 0,
+    banco_destino: (pedido as Pedido & { banco_destino?: string | null }).banco_destino ?? null,
+    voucher_numero: (pedido as Pedido & { voucher_numero?: string | null }).voucher_numero ?? null,
+    notas: pedido.notas,
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
@@ -122,18 +156,36 @@ function DetalleModal({ pedido, onClose }: DetalleModalProps) {
           )}
         </div>
 
+        {/* Boton nota de venta cuando esta enviado/entregado */}
+        {notaDisponible && (
+          <div className="px-6 py-3 bg-[#FFFDF0] border-t border-[#D4AF37]/30">
+            <button
+              onClick={() => setShowNota(true)}
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B8941F] text-[#0B2913] text-sm font-bold hover:from-[#E8C94A] hover:to-[#D4AF37] transition-all shadow-[0_4px_16px_rgba(212,175,55,0.35)]"
+            >
+              <FileText size={15} /> Ver Nota de Venta {notaNumero}
+            </button>
+            <p className="text-[10px] text-[#92680A] text-center mt-1.5">
+              Documento oficial de tu compra · Imprimible y descargable como PDF
+            </p>
+          </div>
+        )}
+
         {/* Total */}
         <div className="flex justify-between items-center px-6 py-4 bg-gradient-to-r from-[#0F2E18] to-[#1A4E26] rounded-b-3xl">
           <span className="font-heading font-bold text-white text-sm">Total del pedido</span>
           <span className="font-heading font-bold text-2xl text-[#D4AF37]">${Number(pedido.total).toFixed(2)}</span>
         </div>
       </motion.div>
+
+      {/* Nota de venta modal */}
+      <NotaVenta data={notaData} open={showNota} onClose={() => setShowNota(false)} />
     </div>
   );
 }
 
 export default function MisPedidos() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
@@ -358,6 +410,8 @@ export default function MisPedidos() {
       {selectedPedido && (
         <DetalleModal
           pedido={selectedPedido}
+          clienteNombre={profile?.nombre_completo ?? '—'}
+          clienteCodigo={profile?.codigo_distribuidor ?? undefined}
           onClose={() => setSelectedPedido(null)}
         />
       )}

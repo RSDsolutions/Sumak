@@ -69,6 +69,10 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
   const [loading, setLoading] = useState(false);
   const [loadingDist, setLoadingDist] = useState(true);
   const [error, setError] = useState('');
+  // BIZ: ahora cualquier distribuidor puede tener N frontales (no solo el admin).
+  // Si el admin marca esta opcion, el nuevo nodo se coloca como frontal
+  // (posicion=NULL) en vez de ocupar izquierda o derecha del binario estricto.
+  const [abrirComoFrontal, setAbrirComoFrontal] = useState(false);
 
   // Load existing distributors for the dropdown and auto-suggest placement
   useEffect(() => {
@@ -245,8 +249,11 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
         const selectedParent = distribuidores.find((d) => d.id === parentProfileId);
         const parentIsAdmin = selectedParent?.rol === 'admin';
 
-        if (parentIsAdmin) {
-          // Hijos directos del admin = frontales, sin posición izq/der
+        if (parentIsAdmin || abrirComoFrontal) {
+          // Frontal: hijos directos sin posicion izq/der.
+          // El admin SIEMPRE coloca sus directos como frontales.
+          // Cualquier otro distribuidor puede tambien si se marca el checkbox
+          // (la migracion 007 habilita esto en el trigger SQL).
           posicionFinal = null;
         } else {
           // Auto-asignar izquierda o derecha según disponibilidad
@@ -263,7 +270,11 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
           } else if (!tieneDer) {
             posicionFinal = 'derecha';
           } else {
-            setError('Este distribuidor ya tiene ambas posiciones (Izq. y Der.) ocupadas. Selecciona otro.');
+            setError(
+              'Este distribuidor ya tiene ambas posiciones (Izq. y Der.) ocupadas. ' +
+              'Puedes marcar "Abrir como frontal nuevo" para colgar el nodo como frontal, ' +
+              'o seleccionar otro patrocinador.'
+            );
             return;
           }
         }
@@ -457,6 +468,31 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
           </p>
         </div>
 
+        {/* Checkbox: abrir como frontal nuevo (cualquier distribuidor puede) */}
+        {padreProfileId && distribuidores.find((d) => d.id === padreProfileId)?.rol !== 'admin' && (
+          <div className="mb-4">
+            <label className="flex items-start gap-3 cursor-pointer bg-[#FFFDF0] border border-[#D4AF37]/40 rounded-xl px-4 py-3 hover:bg-[#FFFCE5] transition-colors">
+              <input
+                type="checkbox"
+                checked={abrirComoFrontal}
+                onChange={(e) => setAbrirComoFrontal(e.target.checked)}
+                className="mt-0.5 accent-[#D4AF37]"
+              />
+              <div>
+                <p className="text-[#92680A] text-sm font-bold">
+                  Abrir como frontal nuevo bajo este distribuidor
+                </p>
+                <p className="text-[#6B7280] text-xs mt-0.5 leading-relaxed">
+                  En lugar de ocupar izquierda o derecha del binario, el nuevo afiliado se cuelga
+                  como un frontal directo. El padre puede tener N frontales en paralelo, igual
+                  que el admin. Útil cuando ambas posiciones ya están ocupadas o el padre quiere
+                  organizar su red en múltiples ramas.
+                </p>
+              </div>
+            </label>
+          </div>
+        )}
+
         {/* Posición auto-asignada */}
         <div className="mb-6 bg-[#F4F7F5] border border-[#C8D8CB] rounded-xl px-4 py-3">
           <p className="text-[#6B7280] text-xs font-semibold uppercase tracking-wider mb-1">Posición en la red</p>
@@ -464,6 +500,8 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
             <p className="text-[#9CA3AF] text-sm">Selecciona un partner para ver la posición</p>
           ) : distribuidores.find((d) => d.id === padreProfileId)?.rol === 'admin' ? (
             <p className="text-[#1A4E26] text-sm font-medium">Frontal directo del admin (sin posición izq/der)</p>
+          ) : abrirComoFrontal ? (
+            <p className="text-[#92680A] text-sm font-medium">⭐ Frontal nuevo del distribuidor (sin posición izq/der)</p>
           ) : (
             <p className="text-[#1A4E26] text-sm font-medium">Se asigna automáticamente: Izquierda si libre, Derecha si no</p>
           )}

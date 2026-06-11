@@ -77,7 +77,7 @@ export default function Nosotros() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-[#6B7280] text-lg max-w-2xl mx-auto"
           >
-            Más de 15 años rescatando la sabiduría ancestral andina para transformar
+            Más de 15 años rescatando la sabiduría ancestral andina y amazónica para transformar
             la salud y el bienestar de Ecuador.
           </motion.p>
         </div>
@@ -110,8 +110,8 @@ export default function Nosotros() {
               </h2>
               <p className="text-[#6B7280] text-base leading-relaxed mb-4">
                 Durante más de 15 años, SUMAK ha sido un referente en la elaboración de productos
-                naturales basados en la sabiduría ancestral andina. Nuestra misión es simple pero
-                transformadora: acercar el poder de la naturaleza a cada hogar ecuatoriano.
+                naturales basados en la sabiduría ancestral andina y amazónica. Nuestra misión es simple pero
+                transformadora: acercar el poder de la naturaleza ecuatoriana a cada hogar.
               </p>
               <p className="text-[#6B7280] text-base leading-relaxed">
                 A través de nuestro laboratorio ancestral Sumak Jambi, combinamos el conocimiento

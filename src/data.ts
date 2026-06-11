@@ -361,6 +361,8 @@ export const products: Product[] = [
     tagline: 'Tu aliado natural para una vida plena',
     presentacion: 'Frasco de 50 ml — concentrado',
     nuevo: true,
+    bestseller: true,
+    destacado: true,
     revistaPagina: '/products/revista/vive-oxi-100.jpg',
     beneficios: [
       'Fortalece el sistema inmunológico',
@@ -727,7 +729,7 @@ export const affiliatePackages: AffiliatePackage[] = [
     productos: 5,
     destacado: false,
     beneficios: packageBenefits,
-    imagen: '/packs/pack-basico.jpeg',
+    imagen: '/packs/pack-basico.png',
     tagline: 'Tu primer paso hacia el bienestar y el negocio',
     descripcion:
       'El kit ideal para empezar tu camino con Sumak. Incluye 5 productos elegidos por ti del catálogo a precio especial de afiliado, más el acceso completo a la red multinivel.',
@@ -741,7 +743,7 @@ export const affiliatePackages: AffiliatePackage[] = [
     productos: 9,
     destacado: true,
     beneficios: packageBenefits,
-    imagen: '/packs/pack-emprendedor.jpeg',
+    imagen: '/packs/pack-emprendedor.png',
     tagline: 'Más productos, más alcance, más comisiones',
     descripcion:
       'El pack más popular. Incluye 9 productos a tu elección, perfecto para arrancar tu negocio con stock variado y ofrecer muestras a tu red.',
@@ -755,7 +757,7 @@ export const affiliatePackages: AffiliatePackage[] = [
     productos: 21,
     destacado: false,
     beneficios: packageBenefits,
-    imagen: '/packs/pack-lider.jpeg',
+    imagen: '/packs/pack-lider.png',
     tagline: 'El kit completo para líderes de red',
     descripcion:
       'Pensado para distribuidores que quieren maximizar su rango desde el inicio. 21 productos a tu elección, máxima activación de puntos y posicionamiento como líder.',

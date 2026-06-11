@@ -3,11 +3,11 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
   DollarSign, Users, ShoppingCart, Hash, Star, ArrowRight, TrendingUp,
-  CheckCircle2, AlertCircle, Store, Sparkles, ShoppingBag, Calendar,
+  CheckCircle2, AlertCircle, Store, Sparkles, ShoppingBag, Calendar, Package, Gift,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
-import { getRangoActual, getNextRango, planConfig } from '../../data';
+import { getRangoActual, getNextRango, planConfig, affiliatePackages } from '../../data';
 import type { Comision, Pedido } from '../../lib/types';
 
 function Spinner() {
@@ -132,6 +132,66 @@ export default function Overview() {
         <Spinner />
       ) : (
         <>
+          {/* ─── BIENVENIDA: TU PACK ESTÁ DISPONIBLE ──────── */}
+          {profile?.paquete && (() => {
+            const miPack = affiliatePackages.find((p) => p.paqueteKey === profile.paquete);
+            if (!miPack) return null;
+            return (
+              <motion.div
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.05 }}
+                className="relative overflow-hidden rounded-3xl mb-6 border-2 border-[#D4AF37]/40 bg-gradient-to-br from-[#FFF8DC] via-[#FFFEF7] to-[#FFF4CC] shadow-[0_8px_28px_rgba(212,175,55,0.18)]"
+              >
+                <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-[#D4AF37]/15 blur-3xl pointer-events-none" />
+                <div className="absolute -bottom-12 -left-12 w-40 h-40 rounded-full bg-[#1A4E26]/10 blur-3xl pointer-events-none" />
+                <div className="relative grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-5 p-5 sm:p-6 items-center">
+                  <div className="flex items-start gap-4">
+                    <div className="hidden sm:flex w-20 h-20 rounded-2xl overflow-hidden border border-[#D4AF37]/40 shrink-0 bg-white">
+                      <img
+                        src={miPack.imagen}
+                        alt={miPack.nombre}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                        <span className="inline-flex items-center gap-1 bg-[#D4AF37] text-[#0B2913] text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full">
+                          <Gift size={11} /> Tu pack está activo
+                        </span>
+                        <span className="text-[10px] font-bold text-[#92680A] uppercase tracking-wider">
+                          {miPack.productos} productos a tu elección
+                        </span>
+                      </div>
+                      <h2 className="font-heading font-black text-xl sm:text-2xl text-[#0B2913] leading-tight mb-1">
+                        ¡Bienvenido a SUMAK! Tu {miPack.nombre} está listo
+                      </h2>
+                      <p className="text-[#5C4200] text-sm leading-relaxed">
+                        Ya puedes <strong>armar tu paquete</strong> y elegir los {miPack.productos} productos
+                        que quieras del catálogo. Una vez armado, pasa a la tienda como un pedido listo
+                        para enviar.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2 sm:items-center shrink-0">
+                    <Link
+                      to={`/dashboard/tienda/pack/${miPack.slug}`}
+                      className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-[#1A4E26] to-[#256B36] text-white font-bold text-sm hover:from-[#163F1E] hover:to-[#1F5A2D] transition-all shadow-[0_8px_20px_-6px_rgba(26,78,38,0.5)]"
+                    >
+                      <Package size={15} /> Armar mi pack
+                    </Link>
+                    <Link
+                      to="/dashboard/tienda"
+                      className="inline-flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl border border-[#D4AF37]/50 text-[#92680A] font-bold text-xs hover:bg-white transition-colors"
+                    >
+                      Ver tienda
+                    </Link>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })()}
+
           {/* ─── ACTIVATION HERO ─────────────────────────── */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
