@@ -4,7 +4,7 @@ import { motion } from 'motion/react';
 import {
   ShoppingCart, Plus, Minus, X, CheckCircle2, AlertCircle, TrendingUp,
   ArrowLeft, ArrowRight, Trash2, Leaf, Sparkles, Upload,
-  CreditCard, Receipt, Landmark, Clock, Copy, Check,
+  CreditCard, Receipt, Landmark, Clock, Copy, Check, Package,
 } from 'lucide-react';
 import { levelCommissions, contactInfo, bankAccounts, planConfig } from '../../data';
 import { supabase, supabaseAdmin } from '../../lib/supabase';
@@ -295,14 +295,25 @@ export default function NuevoPedido() {
       }
 
       // 3. Insert items
-      const itemsRows = items.map((item) => ({
-        pedido_id: pedidoData.id,
-        producto_codigo: item.codigo,
-        producto_nombre: item.nombre,
-        cantidad: item.cantidad,
-        precio_unitario: item.precio,
-        subtotal: parseFloat((item.precio * item.cantidad).toFixed(2)),
-      }));
+      // Si el item es un pack (PKG-*) con productos seleccionados, los anexamos
+      // al nombre como texto legible para que el admin vea qué eligió el cliente
+      // sin necesidad de cambiar el schema de pedido_items.
+      const itemsRows = items.map((item) => {
+        const isPack = item.codigo.startsWith('PKG-');
+        const nombreFinal = isPack && item.packSelections && item.packSelections.length > 0
+          ? `${item.nombre} (incluye: ${item.packSelections
+              .map((s) => `${s.cantidad}x ${s.nombre}`)
+              .join(', ')})`
+          : item.nombre;
+        return {
+          pedido_id: pedidoData.id,
+          producto_codigo: item.codigo,
+          producto_nombre: nombreFinal,
+          cantidad: item.cantidad,
+          precio_unitario: item.precio,
+          subtotal: parseFloat((item.precio * item.cantidad).toFixed(2)),
+        };
+      });
       const { error: itemsError } = await supabase.from('pedido_items').insert(itemsRows);
       if (itemsError) {
         // UX-004: mensaje amable; detalle a consola.
@@ -947,6 +958,11 @@ export default function NuevoPedido() {
                     <Link to={`/dashboard/tienda/${item.codigo}`} className="block">
                       <p className="text-[#111111] font-bold text-sm leading-tight truncate hover:text-[#1A4E26] transition-colors">
                         {item.nombre}
+                        {item.codigo.startsWith('PKG-') && (
+                          <span className="ml-1.5 inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider bg-[#D4AF37]/15 text-[#92680A] border border-[#D4AF37]/30 rounded px-1.5 py-0.5">
+                            <Sparkles size={9} /> Pack
+                          </span>
+                        )}
                       </p>
                     </Link>
                     <p className="text-[#6B7280] text-xs mt-0.5">
@@ -954,6 +970,20 @@ export default function NuevoPedido() {
                       <span className="text-[#1A4E26] font-bold">${item.precio.toFixed(2)}</span>{' '}
                       <span className="text-[#9CA3AF]">c/u</span>
                     </p>
+                    {item.packSelections && item.packSelections.length > 0 && (
+                      <details className="mt-1.5 text-[10px]">
+                        <summary className="text-[#1A4E26] font-bold cursor-pointer hover:text-[#0F2E18] transition-colors inline-flex items-center gap-1">
+                          <Package size={10} /> Ver {item.packSelections.reduce((s, x) => s + x.cantidad, 0)} productos incluidos
+                        </summary>
+                        <ul className="mt-1.5 pl-3 space-y-0.5 border-l border-[#C8D8CB]">
+                          {item.packSelections.map((s) => (
+                            <li key={s.codigo} className="text-[#6B7280]">
+                              <span className="font-bold text-[#1A4E26]">{s.cantidad}x</span> {s.nombre}
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
                   </div>
 
                   <div className="flex items-center border border-[#C8D8CB] rounded-xl overflow-hidden shrink-0">

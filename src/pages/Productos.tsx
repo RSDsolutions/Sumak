@@ -1,8 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import { motion, type Variants } from 'motion/react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Leaf, Search, Star, ArrowRight, ShoppingBag, Sparkles, X, SlidersHorizontal } from 'lucide-react';
-import { products, categoryFilters, contactInfo } from '../data';
+import { Leaf, Search, Star, ArrowRight, ShoppingBag, Sparkles, X, SlidersHorizontal, Package, Crown, Award } from 'lucide-react';
+import { products, categoryFilters, contactInfo, affiliatePackages } from '../data';
 import { useSEO } from '../lib/seo';
 
 const fadeUp: Variants = {
@@ -216,6 +216,102 @@ export default function Productos() {
                 ))}
               </select>
             </label>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Packs destacados ─────────────────────────────────── */}
+      <section className="py-12 px-4 sm:px-6 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-8"
+          >
+            <span className="inline-flex items-center gap-1.5 bg-[#D4AF37]/15 text-[#92680A] text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-3">
+              <Package size={11} /> Paquetes de Afiliación
+            </span>
+            <h2 className="font-heading font-bold text-3xl sm:text-4xl text-[#111111] mb-3">
+              Arma tu pack y comienza tu negocio
+            </h2>
+            <p className="text-[#6B7280] text-base max-w-2xl mx-auto">
+              Elige el paquete que mejor se adapte a ti. Cada uno te da acceso completo a la red
+              Sumak y los productos los eliges tú del catálogo.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {affiliatePackages.map((pack, i) => {
+              const Icon = pack.paqueteKey === 'basico' ? Star
+                : pack.paqueteKey === 'emprendedor' ? Award
+                : Crown;
+              const accent = pack.paqueteKey === 'lider' ? '#D4AF37' : '#1A4E26';
+              return (
+                <motion.div
+                  key={pack.slug}
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: i * 0.1 }}
+                >
+                  <Link
+                    to={`/packs/${pack.slug}`}
+                    className={`block relative bg-white border-2 rounded-2xl overflow-hidden hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(26,78,38,0.18)] transition-all duration-300 group ${
+                      pack.destacado ? 'border-[#D4AF37]/50' : 'border-[#C8D8CB]'
+                    }`}
+                  >
+                    {pack.destacado && (
+                      <span className="absolute top-4 right-4 z-10 bg-[#D4AF37] text-[#0B2913] text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-md">
+                        Más popular
+                      </span>
+                    )}
+                    <div className="aspect-[16/10] overflow-hidden" style={{ background: 'linear-gradient(135deg, #EBF4ED 0%, #D5ECD9 100%)' }}>
+                      <img
+                        src={pack.imagen}
+                        alt={pack.nombre}
+                        loading="lazy"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    </div>
+                    <div className="p-6">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div
+                          className="w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0"
+                          style={{ backgroundColor: accent }}
+                        >
+                          <Icon size={16} />
+                        </div>
+                        <h3 className="font-heading font-bold text-[#111111] text-lg">{pack.nombre}</h3>
+                      </div>
+                      <p className="text-[#1A4E26] text-sm italic mb-4">{pack.tagline}</p>
+
+                      <div className="grid grid-cols-3 gap-2 mb-5">
+                        <div className="bg-[#F4F7F5] border border-[#C8D8CB] rounded-lg p-2 text-center">
+                          <p className="text-[9px] uppercase tracking-wider text-[#9CA3AF] font-bold">Precio</p>
+                          <p className="font-heading font-bold text-base text-[#1A4E26]">${pack.precio}</p>
+                        </div>
+                        <div className="bg-[#F4F7F5] border border-[#C8D8CB] rounded-lg p-2 text-center">
+                          <p className="text-[9px] uppercase tracking-wider text-[#9CA3AF] font-bold">Puntos</p>
+                          <p className="font-heading font-bold text-base text-[#D4AF37]">{pack.puntos}</p>
+                        </div>
+                        <div className="bg-[#F4F7F5] border border-[#C8D8CB] rounded-lg p-2 text-center">
+                          <p className="text-[9px] uppercase tracking-wider text-[#9CA3AF] font-bold">Productos</p>
+                          <p className="font-heading font-bold text-base text-[#111111]">{pack.productos}</p>
+                        </div>
+                      </div>
+
+                      <div
+                        className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm text-white transition-all group-hover:gap-3"
+                        style={{ backgroundColor: accent }}
+                      >
+                        Ver detalle <ArrowRight size={15} />
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>

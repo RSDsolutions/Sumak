@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
   Search, X, SlidersHorizontal, ShoppingCart, Plus, Minus,
-  Star, ArrowRight, Leaf, Check, Sparkles,
+  Star, ArrowRight, Leaf, Check, Sparkles, Package, Crown, Award,
 } from 'lucide-react';
-import { products, categoryFilters, planConfig } from '../../data';
+import { products, categoryFilters, planConfig, affiliatePackages } from '../../data';
 import { useCart } from '../../lib/cart';
 import { useToast } from '../../lib/toast';
 
@@ -93,6 +93,93 @@ export default function Tienda() {
           </Link>
         </div>
       </div>
+
+      {/* ── Packs destacados ────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="mb-6"
+      >
+        <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Package size={18} className="text-[#1A4E26]" />
+            <h2 className="font-heading font-bold text-lg text-[#111111]">
+              Paquetes Sumak
+            </h2>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#D4AF37] bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded px-1.5 py-0.5">
+              Arma tu pack
+            </span>
+          </div>
+          <p className="text-[#6B7280] text-xs hidden sm:block">
+            Elige los productos que quieres dentro del paquete
+          </p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {affiliatePackages.map((pack, i) => {
+            const Icon = pack.paqueteKey === 'basico' ? Star
+              : pack.paqueteKey === 'emprendedor' ? Award
+              : Crown;
+            const accent = pack.paqueteKey === 'lider' ? '#D4AF37' : '#1A4E26';
+            return (
+              <motion.div
+                key={pack.slug}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: i * 0.08 }}
+              >
+                <Link
+                  to={`/dashboard/tienda/pack/${pack.slug}`}
+                  className={`block relative bg-white border rounded-2xl overflow-hidden group hover:shadow-[0_15px_40px_rgba(26,78,38,0.15)] hover:-translate-y-1 transition-all duration-300 ${
+                    pack.destacado ? 'border-[#D4AF37]/50' : 'border-[#C8D8CB]'
+                  }`}
+                >
+                  {pack.destacado && (
+                    <span className="absolute top-2 right-2 z-10 bg-[#D4AF37] text-[#0B2913] text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full shadow-md">
+                      Popular
+                    </span>
+                  )}
+                  <div className="aspect-[5/3] overflow-hidden" style={{ background: 'linear-gradient(135deg, #EBF4ED 0%, #D5ECD9 100%)' }}>
+                    <img
+                      src={pack.imagen}
+                      alt={pack.nombre}
+                      loading="lazy"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  </div>
+                  <div className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-white shrink-0"
+                        style={{ backgroundColor: accent }}
+                      >
+                        <Icon size={13} />
+                      </div>
+                      <h3 className="font-heading font-bold text-[#111111] text-sm">{pack.nombre}</h3>
+                    </div>
+                    <p className="text-[#6B7280] text-xs leading-relaxed line-clamp-2 mb-3 min-h-[32px]">
+                      {pack.tagline}
+                    </p>
+                    <div className="flex items-end justify-between gap-2 pt-3 border-t border-[#C8D8CB]">
+                      <div>
+                        <p className="font-heading font-black text-2xl" style={{ color: accent }}>
+                          ${pack.precio}
+                        </p>
+                        <p className="text-[10px] text-[#9CA3AF]">
+                          {pack.productos} productos · {pack.puntos} pts
+                        </p>
+                      </div>
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#1A4E26] group-hover:gap-2 transition-all">
+                        Armar pack <ArrowRight size={12} />
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              </motion.div>
+            );
+          })}
+        </div>
+      </motion.div>
 
       {/* ── Search bar ──────────────────────────────────── */}
       <div className="relative mb-4">

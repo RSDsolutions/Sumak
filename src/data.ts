@@ -157,11 +157,16 @@ export interface Product {
 
 export interface AffiliatePackage {
   nombre: string;
+  slug: string;
+  paqueteKey: 'basico' | 'emprendedor' | 'lider';
   precio: number;
   puntos: number;
   productos: number;
   destacado: boolean;
   beneficios: string[];
+  imagen: string;
+  tagline: string;
+  descripcion: string;
 }
 
 export interface LevelCommission {
@@ -714,30 +719,52 @@ const packageBenefits: string[] = [
 
 export const affiliatePackages: AffiliatePackage[] = [
   {
-    nombre: 'Básico',
+    nombre: 'Pack Básico',
+    slug: 'pack-basico',
+    paqueteKey: 'basico',
     precio: 125,
     puntos: 125,
-    productos: 9,
+    productos: 5,
     destacado: false,
     beneficios: packageBenefits,
+    imagen: '/packs/pack-basico.jpeg',
+    tagline: 'Tu primer paso hacia el bienestar y el negocio',
+    descripcion:
+      'El kit ideal para empezar tu camino con Sumak. Incluye 5 productos elegidos por ti del catálogo a precio especial de afiliado, más el acceso completo a la red multinivel.',
   },
   {
-    nombre: 'Emprendedor',
+    nombre: 'Pack Emprendedor',
+    slug: 'pack-emprendedor',
+    paqueteKey: 'emprendedor',
     precio: 225,
     puntos: 225,
     productos: 9,
     destacado: true,
     beneficios: packageBenefits,
+    imagen: '/packs/pack-emprendedor.jpeg',
+    tagline: 'Más productos, más alcance, más comisiones',
+    descripcion:
+      'El pack más popular. Incluye 9 productos a tu elección, perfecto para arrancar tu negocio con stock variado y ofrecer muestras a tu red.',
   },
   {
-    nombre: 'Líder',
+    nombre: 'Pack Líder',
+    slug: 'pack-lider',
+    paqueteKey: 'lider',
     precio: 525,
     puntos: 525,
-    productos: 9,
+    productos: 21,
     destacado: false,
     beneficios: packageBenefits,
+    imagen: '/packs/pack-lider.jpeg',
+    tagline: 'El kit completo para líderes de red',
+    descripcion:
+      'Pensado para distribuidores que quieren maximizar su rango desde el inicio. 21 productos a tu elección, máxima activación de puntos y posicionamiento como líder.',
   },
 ];
+
+export function getPackBySlug(slug: string): AffiliatePackage | undefined {
+  return affiliatePackages.find((p) => p.slug === slug);
+}
 
 // ── Level Commissions ────────────────────────────────────────
 export const levelCommissions: LevelCommission[] = [

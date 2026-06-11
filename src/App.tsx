@@ -28,6 +28,7 @@ const Contacto = lazy(() => import('./pages/Contacto'));
 const Registro = lazy(() => import('./pages/Registro'));
 const Login = lazy(() => import('./pages/Login'));
 const Manual = lazy(() => import('./pages/Manual'));
+const Pack = lazy(() => import('./pages/Pack'));
 
 // Distribuidor dashboard pages
 const AdminLayout = lazy(() => import('./components/AdminLayout'));
@@ -41,6 +42,7 @@ const MiPerfil = lazy(() => import('./pages/dashboard/MiPerfil'));
 const MiEscalera = lazy(() => import('./pages/dashboard/MiEscalera'));
 const Tienda = lazy(() => import('./pages/dashboard/Tienda'));
 const TiendaProducto = lazy(() => import('./pages/dashboard/TiendaProducto'));
+const TiendaPack = lazy(() => import('./pages/dashboard/TiendaPack'));
 
 // Admin pages
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
@@ -198,6 +200,14 @@ export default function App() {
               </PublicLayout>
             }
           />
+          <Route
+            path="/packs/:slug"
+            element={
+              <PublicLayout>
+                <PageTransition><Pack /></PageTransition>
+              </PublicLayout>
+            }
+          />
           <Route path="/login" element={<Login />} />
 
           {/* ── DISTRIBUIDOR ROUTES ───────────────────────── */}
@@ -267,6 +277,16 @@ export default function App() {
               <ProtectedRoute allowedRoles={['distribuidor']}>
                 <DashboardLayout>
                   <Tienda />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/tienda/pack/:slug"
+            element={
+              <ProtectedRoute allowedRoles={['distribuidor']}>
+                <DashboardLayout>
+                  <TiendaPack />
                 </DashboardLayout>
               </ProtectedRoute>
             }

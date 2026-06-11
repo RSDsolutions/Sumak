@@ -1,5 +1,11 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
+export interface PackSelection {
+  codigo: string;
+  nombre: string;
+  cantidad: number;
+}
+
 export interface CartItem {
   codigo: string;
   nombre: string;
@@ -7,6 +13,10 @@ export interface CartItem {
   precio: number;
   cantidad: number;
   imagen?: string;
+  // Para items tipo paquete (PKG-*): productos elegidos por el usuario
+  // que conforman el contenido del pack. Solo informativos: el precio del
+  // pack es fijo y no depende de las selecciones.
+  packSelections?: PackSelection[];
 }
 
 interface CartContextValue {
@@ -60,6 +70,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setItems((prev) => {
       const existing = prev.find((i) => i.codigo === item.codigo);
       if (existing) {
+        // Para packs: si el usuario reconfigura el pack agregándolo otra vez,
+        // reemplazamos las selecciones y mantenemos la cantidad existente +1.
+        if (item.packSelections) {
+          return prev.map((i) =>
+            i.codigo === item.codigo
+              ? { ...i, packSelections: item.packSelections, cantidad: i.cantidad + qty }
+              : i,
+          );
+        }
         return prev.map((i) => i.codigo === item.codigo ? { ...i, cantidad: i.cantidad + qty } : i);
       }
       return [...prev, { ...item, cantidad: Math.max(1, qty) }];
