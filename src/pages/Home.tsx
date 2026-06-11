@@ -1,5 +1,6 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, type Variants } from 'motion/react';
+import { motion, AnimatePresence, type Variants } from 'motion/react';
 import {
   Leaf, Users, Shield, ArrowRight, Star, CheckCircle, ShoppingBag,
   Sparkles, Heart, Award, TrendingUp, Truck, Lock,
@@ -16,8 +17,18 @@ const stagger = {
   visible: { transition: { staggerChildren: 0.1 } },
 };
 
-// ── Featured products (with imagery) ──
-const heroProduct = products.find((p) => p.slug === 'regen-24')!;
+// ── Hero carousel — productos destacados que rotan automáticamente ──
+const heroCarouselSlugs = [
+  'regen-24',
+  'te-extractos-de-la-vida',
+  'colon-renova',
+  'colageno-hidrolizado',
+  'formula-1000',
+];
+const heroProducts = heroCarouselSlugs
+  .map((s) => products.find((p) => p.slug === s)!)
+  .filter(Boolean);
+
 const bestsellers = products.filter((p) => p.bestseller);
 const novelties = products.filter((p) => p.nuevo);
 
@@ -64,6 +75,18 @@ const trustBadges = [
 ];
 
 export default function Home() {
+  // Carousel del hero — cambia de producto cada 4 segundos
+  const [heroIndex, setHeroIndex] = useState(0);
+  const heroProduct = heroProducts[heroIndex] ?? heroProducts[0];
+
+  useEffect(() => {
+    if (heroProducts.length < 2) return;
+    const id = setInterval(() => {
+      setHeroIndex((i) => (i + 1) % heroProducts.length);
+    }, 4000);
+    return () => clearInterval(id);
+  }, []);
+
   return (
     <div className="bg-white">
 
@@ -181,58 +204,82 @@ export default function Home() {
                 <div className="absolute inset-[-20%] rounded-full blur-3xl opacity-25 pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.7) 0%, transparent 60%)' }} />
 
                 {/* The product card */}
-                <div className="relative bg-gradient-to-br from-white/[0.07] to-white/[0.02] backdrop-blur-xl border border-white/20 rounded-3xl p-7 shadow-[0_25px_60px_rgba(0,0,0,0.4)]">
+                <div className="relative bg-gradient-to-br from-white/[0.07] to-white/[0.02] backdrop-blur-xl border border-white/20 rounded-3xl p-7 shadow-[0_25px_60px_rgba(0,0,0,0.4)] overflow-hidden">
 
-                  {/* Top: badge */}
-                  <div className="flex items-center justify-between mb-5">
-                    <span className="inline-flex items-center gap-1.5 bg-[#D4AF37] text-[#0B2913] text-[10px] font-bold tracking-widest uppercase px-3 py-1 rounded-full">
-                      <Star size={10} fill="currentColor" /> Más Vendido
-                    </span>
-                    <span className="text-white/50 text-[11px] font-mono">#{heroProduct.codigo}</span>
-                  </div>
-
-                  {/* Product image — fills the box */}
-                  <div className="relative h-[280px] sm:h-[340px] rounded-2xl overflow-hidden mb-5">
-                    <img
-                      src={heroProduct.imagen}
-                      alt={heroProduct.nombre}
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
-                  </div>
-
-                  {/* Product details */}
-                  <div className="border-t border-white/15 pt-5">
-                    <p className="text-[#D4AF37] text-[10px] font-semibold uppercase tracking-widest mb-2">{heroProduct.categoria}</p>
-                    <h3 className="font-heading font-bold text-2xl text-white mb-1">{heroProduct.nombre}</h3>
-                    <p className="text-white/65 text-sm mb-5 leading-snug">{heroProduct.tagline ?? heroProduct.descripcion}</p>
-
-                    {/* Mini benefits */}
-                    {heroProduct.beneficios && (
-                      <ul className="space-y-1.5 mb-5">
-                        {heroProduct.beneficios.slice(0, 3).map((b) => (
-                          <li key={b} className="flex items-start gap-2 text-white/80 text-xs">
-                            <CheckCircle size={13} className="text-[#D4AF37] flex-shrink-0 mt-0.5" />
-                            <span>{b}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-
-                    {/* Price + CTA */}
-                    <div className="flex items-end justify-between gap-3">
-                      <div>
-                        <p className="text-white/50 text-[10px] uppercase tracking-wider mb-1">Desde</p>
-                        <p className="font-heading font-bold text-white text-3xl leading-none">
-                          ${heroProduct.pvp.toFixed(2)}
-                        </p>
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={heroProduct.slug}
+                      initial={{ opacity: 0, x: 60 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -60 }}
+                      transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+                    >
+                      {/* Top: badge */}
+                      <div className="flex items-center justify-between mb-5">
+                        <span className="inline-flex items-center gap-1.5 bg-[#D4AF37] text-[#0B2913] text-[10px] font-bold tracking-widest uppercase px-3 py-1 rounded-full">
+                          <Star size={10} fill="currentColor" /> {heroProduct.bestseller ? 'Más Vendido' : heroProduct.nuevo ? 'Nuevo' : 'Destacado'}
+                        </span>
+                        <span className="text-white/50 text-[11px] font-mono">#{heroProduct.codigo}</span>
                       </div>
-                      <Link
-                        to={`/productos/${heroProduct.slug}`}
-                        className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-white text-[#0B2913] font-bold text-sm hover:bg-[#D4AF37] hover:text-[#0B2913] transition-all duration-200"
-                      >
-                        Ver Producto <ArrowRight size={15} />
-                      </Link>
-                    </div>
+
+                      {/* Product image — fills the box */}
+                      <div className="relative h-[280px] sm:h-[340px] rounded-2xl overflow-hidden mb-5">
+                        <img
+                          src={heroProduct.imagen}
+                          alt={heroProduct.nombre}
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                      </div>
+
+                      {/* Product details */}
+                      <div className="border-t border-white/15 pt-5">
+                        <p className="text-[#D4AF37] text-[10px] font-semibold uppercase tracking-widest mb-2">{heroProduct.categoria}</p>
+                        <h3 className="font-heading font-bold text-2xl text-white mb-1">{heroProduct.nombre}</h3>
+                        <p className="text-white/65 text-sm mb-5 leading-snug">{heroProduct.tagline ?? heroProduct.descripcion}</p>
+
+                        {/* Mini benefits */}
+                        {heroProduct.beneficios && (
+                          <ul className="space-y-1.5 mb-5">
+                            {heroProduct.beneficios.slice(0, 3).map((b) => (
+                              <li key={b} className="flex items-start gap-2 text-white/80 text-xs">
+                                <CheckCircle size={13} className="text-[#D4AF37] flex-shrink-0 mt-0.5" />
+                                <span>{b}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+
+                        {/* Price + CTA */}
+                        <div className="flex items-end justify-between gap-3">
+                          <div>
+                            <p className="text-white/50 text-[10px] uppercase tracking-wider mb-1">Desde</p>
+                            <p className="font-heading font-bold text-white text-3xl leading-none">
+                              ${heroProduct.pvp.toFixed(2)}
+                            </p>
+                          </div>
+                          <Link
+                            to={`/productos/${heroProduct.slug}`}
+                            className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-white text-[#0B2913] font-bold text-sm hover:bg-[#D4AF37] hover:text-[#0B2913] transition-all duration-200"
+                          >
+                            Ver Producto <ArrowRight size={15} />
+                          </Link>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </AnimatePresence>
+
+                  {/* Dots indicador del carousel */}
+                  <div className="flex justify-center gap-1.5 mt-5 pt-3 border-t border-white/10">
+                    {heroProducts.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setHeroIndex(i)}
+                        aria-label={`Producto ${i + 1}`}
+                        className={`h-1.5 rounded-full transition-all duration-500 ${
+                          heroIndex === i ? 'w-6 bg-[#D4AF37]' : 'w-1.5 bg-white/25 hover:bg-white/40'
+                        }`}
+                      />
+                    ))}
                   </div>
                 </div>
 
