@@ -514,8 +514,8 @@ export default function Home() {
           >
             {/* Banner image fills the entire frame */}
             <img
-              src="/productos-banner.png"
-              alt="Línea de productos Sumak — Fibramak, Madre Silvestre, Regen 24, Vive-Oxi-100"
+              src="/3-productos.png"
+              alt="Línea de productos Sumak"
               className="absolute inset-0 w-full h-full object-cover"
             />
 
