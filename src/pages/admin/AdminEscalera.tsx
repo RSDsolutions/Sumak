@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   Trophy, Crown, Search, ChevronRight, Users, Sparkles, ExternalLink,
   Globe, ChefHat, Snowflake, Tv, Laptop, Bike, Car, Home, Plane, MapPin,
-  TrendingUp, Award, X,
+  TrendingUp, Award, X, Calendar, ChevronLeft, RefreshCw,
 } from 'lucide-react';
 import { supabaseAdmin } from '../../lib/supabase';
 import { tramo1Ranks, tramo2Ranks, getRangoActual } from '../../data';
@@ -20,6 +20,15 @@ interface DistribuidorRow {
   email: string;
   patrocinador_id: string | null;
   estado: string;
+  fecha_aprobacion: string | null;
+  fecha_registro: string | null;
+}
+
+function monthRange(date: Date): { start: Date; end: Date; label: string } {
+  const start = new Date(date.getFullYear(), date.getMonth(), 1);
+  const end = new Date(date.getFullYear(), date.getMonth() + 1, 1);
+  const label = start.toLocaleString('es-EC', { month: 'long', year: 'numeric' });
+  return { start, end, label };
 }
 
 function getPrizeIcon(text: string, size = 11) {
@@ -59,36 +68,66 @@ export default function AdminEscalera() {
   const [expandedT1, setExpandedT1] = useState<number | null>(null);
   const [expandedT2, setExpandedT2] = useState<number | null>(null);
   const [search, setSearch] = useState('');
+  // BIZ: la escalera se calcula por mes calendario. El admin puede
+  // moverse por meses anteriores para revisar historico.
+  const [monthOffset, setMonthOffset] = useState(0);
+  const monthDate = useMemo(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth() + monthOffset, 1);
+  }, [monthOffset]);
+  const { start: monthStart, end: monthEnd, label: monthLabel } = useMemo(
+    () => monthRange(monthDate),
+    [monthDate],
+  );
+  const isCurrentMonth = monthOffset === 0;
 
   useEffect(() => {
     async function load() {
+      setLoading(true);
       const { data: profiles } = await supabaseAdmin
         .from('profiles')
-        .select('id, codigo_distribuidor, nombre_completo, email, patrocinador_id, estado, rol')
+        .select('id, codigo_distribuidor, nombre_completo, email, patrocinador_id, estado, rol, fecha_aprobacion, fecha_registro')
         .eq('rol', 'distribuidor')
         .order('codigo_distribuidor', { ascending: true });
 
       const list = (profiles ?? []) as (DistribuidorRow & { rol: string })[];
       const justDistrib = list.map(({ rol: _rol, ...rest }) => rest);
 
-      // Directos por user
-      const directos = new Map<string, number>();
+      const startMs = monthStart.getTime();
+      const endMs = monthEnd.getTime();
+      const inMonth = (p: DistribuidorRow) => {
+        const dateStr = p.fecha_aprobacion ?? p.fecha_registro;
+        if (!dateStr) return false;
+        const t = new Date(dateStr).getTime();
+        return t >= startMs && t < endMs;
+      };
+
+      // Construir mapas necesarios sobre TODA la red (sin filtrar por mes)
+      // porque los descendientes de un usuario X pueden no ser del mes,
+      // pero los nietos sí (poco probable, pero estructura igual).
       const childrenMap = new Map<string, string[]>();
+      const byId = new Map<string, DistribuidorRow>();
       for (const p of justDistrib) {
-        directos.set(p.id, 0);
+        byId.set(p.id, p);
         if (p.patrocinador_id) {
           const arr = childrenMap.get(p.patrocinador_id) ?? [];
           arr.push(p.id);
           childrenMap.set(p.patrocinador_id, arr);
         }
       }
+
+      // Directos del mes: cuenta cuantos hijos directos del usuario X
+      // fueron afiliados ESTE mes.
+      const directos = new Map<string, number>();
+      for (const p of justDistrib) directos.set(p.id, 0);
       for (const p of justDistrib) {
-        if (p.patrocinador_id && directos.has(p.patrocinador_id)) {
+        if (p.patrocinador_id && directos.has(p.patrocinador_id) && inMonth(p)) {
           directos.set(p.patrocinador_id, (directos.get(p.patrocinador_id) ?? 0) + 1);
         }
       }
 
-      // Red total por user via BFS
+      // Red del mes: descendientes (cualquier profundidad) cuya fecha
+      // cae en este mes.
       const red = new Map<string, number>();
       for (const p of justDistrib) {
         let total = 0;
@@ -100,7 +139,8 @@ export default function AdminEscalera() {
           for (const k of kids) {
             if (!visited.has(k)) {
               visited.add(k);
-              total++;
+              const childData = byId.get(k);
+              if (childData && inMonth(childData)) total++;
               queue.push(k);
             }
           }
@@ -114,7 +154,7 @@ export default function AdminEscalera() {
       setLoading(false);
     }
     load();
-  }, []);
+  }, [monthStart, monthEnd]);
 
   // ── Construir mapa de usuarios por rango T1 ──
   const usersByT1 = useMemo(() => {
@@ -218,7 +258,7 @@ export default function AdminEscalera() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-4">
         <div className="flex items-center gap-3 flex-wrap">
           <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#111111] flex items-center gap-2">
             <Trophy size={26} className="text-[#D4AF37]" />
@@ -229,8 +269,58 @@ export default function AdminEscalera() {
           </span>
         </div>
         <p className="text-[#6B7280] text-sm mt-1">
-          Posición de cada distribuidor en los rangos. Haz clic en un escalón para ver quiénes están ahí.
+          Posición de cada distribuidor en los rangos del mes. Click en un escalón para ver quiénes están ahí.
         </p>
+      </div>
+
+      {/* Selector de mes — la escalera se reinicia cada mes */}
+      <div className="bg-gradient-to-r from-[#FFF8DC] to-[#FFFEF7] border-2 border-[#D4AF37]/40 rounded-2xl p-4 mb-6 shadow-[0_4px_16px_rgba(212,175,55,0.12)]">
+        <div className="flex items-start gap-3 flex-wrap">
+          <div className="w-11 h-11 rounded-xl bg-[#D4AF37]/20 flex items-center justify-center shrink-0">
+            <RefreshCw size={18} className="text-[#92680A]" />
+          </div>
+          <div className="flex-1 min-w-[220px]">
+            <p className="font-bold text-[#0B2913] text-sm flex items-center gap-1.5 flex-wrap">
+              <Calendar size={13} className="text-[#92680A]" />
+              Datos de
+              <span className="capitalize">{monthLabel}</span>
+              {isCurrentMonth && (
+                <span className="text-[10px] font-bold uppercase tracking-wider bg-[#1A4E26] text-white px-2 py-0.5 rounded">
+                  Mes actual
+                </span>
+              )}
+            </p>
+            <p className="text-[#5C4200] text-xs mt-1 leading-relaxed">
+              Cada distribuidor se ubica en el rango según las personas que afilió a su red
+              <strong> en este mes</strong>. La escalera se reinicia el día 1 de cada mes calendario.
+            </p>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={() => setMonthOffset((o) => o - 1)}
+              className="w-9 h-9 rounded-lg bg-white border border-[#D4AF37]/40 flex items-center justify-center text-[#92680A] hover:bg-[#FFF4CC] transition-colors"
+              aria-label="Mes anterior"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              onClick={() => setMonthOffset((o) => o + 1)}
+              disabled={isCurrentMonth}
+              className="w-9 h-9 rounded-lg bg-white border border-[#D4AF37]/40 flex items-center justify-center text-[#92680A] hover:bg-[#FFF4CC] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              aria-label="Mes siguiente"
+            >
+              <ChevronRight size={16} />
+            </button>
+            {!isCurrentMonth && (
+              <button
+                onClick={() => setMonthOffset(0)}
+                className="ml-1 px-3 h-9 rounded-lg bg-[#D4AF37] text-[#0B2913] text-xs font-bold hover:bg-[#E8C94A] transition-colors"
+              >
+                Hoy
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Stats globales */}
@@ -240,14 +330,14 @@ export default function AdminEscalera() {
             <Users size={12} /> Total
           </div>
           <p className="font-heading font-bold text-2xl text-[#111111]">{totalDistribuidores}</p>
-          <p className="text-[10px] text-[#9CA3AF] mt-0.5">distribuidores activos</p>
+          <p className="text-[10px] text-[#9CA3AF] mt-0.5">distribuidores activos (histórico)</p>
         </div>
         <div className="bg-white border border-[#C8D8CB] rounded-2xl p-4">
           <div className="flex items-center gap-2 text-[#1A4E26] text-[10px] font-bold uppercase tracking-widest mb-2">
             <TrendingUp size={12} /> Tramo 1
           </div>
           <p className="font-heading font-bold text-2xl text-[#1A4E26]">{totalT1Cubiertos}</p>
-          <p className="text-[10px] text-[#9CA3AF] mt-0.5">en algún rango T1</p>
+          <p className="text-[10px] text-[#9CA3AF] mt-0.5">con afiliados este mes</p>
         </div>
         <div className="bg-white border border-[#D4AF37]/30 rounded-2xl p-4">
           <div className="flex items-center gap-2 text-[#D4AF37] text-[10px] font-bold uppercase tracking-widest mb-2">

@@ -4,12 +4,20 @@ import { motion } from 'motion/react';
 import {
   Trophy, Crown, Star, ArrowRight, TrendingUp,
   Sparkles, Globe, ChefHat, Snowflake, Tv, Laptop, Bike, Car, Home,
-  Plane, MapPin, Users,
+  Plane, MapPin, Users, Calendar, ChevronLeft, ChevronRight, RefreshCw,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { tramo1Ranks, tramo2Ranks, getRangoActual, getNextRango } from '../../data';
 import StaircaseVisual, { type StaircaseRank } from '../../components/StaircaseVisual';
+
+// Devuelve [inicio, finExclusivo) del mes calendario para una fecha dada.
+function monthRange(date: Date): { start: Date; end: Date; label: string } {
+  const start = new Date(date.getFullYear(), date.getMonth(), 1);
+  const end = new Date(date.getFullYear(), date.getMonth() + 1, 1);
+  const label = start.toLocaleString('es-EC', { month: 'long', year: 'numeric' });
+  return { start, end, label };
+}
 
 function Spinner() {
   return (
@@ -44,25 +52,60 @@ export default function MiEscalera() {
   const [loading, setLoading] = useState(true);
   const [directos, setDirectos] = useState(0);
   const [redTotal, setRedTotal] = useState(0);
+  // BIZ: la escalera de exito es MENSUAL — se reinicia cada mes.
+  // Solo cuentan los afiliados (directos y red) cuya fecha de aprobacion
+  // este dentro del mes seleccionado. El usuario puede navegar a meses
+  // anteriores para ver su historial.
+  const [monthOffset, setMonthOffset] = useState(0);
+  const monthDate = useMemo(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth() + monthOffset, 1);
+  }, [monthOffset]);
+  const { start: monthStart, end: monthEnd, label: monthLabel } = useMemo(
+    () => monthRange(monthDate),
+    [monthDate],
+  );
+  const isCurrentMonth = monthOffset === 0;
 
   useEffect(() => {
     if (!user) return;
 
     async function load() {
-      // Cargar todos los profiles distribuidor para construir el árbol de descendientes
+      setLoading(true);
+      // Cargar todos los profiles distribuidor con su fecha de aprobacion.
+      // Si fecha_aprobacion es null cae a fecha_registro como fallback.
       const { data: allProfiles } = await supabase
         .from('profiles')
-        .select('id, patrocinador_id')
+        .select('id, patrocinador_id, fecha_aprobacion, fecha_registro')
         .eq('rol', 'distribuidor');
 
-      const list = (allProfiles ?? []) as { id: string; patrocinador_id: string | null }[];
+      const list = (allProfiles ?? []) as {
+        id: string;
+        patrocinador_id: string | null;
+        fecha_aprobacion: string | null;
+        fecha_registro: string | null;
+      }[];
 
-      // Directos: profiles cuyo patrocinador_id = user.id
-      const directosCount = list.filter((p) => p.patrocinador_id === user!.id).length;
+      const startMs = monthStart.getTime();
+      const endMs = monthEnd.getTime();
+      const inMonth = (p: typeof list[number]) => {
+        const dateStr = p.fecha_aprobacion ?? p.fecha_registro;
+        if (!dateStr) return false;
+        const t = new Date(dateStr).getTime();
+        return t >= startMs && t < endMs;
+      };
 
-      // Red total: BFS recursivo desde el user.id por la cadena patrocinador
+      // Directos del mes: profiles cuyo patrocinador_id = user.id
+      // y cuya fecha cae en el mes seleccionado.
+      const directosCount = list.filter(
+        (p) => p.patrocinador_id === user!.id && inMonth(p),
+      ).length;
+
+      // Mapa hijo→padres (toda la red, sin filtrar) para descender.
       const childrenMap = new Map<string, string[]>();
+      const byId = new Map<string, typeof list[number]>();
       for (const p of list) {
+        byId.set(p.id, p);
         if (p.patrocinador_id) {
           const arr = childrenMap.get(p.patrocinador_id) ?? [];
           arr.push(p.id);
@@ -70,13 +113,19 @@ export default function MiEscalera() {
         }
       }
 
+      // Red total del mes: BFS descendente; solo cuenta a los que se
+      // afiliaron en este mes.
       let total = 0;
       const queue: string[] = [user!.id];
+      const seen = new Set<string>([user!.id]);
       while (queue.length > 0) {
         const current = queue.shift()!;
         const children = childrenMap.get(current) ?? [];
         for (const child of children) {
-          total++;
+          if (seen.has(child)) continue;
+          seen.add(child);
+          const childData = byId.get(child);
+          if (childData && inMonth(childData)) total++;
           queue.push(child);
         }
       }
@@ -87,7 +136,7 @@ export default function MiEscalera() {
     }
 
     load();
-  }, [user]);
+  }, [user, monthStart, monthEnd]);
 
   // ── Tramo 1 ──
   const rangoT1Actual = useMemo(() => getRangoActual(directos), [directos]);
@@ -150,7 +199,7 @@ export default function MiEscalera() {
   return (
     <div>
       {/* ── Header ───────────────────────────────── */}
-      <div className="mb-6">
+      <div className="mb-4">
         <div className="flex items-center gap-3 flex-wrap">
           <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#111111] flex items-center gap-2">
             <Trophy size={26} className="text-[#D4AF37]" />
@@ -163,6 +212,56 @@ export default function MiEscalera() {
         <p className="text-[#6B7280] text-sm mt-1">
           Tu progreso en los dos tramos de la red Sumak. Cada rango desbloquea bonos y recompensas.
         </p>
+      </div>
+
+      {/* ── Selector de mes + aviso de reset mensual ───────── */}
+      <div className="bg-gradient-to-r from-[#FFF8DC] to-[#FFFEF7] border-2 border-[#D4AF37]/40 rounded-2xl p-4 mb-6 shadow-[0_4px_16px_rgba(212,175,55,0.12)]">
+        <div className="flex items-start gap-3 flex-wrap">
+          <div className="w-11 h-11 rounded-xl bg-[#D4AF37]/20 flex items-center justify-center shrink-0">
+            <RefreshCw size={18} className="text-[#92680A]" />
+          </div>
+          <div className="flex-1 min-w-[200px]">
+            <p className="font-bold text-[#0B2913] text-sm flex items-center gap-1.5 flex-wrap">
+              <Calendar size={13} className="text-[#92680A]" />
+              Escalera de
+              <span className="capitalize">{monthLabel}</span>
+              {isCurrentMonth && (
+                <span className="text-[10px] font-bold uppercase tracking-wider bg-[#1A4E26] text-white px-2 py-0.5 rounded">
+                  Mes actual
+                </span>
+              )}
+            </p>
+            <p className="text-[#5C4200] text-xs mt-1 leading-relaxed">
+              Los rangos se calculan <strong>por mes calendario</strong> y se reinician el día 1.
+              Solo cuentan los distribuidores afiliados en este mes a tu red para definir tu rango.
+            </p>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={() => setMonthOffset((o) => o - 1)}
+              className="w-9 h-9 rounded-lg bg-white border border-[#D4AF37]/40 flex items-center justify-center text-[#92680A] hover:bg-[#FFF4CC] transition-colors"
+              aria-label="Mes anterior"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              onClick={() => setMonthOffset((o) => o + 1)}
+              disabled={isCurrentMonth}
+              className="w-9 h-9 rounded-lg bg-white border border-[#D4AF37]/40 flex items-center justify-center text-[#92680A] hover:bg-[#FFF4CC] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              aria-label="Mes siguiente"
+            >
+              <ChevronRight size={16} />
+            </button>
+            {!isCurrentMonth && (
+              <button
+                onClick={() => setMonthOffset(0)}
+                className="ml-1 px-3 h-9 rounded-lg bg-[#D4AF37] text-[#0B2913] text-xs font-bold hover:bg-[#E8C94A] transition-colors"
+              >
+                Hoy
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* ── Hero con posición actual ───────────────────── */}
@@ -184,7 +283,7 @@ export default function MiEscalera() {
           />
           <div className="relative">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-[#D4AF37] text-[10px] font-bold uppercase tracking-[0.25em]">Tramo 1 · Mi rango actual</span>
+              <span className="text-[#D4AF37] text-[10px] font-bold uppercase tracking-[0.25em]">Tramo 1 · Rango del mes</span>
               <span className="bg-[#D4AF37]/20 text-[#D4AF37] text-[10px] font-bold px-2 py-0.5 rounded-full">
                 {directos} directo{directos !== 1 ? 's' : ''}
               </span>
@@ -239,7 +338,7 @@ export default function MiEscalera() {
           />
           <div className="relative">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-white/85 text-[10px] font-bold uppercase tracking-[0.25em]">Tramo 2 · Red total</span>
+              <span className="text-white/85 text-[10px] font-bold uppercase tracking-[0.25em]">Tramo 2 · Red del mes</span>
               <span className="bg-black/25 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                 {redTotal.toLocaleString('es-EC')} en red
               </span>
