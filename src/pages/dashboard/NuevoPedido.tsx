@@ -172,10 +172,12 @@ export default function NuevoPedido() {
         .upload(voucherPath, voucherFile, { upsert: false });
 
       if (uploadError) {
-        // UX-004: mensaje genérico para el usuario; detalle técnico solo a consola.
+        // UX-004: mensaje genérico para el usuario; detalle técnico también visible
+        // mientras depuramos. Quitar el detalle una vez identificada la causa.
         console.error('Voucher upload error:', uploadError);
+        const detail = uploadError.message ? ` — ${uploadError.message}` : '';
         setError(
-          'No pudimos guardar tu comprobante. Por favor, intenta de nuevo o contacta a soporte si el problema persiste.'
+          'No pudimos guardar tu comprobante. Por favor, intenta de nuevo o contacta a soporte si el problema persiste.' + detail
         );
         setSubmitting(false);
         return;
@@ -183,27 +185,73 @@ export default function NuevoPedido() {
 
       // 2. Create pedido directly as 'procesando' (label: Procesado)
       // BIZ-005: idempotency_key impide doble-submit (constraint único en BD).
-      const { data: pedidoData, error: pedidoError } = await supabase
-        .from('pedidos')
-        .insert({
-          distribuidor_id: distribId,
-          estado: 'procesando',
-          tipo_precio: 'distribuidor',
-          total: parseFloat(total.toFixed(2)),
-          puntos_generados: puntos,
-          notas: notes || null,
-          voucher_url: voucherPath,
-          voucher_numero: voucherNumero.trim(),
-          banco_destino: selectedBanco,
-          idempotency_key: idempotencyKeyRef.current,
-        })
-        .select()
-        .single();
+      //
+      // Las columnas voucher_url, voucher_numero, banco_destino e idempotency_key
+      // se agregaron en migraciones 004/005/006. Si el Supabase del cliente no
+      // las tiene aún aplicadas, el insert falla con 42703 (undefined_column).
+      // En vez de bloquear el pedido, reintentamos quitando la columna ofensora
+      // una a una. El admin verá igual el pedido y podrá correr la migración
+      // pendiente para recuperar los metadatos faltantes en pedidos futuros.
+      type PedidoInsert = {
+        distribuidor_id: string;
+        estado: string;
+        tipo_precio: string;
+        total: number;
+        puntos_generados: number;
+        notas: string | null;
+        voucher_url?: string;
+        voucher_numero?: string;
+        banco_destino?: string;
+        idempotency_key?: string;
+      };
+      const payload: PedidoInsert = {
+        distribuidor_id: distribId,
+        estado: 'procesando',
+        tipo_precio: 'distribuidor',
+        total: parseFloat(total.toFixed(2)),
+        puntos_generados: puntos,
+        notas: notes || null,
+        voucher_url: voucherPath,
+        voucher_numero: voucherNumero.trim(),
+        banco_destino: selectedBanco,
+        idempotency_key: idempotencyKeyRef.current,
+      };
+
+      const optionalCols: (keyof PedidoInsert)[] = [
+        'idempotency_key', 'banco_destino', 'voucher_numero', 'voucher_url',
+      ];
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let pedidoData: any = null;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let pedidoError: any = null;
+      const droppedCols: string[] = [];
+
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const res = await supabase.from('pedidos').insert(payload).select().single();
+        pedidoData = res.data;
+        pedidoError = res.error;
+        if (!pedidoError) break;
+
+        // 42703 = undefined_column → migración pendiente para esa columna.
+        if (pedidoError.code === '42703') {
+          const msg = String(pedidoError.message ?? '');
+          // Mensaje típico: column "idempotency_key" of relation "pedidos" does not exist
+          const offending = optionalCols.find((c) => msg.includes(`"${c}"`));
+          if (offending && payload[offending] !== undefined) {
+            delete payload[offending];
+            droppedCols.push(offending);
+            console.warn(`Columna faltante "${offending}" en pedidos — reintentando sin ella.`);
+            continue;
+          }
+        }
+        break; // otro tipo de error → no insistir
+      }
 
       if (pedidoError || !pedidoData) {
         // BIZ-005: violación de unique en idempotency_key = pedido duplicado
         // por doble-click. Buscamos el original y mostramos éxito sin duplicar.
-        if (pedidoError?.code === '23505') {
+        if (pedidoError?.code === '23505' && !droppedCols.includes('idempotency_key')) {
           const { data: existing } = await supabase
             .from('pedidos')
             .select('id')
@@ -219,9 +267,21 @@ export default function NuevoPedido() {
         }
         // UX-004: mensaje amable para el usuario; detalle técnico a consola.
         console.error('Pedido insert error:', pedidoError);
-        setError('No pudimos registrar tu pedido. Intenta nuevamente o contacta a soporte.');
+        const code = pedidoError?.code ?? '?';
+        const msg = pedidoError?.message ?? 'sin mensaje';
+        const hint = pedidoError?.hint ? ` Hint: ${pedidoError.hint}.` : '';
+        setError(
+          `No pudimos registrar tu pedido. [${code}] ${msg}.${hint} Si persiste, contacta a soporte con este mensaje.`
+        );
         setSubmitting(false);
         return;
+      }
+
+      if (droppedCols.length > 0) {
+        console.warn(
+          `Pedido creado sin columnas: ${droppedCols.join(', ')}. ` +
+          `Corre las migraciones pendientes en Supabase para recuperar metadata de voucher/pago.`
+        );
       }
 
       // 3. Insert items
@@ -237,7 +297,9 @@ export default function NuevoPedido() {
       if (itemsError) {
         // UX-004: mensaje amable; detalle a consola.
         console.error('Pedido items insert error:', itemsError);
-        setError('No pudimos guardar los productos del pedido. Contacta a soporte indicando la fecha y hora.');
+        const code = itemsError.code ?? '?';
+        const msg = itemsError.message ?? 'sin mensaje';
+        setError(`No pudimos guardar los productos del pedido. [${code}] ${msg}. Contacta a soporte con este mensaje.`);
         setSubmitting(false);
         return;
       }
@@ -312,7 +374,8 @@ export default function NuevoPedido() {
     } catch (err) {
       // UX-004: el catch puede atrapar errores de red u otros.
       console.error('Pedido submission unexpected error:', err);
-      setError('Tuvimos un problema inesperado al enviar tu pedido. Intenta de nuevo en un momento.');
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(`Tuvimos un problema inesperado al enviar tu pedido: ${msg}`);
     } finally {
       setSubmitting(false);
     }

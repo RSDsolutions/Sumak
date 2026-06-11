@@ -4,8 +4,9 @@ import { motion, AnimatePresence, type Variants } from 'motion/react';
 import {
   CheckCircle2, Upload, User, FileText, Package, AlertCircle, Sparkles,
   TrendingUp, Users, Wallet, ShieldCheck, Rocket, Heart, Award, Leaf,
+  Landmark, Copy, Check, Info,
 } from 'lucide-react';
-import { affiliatePackages } from '../data';
+import { affiliatePackages, bankAccounts } from '../data';
 import { supabase } from '../lib/supabase';
 import type { PaqueteKey } from '../lib/types';
 
@@ -329,6 +330,14 @@ export default function Registro() {
   const [submitting, setSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
   const [submitError, setSubmitError] = useState('');
+  const [copiedField, setCopiedField] = useState<string>('');
+
+  function copyToClipboard(value: string, key: string) {
+    navigator.clipboard.writeText(value).then(() => {
+      setCopiedField(key);
+      setTimeout(() => setCopiedField(''), 1500);
+    });
+  }
 
   function handlePersonalChange(e: React.ChangeEvent<HTMLInputElement>) {
     setPersonal((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -632,6 +641,97 @@ export default function Registro() {
                         <FileText size={20} />
                       </div>
                       <h2 className="font-heading font-bold text-xl text-[#111111]">Documentos Requeridos</h2>
+                    </div>
+
+                    {/* Cuentas bancarias para el deposito/transferencia */}
+                    <div className="mb-6">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Landmark size={18} className="text-[#1A4E26]" />
+                        <h3 className="font-heading font-bold text-base text-[#111111]">
+                          Realiza tu depósito o transferencia
+                        </h3>
+                      </div>
+                      <div className="flex items-start gap-2.5 bg-[#FFF8E1] border border-[#FFDD00]/40 rounded-xl px-4 py-3 mb-4">
+                        <Info size={16} className="text-[#B8860B] shrink-0 mt-0.5" />
+                        <p className="text-[#6B4F00] text-xs leading-relaxed">
+                          Deposita o transfiere el valor del paquete que vas a seleccionar a una de
+                          estas cuentas. Luego sube el <strong>voucher de pago</strong> abajo junto
+                          con tus documentos.
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {bankAccounts.map((b) => (
+                          <div
+                            key={b.banco}
+                            className="rounded-xl border border-[#C8D8CB] bg-gradient-to-br from-white to-[#F4F7F5] overflow-hidden"
+                          >
+                            <div className="flex items-center gap-3 px-4 py-3 bg-[#1A4E26] text-white">
+                              <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center shrink-0">
+                                <Landmark size={16} className="text-[#FFDD00]" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-heading font-bold text-sm leading-tight">{b.banco}</p>
+                                <p className="text-white/70 text-[11px]">{b.tipo}</p>
+                              </div>
+                            </div>
+
+                            <div className="p-3 space-y-2">
+                              {[
+                                { label: 'N° de Cuenta', value: b.numero, key: `${b.banco}-num`, highlight: true },
+                                { label: 'Titular', value: b.titular, key: `${b.banco}-tit` },
+                                { label: 'Identificación', value: b.identificacion, key: `${b.banco}-id` },
+                                ...(b.email ? [{ label: 'Email', value: b.email, key: `${b.banco}-em` }] : []),
+                              ].map((row) => (
+                                <div
+                                  key={row.key}
+                                  className={`flex items-center justify-between gap-2 rounded-lg px-2.5 py-2 border ${
+                                    row.highlight
+                                      ? 'bg-[#EBF4ED] border-[#1A4E26]/30'
+                                      : 'bg-white border-[#E5E7EB]'
+                                  }`}
+                                >
+                                  <div className="min-w-0">
+                                    <p className="text-[9px] uppercase tracking-widest text-[#9CA3AF] font-bold">
+                                      {row.label}
+                                    </p>
+                                    <p className={`font-mono font-semibold truncate ${
+                                      row.highlight ? 'text-[#1A4E26] text-base' : 'text-[#111111] text-xs'
+                                    }`}>
+                                      {row.value}
+                                    </p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => copyToClipboard(row.value, row.key)}
+                                    className="shrink-0 inline-flex items-center gap-1 text-[#1A4E26] hover:bg-[#EBF4ED] active:bg-[#D7E8DA] rounded-md px-2 py-1.5 text-[10px] font-semibold transition-colors"
+                                    aria-label={`Copiar ${row.label}`}
+                                  >
+                                    {copiedField === row.key ? (
+                                      <>
+                                        <Check size={11} /> Copiado
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Copy size={11} /> Copiar
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Separador */}
+                    <div className="flex items-center gap-3 mb-5">
+                      <div className="flex-1 h-px bg-[#C8D8CB]" />
+                      <span className="text-[#6B7280] text-[11px] font-bold uppercase tracking-widest">
+                        Sube tus documentos
+                      </span>
+                      <div className="flex-1 h-px bg-[#C8D8CB]" />
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

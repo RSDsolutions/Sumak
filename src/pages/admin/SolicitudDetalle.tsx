@@ -104,6 +104,41 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
     setLoading(true);
     setError('');
     try {
+      // 0. Pre-check: no puede existir ya un profile con esta cedula o email.
+      // Sin esto el flujo crea el auth.user, intenta insertar el profile y
+      // explota con "profiles_cedula_key", dejando un auth.user huerfano.
+      const { data: existingByCedula } = await supabaseAdmin
+        .from('profiles')
+        .select('id, codigo_distribuidor, nombre_completo, email, estado')
+        .eq('cedula', afiliacion.cedula)
+        .maybeSingle();
+      if (existingByCedula) {
+        setError(
+          `Ya existe un distribuidor con la cédula ${afiliacion.cedula}: ` +
+          `${existingByCedula.codigo_distribuidor} — ${existingByCedula.nombre_completo} ` +
+          `(${existingByCedula.email}, estado: ${existingByCedula.estado}). ` +
+          `Si fue un intento de aprobación previo que falló a medias, elimina ese ` +
+          `perfil desde "Distribuidores" antes de reintentar. Si la persona ya está ` +
+          `afiliada, rechaza esta solicitud.`
+        );
+        return;
+      }
+
+      const { data: existingByEmail } = await supabaseAdmin
+        .from('profiles')
+        .select('id, codigo_distribuidor, nombre_completo, cedula')
+        .eq('email', afiliacion.email)
+        .maybeSingle();
+      if (existingByEmail) {
+        setError(
+          `Ya existe un distribuidor con el email ${afiliacion.email}: ` +
+          `${existingByEmail.codigo_distribuidor} — ${existingByEmail.nombre_completo} ` +
+          `(cédula ${existingByEmail.cedula}). El afiliado debe usar otro email, ` +
+          `o elimina el perfil existente desde "Distribuidores".`
+        );
+        return;
+      }
+
       // 1. Generate distributor code
       const { count } = await supabaseAdmin
         .from('profiles')
@@ -166,6 +201,12 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
       });
 
       if (profileError) {
+        // Rollback: el auth.user ya se creo en el paso 3. Si dejamos que
+        // quede sin profile, queda huerfano y al reintentar la siguiente
+        // aprobacion choca de nuevo. Lo borramos best-effort.
+        await supabaseAdmin.auth.admin.deleteUser(userId).catch((cleanupErr) => {
+          console.error('No se pudo limpiar auth.user huerfano:', cleanupErr);
+        });
         setError('Error al crear perfil: ' + profileError.message);
         return;
       }
