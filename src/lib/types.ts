@@ -72,6 +72,7 @@ export interface Pedido {
   voucher_numero: string | null;
   banco_destino: string | null;
   pago_expira_en: string | null;
+  idempotency_key: string | null;
   created_at: string;
   updated_at: string;
   // joined
@@ -93,6 +94,7 @@ export interface Comision {
   id: string;
   beneficiario_id: string;
   origen_id: string | null;
+  pedido_id: string | null;
   tipo: TipoComision;
   nivel_red: number | null;
   monto: number;

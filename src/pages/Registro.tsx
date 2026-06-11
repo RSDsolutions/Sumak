@@ -150,13 +150,12 @@ export default function Registro() {
     setSponsorChecking(true);
     setSponsorInvalid(false);
     const handle = setTimeout(async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('nombre_completo')
-        .eq('codigo_distribuidor', code)
-        .maybeSingle();
-      if (data) {
-        setSponsorName(data.nombre_completo);
+      // SEC-003: usar RPC pública que solo devuelve campos no sensibles
+      // (id, código, nombre). No expone cédula, teléfono ni dirección.
+      const { data } = await supabase.rpc('lookup_sponsor', { p_codigo: code });
+      const sponsor = Array.isArray(data) ? data[0] : null;
+      if (sponsor) {
+        setSponsorName(sponsor.nombre_completo);
         setSponsorInvalid(false);
       } else {
         setSponsorName(null);

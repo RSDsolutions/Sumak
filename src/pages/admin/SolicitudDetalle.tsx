@@ -40,6 +40,18 @@ const paqueteKeyFull: Record<string, string> = {
   lider: 'Líder ($525)',
 };
 
+// SEC-005: contraseña temporal con entropía criptográfica.
+// Evita el patrón predecible "Sumak{4 últimos dígitos cédula}!"
+// que era trivial de adivinar conociendo la cédula del usuario.
+function generateTempPassword(): string {
+  const charset = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  const bytes = new Uint8Array(14);
+  crypto.getRandomValues(bytes);
+  let s = '';
+  for (const b of bytes) s += charset[b % charset.length];
+  return 'Sumak' + s + '!';
+}
+
 interface ApproveModalProps {
   afiliacion: Afiliacion;
   onClose: () => void;
@@ -99,8 +111,8 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
       const nextNum = (count ?? 0) + 1;
       const codigo = `SUMAK-${String(nextNum).padStart(5, '0')}`;
 
-      // 2. Generate temp password
-      const tempPassword = `Sumak${afiliacion.cedula.slice(-4)}!`;
+      // 2. Generate temp password (SEC-005: crypto-random, no derivada de cédula)
+      const tempPassword = generateTempPassword();
 
       // 3. Create auth user
       const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -243,6 +255,9 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
       // 8.1 Pedido inicial procesado por el paquete (activa el mes automáticamente)
       const packagePrice = PAQUETE_PRECIOS[afiliacion.paquete_seleccionado] ?? 0;
       const packageName = afiliacion.paquete_seleccionado.charAt(0).toUpperCase() + afiliacion.paquete_seleccionado.slice(1);
+      // BIZ-002: capturamos el pedido_id para vincular las comisiones que genera.
+      // Si el pedido se cancela, las comisiones se podrán anular por filtro exacto.
+      let pkgPedidoId: string | null = null;
       if (packagePrice > 0) {
         const { data: pkgPedido } = await supabaseAdmin
           .from('pedidos')
@@ -258,6 +273,7 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
           .single();
 
         if (pkgPedido) {
+          pkgPedidoId = pkgPedido.id;
           await supabaseAdmin.from('pedido_items').insert({
             pedido_id: pkgPedido.id,
             producto_codigo: `PKG-${afiliacion.paquete_seleccionado.toUpperCase()}`,
@@ -275,6 +291,7 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
         await supabaseAdmin.from('comisiones').insert({
           beneficiario_id: patrocinadorId,
           origen_id: userId,
+          pedido_id: pkgPedidoId, // BIZ-002
           tipo: 'afiliacion',
           monto: montoReferido,
           estado: 'pendiente',
@@ -324,6 +341,7 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
                 comInserts.push({
                   beneficiario_id: entry.id,
                   origen_id: userId,
+                  pedido_id: pkgPedidoId, // BIZ-002
                   tipo: 'nivel',
                   nivel_red: entry.nivel,
                   monto,

@@ -388,15 +388,16 @@ export default function AdminPedidos() {
           }
         }
 
-        // Cancelar comisiones generadas por este pedido (mismo origen, misma fecha aproximada)
-        const margen = new Date(new Date(pedido.created_at).getTime() + 5 * 60 * 1000).toISOString();
+        // BIZ-002: cancelar comisiones por filtro EXACTO de pedido_id.
+        // Reemplaza la heurística anterior de ventana de ±5 min que podía
+        // cancelar comisiones de otros pedidos del mismo origen.
+        // Las comisiones legacy sin pedido_id no se ven afectadas
+        // (quedan en estado anterior; deben tratarse manualmente).
         await supabaseAdmin
           .from('comisiones')
           .update({ estado: 'cancelado' })
-          .eq('origen_id', pedido.distribuidor_id)
-          .eq('tipo', 'nivel')
-          .gte('created_at', pedido.created_at)
-          .lte('created_at', margen);
+          .eq('pedido_id', pedido.id)
+          .eq('estado', 'pendiente');
       }
 
       await supabaseAdmin.from('pedidos').update({ estado: newEstado }).eq('id', pedidoId);

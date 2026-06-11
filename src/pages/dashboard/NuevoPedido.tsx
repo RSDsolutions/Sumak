@@ -48,6 +48,11 @@ export default function NuevoPedido() {
   const [secondsLeft, setSecondsLeft] = useState(PAY_WINDOW_SECONDS);
   const expiresAtRef = useRef<number | null>(null);
 
+  // BIZ-005: idempotency_key generada una vez por sesión de checkout.
+  // Si el usuario hace doble-click en "Enviar pedido", la segunda inserción
+  // falla con 23505 (unique violation) y se trata como éxito sin duplicar.
+  const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
+
   const willQualify = subtotal >= 100;
   const total = subtotal;
   const selectedBancoData = bankAccounts.find((b) => b.banco === selectedBanco);
@@ -108,6 +113,8 @@ export default function NuevoPedido() {
     setVoucherPreview(null);
     expiresAtRef.current = Date.now() + PAY_WINDOW_SECONDS * 1000;
     setSecondsLeft(PAY_WINDOW_SECONDS);
+    // BIZ-005: nueva sesión de checkout → nueva idempotency_key
+    idempotencyKeyRef.current = crypto.randomUUID();
     setStep('pay');
   }
 
@@ -178,6 +185,7 @@ export default function NuevoPedido() {
       }
 
       // 2. Create pedido directly as 'procesando' (label: Procesado)
+      // BIZ-005: idempotency_key impide doble-submit (constraint único en BD).
       const { data: pedidoData, error: pedidoError } = await supabase
         .from('pedidos')
         .insert({
@@ -190,11 +198,28 @@ export default function NuevoPedido() {
           voucher_url: voucherPath,
           voucher_numero: voucherNumero.trim(),
           banco_destino: selectedBanco,
+          idempotency_key: idempotencyKeyRef.current,
         })
         .select()
         .single();
 
       if (pedidoError || !pedidoData) {
+        // BIZ-005: violación de unique en idempotency_key = pedido duplicado
+        // por doble-click. Buscamos el original y mostramos éxito sin duplicar.
+        if (pedidoError?.code === '23505') {
+          const { data: existing } = await supabase
+            .from('pedidos')
+            .select('id')
+            .eq('idempotency_key', idempotencyKeyRef.current)
+            .maybeSingle();
+          if (existing) {
+            setEarnedPuntos(puntos);
+            clear();
+            expiresAtRef.current = null;
+            setStep('done');
+            return;
+          }
+        }
         setError('Error al crear el pedido: ' + (pedidoError?.message ?? 'desconocido'));
         setSubmitting(false);
         return;
@@ -264,6 +289,7 @@ export default function NuevoPedido() {
                 comInserts.push({
                   beneficiario_id: entry.id,
                   origen_id: distribId,
+                  pedido_id: pedidoData.id, // BIZ-002
                   tipo: 'nivel',
                   nivel_red: entry.nivel,
                   monto,
