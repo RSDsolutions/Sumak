@@ -4,6 +4,71 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
+// ──────────────────────────────────────────────────────────────
+// Auto-reload en ChunkLoadError tras un deploy nuevo (ARQ-007)
+//
+// Cuando Vercel publica un nuevo deploy, los chunks JS cambian de
+// hash (Plan-AAA.js -> Plan-BBB.js). Si el usuario tenia la pagina
+// abierta antes del deploy, su index.html cacheado todavia pide
+// los chunks viejos; Vercel responde 404 -> ChunkLoadError ->
+// pantalla "Algo salio mal".
+//
+// La cura es recargar el index.html, que ya viene fresco gracias
+// al Cache-Control: must-revalidate que tenemos en vercel.json.
+//
+// Lo hacemos silencioso (sin mostrar el modal) UNA sola vez por
+// sesion para evitar loops si el reload no soluciona.
+// ──────────────────────────────────────────────────────────────
+
+const RELOAD_FLAG = 'sumak_chunk_reload_attempted';
+
+function isChunkLoadError(error: unknown): boolean {
+  if (!error) return false;
+  // Error puede ser un Event en vite:preloadError, o un Error normal.
+  const errObj = error as { message?: string; name?: string };
+  const msg = (errObj.message ?? String(error)).toLowerCase();
+  return (
+    errObj.name === 'ChunkLoadError' ||
+    msg.includes('failed to fetch dynamically imported module') ||
+    msg.includes('importing a module script failed') ||
+    msg.includes('error loading dynamically imported module') ||
+    msg.includes('loading chunk') ||
+    msg.includes('loading css chunk')
+  );
+}
+
+function tryReloadOnce(): boolean {
+  // sessionStorage = solo esta sesion de pestana; al cerrar la pestana
+  // se borra y permitimos reintentar en futuras sesiones.
+  try {
+    if (sessionStorage.getItem(RELOAD_FLAG) === '1') return false;
+    sessionStorage.setItem(RELOAD_FLAG, '1');
+  } catch {
+    // sessionStorage bloqueado (modo privado estricto). Recargamos igual.
+  }
+  // Truco de cache busting: anadir un timestamp asegura que index.html
+  // se sirva fresco aun si algun proxy intermedio lo cachea.
+  const url = new URL(window.location.href);
+  url.searchParams.set('_r', String(Date.now()));
+  window.location.replace(url.toString());
+  return true;
+}
+
+// Vite emite este evento cuando un import() falla al precargar.
+// Lo capturamos ANTES de que llegue a React, para no mostrar el modal.
+window.addEventListener('vite:preloadError', (event) => {
+  if (tryReloadOnce()) {
+    event.preventDefault();
+  }
+});
+
+// Por si ChunkLoadError llega como rejection no manejada:
+window.addEventListener('unhandledrejection', (event) => {
+  if (isChunkLoadError(event.reason) && tryReloadOnce()) {
+    event.preventDefault();
+  }
+});
+
 /**
  * Error Boundary global (ARQ-006).
  *
@@ -24,6 +89,11 @@ class ErrorBoundary extends Component<
   }
 
   static getDerivedStateFromError(error: Error) {
+    // ChunkLoadError: intentamos reload silencioso y devolvemos null
+    // para que React no renderice el modal mientras la pagina recarga.
+    if (isChunkLoadError(error) && tryReloadOnce()) {
+      return { error: null };
+    }
     return { error };
   }
 
@@ -34,10 +104,14 @@ class ErrorBoundary extends Component<
   }
 
   handleReload = () => {
+    // Limpiamos el flag para que el auto-reload vuelva a funcionar en
+    // futuros chunk errors despues de este intento manual.
+    try { sessionStorage.removeItem(RELOAD_FLAG); } catch { /* ignore */ }
     window.location.reload();
   };
 
   handleHome = () => {
+    try { sessionStorage.removeItem(RELOAD_FLAG); } catch { /* ignore */ }
     window.location.href = '/';
   };
 
