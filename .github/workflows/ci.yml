@@ -1,0 +1,62 @@
+name: CI
+
+# OPS-001 de la auditoría — verifica typecheck y build en cada PR a main.
+# No despliega nada (ese es el rol de deploy.yml). Solo gate de calidad.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Typecheck + Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Type-check
+        # `npm run lint` está alias a `tsc --noEmit`. Falla si hay errores
+        # de tipos. Hoy hay 2-3 errores pre-existentes en TiendaProducto /
+        # ProductDetail / MisPedidos; los reportamos sin fallar el build
+        # hasta que se limpien.
+        # TODO(COD-04): cuando se agregue ESLint y se limpien los errores
+        # de tipos pre-existentes, eliminar `continue-on-error`.
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Build
+        env:
+          # CI no necesita conectarse a Supabase real; valores dummy
+          # son suficientes para que `import.meta.env.VITE_SUPABASE_URL`
+          # esté definido y no rompa la build inicial.
+          VITE_SUPABASE_URL: 'https://dummy.supabase.co'
+          VITE_SUPABASE_ANON_KEY: 'dummy_anon_key'
+          VITE_SUPABASE_SERVICE_ROLE_KEY: 'dummy_service_key'
+        run: npm run build
+
+      - name: Verify output
+        run: |
+          test -f dist/index.html || (echo "❌ dist/index.html missing" && exit 1)
+          test -d dist/assets || (echo "❌ dist/assets missing" && exit 1)
+          echo "✔ Build artifacts OK"

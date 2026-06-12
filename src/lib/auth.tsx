@@ -7,8 +7,11 @@ interface AuthContextValue {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
-  /** Hace login y devuelve el profile fresco (necesario para redirect por rol). */
-  signIn: (email: string, password: string) => Promise<{ error: string | null; profile: Profile | null }>;
+  /**
+   * Hace login y devuelve el profile fresco (necesario para redirect por rol).
+   * `captchaToken` opcional — solo necesario si SEC-007 está activado (Turnstile).
+   */
+  signIn: (email: string, password: string, captchaToken?: string) => Promise<{ error: string | null; profile: Profile | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   isAdmin: boolean;
@@ -68,9 +71,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   async function signIn(
-    email: string, password: string,
+    email: string, password: string, captchaToken?: string,
   ): Promise<{ error: string | null; profile: Profile | null }> {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+      // SEC-007: si Supabase Auth tiene captcha activo, el token va aquí.
+      // Cuando no está activado, Supabase ignora el campo.
+      options: captchaToken ? { captchaToken } : undefined,
+    });
     if (error) {
       return { error: 'Credenciales incorrectas. Verifica tu email y contraseña.', profile: null };
     }

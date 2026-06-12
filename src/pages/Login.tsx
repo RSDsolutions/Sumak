@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Lock, Mail, CheckCircle2 } from 'lucide-react';
+import { Lock, Mail, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import { useSEO } from '../lib/seo';
+import Captcha, { CAPTCHA_ENABLED } from '../components/Captcha';
 
 export default function Login() {
   useSEO({
@@ -20,18 +21,30 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
+  // SEC-007: token de Cloudflare Turnstile. Solo se requiere si CAPTCHA_ENABLED.
+  const [captchaToken, setCaptchaToken] = useState('');
 
   const { signIn, homeForProfile } = useAuth();
   const navigate = useNavigate();
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (CAPTCHA_ENABLED && !captchaToken) {
+      setError('Por favor completa el captcha antes de iniciar sesión.');
+      return;
+    }
     setError('');
     setLoading(true);
     try {
-      const { error: signInError, profile } = await signIn(email, password);
+      const { error: signInError, profile } = await signIn(
+        email,
+        password,
+        captchaToken || undefined,
+      );
       if (signInError) {
         setError(signInError);
+        // Captcha token es de un solo uso; limpiamos para que reintente.
+        setCaptchaToken('');
       } else {
         // Redirige según el rol del profile recién obtenido.
         // admin → /admin, operaciones → /operaciones, distribuidor → /dashboard.
@@ -139,13 +152,23 @@ export default function Login() {
                 </button>
               </div>
 
+              {/* SEC-007: captcha si está configurado en .env */}
+              <Captcha onToken={setCaptchaToken} onError={() => setCaptchaToken('')} />
+
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || (CAPTCHA_ENABLED && !captchaToken)}
                 className="w-full py-4 rounded-xl bg-[#1A4E26] text-white font-bold text-sm hover:bg-[#163F1E] shadow-[0_0_20px_rgba(26,78,38,0.25)] transition-all duration-200 mt-1 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
               </button>
+
+              {CAPTCHA_ENABLED && (
+                <p className="text-[10px] text-[#9CA3AF] text-center inline-flex items-center justify-center gap-1">
+                  <ShieldCheck size={11} aria-hidden="true" />
+                  Protegido por Cloudflare Turnstile
+                </p>
+              )}
             </form>
           )}
 

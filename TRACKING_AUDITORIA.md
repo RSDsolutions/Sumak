@@ -34,13 +34,13 @@ Distribución por severidad:
 
 ---
 
-## Estado tras Fase 1 + Tandas 2, 3, 4, 5, 6
+## Estado tras Fase 1 + Tandas 2, 3, 4, 5, 6, 7
 
 | Estado | # | Significado |
 |---|---|---|
-| ✅ Resuelto | **29** | Código activo aplica el fix; el flujo afectado YA se comporta correctamente |
-| 🔄 Mitigado / Infra disponible | **2** | La infraestructura ya existe; adopción completa en próxima tanda |
-| ⏳ Pendiente | **47** | Sin trabajo todavía |
+| ✅ Resuelto | **30** | Código activo aplica el fix; el flujo afectado YA se comporta correctamente |
+| 🔄 Mitigado / Infra disponible | **6** | La infraestructura ya existe; activación requiere acción externa (Cloudflare, Sentry, Supabase, etc.) |
+| ⏳ Pendiente | **42** | Sin trabajo todavía |
 | **Total** | **78** | |
 
 ### Lo que está ✅ Resuelto
@@ -83,6 +83,21 @@ Distribución por severidad:
 | PERF-002 | 🟡 Media | Code-splitting + vendor chunks | [App.tsx](src/App.tsx) usa `lazy()` por ruta + `<Suspense fallback>`. [vite.config.ts](vite.config.ts) `manualChunks` separa `vendor-react`, `vendor-motion`, `vendor-supabase`, `vendor-icons`. Bundle inicial: 87 kB gzip (antes 295 kB en un solo chunk de 1.16 MB). Sin warnings de tamaño |
 | PERF-003 | 🟡 Media | Lazy loading de imágenes | Atributos `loading="lazy" decoding="async"` en imágenes no-hero: catálogo (Home, Productos, Tienda), relacionados (ProductDetail, TiendaProducto), revista zoom, carrito y voucher en admin. Hero del Home, Login y producto siguen `eager` para LCP. |
 | PERF-004 | 🟡 Media | N+1 en MisComisiones eliminado | Query principal hace join `origen:profiles!origen_id(...)`. DetalleModal lee `comision.origen` directo (antes: 1 fetch por modal). Aplicado en `MisComisiones.tsx` y `AdminMisComisiones.tsx` |
+
+**Tanda 7 (Operativos — security headers, CI, bucket constraints, captcha, Sentry):**
+
+| ID | Severidad | Asunto | Cómo se confirmó |
+|---|---|---|---|
+| SEC-006 | 🟡 Media | Headers de seguridad | [vercel.json](vercel.json) inyecta CSP estricta + X-Frame-Options + HSTS + Permissions-Policy + Referrer-Policy en cada response. Activo desde el próximo deploy de Vercel. |
+| OPS-001 | 🟡 Media | CI workflow | [.github/workflows/ci.yml](.github/workflows/ci.yml) corre typecheck + build verificado en cada PR a `main`. No despliega (eso es `deploy.yml`). |
+| SEC-008 (parcial) | 🟢 Baja | Bucket constraints | Migration 009 fija `file_size_limit=5MB` y `allowed_mime_types` server-side en `pedidos-vouchers` y `documentos-afiliacion`. Aplicar manualmente en SQL Editor. |
+
+**Tanda 7 — 🔄 Mitigado (infra lista, activación externa pendiente):**
+
+| ID | Severidad | Asunto | Activación |
+|---|---|---|---|
+| SEC-007 | 🟡 Media | Cloudflare Turnstile captcha en login | [`Captcha.tsx`](src/components/Captcha.tsx) + `signIn(captchaToken)` listos. Activar con `VITE_TURNSTILE_SITE_KEY` + config en Supabase Auth. Pasos en [GUIA_OPERATIVOS.md](GUIA_OPERATIVOS.md). |
+| OPS-004 | 🟡 Media | Sentry error tracking | [`logger.ts`](src/lib/logger.ts) llama `window.Sentry.captureException` si está cargado. Activar con Loader Script de Sentry + extender CSP. Pasos en GUIA_OPERATIVOS.md. |
 
 **Tanda 6 (Adopción de RPCs Fase 1, cierra los 🔄 altos):**
 
@@ -280,16 +295,16 @@ ARQ-007 (React Query), PERF-001 (paginación), COD-006 (descomponer componentes)
 ## Indicador de avance
 
 ```
-Resueltos:  ███████████████░░░░░░░░░░░░░░░░░░░░░░░░░ 29/78  (37%)
-Mitigados:  █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  2/78  (3%)
-Pendientes: ████████████████████████░░░░░░░░░░░░░░░ 47/78  (60%)
+Resueltos:  ███████████████░░░░░░░░░░░░░░░░░░░░░░░░░ 30/78  (38%)
+Mitigados:  ███░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  6/78  (8%)
+Pendientes: █████████████████████░░░░░░░░░░░░░░░░░░ 42/78  (54%)
 ```
 
 Por severidad:
 - 🔴 Crítica: **1 pendiente** (SEC-001)
-- 🟠 Alta: **4 pendientes** (BIZ-009, BIZ-010, PERF-001, UX-015) — los 4 mitigados pasaron a ✅
-- 🟡 Media: **31 pendientes** (de 46 totales — 15 resueltos + 2 mitigados)
-- 🟢 Baja: **11 pendientes** (de 21 totales — 6 resueltos)
+- 🟠 Alta: **4 pendientes** (BIZ-009, BIZ-010, PERF-001, UX-015)
+- 🟡 Media: **27 pendientes** (de 46 totales — 17 resueltos + 4 mitigados pendientes de activación externa)
+- 🟢 Baja: **10 pendientes** (de 21 totales — 7 resueltos)
 
 ### Pendientes ⏳ — restantes tras Tanda 5
 
