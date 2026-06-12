@@ -73,6 +73,14 @@ export interface Pedido {
   banco_destino: string | null;
   pago_expira_en: string | null;
   idempotency_key: string | null;
+  /** Voucher (guía / foto) cargado por admin/operaciones al marcar enviado. */
+  envio_voucher_url: string | null;
+  /** Número de guía / tracking. */
+  envio_numero: string | null;
+  /** Profile.id de quien registró el envío. */
+  enviado_por: string | null;
+  /** Número secuencial de pedido (humano-amigable: NV-000123). */
+  numero_pedido: number | null;
   created_at: string;
   updated_at: string;
   // joined
@@ -102,6 +110,12 @@ export interface Comision {
   descripcion: string | null;
   created_at: string;
   pagado_at: string | null;
+  /** comprobante del pago — storage path en `comisiones-vouchers`. */
+  voucher_url: string | null;
+  /** número de transferencia / referencia que registró el admin/operaciones. */
+  voucher_numero: string | null;
+  /** profile.id del usuario que registró el pago. */
+  pagado_por: string | null;
   // joined
   beneficiario?: Profile;
   origen?: Profile;

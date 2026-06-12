@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, ChevronRight } from 'lucide-react';
 import { supabaseAdmin } from '../../lib/supabase';
+import { useAdminBasePath } from '../../lib/useAdminBasePath';
 import type { Afiliacion, EstadoAfiliacion } from '../../lib/types';
 
 type FilterTab = 'todas' | EstadoAfiliacion;
@@ -47,6 +48,9 @@ const TABS: { key: FilterTab; label: string }[] = [
 
 export default function Solicitudes() {
   const navigate = useNavigate();
+  // Detecta si estamos en /admin o /operaciones para que los links
+  // a detalle no rebotem al usuario de operaciones a su home.
+  const basePath = useAdminBasePath();
   const [afiliaciones, setAfiliaciones] = useState<Afiliacion[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<FilterTab>('todas');
@@ -133,7 +137,7 @@ export default function Solicitudes() {
                 {filtered.map((a) => (
                   <tr
                     key={a.id}
-                    onClick={() => navigate(`/admin/solicitudes/${a.id}`)}
+                    onClick={() => navigate(`${basePath}/solicitudes/${a.id}`)}
                     className="border-b border-[#C8D8CB] hover:bg-[#F4F7F5] cursor-pointer transition-colors"
                   >
                     <td className="px-6 py-4 text-[#6B7280] whitespace-nowrap">

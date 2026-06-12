@@ -2,13 +2,20 @@
 -- SUMAK — Seed del usuario "operaciones" inicial (007b)
 -- ============================================================
 -- ANTES DE EJECUTAR:
---   1. Cambia el email y el nombre completo abajo si quieres otros.
+--   1. Cambia el email, el nombre completo y la contraseña abajo
+--      si quieres otros valores.
 --   2. Verifica que migración 007 ya está aplicada.
---   3. Este script genera una contraseña aleatoria y la imprime al
---      final con RAISE NOTICE. Copiala y entrégala al usuario por
---      canal seguro (no por WhatsApp en claro).
---   4. Esta operación es IDEMPOTENTE: si el email ya existe en
+--   3. Esta operación es IDEMPOTENTE: si el email ya existe en
 --      auth.users, sólo actualiza su profile a rol='operaciones'.
+--
+-- IMPORTANTE — contraseña '123456':
+--   • Supabase Auth puede rechazar el login si el "Minimum password
+--     length" del proyecto es >6. En ese caso, ir a Project Settings
+--     → Authentication → Password requirements y bajar a 6, o usar
+--     una contraseña con más caracteres (recomendado).
+--   • Pedile al usuario que la CAMBIE en el primer login desde la
+--     pantalla de perfil. '123456' es la contraseña más comprometida
+--     del mundo y no debe quedarse permanente.
 -- ============================================================
 -- Requiere extensión pgcrypto (Supabase ya la tiene por defecto).
 -- ============================================================
@@ -18,24 +25,19 @@ create extension if not exists pgcrypto;
 do $$
 declare
   -- ┌─────────────────────────────────────────────────┐
-  -- │ EDITA ESTAS DOS LÍNEAS SI QUIERES OTROS VALORES │
+  -- │ EDITA ESTAS LÍNEAS SI QUIERES OTROS VALORES     │
   -- └─────────────────────────────────────────────────┘
   v_email constant text := 'operaciones@sumak.com.ec';
   v_nombre constant text := 'Operaciones Sumak';
+  v_temp_password constant text := '123456';
   -- ──────────────────────────────────────────────────
 
   v_user_id uuid;
-  v_temp_password text;
   v_existing_auth_id uuid;
   v_next_num integer;
   v_codigo text;
 begin
-  -- 1) Generar contraseña temporal aleatoria de 14 chars alfanuméricos.
-  v_temp_password := 'Ops-' ||
-    substring(
-      translate(encode(gen_random_bytes(12), 'base64'), '+/=', 'xyz'),
-      1, 14
-    );
+  -- (la contraseña ahora es fija; antes era aleatoria)
 
   -- 2) ¿Ya existe el auth.users? Si sí, sólo asegurar profile.
   select id into v_existing_auth_id
@@ -103,18 +105,19 @@ begin
         nombre_completo = excluded.nombre_completo,
         email = excluded.email;
 
-  -- 6) Imprimir credenciales para que el admin las capture.
+  -- 6) Imprimir confirmación para el admin.
   raise notice ' ';
   raise notice '──────────────────────────────────────────────';
   raise notice 'USUARIO OPERACIONES CREADO ✔';
   raise notice '──────────────────────────────────────────────';
   raise notice 'Email     : %', v_email;
-  raise notice 'Contraseña: %', v_temp_password;
+  raise notice 'Contraseña: %  (TEMPORAL — debe cambiarla)', v_temp_password;
   raise notice 'Código    : %', v_codigo;
   raise notice 'Rol       : operaciones';
   raise notice '──────────────────────────────────────────────';
-  raise notice 'Entrega esta contraseña por canal seguro y pide';
-  raise notice 'al usuario que la cambie en su primer login.';
+  raise notice 'Si el login falla por "password too short", ajusta';
+  raise notice 'el minimo en Supabase: Authentication → Password';
+  raise notice 'requirements → Minimum length = 6.';
   raise notice '──────────────────────────────────────────────';
 end $$;
 

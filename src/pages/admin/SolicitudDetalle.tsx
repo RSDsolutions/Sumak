@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText, CheckCircle, XCircle, ExternalLink, Copy } from 'lucide-react';
 import { supabase, supabaseAdmin } from '../../lib/supabase';
 import { logger } from '../../lib/logger';
+import { useAdminBasePath } from '../../lib/useAdminBasePath';
 import type { Afiliacion } from '../../lib/types';
 
 // Tanda 6: las tablas PAQUETE_PUNTOS/PAQUETE_PRECIOS y la cadena
@@ -456,6 +457,7 @@ function SuccessModal({ codigo, tempPassword, onClose }: SuccessModalProps) {
 export default function SolicitudDetalle() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const basePath = useAdminBasePath();
   const [afiliacion, setAfiliacion] = useState<Afiliacion | null>(null);
   const [loading, setLoading] = useState(true);
   const [showApprove, setShowApprove] = useState(false);
@@ -539,14 +541,14 @@ export default function SolicitudDetalle() {
         <SuccessModal
           codigo={successData.codigo}
           tempPassword={successData.tempPassword}
-          onClose={() => { setSuccessData(null); navigate('/admin/solicitudes'); }}
+          onClose={() => { setSuccessData(null); navigate(`${basePath}/solicitudes`); }}
         />
       )}
 
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <button
-          onClick={() => navigate('/admin/solicitudes')}
+          onClick={() => navigate(`${basePath}/solicitudes`)}
           className="text-[#6B7280] hover:text-[#111111] transition-colors"
         >
           <ArrowLeft size={20} />

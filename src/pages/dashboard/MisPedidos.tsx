@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import {
   ShoppingCart, Plus, X, Search, Calendar, ChevronRight,
   Package, TrendingUp, CheckCircle2, Clock, AlertCircle, Leaf, FileText,
+  Truck, ExternalLink,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
@@ -38,6 +39,60 @@ const TABS: { key: FilterTab; label: string }[] = [
   { key: 'pendiente', label: 'Pendientes' },
   { key: 'cancelado', label: 'Cancelados' },
 ];
+
+/**
+ * Sección de envío que el distribuidor ve cuando el admin/operaciones
+ * marcó el pedido como enviado y subió guía + N° tracking. Carga la
+ * imagen del bucket pedidos-envios con signed URL (RLS le permite ver
+ * solo los suyos).
+ */
+function EnvioSection({ pedido }: { pedido: Pedido }) {
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    if (pedido.envio_voucher_url) {
+      supabase.storage
+        .from('pedidos-envios')
+        .createSignedUrl(pedido.envio_voucher_url, 3600)
+        .then(({ data }) => {
+          if (!cancelled && data?.signedUrl) setSignedUrl(data.signedUrl);
+        });
+    }
+    return () => { cancelled = true; };
+  }, [pedido.envio_voucher_url]);
+
+  return (
+    <div className="px-6 py-5 border-b border-[#C8D8CB] bg-purple-50/40">
+      <p className="text-[10px] uppercase tracking-widest text-purple-700 font-bold mb-3 flex items-center gap-1.5">
+        <Truck size={12} aria-hidden="true" /> Información de envío
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+        {pedido.envio_numero && (
+          <div className="bg-white rounded-xl border border-purple-200 px-3 py-2">
+            <p className="text-[9px] uppercase tracking-widest text-purple-700 font-bold">N° de guía / tracking</p>
+            <p className="text-[#111111] font-mono font-semibold mt-0.5">{pedido.envio_numero}</p>
+          </div>
+        )}
+        {signedUrl ? (
+          <a
+            href={signedUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-white rounded-xl border border-purple-200 px-3 py-2 hover:border-purple-400 transition-colors flex items-center justify-between gap-2"
+          >
+            <div className="min-w-0">
+              <p className="text-[9px] uppercase tracking-widest text-purple-700 font-bold">Comprobante de envío</p>
+              <p className="text-[#111111] font-semibold mt-0.5">Ver guía</p>
+            </div>
+            <ExternalLink size={13} className="text-purple-600 shrink-0" aria-hidden="true" />
+          </a>
+        ) : pedido.envio_voucher_url ? (
+          <div className="bg-white rounded-xl border border-purple-200 px-3 py-2 text-[#9CA3AF]">Cargando comprobante…</div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
 
 interface DetalleModalProps {
   pedido: Pedido;
@@ -123,6 +178,11 @@ function DetalleModal({ pedido, clienteNombre, clienteCodigo, onClose }: Detalle
             </span>
           )}
         </div>
+
+        {/* Información de envío (si el admin lo marcó como enviado) */}
+        {(pedido.envio_numero || pedido.envio_voucher_url) && (
+          <EnvioSection pedido={pedido} />
+        )}
 
         {/* Items */}
         <div className="px-6 py-5">

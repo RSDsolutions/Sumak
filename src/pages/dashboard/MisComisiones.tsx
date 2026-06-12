@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import {
   DollarSign, TrendingUp, Clock, CheckCircle2, AlertCircle, X, Eye,
-  ArrowUp, ArrowDown, Calendar, Hash, Layers, Sparkles,
+  ArrowUp, ArrowDown, Calendar, Hash, Layers, Sparkles, ExternalLink,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
@@ -21,6 +21,60 @@ function Spinner() {
   return (
     <div className="flex items-center justify-center py-16">
       <div className="w-8 h-8 border-2 border-[#1A4E26] border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
+
+/**
+ * Comprobante de pago — el distribuidor lo ve cuando el admin/operaciones
+ * marca la comisión como pagada y sube voucher + N° de transferencia.
+ * El RLS del bucket comisiones-vouchers permite al beneficiario leer
+ * solo los suyos.
+ */
+function ComprobantePagoSection({ comision }: { comision: Comision }) {
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    if (comision.voucher_url) {
+      supabase.storage
+        .from('comisiones-vouchers')
+        .createSignedUrl(comision.voucher_url, 3600)
+        .then(({ data }) => {
+          if (!cancelled && data?.signedUrl) setSignedUrl(data.signedUrl);
+        });
+    }
+    return () => { cancelled = true; };
+  }, [comision.voucher_url]);
+
+  return (
+    <div className="bg-[#EBF4ED] border border-[#1A4E26]/20 rounded-2xl p-4 mb-4">
+      <p className="text-[10px] uppercase tracking-widest text-[#1A4E26] font-bold mb-3 flex items-center gap-1.5">
+        <CheckCircle2 size={11} aria-hidden="true" /> Comprobante de pago
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+        {comision.voucher_numero && (
+          <div className="bg-white rounded-xl border border-[#1A4E26]/20 px-3 py-2">
+            <p className="text-[9px] uppercase tracking-widest text-[#1A4E26] font-bold">N° de transferencia</p>
+            <p className="text-[#111111] font-mono font-semibold mt-0.5">{comision.voucher_numero}</p>
+          </div>
+        )}
+        {signedUrl ? (
+          <a
+            href={signedUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-white rounded-xl border border-[#1A4E26]/20 px-3 py-2 hover:border-[#1A4E26] transition-colors flex items-center justify-between gap-2"
+          >
+            <div className="min-w-0">
+              <p className="text-[9px] uppercase tracking-widest text-[#1A4E26] font-bold">Voucher</p>
+              <p className="text-[#111111] font-semibold mt-0.5">Ver comprobante</p>
+            </div>
+            <ExternalLink size={13} className="text-[#1A4E26] shrink-0" aria-hidden="true" />
+          </a>
+        ) : comision.voucher_url ? (
+          <div className="bg-white rounded-xl border border-[#1A4E26]/20 px-3 py-2 text-[#9CA3AF]">Cargando comprobante…</div>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -159,6 +213,11 @@ function DetalleModal({ comision, onClose }: { comision: Comision; onClose: () =
                   )}
                 </div>
               </div>
+
+              {/* Comprobante de pago (si la comisión está pagada con voucher) */}
+              {comision.estado === 'pagado' && (comision.voucher_numero || comision.voucher_url) && (
+                <ComprobantePagoSection comision={comision} />
+              )}
 
               {/* ID */}
               <div className="bg-[#FAFBFA] border border-[#C8D8CB] rounded-xl p-3">

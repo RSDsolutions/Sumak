@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { supabaseAdmin } from '../../lib/supabase';
+import { useAdminBasePath } from '../../lib/useAdminBasePath';
 import type { Profile, Comision, Pedido } from '../../lib/types';
 
 function Spinner() {
@@ -33,6 +34,7 @@ function estadoPedidoBadge(estado: string) {
 }
 
 export default function DistribuidorDetalle() {
+  const basePath = useAdminBasePath();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -93,7 +95,7 @@ export default function DistribuidorDetalle() {
     <div>
       {/* Header */}
       <div className="flex items-start gap-3 mb-6">
-        <button onClick={() => navigate('/admin/distribuidores')} className="text-[#6B7280] hover:text-[#111111] transition-colors mt-1">
+        <button onClick={() => navigate(`${basePath}/distribuidores`)} className="text-[#6B7280] hover:text-[#111111] transition-colors mt-1">
           <ArrowLeft size={20} />
         </button>
         <div className="flex-1">

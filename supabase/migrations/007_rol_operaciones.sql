@@ -73,6 +73,11 @@ comment on function public.is_operaciones_or_admin() is
 drop policy if exists "Users can read own pedidos" on public.pedidos;
 drop policy if exists "Users can insert own pedidos" on public.pedidos;
 drop policy if exists "Admins can update pedidos" on public.pedidos;
+-- Idempotencia: dropear también las políticas con nombres nuevos por si
+-- una corrida previa quedó a medias.
+drop policy if exists "Distribuidor lee sus pedidos, ops/admin todos" on public.pedidos;
+drop policy if exists "Distribuidor inserta sus pedidos" on public.pedidos;
+drop policy if exists "Ops/admin actualizan pedidos" on public.pedidos;
 
 create policy "Distribuidor lee sus pedidos, ops/admin todos"
   on public.pedidos
@@ -94,6 +99,8 @@ create policy "Ops/admin actualizan pedidos"
 -- ─────────────────────────────────────────────────────────────
 drop policy if exists "Users can read own comisiones" on public.comisiones;
 drop policy if exists "Admins can manage comisiones" on public.comisiones;
+drop policy if exists "Beneficiario lee sus comisiones, ops/admin todas" on public.comisiones;
+drop policy if exists "Ops/admin administran comisiones" on public.comisiones;
 
 create policy "Beneficiario lee sus comisiones, ops/admin todas"
   on public.comisiones
@@ -112,6 +119,8 @@ create policy "Ops/admin administran comisiones"
 -- ─────────────────────────────────────────────────────────────
 drop policy if exists "Admins can read afiliaciones" on public.afiliaciones;
 drop policy if exists "Admins can update afiliaciones" on public.afiliaciones;
+drop policy if exists "Ops/admin leen afiliaciones" on public.afiliaciones;
+drop policy if exists "Ops/admin actualizan afiliaciones" on public.afiliaciones;
 
 create policy "Ops/admin leen afiliaciones"
   on public.afiliaciones
@@ -134,6 +143,9 @@ create policy "Ops/admin actualizan afiliaciones"
 drop policy if exists "Users can read own profile" on public.profiles;
 drop policy if exists "Admins can insert profiles" on public.profiles;
 drop policy if exists "Admins can update profiles" on public.profiles;
+drop policy if exists "Lectura de profiles" on public.profiles;
+drop policy if exists "Ops/admin insertan profiles" on public.profiles;
+drop policy if exists "Actualización de profiles" on public.profiles;
 
 create policy "Lectura de profiles"
   on public.profiles
@@ -165,6 +177,8 @@ create policy "Actualización de profiles"
 -- ─────────────────────────────────────────────────────────────
 drop policy if exists "Users can read own red" on public.red_binaria;
 drop policy if exists "Admins can manage red" on public.red_binaria;
+drop policy if exists "Lectura de la red" on public.red_binaria;
+drop policy if exists "Ops/admin administran red" on public.red_binaria;
 
 create policy "Lectura de la red"
   on public.red_binaria

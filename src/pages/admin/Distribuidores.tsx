@@ -6,6 +6,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { supabaseAdmin } from '../../lib/supabase';
+import { useAdminBasePath } from '../../lib/useAdminBasePath';
 import type { Profile, EstadoDistribuidor } from '../../lib/types';
 
 type EstadoTab = 'todos' | EstadoDistribuidor;
@@ -49,6 +50,7 @@ interface DistribRow extends Profile {
 
 export default function Distribuidores() {
   const navigate = useNavigate();
+  const basePath = useAdminBasePath();
   const [distribuidores, setDistribuidores] = useState<DistribRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -390,7 +392,7 @@ export default function Distribuidores() {
                   return (
                     <tr
                       key={d.id}
-                      onClick={() => navigate(`/admin/distribuidores/${d.id}`)}
+                      onClick={() => navigate(`${basePath}/distribuidores/${d.id}`)}
                       className="border-b border-[#C8D8CB] last:border-0 hover:bg-[#FAFBFA] cursor-pointer transition-colors"
                     >
                       <td className="px-5 py-3 whitespace-nowrap">

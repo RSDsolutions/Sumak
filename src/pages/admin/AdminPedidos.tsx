@@ -2,9 +2,10 @@ import { useEffect, useState, useMemo } from 'react';
 import {
   X, Eye, Image as ImageIcon, ExternalLink, AlertCircle, Search, Calendar,
   Package, Clock, Truck, CheckCircle2, XCircle, ShoppingBag, DollarSign,
-  Star, TrendingUp, Filter, Landmark, Receipt,
+  Star, TrendingUp, Filter, Landmark, Receipt, Upload,
 } from 'lucide-react';
 import { supabase, supabaseAdmin } from '../../lib/supabase';
+import { useAuth } from '../../lib/auth';
 import type { Pedido, PedidoItem, EstadoPedido } from '../../lib/types';
 import Modal from '../../components/Modal';
 import { useToast } from '../../lib/toast';
@@ -250,7 +251,71 @@ export default function AdminPedidos() {
     fromEstado: EstadoPedido;
   } | null>(null);
   const [cancelReason, setCancelReason] = useState('');
+  // Modal de envío: voucher con guía + N° tracking, visibles al distribuidor.
+  const [pendingEnvio, setPendingEnvio] = useState<{
+    pedido: PedidoRowExt;
+    fromEstado: EstadoPedido;
+  } | null>(null);
+  const [envioVoucherFile, setEnvioVoucherFile] = useState<File | null>(null);
+  const [envioVoucherPreview, setEnvioVoucherPreview] = useState<string | null>(null);
+  const [envioNumero, setEnvioNumero] = useState('');
+  const [envioError, setEnvioError] = useState('');
   const toast = useToast();
+  const { profile } = useAuth();
+
+  function onEnvioVoucherFile(file: File) {
+    if (file.size > 5 * 1024 * 1024) {
+      setEnvioError('La imagen no debe superar los 5 MB.');
+      return;
+    }
+    setEnvioError('');
+    setEnvioVoucherFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => setEnvioVoucherPreview(e.target?.result as string);
+    reader.readAsDataURL(file);
+  }
+
+  // Marca el pedido como enviado registrando voucher + N° tracking.
+  // El distribuidor verá ambos en /dashboard/pedidos.
+  async function confirmEnvio() {
+    if (!pendingEnvio) return;
+    setUpdatingId(pendingEnvio.pedido.id);
+    setEnvioError('');
+    try {
+      let envioVoucherPath: string | null = null;
+      if (envioVoucherFile) {
+        const ext = envioVoucherFile.name.split('.').pop()?.toLowerCase() ?? 'jpg';
+        envioVoucherPath = `${pendingEnvio.pedido.id}/envio-${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from('pedidos-envios')
+          .upload(envioVoucherPath, envioVoucherFile, { upsert: true });
+        if (upErr) throw new Error(upErr.message);
+      }
+
+      const updates = {
+        estado: 'enviado' as EstadoPedido,
+        envio_voucher_url: envioVoucherPath,
+        envio_numero: envioNumero.trim() || null,
+        enviado_por: profile?.id ?? null,
+      };
+      const { error: updErr } = await supabaseAdmin
+        .from('pedidos')
+        .update(updates)
+        .eq('id', pendingEnvio.pedido.id);
+      if (updErr) throw new Error(updErr.message);
+
+      setPedidos((prev) => prev.map((p) =>
+        p.id === pendingEnvio.pedido.id ? { ...p, ...updates } : p,
+      ));
+      toast.success('Pedido marcado como enviado. El distribuidor lo verá.');
+      setPendingEnvio(null);
+    } catch (err) {
+      logger.error('confirmEnvio error', err);
+      setEnvioError(err instanceof Error ? err.message : 'No pudimos registrar el envío.');
+    } finally {
+      setUpdatingId(null);
+    }
+  }
 
   // Filtros
   const [search, setSearch] = useState('');
@@ -366,12 +431,21 @@ export default function AdminPedidos() {
   }
 
   // UX-001: si el admin cambia el estado a "cancelado" abrimos confirmación;
+  // si cambia a "enviado" abrimos modal para subir voucher + tracking;
   // cualquier otro cambio se aplica directo.
   function handleEstadoChange(pedido: PedidoRowExt, newEstado: EstadoPedido) {
     if (newEstado === pedido.estado) return;
     if (newEstado === 'cancelado') {
       setPendingCancel({ pedido, fromEstado: pedido.estado });
       setCancelReason('');
+      return;
+    }
+    if (newEstado === 'enviado') {
+      setPendingEnvio({ pedido, fromEstado: pedido.estado });
+      setEnvioVoucherFile(null);
+      setEnvioVoucherPreview(null);
+      setEnvioNumero('');
+      setEnvioError('');
       return;
     }
     void updateEstado(pedido.id, newEstado, pedido.estado);
@@ -775,6 +849,113 @@ export default function AdminPedidos() {
                   </>
                 ) : (
                   <>Sí, cancelar pedido</>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Modal de envío: voucher de guía + N° tracking */}
+      <Modal
+        open={!!pendingEnvio}
+        onClose={() => { if (updatingId === null) setPendingEnvio(null); }}
+        title="Marcar pedido como enviado"
+        subtitle="El distribuidor verá el comprobante y el N° de guía."
+        size="md"
+        labelledById="envio-title"
+      >
+        {pendingEnvio && (
+          <div className="px-6 py-5 space-y-4">
+            <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 flex items-start gap-3 text-sm">
+              <Truck size={18} className="text-purple-600 shrink-0 mt-0.5" aria-hidden="true" />
+              <div className="text-purple-700 text-xs">
+                Pedido de <strong>{pendingEnvio.pedido.distribuidor_nombre}</strong> por
+                {' '}<strong>${Number(pendingEnvio.pedido.total).toFixed(2)}</strong>.
+                Subí la foto de la guía (opcional) y el N° de tracking para que el
+                distribuidor pueda seguir su envío.
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="envio-numero" className="block text-[#6B7280] text-xs font-semibold uppercase tracking-wider mb-2">
+                N° de guía / tracking <span className="text-[#9CA3AF] font-normal">(opcional, recomendado)</span>
+              </label>
+              <input
+                id="envio-numero"
+                type="text"
+                value={envioNumero}
+                onChange={(e) => setEnvioNumero(e.target.value)}
+                placeholder="Ej: TRMC123456789"
+                autoComplete="off"
+                className="w-full bg-white border border-[#C8D8CB] rounded-xl px-4 py-3 text-[#111111] text-sm font-mono placeholder-[#9CA3AF] focus:outline-none focus:border-[#1A4E26] transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[#6B7280] text-xs font-semibold uppercase tracking-wider mb-2">
+                Foto de la guía / comprobante <span className="text-[#9CA3AF] font-normal">(opcional)</span>
+              </label>
+              {envioVoucherPreview ? (
+                <div className="relative rounded-xl overflow-hidden border border-[#C8D8CB] bg-[#F4F7F5]">
+                  <img src={envioVoucherPreview} alt="Voucher de envío" className="w-full max-h-56 object-contain" loading="lazy" />
+                  <button
+                    type="button"
+                    onClick={() => { setEnvioVoucherFile(null); setEnvioVoucherPreview(null); }}
+                    className="absolute top-2 right-2 bg-white/95 border border-[#C8D8CB] rounded-lg px-3 py-1.5 text-xs font-semibold text-[#6B7280] hover:text-red-600 transition-colors inline-flex items-center gap-1"
+                  >
+                    <X size={12} aria-hidden="true" /> Cambiar
+                  </button>
+                </div>
+              ) : (
+                <label className="relative flex flex-col items-center justify-center gap-2 border-2 border-dashed border-[#C8D8CB] hover:border-[#A8C2AD] rounded-xl p-6 cursor-pointer transition-all bg-[#F4F7F5]">
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,application/pdf"
+                    className="sr-only"
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) onEnvioVoucherFile(f); }}
+                  />
+                  <Upload size={22} className="text-[#9CA3AF]" aria-hidden="true" />
+                  <div className="text-center">
+                    <p className="text-[#6B7280] text-xs font-medium">Sube la foto de la guía</p>
+                    <p className="text-[#9CA3AF] text-[10px] mt-0.5">JPG, PNG, PDF · Máx 5 MB</p>
+                  </div>
+                </label>
+              )}
+            </div>
+
+            {envioError && (
+              <div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2 text-red-600 text-xs flex items-start gap-2">
+                <AlertCircle size={13} className="shrink-0 mt-0.5" aria-hidden="true" />
+                {envioError}
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setPendingEnvio(null)}
+                disabled={updatingId !== null}
+                className="flex-1 py-3 rounded-xl border border-[#C8D8CB] text-[#6B7280] text-sm font-medium hover:border-[#A8C2AD] transition-all disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={confirmEnvio}
+                disabled={updatingId !== null}
+                className="flex-[1.5] py-3 rounded-xl bg-purple-600 text-white text-sm font-bold hover:bg-purple-700 transition-all disabled:opacity-60 inline-flex items-center justify-center gap-2"
+              >
+                {updatingId === pendingEnvio.pedido.id ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Registrando…
+                  </>
+                ) : (
+                  <>
+                    <Truck size={14} aria-hidden="true" />
+                    Confirmar envío
+                  </>
                 )}
               </button>
             </div>

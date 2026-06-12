@@ -3,10 +3,14 @@ import { motion } from 'motion/react';
 import {
   DollarSign, X, Eye, ArrowDown, ArrowUp, Calendar, Hash,
   Layers, Sparkles, CheckCircle2, Clock, AlertCircle, Search,
-  Users, Network, TrendingUp, Filter,
+  Users, Network, TrendingUp, Filter, Upload, Receipt, ImageIcon,
+  ExternalLink,
 } from 'lucide-react';
-import { supabaseAdmin } from '../../lib/supabase';
+import { supabase, supabaseAdmin } from '../../lib/supabase';
+import { useAuth } from '../../lib/auth';
 import { levelCommissions } from '../../data';
+import { logger } from '../../lib/logger';
+import Modal from '../../components/Modal';
 import type { Comision, Profile, TipoComision, EstadoComision } from '../../lib/types';
 
 // ── Tabs by estado ──
@@ -261,6 +265,13 @@ export default function AdminComisiones() {
   // Pago batch
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [marking, setMarking] = useState(false);
+  // Voucher en el modal de pago
+  const [payModalOpen, setPayModalOpen] = useState(false);
+  const [voucherFile, setVoucherFile] = useState<File | null>(null);
+  const [voucherPreview, setVoucherPreview] = useState<string | null>(null);
+  const [voucherNumero, setVoucherNumero] = useState('');
+  const [payError, setPayError] = useState('');
+  const { profile } = useAuth();
 
   // Modal
   const [detalle, setDetalle] = useState<ComisionRow | null>(null);
@@ -407,15 +418,80 @@ export default function AdminComisiones() {
     }
   }
 
+  function openPayModal() {
+    if (selected.size === 0) return;
+    setPayError('');
+    setVoucherFile(null);
+    setVoucherPreview(null);
+    setVoucherNumero('');
+    setPayModalOpen(true);
+  }
+
+  function onVoucherFile(file: File) {
+    if (file.size > 5 * 1024 * 1024) {
+      setPayError('La imagen no debe superar los 5 MB.');
+      return;
+    }
+    setPayError('');
+    setVoucherFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => setVoucherPreview(e.target?.result as string);
+    reader.readAsDataURL(file);
+  }
+
+  // Tanda nueva: marca como pagada con voucher opcional. El voucher
+  // se sube a comisiones-vouchers/<comisionId>/voucher.<ext> por cada
+  // comisión seleccionada, así el RLS por carpeta funciona para que
+  // el beneficiario pueda leer solo el suyo.
   async function markAsPaid() {
     if (selected.size === 0) return;
     setMarking(true);
-    await supabaseAdmin
-      .from('comisiones')
-      .update({ estado: 'pagado', pagado_at: new Date().toISOString() })
-      .in('id', Array.from(selected));
-    setMarking(false);
-    await load();
+    setPayError('');
+    try {
+      const ids = Array.from(selected);
+      const pagadoAt = new Date().toISOString();
+      const payById: Record<string, { voucher_url: string | null }> = {};
+
+      // 1. Si hay voucher, subir uno por comision.
+      if (voucherFile) {
+        const ext = voucherFile.name.split('.').pop()?.toLowerCase() ?? 'jpg';
+        for (const id of ids) {
+          const path = `${id}/voucher-${Date.now()}.${ext}`;
+          const { error: upErr } = await supabase.storage
+            .from('comisiones-vouchers')
+            .upload(path, voucherFile, { upsert: true });
+          if (upErr) throw new Error(upErr.message);
+          payById[id] = { voucher_url: path };
+        }
+      } else {
+        for (const id of ids) payById[id] = { voucher_url: null };
+      }
+
+      // 2. Update por comision con metadata individual.
+      const numero = voucherNumero.trim() || null;
+      for (const id of ids) {
+        const { error: updErr } = await supabaseAdmin
+          .from('comisiones')
+          .update({
+            estado: 'pagado',
+            pagado_at: pagadoAt,
+            pagado_por: profile?.id ?? null,
+            voucher_url: payById[id].voucher_url,
+            voucher_numero: numero,
+          })
+          .eq('id', id);
+        if (updErr) throw new Error(updErr.message);
+      }
+
+      setPayModalOpen(false);
+      setSelected(new Set());
+      await load();
+    } catch (err) {
+      logger.error('markAsPaid error', err);
+      setPayError(err instanceof Error ? err.message : 'Error al registrar el pago.');
+    } finally {
+      setMarking(false);
+    }
   }
 
   function resetFilters() {
@@ -543,12 +619,12 @@ export default function AdminComisiones() {
         </div>
         {selected.size > 0 && (
           <button
-            onClick={markAsPaid}
+            onClick={openPayModal}
             disabled={marking}
             className="px-5 py-3 rounded-xl bg-[#1A4E26] text-white font-bold text-sm hover:bg-[#163F1E] transition-all duration-200 disabled:opacity-60 shadow-[0_4px_16px_rgba(26,78,38,0.25)] inline-flex items-center gap-2"
           >
             <CheckCircle2 size={15} />
-            {marking ? 'Procesando...' : `Marcar ${selected.size} como Pagadas`}
+            Pagar {selected.size} comisión{selected.size !== 1 ? 'es' : ''}
           </button>
         )}
       </div>
@@ -788,6 +864,124 @@ export default function AdminComisiones() {
       )}
 
       {detalle && <DetalleModal comision={detalle} onClose={() => setDetalle(null)} />}
+
+      {/* Modal de pago con voucher opcional */}
+      <Modal
+        open={payModalOpen}
+        onClose={() => { if (!marking) setPayModalOpen(false); }}
+        title="Registrar pago de comisiones"
+        subtitle={`${selected.size} comisión${selected.size !== 1 ? 'es' : ''} seleccionada${selected.size !== 1 ? 's' : ''}`}
+        size="md"
+        labelledById="pay-comisiones-title"
+      >
+        <div className="px-6 py-5 space-y-4">
+          {/* Resumen */}
+          <div className="bg-[#EBF4ED] border border-[#1A4E26]/20 rounded-xl p-4">
+            <p className="text-[10px] uppercase tracking-widest text-[#1A4E26] font-bold mb-1">Monto total a pagar</p>
+            <p className="font-heading font-bold text-2xl text-[#1A4E26]">
+              ${comisiones.filter((c) => selected.has(c.id)).reduce((s, c) => s + Number(c.monto), 0).toFixed(2)}
+            </p>
+            <p className="text-[#1A4E26]/80 text-xs mt-1">
+              Las comisiones quedarán como <strong>Pagadas</strong>. El beneficiario verá el voucher en su panel.
+            </p>
+          </div>
+
+          {/* N° transferencia */}
+          <div>
+            <label htmlFor="voucher-numero" className="block text-[#6B7280] text-xs font-semibold uppercase tracking-wider mb-2">
+              N° de transferencia <span className="text-[#9CA3AF] font-normal">(opcional, recomendado)</span>
+            </label>
+            <input
+              id="voucher-numero"
+              type="text"
+              value={voucherNumero}
+              onChange={(e) => setVoucherNumero(e.target.value)}
+              placeholder="Ej: 0123456789"
+              autoComplete="off"
+              className="w-full bg-white border border-[#C8D8CB] rounded-xl px-4 py-3 text-[#111111] text-sm font-mono placeholder-[#9CA3AF] focus:outline-none focus:border-[#1A4E26] transition-colors"
+            />
+            <p className="text-[10px] text-[#9CA3AF] mt-1.5">
+              Mismo número se asocia a todas las comisiones seleccionadas.
+            </p>
+          </div>
+
+          {/* Voucher */}
+          <div>
+            <label className="block text-[#6B7280] text-xs font-semibold uppercase tracking-wider mb-2">
+              Comprobante <span className="text-[#9CA3AF] font-normal">(opcional, recomendado)</span>
+            </label>
+            {voucherPreview ? (
+              <div className="relative rounded-xl overflow-hidden border border-[#C8D8CB] bg-[#F4F7F5]">
+                <img src={voucherPreview} alt="Voucher" className="w-full max-h-56 object-contain" loading="lazy" />
+                <button
+                  type="button"
+                  onClick={() => { setVoucherFile(null); setVoucherPreview(null); }}
+                  className="absolute top-2 right-2 bg-white/95 border border-[#C8D8CB] rounded-lg px-3 py-1.5 text-xs font-semibold text-[#6B7280] hover:text-red-600 transition-colors inline-flex items-center gap-1"
+                >
+                  <X size={12} aria-hidden="true" /> Cambiar
+                </button>
+              </div>
+            ) : (
+              <label className="relative flex flex-col items-center justify-center gap-2 border-2 border-dashed border-[#C8D8CB] hover:border-[#A8C2AD] rounded-xl p-6 cursor-pointer transition-all bg-[#F4F7F5]">
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,application/pdf"
+                  className="sr-only"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) onVoucherFile(f); }}
+                />
+                <Upload size={22} className="text-[#9CA3AF]" aria-hidden="true" />
+                <div className="text-center">
+                  <p className="text-[#6B7280] text-xs font-medium">Sube el comprobante</p>
+                  <p className="text-[#9CA3AF] text-[10px] mt-0.5">JPG, PNG, PDF · Máx 5 MB</p>
+                </div>
+              </label>
+            )}
+            {voucherFile && (
+              <p className="text-[#1A4E26] text-[11px] mt-1.5 flex items-center gap-1.5">
+                <CheckCircle2 size={12} aria-hidden="true" />
+                <span className="font-medium">{voucherFile.name}</span>
+                <span className="text-[#9CA3AF]">({(voucherFile.size / 1024).toFixed(0)} KB)</span>
+              </p>
+            )}
+          </div>
+
+          {payError && (
+            <div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2 text-red-600 text-xs flex items-start gap-2">
+              <AlertCircle size={13} className="shrink-0 mt-0.5" aria-hidden="true" />
+              {payError}
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setPayModalOpen(false)}
+              disabled={marking}
+              className="flex-1 py-3 rounded-xl border border-[#C8D8CB] text-[#6B7280] text-sm font-medium hover:border-[#A8C2AD] transition-all disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={markAsPaid}
+              disabled={marking}
+              className="flex-[1.5] py-3 rounded-xl bg-[#1A4E26] text-white text-sm font-bold hover:bg-[#163F1E] transition-all disabled:opacity-60 inline-flex items-center justify-center gap-2"
+            >
+              {marking ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Procesando…
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 size={14} aria-hidden="true" />
+                  Confirmar pago
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
