@@ -7,11 +7,18 @@ interface AuthContextValue {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  /** Hace login y devuelve el profile fresco (necesario para redirect por rol). */
+  signIn: (email: string, password: string) => Promise<{ error: string | null; profile: Profile | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   isAdmin: boolean;
   isDistribuidor: boolean;
+  /** true si el usuario tiene rol 'operaciones' (gestiona pedidos, comisiones y solicitudes). */
+  isOperaciones: boolean;
+  /** Ruta home según el rol — usar en redirects de Login y ProtectedRoute. */
+  homeForRole: () => '/admin' | '/operaciones' | '/dashboard' | '/login';
+  /** Igual que homeForRole pero recibe un profile específico (útil tras signIn). */
+  homeForProfile: (p: Profile | null) => '/admin' | '/operaciones' | '/dashboard' | '/login';
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -21,17 +28,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  async function fetchProfile(uid: string): Promise<void> {
+  async function fetchProfile(uid: string): Promise<Profile | null> {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', uid)
       .single();
     if (!error && data) {
-      setProfile(data as Profile);
-    } else {
-      setProfile(null);
+      const p = data as Profile;
+      setProfile(p);
+      return p;
     }
+    setProfile(null);
+    return null;
   }
 
   useEffect(() => {
@@ -58,15 +67,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  async function signIn(email: string, password: string): Promise<{ error: string | null }> {
+  async function signIn(
+    email: string, password: string,
+  ): Promise<{ error: string | null; profile: Profile | null }> {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      return { error: 'Credenciales incorrectas. Verifica tu email y contraseña.' };
+      return { error: 'Credenciales incorrectas. Verifica tu email y contraseña.', profile: null };
     }
-    if (data.user) {
-      await fetchProfile(data.user.id);
-    }
-    return { error: null };
+    let p: Profile | null = null;
+    if (data.user) p = await fetchProfile(data.user.id);
+    return { error: null, profile: p };
   }
 
   async function signOut(): Promise<void> {
@@ -82,9 +92,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const isAdmin = profile?.rol === 'admin';
   const isDistribuidor = profile?.rol === 'distribuidor';
+  const isOperaciones = profile?.rol === 'operaciones';
+
+  function homeForProfile(p: Profile | null): '/admin' | '/operaciones' | '/dashboard' | '/login' {
+    if (!p) return '/login';
+    if (p.rol === 'admin') return '/admin';
+    if (p.rol === 'operaciones') return '/operaciones';
+    return '/dashboard';
+  }
+
+  function homeForRole() {
+    return homeForProfile(profile);
+  }
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signIn, signOut, refreshProfile, isAdmin, isDistribuidor }}>
+    <AuthContext.Provider
+      value={{
+        user, profile, loading,
+        signIn, signOut, refreshProfile,
+        isAdmin, isDistribuidor, isOperaciones,
+        homeForRole, homeForProfile,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

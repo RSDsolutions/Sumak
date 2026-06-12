@@ -21,7 +21,7 @@ export default function Login() {
   const [resetSent, setResetSent] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
 
-  const { signIn, isAdmin } = useAuth();
+  const { signIn, homeForProfile } = useAuth();
   const navigate = useNavigate();
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -29,11 +29,13 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      const { error: signInError } = await signIn(email, password);
+      const { error: signInError, profile } = await signIn(email, password);
       if (signInError) {
         setError(signInError);
       } else {
-        navigate('/dashboard');
+        // Redirige según el rol del profile recién obtenido.
+        // admin → /admin, operaciones → /operaciones, distribuidor → /dashboard.
+        navigate(homeForProfile(profile), { replace: true });
       }
     } finally {
       setLoading(false);
@@ -53,8 +55,6 @@ export default function Login() {
     setResetSent(true);
     setResetLoading(false);
   }
-
-  void isAdmin;
 
   return (
     <div className="bg-[#F4F7F5] min-h-screen flex items-center justify-center px-4 py-16">

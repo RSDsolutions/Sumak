@@ -56,6 +56,12 @@ const AdminPedidos = lazy(() => import('./pages/admin/AdminPedidos'));
 const AdminRed = lazy(() => import('./pages/admin/AdminRed'));
 const AdminEscalera = lazy(() => import('./pages/admin/AdminEscalera'));
 
+// Operaciones pages (rol delegado para pedidos / comisiones / solicitudes).
+// Reusa componentes de admin/* — sólo cambia el layout (OperacionesLayout)
+// y el ProtectedRoute que permite 'admin' o 'operaciones'.
+const OperacionesLayout = lazy(() => import('./components/OperacionesLayout'));
+const OperacionesOverview = lazy(() => import('./pages/operaciones/Overview'));
+
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -410,6 +416,81 @@ export default function App() {
                 <AdminLayout>
                   <AdminEscalera />
                 </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ── OPERACIONES ROUTES ───────────────────────── */}
+          {/* Reusan componentes admin/* — la lógica RLS y los gates de UI
+              ya están escritos para admin y siguen funcionando con
+              rol='operaciones' gracias a is_operaciones_or_admin() en BD. */}
+          <Route
+            path="/operaciones"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'operaciones']}>
+                <OperacionesLayout>
+                  <OperacionesOverview />
+                </OperacionesLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/operaciones/solicitudes"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'operaciones']}>
+                <OperacionesLayout>
+                  <Solicitudes />
+                </OperacionesLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/operaciones/solicitudes/:id"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'operaciones']}>
+                <OperacionesLayout>
+                  <SolicitudDetalle />
+                </OperacionesLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/operaciones/distribuidores"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'operaciones']}>
+                <OperacionesLayout>
+                  <Distribuidores />
+                </OperacionesLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/operaciones/distribuidores/:id"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'operaciones']}>
+                <OperacionesLayout>
+                  <DistribuidorDetalle />
+                </OperacionesLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/operaciones/comisiones"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'operaciones']}>
+                <OperacionesLayout>
+                  <AdminComisiones />
+                </OperacionesLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/operaciones/pedidos"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'operaciones']}>
+                <OperacionesLayout>
+                  <AdminPedidos />
+                </OperacionesLayout>
               </ProtectedRoute>
             }
           />

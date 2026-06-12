@@ -1,8 +1,9 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
+import type { RolUsuario } from '../lib/types';
 
 interface ProtectedRouteProps {
-  allowedRoles: ('admin' | 'distribuidor')[];
+  allowedRoles: RolUsuario[];
   children: React.ReactNode;
 }
 
@@ -21,7 +22,7 @@ function Spinner() {
 }
 
 export default function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, homeForRole } = useAuth();
 
   if (loading) return <Spinner />;
 
@@ -30,8 +31,8 @@ export default function ProtectedRoute({ allowedRoles, children }: ProtectedRout
   if (!profile) return <Spinner />;
 
   if (!allowedRoles.includes(profile.rol)) {
-    if (profile.rol === 'admin') return <Navigate to="/admin" replace />;
-    return <Navigate to="/dashboard" replace />;
+    // Redirige al home propio del rol en lugar de caer siempre en /dashboard.
+    return <Navigate to={homeForRole()} replace />;
   }
 
   return <>{children}</>;
