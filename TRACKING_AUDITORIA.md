@@ -34,12 +34,12 @@ Distribución por severidad:
 
 ---
 
-## Estado tras Fase 1 + Tandas 2, 3, 4, 5
+## Estado tras Fase 1 + Tandas 2, 3, 4, 5, 6
 
 | Estado | # | Significado |
 |---|---|---|
-| ✅ Resuelto | **25** | Código activo aplica el fix; el flujo afectado YA se comporta correctamente |
-| 🔄 Mitigado / Infra disponible | **6** | La infraestructura ya existe; adopción completa en próxima tanda |
+| ✅ Resuelto | **29** | Código activo aplica el fix; el flujo afectado YA se comporta correctamente |
+| 🔄 Mitigado / Infra disponible | **2** | La infraestructura ya existe; adopción completa en próxima tanda |
 | ⏳ Pendiente | **47** | Sin trabajo todavía |
 | **Total** | **78** | |
 
@@ -84,6 +84,15 @@ Distribución por severidad:
 | PERF-003 | 🟡 Media | Lazy loading de imágenes | Atributos `loading="lazy" decoding="async"` en imágenes no-hero: catálogo (Home, Productos, Tienda), relacionados (ProductDetail, TiendaProducto), revista zoom, carrito y voucher en admin. Hero del Home, Login y producto siguen `eager` para LCP. |
 | PERF-004 | 🟡 Media | N+1 en MisComisiones eliminado | Query principal hace join `origen:profiles!origen_id(...)`. DetalleModal lee `comision.origen` directo (antes: 1 fetch por modal). Aplicado en `MisComisiones.tsx` y `AdminMisComisiones.tsx` |
 
+**Tanda 6 (Adopción de RPCs Fase 1, cierra los 🔄 altos):**
+
+| ID | Severidad | Asunto | Cómo se confirmó |
+|---|---|---|---|
+| SEC-002 | 🟠 Alta | Aprobación atómica de afiliado | `SolicitudDetalle.handleApprove` ahora hace pre-checks (cédula/email duplicado), crea `auth.user` y llama a la RPC `finish_approve_afiliacion` que ejecuta los 7-12 pasos en una transacción. Si la RPC falla, rollback del `auth.user`. Migration 008 extiende la RPC para aceptar `p_abrir_como_frontal` (compatible con migración 007 del usuario). |
+| BIZ-001 | 🟠 Alta | Cálculo server-side de pedido | `NuevoPedido.handleSubmitFinal` ahora hace upload del voucher y llama a la RPC `submit_pedido`. La RPC inserta pedido + items, suma puntos y genera comisiones server-side. El cliente ya no calcula totales/comisiones ni usa `supabaseAdmin`. |
+| ARQ-001 | 🟠 Alta | Capa de servicio servidor-side | Las 3 RPCs (`submit_pedido`, `cancel_pedido`, `finish_approve_afiliacion`) son ahora los únicos puntos de escritura para operaciones complejas. El cliente solo orquesta. |
+| ARQ-002 | 🟠 Alta | Reemplazo de Edge Functions | Las RPCs PL/pgSQL cumplen el rol de Edge Functions para estos 3 flujos críticos. Quedan otras operaciones admin con `supabaseAdmin` que migrarán en Fase 2 (SEC-001 completo). |
+
 **Tanda 5 (Limpieza y DX, sin tocar BD):**
 
 | ID | Severidad | Asunto | Cómo se confirmó |
@@ -99,10 +108,6 @@ Distribución por severidad:
 
 | ID | Severidad | Por qué solo mitigado |
 |---|---|---|
-| SEC-002 | 🟠 Alta | RPC `finish_approve_afiliacion` disponible en BD, pero `SolicitudDetalle.handleApprove` sigue ejecutando 8 inserts sin transacción. Adopción requiere testing en staging primero. |
-| BIZ-001 | 🟠 Alta | RPC `submit_pedido` disponible en BD, pero `NuevoPedido` sigue calculando total/puntos cliente-side. Adopción requiere testing. |
-| ARQ-001 | 🟠 Alta | Las 4 RPCs son los primeros servicios servidor-side; pero el resto del código sigue acoplado a Supabase directo en 30+ lugares. |
-| ARQ-002 | 🟠 Alta | RPCs PL/pgSQL sustituyen parcialmente Edge Functions; pero `auth.admin.createUser` y otros bypasses con service_role siguen en cliente. |
 | UX-002 + A11Y-001 | 🟡 Media | Componente `<Modal/>` reutilizable creado (`src/components/Modal.tsx`) con focus trap, ESC, click-outside, `aria-modal`, bloqueo de scroll. Adoptado en la nueva confirmación de cancelar pedido. **Pendiente migrar** los modales legacy (DetalleModal en AdminPedidos, ApproveModal/RejectModal/SuccessModal en SolicitudDetalle, DetalleModal en MisComisiones/AdminMisComisiones) para que también tengan focus trap. |
 | UX-006 | 🟡 Media | Componente `<Skeleton/>` y variantes (`SkeletonTableRow`, `SkeletonCard`, `SkeletonCards`) creados (`src/components/Skeleton.tsx`). Pendiente adoptarlos en los listados grandes (AdminPedidos, MisPedidos, MisComisiones, Distribuidores) que aún muestran spinner global. |
 
@@ -275,14 +280,14 @@ ARQ-007 (React Query), PERF-001 (paginación), COD-006 (descomponer componentes)
 ## Indicador de avance
 
 ```
-Resueltos:  ████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 25/78  (32%)
-Mitigados:  ███░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  6/78  (8%)
+Resueltos:  ███████████████░░░░░░░░░░░░░░░░░░░░░░░░░ 29/78  (37%)
+Mitigados:  █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  2/78  (3%)
 Pendientes: ████████████████████████░░░░░░░░░░░░░░░ 47/78  (60%)
 ```
 
 Por severidad:
 - 🔴 Crítica: **1 pendiente** (SEC-001)
-- 🟠 Alta: **4 pendientes** (BIZ-009, BIZ-010, PERF-001, UX-015) + 4 mitigados
+- 🟠 Alta: **4 pendientes** (BIZ-009, BIZ-010, PERF-001, UX-015) — los 4 mitigados pasaron a ✅
 - 🟡 Media: **31 pendientes** (de 46 totales — 15 resueltos + 2 mitigados)
 - 🟢 Baja: **11 pendientes** (de 21 totales — 6 resueltos)
 

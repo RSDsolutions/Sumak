@@ -4,7 +4,7 @@ import {
   Package, Clock, Truck, CheckCircle2, XCircle, ShoppingBag, DollarSign,
   Star, TrendingUp, Filter, Landmark, Receipt,
 } from 'lucide-react';
-import { supabaseAdmin } from '../../lib/supabase';
+import { supabase, supabaseAdmin } from '../../lib/supabase';
 import type { Pedido, PedidoItem, EstadoPedido } from '../../lib/types';
 import Modal from '../../components/Modal';
 import { useToast } from '../../lib/toast';
@@ -384,49 +384,45 @@ export default function AdminPedidos() {
     try {
       const pedido = pedidos.find((p) => p.id === pedidoId);
 
-      // Cancelación: revertir puntos y marcar comisiones relacionadas
-      // (aplica si el pedido ya estaba en cualquier estado activo)
-      if (newEstado === 'cancelado' && ['procesando', 'enviado', 'entregado'].includes(currentEstado) && pedido) {
-        const puntos = pedido.puntos_generados;
-        const distribId = pedido.distribuidor_id;
+      // Tanda 6 (BIZ-002 + ARQ-001): para cancelar usamos la RPC atómica
+      // public.cancel_pedido. Hace en una transacción: revertir puntos,
+      // cancelar comisiones por pedido_id, registrar motivo en notas y
+      // cambiar estado. Idempotente (si ya estaba cancelado, no falla).
+      if (newEstado === 'cancelado') {
+        const { error: rpcErr } = await supabase.rpc('cancel_pedido', {
+          p_pedido_id: pedidoId,
+          p_motivo: motivo ?? null,
+        });
+        if (rpcErr) throw rpcErr;
 
-        if (puntos > 0) {
-          const { data: dp } = await supabaseAdmin.from('profiles').select('puntos').eq('id', distribId).single();
-          if (dp) {
-            await supabaseAdmin
-              .from('profiles')
-              .update({ puntos: Math.max(0, Number(dp.puntos) - puntos) })
-              .eq('id', distribId);
-          }
-        }
-
-        // BIZ-002: cancelar comisiones por filtro EXACTO de pedido_id.
-        // Reemplaza la heurística anterior de ventana de ±5 min que podía
-        // cancelar comisiones de otros pedidos del mismo origen.
-        // Las comisiones legacy sin pedido_id no se ven afectadas
-        // (quedan en estado anterior; deben tratarse manualmente).
-        await supabaseAdmin
-          .from('comisiones')
-          .update({ estado: 'cancelado' })
-          .eq('pedido_id', pedido.id)
-          .eq('estado', 'pendiente');
+        // Actualizamos el estado local con los efectos que aplicó la RPC.
+        setPedidos((prev) => prev.map((p) =>
+          p.id === pedidoId
+            ? {
+                ...p,
+                estado: 'cancelado' as EstadoPedido,
+                notas: motivo
+                  ? ((p.notas ? p.notas + ' | ' : '') + 'Cancelado: ' + motivo)
+                  : p.notas,
+              }
+            : p
+        ));
+        toast.success(
+          ['procesando', 'enviado', 'entregado'].includes(currentEstado)
+            ? 'Pedido cancelado. Puntos y comisiones revertidos.'
+            : 'Pedido marcado como cancelado.'
+        );
+      } else {
+        // Cambios de estado NO cancelados: simple update con RLS.
+        // La migración 007 habilita admin/operaciones a updatear pedidos.
+        const updates: { estado: EstadoPedido } = { estado: newEstado };
+        const { error: updErr } = await supabaseAdmin.from('pedidos').update(updates).eq('id', pedidoId);
+        if (updErr) throw updErr;
+        setPedidos((prev) => prev.map((p) => p.id === pedidoId ? { ...p, estado: newEstado } : p));
+        toast.success('Estado del pedido actualizado.');
       }
-
-      // Si hay motivo (cancelación), lo dejamos en notas para audit ligero.
-      const updates: { estado: EstadoPedido; notas?: string } = { estado: newEstado };
-      if (motivo && pedido) {
-        const prev = pedido.notas ?? '';
-        updates.notas = (prev ? prev + ' | ' : '') + 'Cancelado: ' + motivo;
-      }
-
-      const { error: updErr } = await supabaseAdmin.from('pedidos').update(updates).eq('id', pedidoId);
-      if (updErr) throw updErr;
-      setPedidos((prev) => prev.map((p) => p.id === pedidoId ? { ...p, ...updates } : p));
-      toast.success(
-        newEstado === 'cancelado'
-          ? 'Pedido cancelado. Puntos y comisiones revertidos.'
-          : 'Estado del pedido actualizado.'
-      );
+      // 'pedido' es referencia para log; suprimimos warning de variable usada solo aquí.
+      void pedido;
     } catch (err) {
       logger.error('updateEstado error', err);
       toast.error('No pudimos actualizar el pedido. Intenta de nuevo.');

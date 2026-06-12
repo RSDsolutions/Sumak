@@ -1,17 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText, CheckCircle, XCircle, ExternalLink, Copy } from 'lucide-react';
-import { supabaseAdmin } from '../../lib/supabase';
-import { levelCommissions, planConfig } from '../../data';
-import type { Afiliacion, PaqueteKey } from '../../lib/types';
+import { supabase, supabaseAdmin } from '../../lib/supabase';
+import { logger } from '../../lib/logger';
+import type { Afiliacion } from '../../lib/types';
 
-// COD-002: derivar de planConfig en lugar de duplicar la tabla.
-const PAQUETE_PUNTOS: Record<string, number> = Object.fromEntries(
-  Object.entries(planConfig.paquetes).map(([k, v]) => [k, v.puntos]),
-);
-const PAQUETE_PRECIOS: Record<string, number> = Object.fromEntries(
-  Object.entries(planConfig.paquetes).map(([k, v]) => [k, v.precio]),
-);
+// Tanda 6: las tablas PAQUETE_PUNTOS/PAQUETE_PRECIOS y la cadena
+// upline ya no se calculan aquí — todo lo hace la RPC server-side
+// public.finish_approve_afiliacion. Los números (125/225/525) están
+// replicados en el SQL de la RPC; cuando se cambien, hay que actualizar
+// la RPC también (migración 008 o posterior).
 
 function Spinner() {
   return (
@@ -139,17 +137,19 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
         return;
       }
 
-      // 1. Generate distributor code
+      // ── 1. Generar código distribuidor ──
       const { count } = await supabaseAdmin
         .from('profiles')
         .select('*', { count: 'exact', head: true });
       const nextNum = (count ?? 0) + 1;
       const codigo = `SUMAK-${String(nextNum).padStart(5, '0')}`;
 
-      // 2. Generate temp password (SEC-005: crypto-random, no derivada de cédula)
+      // ── 2. Generar contraseña temporal (SEC-005: crypto-random) ──
       const tempPassword = generateTempPassword();
 
-      // 3. Create auth user
+      // ── 3. Crear auth.user ──
+      // Es el único paso que requiere supabaseAdmin (no hay equivalente
+      // en SQL nativo de Supabase Auth). El resto va por la RPC atómica.
       const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
         email: afiliacion.email,
         password: tempPassword,
@@ -163,250 +163,57 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
 
       const userId = authData.user.id;
 
-      // 4. Determinar el patrocinador del nuevo profile:
-      //    El patrocinador SIEMPRE es el dueño del código declarado por el afiliado.
-      //    Si no declaró código, el patrocinador es el admin (root de la red).
-      let patrocinadorId: string | null = null;
-      if (afiliacion.codigo_patrocinador) {
-        const { data: pat } = await supabaseAdmin
-          .from('profiles')
-          .select('id')
-          .eq('codigo_distribuidor', afiliacion.codigo_patrocinador)
-          .maybeSingle();
-        patrocinadorId = pat?.id ?? null;
-      }
-      if (!patrocinadorId) {
-        patrocinadorId = adminProfile?.id ?? null;
-      }
-
-      const packagePuntos = PAQUETE_PUNTOS[afiliacion.paquete_seleccionado] ?? 0;
-
-      // 5. Insert profile with package puntos
-      const { error: profileError } = await supabaseAdmin.from('profiles').insert({
-        id: userId,
-        codigo_distribuidor: codigo,
-        nombre_completo: afiliacion.nombre_completo,
-        cedula: afiliacion.cedula,
-        email: afiliacion.email,
-        telefono: afiliacion.telefono,
-        direccion: afiliacion.direccion,
-        ciudad: afiliacion.ciudad,
-        codigo_patrocinador: afiliacion.codigo_patrocinador ?? null,
-        patrocinador_id: patrocinadorId,
-        paquete: afiliacion.paquete_seleccionado as PaqueteKey,
-        puntos: packagePuntos,
-        rol: 'distribuidor',
-        estado: 'activo',
-        fecha_aprobacion: new Date().toISOString(),
+      // ── 4. Llamar a la RPC atómica ──
+      // Tanda 6 (SEC-002 + ARQ-001 + ARQ-002): la RPC corre en una sola
+      // transacción server-side:
+      //   • Inserta profile con todos los campos correctos
+      //   • Resuelve patrocinador del código declarado (o admin si no)
+      //   • Inserta nodo en red_binaria con posición auto-asignada
+      //     (izq/der, o frontal si abrirComoFrontal=true / padre es admin)
+      //   • Marca afiliación como aprobada
+      //   • Crea pedido inicial procesado + items del paquete
+      //   • Crea comisión de referido 40% para el patrocinador
+      //   • Crea comisiones por nivel hasta 14 niveles a upline calificado
+      // Si cualquier paso falla, NADA se persiste (rollback automático).
+      //
+      // Si falla la RPC, hacemos rollback del auth.user para no dejar
+      // huérfanos que bloquearían reintentos.
+      const padrePerfil = padreProfileId || null;
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('finish_approve_afiliacion', {
+        p_afiliacion_id: afiliacion.id,
+        p_user_id: userId,
+        p_codigo: codigo,
+        p_padre_profile_id: padrePerfil,
+        p_abrir_como_frontal: abrirComoFrontal,
       });
 
-      if (profileError) {
-        // Rollback: el auth.user ya se creo en el paso 3. Si dejamos que
-        // quede sin profile, queda huerfano y al reintentar la siguiente
-        // aprobacion choca de nuevo. Lo borramos best-effort.
+      if (rpcError) {
+        // Rollback best-effort: borramos el auth.user creado en el paso 3.
         await supabaseAdmin.auth.admin.deleteUser(userId).catch((cleanupErr) => {
-          console.error('No se pudo limpiar auth.user huerfano:', cleanupErr);
+          logger.error('No se pudo limpiar auth.user huérfano tras fallar RPC', cleanupErr);
         });
-        setError('Error al crear perfil: ' + profileError.message);
-        return;
-      }
-
-      // 6. Determinar la ubicación en la red binaria.
-      //    Si el admin no escogió un padre explícito en el dropdown,
-      //    se ubica bajo el patrocinador resuelto (referido o admin).
-      const parentProfileId = padreProfileId || patrocinadorId;
-      let padreNodoId: string | null = null;
-      let padreNivel: number = 0;
-      if (parentProfileId) {
-        const { data: padreNodo } = await supabaseAdmin
-          .from('red_binaria')
-          .select('id, nivel')
-          .eq('distribuidor_id', parentProfileId)
-          .maybeSingle();
-        if (padreNodo) {
-          padreNodoId = padreNodo.id;
-          padreNivel = padreNodo.nivel;
-        } else {
-          // El padre no tiene nodo aún. Si es el admin, créalo como root.
-          const selectedParent = distribuidores.find((d) => d.id === parentProfileId);
-          if (selectedParent?.rol === 'admin') {
-            const { data: newAdminNode } = await supabaseAdmin
-              .from('red_binaria')
-              .insert({ distribuidor_id: parentProfileId, padre_id: null, posicion: null, nivel: 1 })
-              .select('id, nivel')
-              .single();
-            if (newAdminNode) {
-              padreNodoId = newAdminNode.id;
-              padreNivel = newAdminNode.nivel;
-            }
-          }
-        }
-      }
-
-      // 7. Auto-determinar posición en árbol binario
-      let posicionFinal: 'izquierda' | 'derecha' | null = null;
-      if (padreNodoId) {
-        const selectedParent = distribuidores.find((d) => d.id === parentProfileId);
-        const parentIsAdmin = selectedParent?.rol === 'admin';
-
-        if (parentIsAdmin || abrirComoFrontal) {
-          // Frontal: hijos directos sin posicion izq/der.
-          // El admin SIEMPRE coloca sus directos como frontales.
-          // Cualquier otro distribuidor puede tambien si se marca el checkbox
-          // (la migracion 007 habilita esto en el trigger SQL).
-          posicionFinal = null;
-        } else {
-          // Auto-asignar izquierda o derecha según disponibilidad
-          const { data: hijos } = await supabaseAdmin
-            .from('red_binaria')
-            .select('posicion')
-            .eq('padre_id', padreNodoId);
-
-          const tieneIzq = hijos?.some((h) => h.posicion === 'izquierda');
-          const tieneDer = hijos?.some((h) => h.posicion === 'derecha');
-
-          if (!tieneIzq) {
-            posicionFinal = 'izquierda';
-          } else if (!tieneDer) {
-            posicionFinal = 'derecha';
-          } else {
-            setError(
-              'Este distribuidor ya tiene ambas posiciones (Izq. y Der.) ocupadas. ' +
-              'Puedes marcar "Abrir como frontal nuevo" para colgar el nodo como frontal, ' +
-              'o seleccionar otro patrocinador.'
-            );
-            return;
-          }
-        }
-      }
-
-      // 8. Insert into red_binaria
-      const nivelNuevo = padreNivel > 0 ? padreNivel + 1 : 1;
-      const { error: redError } = await supabaseAdmin.from('red_binaria').insert({
-        distribuidor_id: userId,
-        padre_id: padreNodoId,
-        posicion: posicionFinal,
-        nivel: nivelNuevo,
-      });
-
-      if (redError) {
-        setError('Error al insertar en red binaria: ' + redError.message);
-        return;
-      }
-
-      // 8. Update afiliacion state
-      await supabaseAdmin
-        .from('afiliaciones')
-        .update({ estado: 'aprobada' })
-        .eq('id', afiliacion.id);
-
-      // 8.1 Pedido inicial procesado por el paquete (activa el mes automáticamente)
-      const packagePrice = PAQUETE_PRECIOS[afiliacion.paquete_seleccionado] ?? 0;
-      const packageName = afiliacion.paquete_seleccionado.charAt(0).toUpperCase() + afiliacion.paquete_seleccionado.slice(1);
-      // BIZ-002: capturamos el pedido_id para vincular las comisiones que genera.
-      // Si el pedido se cancela, las comisiones se podrán anular por filtro exacto.
-      let pkgPedidoId: string | null = null;
-      if (packagePrice > 0) {
-        const { data: pkgPedido } = await supabaseAdmin
-          .from('pedidos')
-          .insert({
-            distribuidor_id: userId,
-            estado: 'procesando',
-            tipo_precio: 'distribuidor',
-            total: packagePrice,
-            puntos_generados: packagePuntos,
-            notas: `Pedido inicial — Paquete ${packageName} (afiliación)`,
-          })
-          .select()
-          .single();
-
-        if (pkgPedido) {
-          pkgPedidoId = pkgPedido.id;
-          await supabaseAdmin.from('pedido_items').insert({
-            pedido_id: pkgPedido.id,
-            producto_codigo: `PKG-${afiliacion.paquete_seleccionado.toUpperCase()}`,
-            producto_nombre: `Paquete ${packageName}`,
-            cantidad: 1,
-            precio_unitario: packagePrice,
-            subtotal: packagePrice,
-          });
-        }
-      }
-
-      // 9. Comisión de referido directa para el patrocinador (40% del precio del paquete)
-      if (patrocinadorId) {
-        const montoReferido = parseFloat(((PAQUETE_PRECIOS[afiliacion.paquete_seleccionado] ?? 0) * planConfig.porcentajeReferido).toFixed(2));
-        await supabaseAdmin.from('comisiones').insert({
-          beneficiario_id: patrocinadorId,
-          origen_id: userId,
-          pedido_id: pkgPedidoId, // BIZ-002
-          tipo: 'afiliacion',
-          monto: montoReferido,
-          estado: 'pendiente',
-          descripcion: `Comisión referido (40%) — ${afiliacion.nombre_completo} — paquete ${afiliacion.paquete_seleccionado}`,
-        });
-      }
-
-      // 10. Comisiones por nivel sobre precio del paquete (solo para upline con compra mensual ≥ $100)
-      if (packagePuntos > 0) {
-        const now = new Date();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-
-        const { data: allProfiles } = await supabaseAdmin
-          .from('profiles')
-          .select('id, patrocinador_id');
-        const profMap = new Map<string, { patrocinador_id: string | null }>(
-          (allProfiles ?? []).map((p) => [p.id, { patrocinador_id: p.patrocinador_id }])
+        const codeStr = rpcError.code ? `[${rpcError.code}] ` : '';
+        setError(
+          `${codeStr}${rpcError.message ?? 'Error desconocido al aprobar afiliación.'} ` +
+          'El sistema revirtió todos los cambios. Revisa los datos y reintenta.'
         );
+        return;
+      }
 
-        // Collect upline IDs
-        const uplineChain: Array<{ id: string; nivel: number; porcentaje: number }> = [];
-        let upId: string | null = userId;
-        for (const lc of levelCommissions) {
-          const prof = profMap.get(upId!);
-          if (!prof?.patrocinador_id) break;
-          upId = prof.patrocinador_id;
-          uplineChain.push({ id: upId, nivel: lc.nivel, porcentaje: lc.porcentaje });
-        }
-
-        if (uplineChain.length > 0) {
-          // Check which upline members have a $100+ single purchase this month
-          const uplineIds = uplineChain.map((u) => u.id);
-          const { data: eligibleOrders } = await supabaseAdmin
-            .from('pedidos')
-            .select('distribuidor_id')
-            .in('distribuidor_id', uplineIds)
-            .in('estado', ['procesando', 'enviado', 'entregado'])
-            .gte('total', 100)
-            .gte('created_at', startOfMonth);
-          const eligibleSet = new Set((eligibleOrders ?? []).map((o: { distribuidor_id: string }) => o.distribuidor_id));
-
-          const comInserts: object[] = [];
-          for (const entry of uplineChain) {
-            if (eligibleSet.has(entry.id)) {
-              const monto = parseFloat((packagePuntos * entry.porcentaje / 100).toFixed(2));
-              if (monto > 0) {
-                comInserts.push({
-                  beneficiario_id: entry.id,
-                  origen_id: userId,
-                  pedido_id: pkgPedidoId, // BIZ-002
-                  tipo: 'nivel',
-                  nivel_red: entry.nivel,
-                  monto,
-                  estado: 'pendiente',
-                  descripcion: `Comisión nivel ${entry.nivel} — paquete ${afiliacion.paquete_seleccionado}`,
-                });
-              }
-            }
-          }
-          if (comInserts.length > 0) await supabaseAdmin.from('comisiones').insert(comInserts);
-        }
+      // La RPC devuelve { ok, codigo, pedido_id }
+      const result = rpcResult as { ok?: boolean; codigo?: string; pedido_id?: string } | null;
+      if (!result?.ok) {
+        await supabaseAdmin.auth.admin.deleteUser(userId).catch((cleanupErr) => {
+          logger.error('No se pudo limpiar auth.user huérfano', cleanupErr);
+        });
+        setError('La aprobación no se completó. Reintenta.');
+        return;
       }
 
       onSuccess(codigo, tempPassword);
     } catch (err) {
-      setError('Error inesperado. Intente de nuevo.');
-      console.error(err);
+      logger.error('handleApprove unexpected error', err);
+      setError(err instanceof Error ? err.message : 'Error inesperado. Intente de nuevo.');
     } finally {
       setLoading(false);
     }

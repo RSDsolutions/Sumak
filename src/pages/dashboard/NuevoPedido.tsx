@@ -6,8 +6,10 @@ import {
   ArrowLeft, ArrowRight, Trash2, Leaf, Sparkles, Upload,
   CreditCard, Receipt, Landmark, Clock, Copy, Check, Package,
 } from 'lucide-react';
-import { levelCommissions, contactInfo, bankAccounts, planConfig } from '../../data';
-import { supabase, supabaseAdmin } from '../../lib/supabase';
+// Tanda 6: ya no necesitamos levelCommissions ni supabaseAdmin en este
+// archivo. La RPC submit_pedido calcula puntos y comisiones server-side.
+import { contactInfo, bankAccounts, planConfig } from '../../data';
+import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { useCart } from '../../lib/cart';
 import { logger } from '../../lib/logger';
@@ -168,7 +170,7 @@ export default function NuevoPedido() {
     try {
       const distribId = user.id;
 
-      // 1. Upload voucher to storage. Folder = user uid (RLS path check).
+      // ── 1. Subir voucher a storage (folder = user uid por RLS) ──
       const ext = voucherFile.name.split('.').pop()?.toLowerCase() ?? 'jpg';
       const voucherPath = `${distribId}/${Date.now()}-voucher.${ext}`;
       const { error: uploadError } = await supabase.storage
@@ -176,8 +178,7 @@ export default function NuevoPedido() {
         .upload(voucherPath, voucherFile, { upsert: false });
 
       if (uploadError) {
-        // UX-004: mensaje genérico para el usuario; detalle técnico también visible
-        // mientras depuramos. Quitar el detalle una vez identificada la causa.
+        // UX-004: mensaje amable; detalle técnico a consola.
         logger.error('Voucher upload error', uploadError);
         const detail = uploadError.message ? ` — ${uploadError.message}` : '';
         setError(
@@ -187,118 +188,18 @@ export default function NuevoPedido() {
         return;
       }
 
-      // 2. Create pedido directly as 'procesando' (label: Procesado)
-      // BIZ-005: idempotency_key impide doble-submit (constraint único en BD).
+      // ── 2. Llamar a la RPC atómica submit_pedido ──
+      // Tanda 6 (BIZ-001 + ARQ-002): la RPC corre en una sola transacción:
+      //   • inserta el pedido con idempotency_key (constraint único: doble-click → reuso)
+      //   • inserta los pedido_items
+      //   • suma puntos al comprador
+      //   • genera comisiones de nivel por upline calificado del mes
+      // Todo server-side → el cliente ya no calcula puntos/comisiones ni usa
+      // supabaseAdmin para escribirlos. Si algún paso falla, ninguno persiste.
       //
-      // Las columnas voucher_url, voucher_numero, banco_destino e idempotency_key
-      // se agregaron en migraciones 004/005/006. Si el Supabase del cliente no
-      // las tiene aún aplicadas, el insert falla con 42703 (undefined_column).
-      // En vez de bloquear el pedido, reintentamos quitando la columna ofensora
-      // una a una. El admin verá igual el pedido y podrá correr la migración
-      // pendiente para recuperar los metadatos faltantes en pedidos futuros.
-      type PedidoInsert = {
-        distribuidor_id: string;
-        estado: string;
-        tipo_precio: string;
-        total: number;
-        puntos_generados: number;
-        notas: string | null;
-        voucher_url?: string;
-        voucher_numero?: string;
-        banco_destino?: string;
-        idempotency_key?: string;
-      };
-      const payload: PedidoInsert = {
-        distribuidor_id: distribId,
-        estado: 'procesando',
-        tipo_precio: 'distribuidor',
-        total: parseFloat(total.toFixed(2)),
-        puntos_generados: puntos,
-        notas: notes || null,
-        voucher_url: voucherPath,
-        voucher_numero: voucherNumero.trim(),
-        banco_destino: selectedBanco,
-        idempotency_key: idempotencyKeyRef.current,
-      };
-
-      const optionalCols: (keyof PedidoInsert)[] = [
-        'idempotency_key', 'banco_destino', 'voucher_numero', 'voucher_url',
-      ];
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let pedidoData: any = null;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let pedidoError: any = null;
-      const droppedCols: string[] = [];
-
-      for (let attempt = 0; attempt < 5; attempt++) {
-        const res = await supabase.from('pedidos').insert(payload).select().single();
-        pedidoData = res.data;
-        pedidoError = res.error;
-        if (!pedidoError) break;
-
-        // Migración pendiente para esa columna. Postgres devuelve 42703
-        // ("column \"X\" of relation \"pedidos\" does not exist"). PostgREST
-        // antepone su propio PGRST204 ("Could not find the 'X' column of
-        // 'pedidos' in the schema cache") cuando el cache aún no la vio.
-        // Detectamos ambos formatos: comillas dobles o simples.
-        const code = pedidoError.code;
-        if (code === '42703' || code === 'PGRST204') {
-          const msg = String(pedidoError.message ?? '');
-          const offending = optionalCols.find(
-            (c) => msg.includes(`"${c}"`) || msg.includes(`'${c}'`)
-          );
-          if (offending && payload[offending] !== undefined) {
-            delete payload[offending];
-            droppedCols.push(offending);
-            console.warn(`Columna faltante "${offending}" en pedidos — reintentando sin ella.`);
-            continue;
-          }
-        }
-        break; // otro tipo de error → no insistir
-      }
-
-      if (pedidoError || !pedidoData) {
-        // BIZ-005: violación de unique en idempotency_key = pedido duplicado
-        // por doble-click. Buscamos el original y mostramos éxito sin duplicar.
-        if (pedidoError?.code === '23505' && !droppedCols.includes('idempotency_key')) {
-          const { data: existing } = await supabase
-            .from('pedidos')
-            .select('id')
-            .eq('idempotency_key', idempotencyKeyRef.current)
-            .maybeSingle();
-          if (existing) {
-            setEarnedPuntos(puntos);
-            clear();
-            expiresAtRef.current = null;
-            setStep('done');
-            return;
-          }
-        }
-        // UX-004: mensaje amable para el usuario; detalle técnico a consola.
-        logger.error('Pedido insert error', pedidoError);
-        const code = pedidoError?.code ?? '?';
-        const msg = pedidoError?.message ?? 'sin mensaje';
-        const hint = pedidoError?.hint ? ` Hint: ${pedidoError.hint}.` : '';
-        setError(
-          `No pudimos registrar tu pedido. [${code}] ${msg}.${hint} Si persiste, contacta a soporte con este mensaje.`
-        );
-        setSubmitting(false);
-        return;
-      }
-
-      if (droppedCols.length > 0) {
-        console.warn(
-          `Pedido creado sin columnas: ${droppedCols.join(', ')}. ` +
-          `Corre las migraciones pendientes en Supabase para recuperar metadata de voucher/pago.`
-        );
-      }
-
-      // 3. Insert items
-      // Si el item es un pack (PKG-*) con productos seleccionados, los anexamos
-      // al nombre como texto legible para que el admin vea qué eligió el cliente
-      // sin necesidad de cambiar el schema de pedido_items.
-      const itemsRows = items.map((item) => {
+      // Las pack selections se anexan al nombre del item para que el admin
+      // las vea sin cambiar el schema de pedido_items.
+      const itemsPayload = items.map((item) => {
         const isPack = item.codigo.startsWith('PKG-');
         const nombreFinal = isPack && item.packSelections && item.packSelections.length > 0
           ? `${item.nombre} (incluye: ${item.packSelections
@@ -306,87 +207,47 @@ export default function NuevoPedido() {
               .join(', ')})`
           : item.nombre;
         return {
-          pedido_id: pedidoData.id,
-          producto_codigo: item.codigo,
-          producto_nombre: nombreFinal,
+          codigo: item.codigo,
+          nombre: nombreFinal,
           cantidad: item.cantidad,
-          precio_unitario: item.precio,
-          subtotal: parseFloat((item.precio * item.cantidad).toFixed(2)),
+          precio: item.precio,
+          pvp: item.pvp,
         };
       });
-      const { error: itemsError } = await supabase.from('pedido_items').insert(itemsRows);
-      if (itemsError) {
-        // UX-004: mensaje amable; detalle a consola.
-        logger.error('Pedido items insert error', itemsError);
-        const code = itemsError.code ?? '?';
-        const msg = itemsError.message ?? 'sin mensaje';
-        setError(`No pudimos guardar los productos del pedido. [${code}] ${msg}. Contacta a soporte con este mensaje.`);
+
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('submit_pedido', {
+        p_idempotency_key: idempotencyKeyRef.current,
+        p_items: itemsPayload,
+        p_voucher_url: voucherPath,
+        p_voucher_numero: voucherNumero.trim(),
+        p_banco_destino: selectedBanco,
+        p_notas: notes || null,
+      });
+
+      if (rpcError) {
+        logger.error('submit_pedido RPC error', rpcError);
+        const code = rpcError.code ?? '?';
+        const msg = rpcError.message ?? 'sin mensaje';
+        const hint = rpcError.hint ? ` Hint: ${rpcError.hint}.` : '';
+        setError(
+          `No pudimos registrar tu pedido. [${code}] ${msg}.${hint} Si persiste, contacta a soporte con este mensaje.`
+        );
         setSubmitting(false);
         return;
       }
 
-      // 4. Sumar puntos al comprador
-      if (puntos > 0) {
-        const { data: myProfile } = await supabaseAdmin
-          .from('profiles').select('puntos').eq('id', distribId).single();
-        if (myProfile) {
-          await supabaseAdmin
-            .from('profiles')
-            .update({ puntos: Number(myProfile.puntos) + puntos })
-            .eq('id', distribId);
-        }
+      // La RPC devuelve { ok, pedido_id, duplicated }. Si duplicated=true
+      // significa que ya había sido enviado con esta idempotency_key
+      // (doble-click) y reusamos el pedido existente — para el usuario es éxito.
+      const result = rpcResult as { ok?: boolean; pedido_id?: string; duplicated?: boolean } | null;
+      if (!result?.ok) {
+        logger.error('submit_pedido devolvió ok=false', result);
+        setError('La aplicación respondió de forma inesperada. Verifica en "Mis Pedidos" si tu pedido fue registrado antes de reintentar.');
+        setSubmitting(false);
+        return;
       }
 
-      // 5. Comisiones por nivel — upline con compra calificada del mes
-      if (puntos > 0) {
-        const now = new Date();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-
-        const { data: allProfiles } = await supabaseAdmin
-          .from('profiles').select('id, patrocinador_id');
-        const profMap = new Map<string, string | null>();
-        for (const p of allProfiles ?? []) profMap.set(p.id, p.patrocinador_id);
-
-        const uplineChain: Array<{ id: string; nivel: number; porcentaje: number }> = [];
-        let upId: string | null = distribId;
-        for (const lc of levelCommissions) {
-          const sponsorId = profMap.get(upId!) ?? null;
-          if (!sponsorId) break;
-          upId = sponsorId;
-          uplineChain.push({ id: upId, nivel: lc.nivel, porcentaje: lc.porcentaje });
-        }
-
-        if (uplineChain.length > 0) {
-          const uplineIds = uplineChain.map((u) => u.id);
-          const { data: eligibleOrders } = await supabaseAdmin
-            .from('pedidos').select('distribuidor_id')
-            .in('distribuidor_id', uplineIds)
-            .in('estado', ['procesando', 'enviado', 'entregado'])
-            .gte('total', MIN_ACTIVACION).gte('created_at', startOfMonth);
-          const eligibleSet = new Set((eligibleOrders ?? []).map((o: { distribuidor_id: string }) => o.distribuidor_id));
-
-          const comInserts: object[] = [];
-          for (const entry of uplineChain) {
-            if (eligibleSet.has(entry.id)) {
-              const monto = parseFloat((puntos * entry.porcentaje / 100).toFixed(2));
-              if (monto > 0) {
-                comInserts.push({
-                  beneficiario_id: entry.id,
-                  origen_id: distribId,
-                  pedido_id: pedidoData.id, // BIZ-002
-                  tipo: 'nivel',
-                  nivel_red: entry.nivel,
-                  monto,
-                  estado: 'pendiente',
-                  descripcion: `Comisión nivel ${entry.nivel}`,
-                });
-              }
-            }
-          }
-          if (comInserts.length > 0) await supabaseAdmin.from('comisiones').insert(comInserts);
-        }
-      }
-
+      // Éxito → limpiar carrito y mostrar pantalla final.
       if (total >= MIN_ACTIVACION) setCompraCalificada(true);
       setEarnedPuntos(puntos);
       clear();
