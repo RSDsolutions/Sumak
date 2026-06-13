@@ -36,6 +36,15 @@ function sumValue(sels: Map<string, number>): number {
 /** Tolerancia para considerar dos $ iguales. */
 const EPS = 0.005;
 
+/**
+ * Margen $ que se permite dejar sin canjear al cerrar el pack. Si el
+ * residuo del cupo es menor o igual a este margen (o menor que el
+ * producto mas barato, lo que sea mayor), el pack se considera lleno
+ * y deja enviarse. Evita que el distribuidor quede trabado por $1-$3
+ * que no le interesa canjear.
+ */
+const RESIDUAL_MARGIN_USD = 3;
+
 export default function PackBuilder({
   pack,
   initialSelections = [],
@@ -59,9 +68,8 @@ export default function PackBuilder({
   const remaining = Math.round((cap - totalValue) * 100) / 100;
   const isOver = totalValue - cap > EPS;
 
-  // Precio mas barato del catalogo a precio distribuidor. Lo usamos para
-  // decidir si el cupo se puede considerar lleno cuando el residuo es
-  // menor que el producto mas barato (no hay nada para canjearlo).
+  // Precio mas barato del catalogo a precio distribuidor (solo informativo
+  // para futuros calculos; el threshold real usa el margen).
   const minPrecio = useMemo(() => {
     let min = Infinity;
     for (const p of products) {
@@ -72,13 +80,19 @@ export default function PackBuilder({
     return min === Infinity ? 0 : min;
   }, []);
 
+  // Margen real que tolera el pack: el mayor entre el producto mas barato
+  // y el RESIDUAL_MARGIN_USD configurado. Asi nunca quedamos por debajo
+  // del producto mas barato (caso original) ni por debajo del margen
+  // explicito definido por negocio ($3).
+  const allowedResidual = Math.max(minPrecio, RESIDUAL_MARGIN_USD);
+
   // El pack se considera completo cuando:
   //  • Suma exacta == cap, o
-  //  • Cap cubierto al menos parcialmente y ya no cabe ni el producto
-  //    mas barato (residuo no aprovechable; el usuario igual paga el
-  //    precio fijo del pack, asi que dejarlo enviar es lo correcto).
+  //  • Cap cubierto al menos parcialmente y el residuo cae dentro del
+  //    margen tolerado. El usuario igual paga el precio fijo del pack
+  //    asi que dejar el residuo sin canjear es razonable.
   const isExactlyFull = Math.abs(remaining) < EPS;
-  const isResidualLocked = totalValue > 0 && remaining > 0 && remaining < minPrecio - EPS;
+  const isResidualLocked = totalValue > 0 && remaining > 0 && remaining < allowedResidual - EPS;
   const isComplete = isExactlyFull || isResidualLocked;
 
   // Productos visibles (excluye proximamente).
@@ -106,7 +120,7 @@ export default function PackBuilder({
     const total = sumValue(next);
     const remainingNow = Math.round((cap - total) * 100) / 100;
     const exactly = Math.abs(remainingNow) < EPS;
-    const lockedResidual = total > 0 && remainingNow > 0 && remainingNow < minPrecio - EPS;
+    const lockedResidual = total > 0 && remainingNow > 0 && remainingNow < allowedResidual - EPS;
     onSelectionsChange(arr, total, exactly || lockedResidual);
   }
 
@@ -232,7 +246,7 @@ export default function PackBuilder({
         )}
         {isResidualLocked && (
           <p className="text-[#D4AF37] text-xs mt-2 font-bold flex items-center gap-1.5">
-            <Check size={13} /> Cupo lleno con {totalUnits} producto{totalUnits !== 1 ? 's' : ''}. Te queda ${remaining.toFixed(2)} de margen que ya no podes canjear (todos los productos cuestan más). Podes enviar el pack así.
+            <Check size={13} /> Cupo lleno con {totalUnits} producto{totalUnits !== 1 ? 's' : ''}. Te queda ${remaining.toFixed(2)} de margen sin canjear (dentro del margen permitido). Podes enviar el pack así.
           </p>
         )}
         {isOver && (

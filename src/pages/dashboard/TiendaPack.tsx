@@ -213,7 +213,7 @@ export default function TiendaPack() {
               </div>
               <p className="text-[#6B7280] text-xs">
                 {isComplete && remainingValue > 0
-                  ? `Cupo lleno. Te queda $${remainingValue.toFixed(2)} de margen sin canjear (ningún producto cabe).`
+                  ? `Cupo lleno. Te queda $${remainingValue.toFixed(2)} de margen sin canjear (dentro del margen permitido).`
                   : isComplete
                   ? '¡Cupo completo! Listo para agregar al carrito.'
                   : `Te faltan $${remainingValue.toFixed(2)} de cupo para completar tu selección.`}
