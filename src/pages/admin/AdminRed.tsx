@@ -6,7 +6,7 @@ import {
   Star, Sparkles, Layers, TrendingUp, Award, ZoomIn, ZoomOut, Maximize2,
   RefreshCw, Move,
 } from 'lucide-react';
-import { supabaseAdmin } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { useAdminBasePath } from '../../lib/useAdminBasePath';
 import type { NodoBinario, Profile } from '../../lib/types';
 
@@ -375,7 +375,7 @@ export default function AdminRed() {
     async function load() {
       try {
         // Cargar TODOS los profiles primero (no solo los que tienen nodo)
-        const { data: perfiles } = await supabaseAdmin.from('profiles').select('*');
+        const { data: perfiles } = await supabase.from('profiles').select('*');
         const profileMap = new Map<string, Profile>();
         for (const p of perfiles ?? []) profileMap.set(p.id, p as Profile);
 
@@ -386,7 +386,7 @@ export default function AdminRed() {
         }
 
         // Cargar nodos binarios
-        const { data: nodos } = await supabaseAdmin
+        const { data: nodos } = await supabase
           .from('red_binaria')
           .select('*')
           .order('nivel', { ascending: true })
@@ -409,7 +409,7 @@ export default function AdminRed() {
         }
         if (!adminTreeNode) {
           // Crear nodo del admin sobre la marcha
-          const { data: newAdminNode } = await supabaseAdmin
+          const { data: newAdminNode } = await supabase
             .from('red_binaria')
             .insert({ distribuidor_id: adminProfile.id, padre_id: null, posicion: null, nivel: 1 })
             .select('*')

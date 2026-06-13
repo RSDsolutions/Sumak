@@ -5,7 +5,7 @@ import {
   CheckCircle2, AlertCircle, Star, Hash, UserCog, MapPin,
   TrendingUp,
 } from 'lucide-react';
-import { supabaseAdmin } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { useAdminBasePath } from '../../lib/useAdminBasePath';
 import type { Profile, EstadoDistribuidor } from '../../lib/types';
 
@@ -69,12 +69,12 @@ export default function Distribuidores() {
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
         const [{ data: profiles }, { data: pedidos }] = await Promise.all([
-          supabaseAdmin
+          supabase
             .from('profiles')
             .select('*')
             .eq('rol', 'distribuidor')
             .order('fecha_registro', { ascending: false }),
-          supabaseAdmin
+          supabase
             .from('pedidos')
             .select('distribuidor_id, total, estado')
             .in('estado', ['procesando', 'enviado', 'entregado'])

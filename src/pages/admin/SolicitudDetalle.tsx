@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText, CheckCircle, XCircle, ExternalLink, Copy } from 'lucide-react';
-import { supabase, supabaseAdmin } from '../../lib/supabase';
+import { supabase, callEdgeFunction } from '../../lib/supabase';
 import { logger } from '../../lib/logger';
 import { useAdminBasePath } from '../../lib/useAdminBasePath';
 import type { Afiliacion } from '../../lib/types';
@@ -36,16 +36,8 @@ const paqueteKeyFull: Record<string, string> = {
 };
 
 // SEC-005: contraseña temporal con entropía criptográfica.
-// Evita el patrón predecible "Sumak{4 últimos dígitos cédula}!"
-// que era trivial de adivinar conociendo la cédula del usuario.
-function generateTempPassword(): string {
-  const charset = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-  const bytes = new Uint8Array(14);
-  crypto.getRandomValues(bytes);
-  let s = '';
-  for (const b of bytes) s += charset[b % charset.length];
-  return 'Sumak' + s + '!';
-}
+// La genera la Edge Function approve-afiliacion server-side desde mig 021;
+// el frontend ya no la genera (antes era una funcion local aqui).
 
 interface ApproveModalProps {
   afiliacion: Afiliacion;
@@ -75,7 +67,7 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
 
   // Load existing distributors for the dropdown and auto-suggest placement
   useEffect(() => {
-    supabaseAdmin
+    supabase
       .from('profiles')
       .select('id, codigo_distribuidor, nombre_completo, rol')
       .order('codigo_distribuidor', { ascending: true })
@@ -103,118 +95,39 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
     setLoading(true);
     setError('');
     try {
-      // 0. Pre-check: no puede existir ya un profile con esta cedula o email.
-      // Sin esto el flujo crea el auth.user, intenta insertar el profile y
-      // explota con "profiles_cedula_key", dejando un auth.user huerfano.
-      const { data: existingByCedula } = await supabaseAdmin
-        .from('profiles')
-        .select('id, codigo_distribuidor, nombre_completo, email, estado')
-        .eq('cedula', afiliacion.cedula)
-        .maybeSingle();
-      if (existingByCedula) {
-        setError(
-          `Ya existe un distribuidor con la cédula ${afiliacion.cedula}: ` +
-          `${existingByCedula.codigo_distribuidor} — ${existingByCedula.nombre_completo} ` +
-          `(${existingByCedula.email}, estado: ${existingByCedula.estado}). ` +
-          `Si fue un intento de aprobación previo que falló a medias, elimina ese ` +
-          `perfil desde "Distribuidores" antes de reintentar. Si la persona ya está ` +
-          `afiliada, rechaza esta solicitud.`
-        );
-        return;
-      }
-
-      const { data: existingByEmail } = await supabaseAdmin
-        .from('profiles')
-        .select('id, codigo_distribuidor, nombre_completo, cedula')
-        .eq('email', afiliacion.email)
-        .maybeSingle();
-      if (existingByEmail) {
-        setError(
-          `Ya existe un distribuidor con el email ${afiliacion.email}: ` +
-          `${existingByEmail.codigo_distribuidor} — ${existingByEmail.nombre_completo} ` +
-          `(cédula ${existingByEmail.cedula}). El afiliado debe usar otro email, ` +
-          `o elimina el perfil existente desde "Distribuidores".`
-        );
-        return;
-      }
-
-      // ── 1. Generar código distribuidor ──
-      const { count } = await supabaseAdmin
+      // SEC-001 (post-mig 021): toda la logica de aprobacion vive ahora
+      // en la Edge Function 'approve-afiliacion'. Esta:
+      //  1) Valida que el caller sea admin (via JWT).
+      //  2) Hace pre-checks de cedula y email duplicados.
+      //  3) Crea auth.user con service_role server-side (no expuesto).
+      //  4) Llama finish_approve_afiliacion RPC atomica.
+      //  5) Si la RPC falla, hace rollback del auth.user.
+      //  6) Devuelve { codigo, tempPassword, pedido_id }.
+      //
+      // Generamos el codigo SUMAK-XXXXX desde el cliente para mantener
+      // compatibilidad con el flujo anterior. Si quedara mejor server-side
+      // (avoid race conditions), seria un refactor posterior.
+      const { count } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true });
       const nextNum = (count ?? 0) + 1;
       const codigo = `SUMAK-${String(nextNum).padStart(5, '0')}`;
 
-      // ── 2. Generar contraseña temporal (SEC-005: crypto-random) ──
-      const tempPassword = generateTempPassword();
-
-      // ── 3. Crear auth.user ──
-      // Es el único paso que requiere supabaseAdmin (no hay equivalente
-      // en SQL nativo de Supabase Auth). El resto va por la RPC atómica.
-      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-        email: afiliacion.email,
-        password: tempPassword,
-        email_confirm: true,
-      });
-
-      if (authError || !authData.user) {
-        setError('Error al crear usuario: ' + (authError?.message ?? 'desconocido'));
-        return;
-      }
-
-      const userId = authData.user.id;
-
-      // ── 4. Llamar a la RPC atómica ──
-      // Tanda 6 (SEC-002 + ARQ-001 + ARQ-002): la RPC corre en una sola
-      // transacción server-side:
-      //   • Inserta profile con todos los campos correctos
-      //   • Resuelve patrocinador del código declarado (o admin si no)
-      //   • Inserta nodo en red_binaria con posición auto-asignada
-      //     (izq/der, o frontal si abrirComoFrontal=true / padre es admin)
-      //   • Marca afiliación como aprobada
-      //   • Crea pedido inicial procesado + items del paquete
-      //   • Crea comisión de referido 40% para el patrocinador
-      //   • Crea comisiones por nivel hasta 14 niveles a upline calificado
-      // Si cualquier paso falla, NADA se persiste (rollback automático).
-      //
-      // Si falla la RPC, hacemos rollback del auth.user para no dejar
-      // huérfanos que bloquearían reintentos.
       const padrePerfil = padreProfileId || null;
-      // Migration 011: usamos el wrapper approve_afiliacion que valida
-      // que el caller sea admin. finish_approve_afiliacion ya no esta
-      // accesible para 'authenticated' directamente.
-      const { data: rpcResult, error: rpcError } = await supabase.rpc('approve_afiliacion', {
-        p_afiliacion_id: afiliacion.id,
-        p_user_id: userId,
-        p_codigo: codigo,
-        p_padre_profile_id: padrePerfil,
-        p_abrir_como_frontal: abrirComoFrontal,
-      });
-
-      if (rpcError) {
-        // Rollback best-effort: borramos el auth.user creado en el paso 3.
-        await supabaseAdmin.auth.admin.deleteUser(userId).catch((cleanupErr) => {
-          logger.error('No se pudo limpiar auth.user huérfano tras fallar RPC', cleanupErr);
-        });
-        const codeStr = rpcError.code ? `[${rpcError.code}] ` : '';
-        setError(
-          `${codeStr}${rpcError.message ?? 'Error desconocido al aprobar afiliación.'} ` +
-          'El sistema revirtió todos los cambios. Revisa los datos y reintenta.'
-        );
+      const resp = await callEdgeFunction<{ ok?: boolean; codigo?: string; tempPassword?: string }>(
+        'approve-afiliacion',
+        {
+          afiliacion_id: afiliacion.id,
+          codigo,
+          padre_profile_id: padrePerfil,
+          abrir_como_frontal: abrirComoFrontal,
+        },
+      );
+      if (!resp.ok || !resp.codigo || !resp.tempPassword) {
+        setError('La aprobacion no se completo. Reintenta.');
         return;
       }
-
-      // La RPC devuelve { ok, codigo, pedido_id }
-      const result = rpcResult as { ok?: boolean; codigo?: string; pedido_id?: string } | null;
-      if (!result?.ok) {
-        await supabaseAdmin.auth.admin.deleteUser(userId).catch((cleanupErr) => {
-          logger.error('No se pudo limpiar auth.user huérfano', cleanupErr);
-        });
-        setError('La aprobación no se completó. Reintenta.');
-        return;
-      }
-
-      onSuccess(codigo, tempPassword);
+      onSuccess(resp.codigo, resp.tempPassword);
     } catch (err) {
       logger.error('handleApprove unexpected error', err);
       setError(err instanceof Error ? err.message : 'Error inesperado. Intente de nuevo.');
@@ -352,7 +265,7 @@ function RejectModal({ afiliacionId, onClose, onSuccess }: RejectModalProps) {
   async function handleReject() {
     if (!reason.trim()) return;
     setLoading(true);
-    await supabaseAdmin
+    await supabase
       .from('afiliaciones')
       .update({ estado: 'rechazada', notas_admin: reason })
       .eq('id', afiliacionId);
@@ -471,7 +384,7 @@ export default function SolicitudDetalle() {
   useEffect(() => {
     async function load() {
       if (!id) return;
-      const { data } = await supabaseAdmin.from('afiliaciones').select('*').eq('id', id).single();
+      const { data } = await supabase.from('afiliaciones').select('*').eq('id', id).single();
       if (data) {
         setAfiliacion(data as Afiliacion);
         // Generate signed URLs for documents
@@ -484,10 +397,16 @@ export default function SolicitudDetalle() {
         const urls: Record<string, string> = {};
         for (const [key, path] of Object.entries(docs)) {
           if (path) {
-            const { data: signedData } = await supabaseAdmin.storage
-              .from('documentos-afiliacion')
-              .createSignedUrl(path as string, 3600);
-            if (signedData?.signedUrl) urls[key] = signedData.signedUrl;
+            try {
+              const resp = await callEdgeFunction<{ signedUrl: string }>('sign-voucher-url', {
+                bucket: 'documentos-afiliacion',
+                path: path as string,
+                expires_in: 3600,
+              });
+              if (resp.signedUrl) urls[key] = resp.signedUrl;
+            } catch (e) {
+              logger.warn('No se pudo firmar URL para documento', { key, err: e });
+            }
           }
         }
         setDocUrls(urls);

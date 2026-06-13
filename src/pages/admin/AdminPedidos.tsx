@@ -4,7 +4,7 @@ import {
   Package, Clock, Truck, CheckCircle2, XCircle, ShoppingBag, DollarSign,
   Star, TrendingUp, Filter, Landmark, Receipt, Upload, FileText,
 } from 'lucide-react';
-import { supabase, supabaseAdmin } from '../../lib/supabase';
+import { supabase, callEdgeFunction } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import type { Pedido, PedidoItem, EstadoPedido } from '../../lib/types';
 import Modal from '../../components/Modal';
@@ -126,7 +126,7 @@ function DetalleModal({ pedido, onClose }: DetalleModalProps) {
   };
 
   useEffect(() => {
-    supabaseAdmin
+    supabase
       .from('pedido_items')
       .select('*')
       .eq('pedido_id', pedido.id)
@@ -139,12 +139,18 @@ function DetalleModal({ pedido, onClose }: DetalleModalProps) {
   useEffect(() => {
     let cancelled = false;
     if (pedido.voucher_url) {
-      supabaseAdmin.storage
-        .from('pedidos-vouchers')
-        .createSignedUrl(pedido.voucher_url, 3600)
-        .then(({ data }) => {
-          if (!cancelled && data?.signedUrl) setVoucherUrl(data.signedUrl);
-        });
+      // Antes hacia createSignedUrl con service_role expuesto. Ahora va
+      // por la Edge Function sign-voucher-url que valida rol y allowlist
+      // de bucket server-side.
+      callEdgeFunction<{ signedUrl: string }>('sign-voucher-url', {
+        bucket: 'pedidos-vouchers',
+        path: pedido.voucher_url,
+        expires_in: 3600,
+      })
+        .then(({ signedUrl }) => {
+          if (!cancelled && signedUrl) setVoucherUrl(signedUrl);
+        })
+        .catch(() => {});
     }
     return () => { cancelled = true; };
   }, [pedido.voucher_url]);
@@ -384,7 +390,7 @@ export default function AdminPedidos() {
         envio_numero: envioNumero.trim() || null,
         enviado_por: profile?.id ?? null,
       };
-      const { error: updErr } = await supabaseAdmin
+      const { error: updErr } = await supabase
         .from('pedidos')
         .update(updates)
         .eq('id', pendingEnvio.pedido.id);
@@ -412,7 +418,7 @@ export default function AdminPedidos() {
   async function load() {
     setLoading(true);
     try {
-      const { data } = await supabaseAdmin
+      const { data } = await supabase
         .from('pedidos')
         .select('*, distribuidor:profiles!distribuidor_id(nombre_completo, codigo_distribuidor)')
         .order('created_at', { ascending: false });
@@ -576,7 +582,7 @@ export default function AdminPedidos() {
         // Cambios de estado NO cancelados: simple update con RLS.
         // La migración 007 habilita admin/operaciones a updatear pedidos.
         const updates: { estado: EstadoPedido } = { estado: newEstado };
-        const { error: updErr } = await supabaseAdmin.from('pedidos').update(updates).eq('id', pedidoId);
+        const { error: updErr } = await supabase.from('pedidos').update(updates).eq('id', pedidoId);
         if (updErr) throw updErr;
         setPedidos((prev) => prev.map((p) => p.id === pedidoId ? { ...p, estado: newEstado } : p));
         toast.success('Estado del pedido actualizado.');

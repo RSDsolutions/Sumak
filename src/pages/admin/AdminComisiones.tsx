@@ -5,8 +5,7 @@ import {
   Layers, Sparkles, CheckCircle2, Clock, AlertCircle, Search,
   Users, Network, TrendingUp, Filter, Upload,
 } from 'lucide-react';
-import { supabase, supabaseAdmin } from '../../lib/supabase';
-import { useAuth } from '../../lib/auth';
+import { supabase } from '../../lib/supabase';
 import { levelCommissions } from '../../data';
 import { logger } from '../../lib/logger';
 import Modal from '../../components/Modal';
@@ -91,7 +90,7 @@ function DetalleModal({ comision, onClose }: { comision: ComisionRow; onClose: (
     async function load() {
       const ids = [comision.beneficiario_id, comision.origen_id].filter(Boolean) as string[];
       if (ids.length === 0) { setLoading(false); return; }
-      const { data } = await supabaseAdmin.from('profiles').select('*').in('id', ids);
+      const { data } = await supabase.from('profiles').select('*').in('id', ids);
       for (const p of (data ?? []) as Profile[]) {
         if (p.id === comision.beneficiario_id) setBeneficiario(p);
         if (p.id === comision.origen_id) setOrigen(p);
@@ -283,7 +282,8 @@ export default function AdminComisiones({ scope = 'no-afiliacion' }: AdminComisi
   const [voucherPreview, setVoucherPreview] = useState<string | null>(null);
   const [voucherNumero, setVoucherNumero] = useState('');
   const [payError, setPayError] = useState('');
-  const { profile } = useAuth();
+  // useAuth no es necesario aqui: la RPC mark_comision_pagada toma
+  // pagado_por de auth.uid() server-side (mig 021).
 
   // Modal de detalle
   const [detalle, setDetalle] = useState<ComisionRow | null>(null);
@@ -293,13 +293,13 @@ export default function AdminComisiones({ scope = 'no-afiliacion' }: AdminComisi
     try {
       // Excluir las comisiones donde el beneficiario es un admin
       // (esas se ven en /admin/mis-comisiones, no aquí)
-      const { data: admins } = await supabaseAdmin
+      const { data: admins } = await supabase
         .from('profiles')
         .select('id')
         .eq('rol', 'admin');
       const adminIds = (admins ?? []).map((a) => a.id);
 
-      let query = supabaseAdmin
+      let query = supabase
         .from('comisiones')
         .select(`*,
           beneficiario:profiles!beneficiario_id(nombre_completo, codigo_distribuidor),
@@ -474,7 +474,6 @@ export default function AdminComisiones({ scope = 'no-afiliacion' }: AdminComisi
     setPayError('');
     try {
       const id = payingId;
-      const pagadoAt = new Date().toISOString();
       let voucherUrl: string | null = null;
 
       if (voucherFile) {
@@ -487,17 +486,15 @@ export default function AdminComisiones({ scope = 'no-afiliacion' }: AdminComisi
         voucherUrl = path;
       }
 
+      // RPC mark_comision_pagada valida internamente que el caller sea
+      // admin u operaciones (mig 021). Devuelve already_paid=true si la
+      // comision ya estaba pagada (idempotente).
       const numero = voucherNumero.trim() || null;
-      const { error: updErr } = await supabaseAdmin
-        .from('comisiones')
-        .update({
-          estado: 'pagado',
-          pagado_at: pagadoAt,
-          pagado_por: profile?.id ?? null,
-          voucher_url: voucherUrl,
-          voucher_numero: numero,
-        })
-        .eq('id', id);
+      const { error: updErr } = await supabase.rpc('mark_comision_pagada', {
+        p_id: id,
+        p_voucher_url: voucherUrl,
+        p_voucher_numero: numero,
+      });
       if (updErr) throw new Error(updErr.message);
 
       setPayModalOpen(false);

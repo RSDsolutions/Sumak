@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FileCheck, Users, DollarSign, ShoppingCart, ArrowRight } from 'lucide-react';
-import { supabaseAdmin } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
+import { logger } from '../../lib/logger';
 import type { Afiliacion } from '../../lib/types';
 
 interface Stats {
@@ -9,6 +10,14 @@ interface Stats {
   distribuidoresActivos: number;
   comisionesPendientes: number;
   pedidosMes: number;
+}
+
+/** Shape devuelto por la RPC public.admin_kpis() (mig 021). */
+interface AdminKpisRpc {
+  afiliaciones_pendientes: number;
+  distribuidores_activos: number;
+  comisiones_pendientes_monto: string | number;
+  pedidos_mes_count: number;
 }
 
 function StatCard({
@@ -53,34 +62,34 @@ export default function AdminDashboard() {
   useEffect(() => {
     async function load() {
       try {
-        const now = new Date();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-
+        // RPC admin_kpis() agrega todos los counts y montos en un solo
+        // viaje server-side (mig 021). Antes esto eran 4 queries con
+        // supabaseAdmin (service_role expuesto).
         const [
-          { count: pendientes },
-          { count: activos },
-          { data: comisionesData },
-          { count: pedidosMes },
+          { data: kpisData, error: kpisErr },
           { data: recentData },
         ] = await Promise.all([
-          supabaseAdmin.from('afiliaciones').select('*', { count: 'exact', head: true }).eq('estado', 'pendiente'),
-          supabaseAdmin.from('profiles').select('*', { count: 'exact', head: true }).eq('rol', 'distribuidor').eq('estado', 'activo'),
-          supabaseAdmin.from('comisiones').select('monto').eq('estado', 'pendiente'),
-          supabaseAdmin.from('pedidos').select('*', { count: 'exact', head: true }).gte('created_at', startOfMonth),
-          supabaseAdmin.from('afiliaciones').select('*').order('created_at', { ascending: false }).limit(5),
+          supabase.rpc('admin_kpis'),
+          supabase
+            .from('afiliaciones')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(5),
         ]);
 
-        const totalComisiones = (comisionesData ?? []).reduce((sum, c) => sum + (Number(c.monto) || 0), 0);
-
+        if (kpisErr) {
+          logger.error('admin_kpis error', kpisErr);
+        }
+        const kpis = (kpisData ?? {}) as AdminKpisRpc;
         setStats({
-          solicitudesPendientes: pendientes ?? 0,
-          distribuidoresActivos: activos ?? 0,
-          comisionesPendientes: totalComisiones,
-          pedidosMes: pedidosMes ?? 0,
+          solicitudesPendientes: Number(kpis.afiliaciones_pendientes ?? 0),
+          distribuidoresActivos: Number(kpis.distribuidores_activos ?? 0),
+          comisionesPendientes: Number(kpis.comisiones_pendientes_monto ?? 0),
+          pedidosMes: Number(kpis.pedidos_mes_count ?? 0),
         });
         setRecientes((recentData ?? []) as Afiliacion[]);
       } catch (err) {
-        console.error(err);
+        logger.error('AdminDashboard load error', err);
       } finally {
         setLoading(false);
       }

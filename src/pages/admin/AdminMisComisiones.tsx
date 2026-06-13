@@ -5,7 +5,7 @@ import {
   Layers, Sparkles, CheckCircle2, Clock, AlertCircle, Search,
   Users, Network, TrendingUp, Crown, Trophy, Filter,
 } from 'lucide-react';
-import { supabaseAdmin } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { levelCommissions, tramo2Ranks, getRangoActual, getNextRango } from '../../data';
 import type { Comision, Profile, TipoComision, EstadoComision } from '../../lib/types';
@@ -249,7 +249,7 @@ export default function AdminMisComisiones({ scope = 'no-afiliacion' }: AdminMis
     if (!user) return;
     setLoading(true);
     try {
-      let comQuery = supabaseAdmin
+      let comQuery = supabase
         .from('comisiones')
         .select(`*,
           origen:profiles!origen_id(nombre_completo, codigo_distribuidor)
@@ -267,11 +267,11 @@ export default function AdminMisComisiones({ scope = 'no-afiliacion' }: AdminMis
         { count: redCount },
       ] = await Promise.all([
         comQuery,
-        supabaseAdmin
+        supabase
           .from('profiles')
           .select('*', { count: 'exact', head: true })
           .eq('patrocinador_id', user.id),
-        supabaseAdmin
+        supabase
           .from('profiles')
           .select('*', { count: 'exact', head: true })
           .eq('rol', 'distribuidor'),
@@ -426,7 +426,7 @@ export default function AdminMisComisiones({ scope = 'no-afiliacion' }: AdminMis
   async function markAsPaid() {
     if (selected.size === 0) return;
     setMarking(true);
-    await supabaseAdmin
+    await supabase
       .from('comisiones')
       .update({ estado: 'pagado', pagado_at: new Date().toISOString() })
       .in('id', Array.from(selected));

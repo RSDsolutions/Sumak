@@ -5,7 +5,7 @@ import {
   Trophy, Crown, Search, ChevronRight, Users, Sparkles, ExternalLink,
   TrendingUp, Award, X, Calendar, ChevronLeft, RefreshCw,
 } from 'lucide-react';
-import { supabaseAdmin } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { useAdminBasePath } from '../../lib/useAdminBasePath';
 import { tramo1Ranks, tramo2Ranks, getRangoActual } from '../../data';
 import StaircaseVisual, {
@@ -65,7 +65,7 @@ export default function AdminEscalera() {
   useEffect(() => {
     async function load() {
       setLoading(true);
-      const { data: profiles } = await supabaseAdmin
+      const { data: profiles } = await supabase
         .from('profiles')
         .select('id, codigo_distribuidor, nombre_completo, email, patrocinador_id, estado, rol, fecha_aprobacion, fecha_registro')
         .eq('rol', 'distribuidor')

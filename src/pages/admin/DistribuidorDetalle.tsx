@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
-import { supabaseAdmin } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { useAdminBasePath } from '../../lib/useAdminBasePath';
 import type { Profile, Comision, Pedido } from '../../lib/types';
@@ -57,10 +57,10 @@ export default function DistribuidorDetalle() {
         { data: pedidosData },
         { count: directosCount },
       ] = await Promise.all([
-        supabaseAdmin.from('profiles').select('*').eq('id', id).single(),
-        supabaseAdmin.from('comisiones').select('*').eq('beneficiario_id', id).order('created_at', { ascending: false }).limit(10),
-        supabaseAdmin.from('pedidos').select('*').eq('distribuidor_id', id).order('created_at', { ascending: false }).limit(5),
-        supabaseAdmin.from('profiles').select('*', { count: 'exact', head: true }).eq('patrocinador_id', id),
+        supabase.from('profiles').select('*').eq('id', id).single(),
+        supabase.from('comisiones').select('*').eq('beneficiario_id', id).order('created_at', { ascending: false }).limit(10),
+        supabase.from('pedidos').select('*').eq('distribuidor_id', id).order('created_at', { ascending: false }).limit(5),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('patrocinador_id', id),
       ]);
 
       setProfile(profileData as Profile);
@@ -79,8 +79,13 @@ export default function DistribuidorDetalle() {
     if (!profile || !id) return;
     setToggling(true);
     const newEstado = profile.estado === 'activo' ? 'suspendido' : 'activo';
-    await supabaseAdmin.from('profiles').update({ estado: newEstado }).eq('id', id);
-    setProfile({ ...profile, estado: newEstado });
+    // RPC admin_set_distribuidor_estado valida is_admin() internamente
+    // y restringe al rol 'distribuidor' solo (mig 021).
+    const { error } = await supabase.rpc('admin_set_distribuidor_estado', {
+      p_id: id,
+      p_estado: newEstado,
+    });
+    if (!error) setProfile({ ...profile, estado: newEstado });
     setToggling(false);
   }
 
