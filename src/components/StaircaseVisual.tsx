@@ -36,10 +36,12 @@ export interface StaircaseRank {
  */
 function autoResolvePrize(label: string): { image?: string; icon: React.ReactNode } {
   const t = label.toLowerCase();
-  // Viaje internacional tiene imagen; nacional/local solo icono por ahora.
+  // Los 3 niveles de viaje (local/nacional/internacional) usan la misma
+  // imagen mientras no haya activos especificos. El icono fallback varia
+  // para reflejar la escala del viaje.
   if (t.includes('internacional')) return { image: '/img/premios/viaje-internacional.jpg', icon: <Globe size={22} /> };
-  if (t.includes('viaje nacional') || (t.includes('viaje') && t.includes('nacional'))) return { icon: <Plane size={22} /> };
-  if (t.includes('viaje local') || (t.includes('viaje') && t.includes('local'))) return { icon: <MapPin size={22} /> };
+  if (t.includes('viaje nacional') || (t.includes('viaje') && t.includes('nacional'))) return { image: '/img/premios/viaje-internacional.jpg', icon: <Plane size={22} /> };
+  if (t.includes('viaje local') || (t.includes('viaje') && t.includes('local'))) return { image: '/img/premios/viaje-internacional.jpg', icon: <MapPin size={22} /> };
   if (t.includes('viaje')) return { image: '/img/premios/viaje-internacional.jpg', icon: <Globe size={22} /> };
   if (t.includes('cocina')) return { image: '/img/premios/cocina.avif', icon: <ChefHat size={22} /> };
   if (t.includes('nevera') || t.includes('refrigerador')) return { image: '/img/premios/nevera.png', icon: <Snowflake size={22} /> };
@@ -68,6 +70,7 @@ function PrizeVisual({
   className?: string;
 }) {
   const [failed, setFailed] = useState(false);
+  // Fallback al icono: mantenemos un contenedor tenue dorado.
   if (!image || failed) {
     return (
       <div className={`${className} flex items-center justify-center rounded-lg ${
@@ -77,15 +80,16 @@ function PrizeVisual({
       </div>
     );
   }
+  // Imagen: sin marco, sin fondo. object-contain para que la transparencia
+  // de los PNG (carro/laptop/moto/proyector/nevera) y los aspect ratios
+  // variados se rendericen naturales sobre el fondo del contenedor padre.
   return (
     <img
       src={image}
       alt="Premio"
       loading="lazy"
       onError={() => setFailed(true)}
-      className={`${className} rounded-lg object-cover bg-white border ${
-        variant === 'dark' ? 'border-[#FFE066]/30' : 'border-[#D4AF37]/40'
-      } shadow-[0_2px_8px_rgba(0,0,0,0.15)]`}
+      className={`${className} object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.25)]`}
     />
   );
 }
