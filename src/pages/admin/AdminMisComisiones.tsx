@@ -211,7 +211,21 @@ function DetalleModal({ comision, onClose }: { comision: ComisionRow; onClose: (
 }
 
 // ── PAGE ──────────────────────────────────────────────────
-export default function AdminMisComisiones() {
+/**
+ * Mis Comisiones del Admin (Dr. Luis Paredes y eventuales otros admins).
+ *
+ * scope='no-afiliacion' (default): solo comisiones por nivel y binaria.
+ * scope='afiliacion': solo bono por afiliacion (40% por referido directo).
+ *
+ * Mantenemos las dos vistas separadas para que el bono por afiliar tenga
+ * su propia seccion y las comisiones por red queden limpias.
+ */
+export interface AdminMisComisionesProps {
+  scope?: 'no-afiliacion' | 'afiliacion';
+}
+
+export default function AdminMisComisiones({ scope = 'no-afiliacion' }: AdminMisComisionesProps) {
+  const isAfiliacionScope = scope === 'afiliacion';
   const { user } = useAuth();
   const [comisiones, setComisiones] = useState<ComisionRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -235,18 +249,24 @@ export default function AdminMisComisiones() {
     if (!user) return;
     setLoading(true);
     try {
+      let comQuery = supabaseAdmin
+        .from('comisiones')
+        .select(`*,
+          origen:profiles!origen_id(nombre_completo, codigo_distribuidor)
+        `)
+        .eq('beneficiario_id', user.id)
+        .order('created_at', { ascending: false });
+      // Separacion estricta por scope: afiliacion vs todo lo demas.
+      comQuery = isAfiliacionScope
+        ? comQuery.eq('tipo', 'afiliacion')
+        : comQuery.neq('tipo', 'afiliacion');
+
       const [
         { data: comsData },
         { count: directosCount },
         { count: redCount },
       ] = await Promise.all([
-        supabaseAdmin
-          .from('comisiones')
-          .select(`*,
-            origen:profiles!origen_id(nombre_completo, codigo_distribuidor)
-          `)
-          .eq('beneficiario_id', user.id)
-          .order('created_at', { ascending: false }),
+        comQuery,
         supabaseAdmin
           .from('profiles')
           .select('*', { count: 'exact', head: true })
@@ -275,7 +295,7 @@ export default function AdminMisComisiones() {
     }
   }
 
-  useEffect(() => { load(); }, [user]);
+  useEffect(() => { load(); }, [user, isAfiliacionScope]);
 
   // ── Filtros aplicados ──
   const filtered = useMemo(() => {
@@ -428,14 +448,16 @@ export default function AdminMisComisiones() {
         <div className="flex items-center gap-3 flex-wrap">
           <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#111111] flex items-center gap-2">
             <Crown size={26} className="text-[#D4AF37]" />
-            Mis Comisiones
+            {isAfiliacionScope ? 'Mi Bono por Afiliación' : 'Mis Comisiones'}
           </h1>
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/30 uppercase tracking-widest">
             <Sparkles size={11} /> Admin
           </span>
         </div>
         <p className="text-[#6B7280] text-sm mt-1">
-          Solo tus comisiones · {comisiones.length} comisiones registradas
+          {isAfiliacionScope
+            ? `Solo tu bono por referido directo (40% del paquete) · ${comisiones.length} bono${comisiones.length !== 1 ? 's' : ''} registrado${comisiones.length !== 1 ? 's' : ''}`
+            : `Solo tus comisiones por nivel y binaria · ${comisiones.length} comisión${comisiones.length !== 1 ? 'es' : ''} registrada${comisiones.length !== 1 ? 's' : ''}`}
         </p>
       </div>
 

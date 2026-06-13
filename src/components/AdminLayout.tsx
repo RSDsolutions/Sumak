@@ -30,6 +30,7 @@ const navItems: NavItem[] = [
   { label: 'Comisiones', to: '/admin/comisiones', icon: <DollarSign size={18} /> },
   { label: 'Bono Afiliación', to: '/admin/bono-afiliacion', icon: <UserPlus size={18} /> },
   { label: 'Mis Comisiones', to: '/admin/mis-comisiones', icon: <Crown size={18} /> },
+  { label: 'Mi Bono Afiliación', to: '/admin/mi-bono-afiliacion', icon: <UserPlus size={18} /> },
   { label: 'Pedidos', to: '/admin/pedidos', icon: <ShoppingCart size={18} /> },
   { label: 'Red Binaria', to: '/admin/red', icon: <Network size={18} /> },
   { label: 'Escalera del Éxito', to: '/admin/escalera', icon: <Trophy size={18} /> },

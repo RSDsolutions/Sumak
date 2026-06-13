@@ -404,7 +404,17 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <AdminLayout>
-                  <AdminMisComisiones />
+                  <AdminMisComisiones scope="no-afiliacion" />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/mi-bono-afiliacion"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminLayout>
+                  <AdminMisComisiones scope="afiliacion" />
                 </AdminLayout>
               </ProtectedRoute>
             }
