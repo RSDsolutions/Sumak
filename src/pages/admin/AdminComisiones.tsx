@@ -337,7 +337,25 @@ export default function AdminComisiones({ scope = 'no-afiliacion' }: AdminComisi
     }
   }
 
-  useEffect(() => { load(); }, []);
+  // IMPORTANTE: incluir isAfiliacionScope en las deps. AdminComisiones se
+  // renderiza desde DOS rutas (/admin/comisiones y /admin/bono-afiliacion).
+  // React Router NO desmonta el componente al navegar entre ellas porque
+  // el element es el mismo — solo cambia el prop `scope`. Sin esta dep el
+  // useEffect inicial corria una sola vez y nunca refrescaba al cambiar
+  // de pestana, obligando al usuario a F5.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    // Reseteamos filtros visuales al cambiar de scope para evitar mezcla.
+    setEstadoTab('pendiente');
+    setTipoFilter('todos');
+    setNivelFilter('todos');
+    setSearch('');
+    setSortBy('fecha-desc');
+    setDetalle(null);
+    setPayModalOpen(false);
+    setPayingId(null);
+    load();
+  }, [isAfiliacionScope]);
 
   // ── Filtros aplicados ──
   const filtered = useMemo(() => {
