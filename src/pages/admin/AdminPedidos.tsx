@@ -2,12 +2,13 @@ import { useEffect, useState, useMemo } from 'react';
 import {
   X, Eye, Image as ImageIcon, ExternalLink, AlertCircle, Search, Calendar,
   Package, Clock, Truck, CheckCircle2, XCircle, ShoppingBag, DollarSign,
-  Star, TrendingUp, Filter, Landmark, Receipt, Upload,
+  Star, TrendingUp, Filter, Landmark, Receipt, Upload, FileText,
 } from 'lucide-react';
 import { supabase, supabaseAdmin } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import type { Pedido, PedidoItem, EstadoPedido } from '../../lib/types';
 import Modal from '../../components/Modal';
+import NotaVenta, { type NotaVentaData } from '../../components/NotaVenta';
 import { useToast } from '../../lib/toast';
 import { logger } from '../../lib/logger';
 import { ESTADO_PEDIDO_LABELS, pedidoBadgeClass } from '../../lib/badges';
@@ -78,8 +79,12 @@ function Spinner() {
   );
 }
 
+interface PedidoRowExt extends PedidoRow {
+  distribuidor_codigo?: string;
+}
+
 interface DetalleModalProps {
-  pedido: PedidoRow;
+  pedido: PedidoRowExt;
   onClose: () => void;
 }
 
@@ -87,6 +92,38 @@ function DetalleModal({ pedido, onClose }: DetalleModalProps) {
   const [items, setItems] = useState<PedidoItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [voucherUrl, setVoucherUrl] = useState<string | null>(null);
+  const [showNota, setShowNota] = useState(false);
+
+  // Nota de venta disponible cuando el pedido ya fue enviado o entregado.
+  // Antes era exclusiva del distribuidor en MisPedidos; ahora admin y
+  // operaciones tambien pueden verla desde este modal.
+  const notaDisponible = ['enviado', 'entregado'].includes(pedido.estado);
+  const notaNumero = pedido.numero_pedido
+    ? `NV-${String(pedido.numero_pedido).padStart(6, '0')}`
+    : `NV-${pedido.id.slice(0, 8).toUpperCase()}`;
+
+  const notaData: NotaVentaData = {
+    numero: notaNumero,
+    fecha: pedido.created_at,
+    estado: pedido.estado,
+    cliente: {
+      nombre: pedido.distribuidor_nombre ?? '—',
+      codigo: pedido.distribuidor_codigo ?? undefined,
+    },
+    items: items.map((i) => ({
+      producto_codigo: i.producto_codigo,
+      producto_nombre: i.producto_nombre,
+      cantidad: i.cantidad,
+      precio_unitario: Number(i.precio_unitario),
+      subtotal: Number(i.subtotal),
+    })),
+    subtotal: Number(pedido.total),
+    total: Number(pedido.total),
+    puntos: pedido.puntos_generados ?? 0,
+    banco_destino: pedido.banco_destino ?? null,
+    voucher_numero: pedido.voucher_numero ?? null,
+    notas: pedido.notas,
+  };
 
   useEffect(() => {
     supabaseAdmin
@@ -258,18 +295,32 @@ function DetalleModal({ pedido, onClose }: DetalleModalProps) {
           )}
         </div>
 
+        {/* Boton nota de venta — disponible cuando el pedido fue enviado o entregado */}
+        {notaDisponible && (
+          <div className="px-6 py-3 bg-[#FFFDF0] border-t border-[#D4AF37]/30">
+            <button
+              onClick={() => setShowNota(true)}
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B8941F] text-[#0B2913] text-sm font-bold hover:from-[#E8C94A] hover:to-[#D4AF37] transition-all shadow-[0_4px_16px_rgba(212,175,55,0.35)]"
+            >
+              <FileText size={15} /> Ver Nota de Venta {notaNumero}
+            </button>
+            <p className="text-[10px] text-[#92680A] text-center mt-1.5">
+              Documento oficial · Imprimible y descargable como PDF
+            </p>
+          </div>
+        )}
+
         {/* Total */}
         <div className="flex justify-between items-center px-6 py-4 bg-[#F4F7F5] border-t border-[#C8D8CB] rounded-b-2xl">
           <span className="font-heading font-bold text-[#111111]">Total</span>
           <span className="font-heading font-bold text-xl text-[#1A4E26]">${Number(pedido.total).toFixed(2)}</span>
         </div>
       </div>
+
+      {/* Modal de la nota de venta */}
+      <NotaVenta data={notaData} open={showNota} onClose={() => setShowNota(false)} />
     </div>
   );
-}
-
-interface PedidoRowExt extends PedidoRow {
-  distribuidor_codigo?: string;
 }
 
 export default function AdminPedidos() {
@@ -277,7 +328,7 @@ export default function AdminPedidos() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<FilterTab>('todos');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [selectedPedido, setSelectedPedido] = useState<PedidoRow | null>(null);
+  const [selectedPedido, setSelectedPedido] = useState<PedidoRowExt | null>(null);
 
   // UX-001: confirmación final antes de cancelar un pedido (irreversible
   // por sus efectos colaterales: revierte puntos y cancela comisiones).

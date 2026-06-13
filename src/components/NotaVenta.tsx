@@ -73,10 +73,15 @@ export default function NotaVenta({ data, open, onClose }: NotaVentaProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto print:bg-white print:p-0 print:block">
-      <div className="bg-white rounded-2xl max-w-3xl w-full my-6 shadow-2xl print:shadow-none print:rounded-none print:my-0 print:max-w-none">
-        {/* Toolbar (oculto al imprimir) */}
-        <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-[#C8D8CB] print:hidden">
+    // Layout con scroll natural (sin flex centering que atrapa el contenido
+    // cuando es mas alto que el viewport). El backdrop ocupa toda la
+    // pantalla y el modal scrollea dentro.
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm overflow-y-auto print:static print:bg-white print:overflow-visible">
+      <div className="min-h-full flex justify-center p-3 sm:p-6 print:p-0">
+        <div className="bg-white rounded-2xl max-w-3xl w-full my-auto shadow-2xl print:shadow-none print:rounded-none print:my-0 print:max-w-none">
+        {/* Toolbar (oculto al imprimir) — sticky para que el boton Cerrar
+            siempre quede visible aunque hagas scroll en notas largas. */}
+        <div className="sticky top-0 z-10 bg-white rounded-t-2xl flex items-center justify-between gap-3 px-5 py-3 border-b border-[#C8D8CB] print:hidden print:static">
           <div className="flex items-center gap-2">
             <CheckCircle2 size={16} className="text-[#1A4E26]" />
             <p className="font-bold text-[#111111] text-sm">Nota de Venta {data.numero}</p>
@@ -288,6 +293,7 @@ export default function NotaVenta({ data, open, onClose }: NotaVentaProps) {
               Documento generado electrónicamente · {contactInfo.empresa} · RUC {contactInfo.ruc}
             </p>
           </div>
+        </div>
         </div>
       </div>
 
