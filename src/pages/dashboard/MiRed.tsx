@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
+import { logger } from '../../lib/logger';
 import type { NodoBinario, Profile } from '../../lib/types';
 
 function Spinner() {
@@ -183,36 +184,93 @@ export default function MiRed() {
 
     async function load() {
       const uid = user!.id;
-      const { data: myNode } = await supabase
+
+      // 1) Cargar el nodo del usuario. maybeSingle no lanza si no hay row.
+      const { data: myNode, error: myNodeErr } = await supabase
         .from('red_binaria')
         .select('*')
         .eq('distribuidor_id', uid)
-        .single();
+        .maybeSingle();
 
-      if (!myNode) { setLoading(false); return; }
+      if (myNodeErr) {
+        logger.error('MiRed: error leyendo nodo del usuario', myNodeErr);
+        setLoading(false);
+        return;
+      }
+      if (!myNode) {
+        // El usuario realmente NO esta en red_binaria. Mostramos el estado vacio.
+        logger.warn('MiRed: usuario sin nodo en red_binaria', { uid });
+        setLoading(false);
+        return;
+      }
 
-      const { data: allNodes } = await supabase
+      // 2) Cargar todos los nodos visibles. limit alto por si la red crece.
+      const { data: allNodes, error: allNodesErr } = await supabase
         .from('red_binaria')
         .select('*')
-        .limit(500);
-      if (!allNodes) { setLoading(false); return; }
+        .limit(5000);
+      if (allNodesErr) {
+        logger.error('MiRed: error leyendo red_binaria', allNodesErr);
+        setLoading(false);
+        return;
+      }
+      const nodes = allNodes ?? [];
 
-      const distIds = allNodes.map((n) => n.distribuidor_id);
-      const { data: perfiles } = await supabase
-        .from('profiles')
-        .select('*')
-        .in('id', distIds);
+      // 3) Cargar profiles de los distribuidores que aparecen. Garantizamos
+      //    incluir el del usuario actual via el contexto auth (profile)
+      //    para evitar el bug "estoy en la red pero no me veo" si la RLS
+      //    bloquea algun caso borderline.
+      const distIds = Array.from(new Set(nodes.map((n) => n.distribuidor_id)));
+      const { data: perfiles, error: perfilesErr } = distIds.length > 0
+        ? await supabase.from('profiles').select('*').in('id', distIds)
+        : { data: [], error: null };
+      if (perfilesErr) {
+        logger.error('MiRed: error leyendo profiles', perfilesErr);
+      }
 
       const profileMap = new Map<string, Profile>();
+      // Fallback: nuestro propio profile siempre disponible desde auth.
+      if (profile) profileMap.set(profile.id, profile);
       for (const p of perfiles ?? []) profileMap.set(p.id, p as Profile);
 
+      // 4) Construir el mapa de nodos. Si falta un profile dejamos un
+      //    placeholder mínimo en lugar de descartar el nodo, para que
+      //    la rama no desaparezca de la vista.
       const nodeMap = new Map<string, TreeNode>();
-      for (const n of allNodes) {
-        const prof = profileMap.get(n.distribuidor_id);
-        if (!prof) continue;
+      for (const n of nodes) {
+        const prof = profileMap.get(n.distribuidor_id) ?? ({
+          id: n.distribuidor_id,
+          codigo_distribuidor: null,
+          nombre_completo: '—',
+          cedula: '',
+          email: '',
+          telefono: null,
+          direccion: null,
+          ciudad: null,
+          codigo_patrocinador: null,
+          patrocinador_id: null,
+          paquete: null,
+          puntos: 0,
+          estado: 'activo',
+          rol: 'distribuidor',
+          avatar_url: null,
+          fecha_registro: new Date().toISOString(),
+          fecha_aprobacion: null,
+        } as Profile);
         nodeMap.set(n.id, { ...(n as unknown as NodoBinario), profile: prof, children: [] });
       }
 
+      // 5) Garantizamos que el nodo del usuario esté en el mapa, aunque
+      //    no haya aparecido en `allNodes` por RLS o paginación.
+      if (!nodeMap.has(myNode.id)) {
+        nodeMap.set(myNode.id, {
+          ...(myNode as unknown as NodoBinario),
+          profile: profile ?? (profileMap.get(uid) as Profile),
+          children: [],
+        });
+      }
+
+      // 6) Linkear padres/hijos.
       for (const [, node] of nodeMap) {
         if (node.padre_id) {
           const parent = nodeMap.get(node.padre_id);
@@ -223,7 +281,7 @@ export default function MiRed() {
       const myTreeNode = nodeMap.get(myNode.id) ?? null;
       setRootNode(myTreeNode);
 
-      // Flatten subtree for the list view
+      // Flatten subtree para la vista de lista.
       const flat: TreeNode[] = [];
       const collect = (n: TreeNode) => {
         for (const c of n.children) { flat.push(c); collect(c); }
