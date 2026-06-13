@@ -883,31 +883,31 @@ export default function Home() {
             transition={{ duration: 0.7 }}
           >
             <motion.div
-              initial={{ opacity: 0, scale: 0.85, y: 30 }}
+              initial={{ opacity: 0, scale: 0.9, y: 30 }}
               whileInView={{ opacity: 1, scale: 1, y: 0 }}
               viewport={{ once: true, margin: '-50px' }}
               transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
-              whileHover={{ scale: 1.04, y: -4 }}
-              className="group relative mx-auto mb-8 w-44 h-44 sm:w-52 sm:h-52 rounded-full cursor-pointer"
+              whileHover={{ scale: 1.03, y: -6 }}
+              className="group relative mx-auto mb-8 w-64 h-64 sm:w-80 sm:h-80 rounded-3xl cursor-pointer"
               style={{
                 background: 'linear-gradient(135deg, #D4AF37 0%, #1A4E26 50%, #D4AF37 100%)',
-                padding: '4px',
-                boxShadow: '0 20px 50px -10px rgba(212, 175, 55, 0.45), 0 10px 30px -5px rgba(26, 78, 38, 0.35)',
+                padding: '5px',
+                boxShadow: '0 25px 60px -12px rgba(212, 175, 55, 0.5), 0 12px 35px -8px rgba(26, 78, 38, 0.4)',
                 transition: 'box-shadow 0.5s ease',
               }}
             >
               <div
-                className="absolute inset-[-8px] rounded-full opacity-60 blur-xl -z-10 transition-all duration-500 group-hover:opacity-90 group-hover:blur-2xl"
+                className="absolute inset-[-10px] rounded-3xl opacity-55 blur-2xl -z-10 transition-all duration-500 group-hover:opacity-90 group-hover:blur-3xl"
                 style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #1A4E26 100%)' }}
                 aria-hidden="true"
               />
-              <div className="w-full h-full rounded-full overflow-hidden bg-white">
+              <div className="w-full h-full rounded-[1.35rem] overflow-hidden bg-white">
                 <img
                   src="/img/dr-luis.jpeg"
                   alt="Dr. Luis Paredes — Gerente General de Sumak Vida Ecuador S.A."
                   loading="lazy"
                   decoding="async"
-                  className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-110"
+                  className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
                 />
               </div>
             </motion.div>
