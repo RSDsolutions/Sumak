@@ -4,10 +4,13 @@ import { motion } from 'motion/react';
 import {
   ShoppingCart, Plus, X, Search, Calendar, ChevronRight,
   Package, TrendingUp, CheckCircle2, Clock, AlertCircle, Leaf, FileText,
-  Truck, ExternalLink,
+  Truck, ExternalLink, ThumbsUp, MessageSquareWarning,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
+import { logger } from '../../lib/logger';
+import { useToast } from '../../lib/toast';
+import Modal from '../../components/Modal';
 import type { Pedido, PedidoItem, EstadoPedido } from '../../lib/types';
 import { pedidoBadgeClass } from '../../lib/badges';
 import NotaVenta, { type NotaVentaData } from '../../components/NotaVenta';
@@ -99,9 +102,12 @@ interface DetalleModalProps {
   clienteNombre: string;
   clienteCodigo?: string;
   onClose: () => void;
+  onConfirmReception: () => void;
+  onReportIssue: () => void;
+  busy: boolean;
 }
 
-function DetalleModal({ pedido, clienteNombre, clienteCodigo, onClose }: DetalleModalProps) {
+function DetalleModal({ pedido, clienteNombre, clienteCodigo, onClose, onConfirmReception, onReportIssue, busy }: DetalleModalProps) {
   const items: PedidoItem[] = pedido.items ?? [];
   const totalItems = items.reduce((s, i) => s + i.cantidad, 0);
   const [showNota, setShowNota] = useState(false);
@@ -184,6 +190,56 @@ function DetalleModal({ pedido, clienteNombre, clienteCodigo, onClose }: Detalle
           <EnvioSection pedido={pedido} />
         )}
 
+        {/* Incidencia abierta (si el distribuidor ya reportó) */}
+        {pedido.incidencia && (
+          <div className="px-6 py-4 border-b border-[#C8D8CB] bg-amber-50/60">
+            <p className="text-amber-700 text-[10px] font-bold uppercase tracking-widest mb-2 flex items-center gap-1.5">
+              <MessageSquareWarning size={11} aria-hidden="true" /> Problema reportado
+              {pedido.incidencia_at && (
+                <span className="text-amber-600/80 normal-case tracking-normal font-normal text-[10px]">
+                  · {new Date(pedido.incidencia_at).toLocaleString('es-EC')}
+                </span>
+              )}
+            </p>
+            <p className="text-amber-900 text-sm leading-relaxed bg-white/60 rounded-xl p-3 border border-amber-200">
+              {pedido.incidencia}
+            </p>
+            <p className="text-amber-700 text-[11px] mt-2">
+              Operaciones ya recibió tu reporte. Se contactarán contigo apenas tengan novedades.
+            </p>
+          </div>
+        )}
+
+        {/* Acciones de recepción (solo cuando pedido.estado === 'enviado') */}
+        {pedido.estado === 'enviado' && (
+          <div className="px-6 py-4 border-b border-[#C8D8CB] bg-[#FAFBFA]">
+            <p className="text-[#1A4E26] text-[10px] font-bold uppercase tracking-widest mb-3">
+              ¿Cómo está tu pedido?
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                onClick={onConfirmReception}
+                disabled={busy}
+                className="flex-[1.4] inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#1A4E26] text-white text-sm font-bold hover:bg-[#163F1E] disabled:opacity-60 transition-all shadow-[0_4px_16px_rgba(26,78,38,0.2)]"
+              >
+                <ThumbsUp size={15} aria-hidden="true" />
+                Sí, recibí mi pedido
+              </button>
+              <button
+                onClick={onReportIssue}
+                disabled={busy || !!pedido.incidencia}
+                className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white border border-amber-300 text-amber-700 text-sm font-bold hover:bg-amber-50 disabled:opacity-60 transition-all"
+              >
+                <MessageSquareWarning size={15} aria-hidden="true" />
+                {pedido.incidencia ? 'Reporte enviado' : 'Tuve un problema'}
+              </button>
+            </div>
+            <p className="text-[#9CA3AF] text-[11px] mt-2 leading-relaxed">
+              Al confirmar la recepción el pedido se cierra como <strong>Entregado</strong> y queda inmutable.
+            </p>
+          </div>
+        )}
+
         {/* Items */}
         <div className="px-6 py-5">
           <p className="text-[#9CA3AF] text-[10px] font-bold uppercase tracking-wider mb-3">Productos del pedido</p>
@@ -246,11 +302,19 @@ function DetalleModal({ pedido, clienteNombre, clienteCodigo, onClose }: Detalle
 
 export default function MisPedidos() {
   const { user, profile } = useAuth();
+  const toast = useToast();
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
   const [tab, setTab] = useState<FilterTab>('todos');
   const [search, setSearch] = useState('');
+
+  // Estados para confirmar recepcion / reportar incidencia.
+  const [busy, setBusy] = useState(false);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [reportingId, setReportingId] = useState<string | null>(null);
+  const [reportText, setReportText] = useState('');
+  const [reportError, setReportError] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -265,6 +329,62 @@ export default function MisPedidos() {
     }
     load();
   }, [user]);
+
+  // Refresca el pedido en el state local con los campos nuevos.
+  function patchPedido(id: string, patch: Partial<Pedido>) {
+    setPedidos((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+    setSelectedPedido((curr) => (curr && curr.id === id ? { ...curr, ...patch } : curr));
+  }
+
+  async function confirmReception(pedidoId: string) {
+    setBusy(true);
+    try {
+      const { error } = await supabase.rpc('mark_pedido_entregado', { p_pedido_id: pedidoId });
+      if (error) throw error;
+      patchPedido(pedidoId, {
+        estado: 'entregado' as EstadoPedido,
+        recibido_at: new Date().toISOString(),
+        incidencia: null,
+        incidencia_at: null,
+      });
+      toast.success('¡Recepción confirmada! Tu pedido quedó como entregado.');
+      setConfirmingId(null);
+    } catch (err) {
+      logger.error('confirmReception error', err);
+      toast.error('No pudimos registrar la recepción. Intenta de nuevo.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submitIssueReport(pedidoId: string) {
+    const motivo = reportText.trim();
+    if (motivo.length < 5) {
+      setReportError('Describí el problema con al menos 5 caracteres.');
+      return;
+    }
+    setBusy(true);
+    setReportError('');
+    try {
+      const { error } = await supabase.rpc('report_pedido_issue', {
+        p_pedido_id: pedidoId,
+        p_motivo: motivo,
+      });
+      if (error) throw error;
+      patchPedido(pedidoId, {
+        incidencia: motivo,
+        incidencia_at: new Date().toISOString(),
+      });
+      toast.success('Reporte enviado. Operaciones se pondrá en contacto contigo.');
+      setReportingId(null);
+      setReportText('');
+    } catch (err) {
+      logger.error('submitIssueReport error', err);
+      setReportError(err instanceof Error ? err.message : 'No pudimos enviar el reporte.');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   // ── Stats summary ──
   const stats = useMemo(() => {
@@ -473,8 +593,125 @@ export default function MisPedidos() {
           clienteNombre={profile?.nombre_completo ?? '—'}
           clienteCodigo={profile?.codigo_distribuidor ?? undefined}
           onClose={() => setSelectedPedido(null)}
+          onConfirmReception={() => setConfirmingId(selectedPedido.id)}
+          onReportIssue={() => {
+            setReportingId(selectedPedido.id);
+            setReportText('');
+            setReportError('');
+          }}
+          busy={busy}
         />
       )}
+
+      {/* Modal: confirmar recepcion */}
+      <Modal
+        open={!!confirmingId}
+        onClose={() => { if (!busy) setConfirmingId(null); }}
+        title="Confirmar recepción"
+        subtitle="Una vez confirmada, el pedido queda como entregado y no se puede modificar."
+        size="sm"
+        labelledById="confirm-reception-title"
+      >
+        <div className="px-6 py-5">
+          <div className="bg-[#EBF4ED] border border-[#1A4E26]/20 rounded-xl p-4 mb-4 flex items-start gap-3">
+            <ThumbsUp size={18} className="text-[#1A4E26] shrink-0 mt-0.5" aria-hidden="true" />
+            <p className="text-[#1A4E26] text-sm leading-relaxed">
+              ¿Confirmás que recibiste tu pedido en buen estado? El pedido se cerrará como{' '}
+              <strong>Entregado</strong>. Los puntos y comisiones asociados quedan firmes.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setConfirmingId(null)}
+              disabled={busy}
+              className="flex-1 py-3 rounded-xl border border-[#C8D8CB] text-[#6B7280] text-sm font-medium hover:border-[#A8C2AD] transition-all disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={() => confirmingId && confirmReception(confirmingId)}
+              disabled={busy}
+              className="flex-[1.5] py-3 rounded-xl bg-[#1A4E26] text-white text-sm font-bold hover:bg-[#163F1E] transition-all disabled:opacity-60 inline-flex items-center justify-center gap-2"
+            >
+              {busy ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Cerrando…
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 size={14} aria-hidden="true" />
+                  Sí, recibí mi pedido
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal: reportar problema */}
+      <Modal
+        open={!!reportingId}
+        onClose={() => { if (!busy) { setReportingId(null); setReportText(''); setReportError(''); } }}
+        title="Reportar un problema"
+        subtitle="Operaciones lo verá apenas se registre."
+        size="md"
+        labelledById="report-issue-title"
+      >
+        <div className="px-6 py-5">
+          <p className="text-[#6B7280] text-xs font-semibold uppercase tracking-wider mb-2">
+            Contanos qué pasó
+          </p>
+          <textarea
+            rows={5}
+            value={reportText}
+            onChange={(e) => setReportText(e.target.value)}
+            placeholder="Ej: el paquete llegó incompleto, una botella vino dañada, el N° de guía no coincide…"
+            className="w-full bg-white border border-[#C8D8CB] rounded-xl px-4 py-3 text-[#111111] text-sm placeholder-[#9CA3AF] focus:outline-none focus:border-amber-400 transition-colors resize-none"
+            disabled={busy}
+            maxLength={1000}
+          />
+          <p className="text-[10px] text-[#9CA3AF] mt-1">
+            {reportText.length} / 1000 caracteres · mínimo 5.
+          </p>
+          {reportError && (
+            <div className="mt-3 bg-red-50 border border-red-200 rounded-xl px-3 py-2 text-red-600 text-xs flex items-start gap-2">
+              <AlertCircle size={13} className="shrink-0 mt-0.5" aria-hidden="true" />
+              {reportError}
+            </div>
+          )}
+          <div className="flex gap-3 mt-5">
+            <button
+              type="button"
+              onClick={() => { setReportingId(null); setReportText(''); setReportError(''); }}
+              disabled={busy}
+              className="flex-1 py-3 rounded-xl border border-[#C8D8CB] text-[#6B7280] text-sm font-medium hover:border-[#A8C2AD] transition-all disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={() => reportingId && submitIssueReport(reportingId)}
+              disabled={busy || reportText.trim().length < 5}
+              className="flex-[1.5] py-3 rounded-xl bg-amber-600 text-white text-sm font-bold hover:bg-amber-700 transition-all disabled:opacity-60 inline-flex items-center justify-center gap-2"
+            >
+              {busy ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Enviando…
+                </>
+              ) : (
+                <>
+                  <MessageSquareWarning size={14} aria-hidden="true" />
+                  Enviar reporte
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

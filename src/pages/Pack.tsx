@@ -128,7 +128,7 @@ export default function Pack() {
               <div className="flex items-baseline gap-3 mb-6">
                 <span className="font-heading font-black text-5xl text-white">${pack.precio}</span>
                 <span className="text-white/60 text-sm">
-                  · {pack.puntos} puntos · {pack.productos} productos
+                  · {pack.puntos} puntos · cupo ${pack.precio} a precio distribuidor
                 </span>
               </div>
 
@@ -211,11 +211,12 @@ export default function Pack() {
               Productos disponibles
             </span>
             <h2 className="font-heading font-bold text-3xl sm:text-4xl text-[#111111] mb-3">
-              Elige los {pack.productos} productos que quieras
+              Elige los productos que quieras hasta llenar ${pack.precio}
             </h2>
             <p className="text-[#6B7280] text-base max-w-2xl mx-auto">
-              Al afiliarte y activar tu cuenta, podrás armar este pack con los productos que tú decidas.
-              Estos son algunos de los más populares del catálogo:
+              Tu cupo es de ${pack.precio} a precio de distribuidor. Productos premium consumen
+              más cupo, opciones accesibles te dan más unidades. Estos son algunos de los más
+              populares del catálogo:
             </p>
           </div>
 

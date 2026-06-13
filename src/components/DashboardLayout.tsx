@@ -11,6 +11,7 @@ import {
   X,
   LogOut,
   Trophy,
+  UserPlus,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useCart } from '../lib/cart';
@@ -32,6 +33,7 @@ const navItems: NavItem[] = [
   { label: 'Mi Red', to: '/dashboard/red', icon: <Network size={18} /> },
   { label: 'Mi Escalera', to: '/dashboard/escalera', icon: <Trophy size={18} /> },
   { label: 'Comisiones', to: '/dashboard/comisiones', icon: <DollarSign size={18} /> },
+  { label: 'Bono Afiliación', to: '/dashboard/bono-afiliacion', icon: <UserPlus size={18} /> },
   { label: 'Mi Perfil', to: '/dashboard/perfil', icon: <User size={18} /> },
 ];
 

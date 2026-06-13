@@ -180,7 +180,10 @@ function ApproveModal({ afiliacion, onClose, onSuccess }: ApproveModalProps) {
       // Si falla la RPC, hacemos rollback del auth.user para no dejar
       // huérfanos que bloquearían reintentos.
       const padrePerfil = padreProfileId || null;
-      const { data: rpcResult, error: rpcError } = await supabase.rpc('finish_approve_afiliacion', {
+      // Migration 011: usamos el wrapper approve_afiliacion que valida
+      // que el caller sea admin. finish_approve_afiliacion ya no esta
+      // accesible para 'authenticated' directamente.
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('approve_afiliacion', {
         p_afiliacion_id: afiliacion.id,
         p_user_id: userId,
         p_codigo: codigo,

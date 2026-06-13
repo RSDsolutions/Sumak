@@ -252,7 +252,17 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={['distribuidor']}>
                 <DashboardLayout>
-                  <MisComisiones />
+                  <MisComisiones scope="no-afiliacion" />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/bono-afiliacion"
+            element={
+              <ProtectedRoute allowedRoles={['distribuidor']}>
+                <DashboardLayout>
+                  <MisComisiones scope="afiliacion" />
                 </DashboardLayout>
               </ProtectedRoute>
             }
@@ -374,7 +384,17 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <AdminLayout>
-                  <AdminComisiones />
+                  <AdminComisiones scope="no-afiliacion" />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/bono-afiliacion"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminLayout>
+                  <AdminComisiones scope="afiliacion" />
                 </AdminLayout>
               </ProtectedRoute>
             }
@@ -435,51 +455,21 @@ export default function App() {
             }
           />
           <Route
-            path="/operaciones/solicitudes"
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'operaciones']}>
-                <OperacionesLayout>
-                  <Solicitudes />
-                </OperacionesLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/operaciones/solicitudes/:id"
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'operaciones']}>
-                <OperacionesLayout>
-                  <SolicitudDetalle />
-                </OperacionesLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/operaciones/distribuidores"
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'operaciones']}>
-                <OperacionesLayout>
-                  <Distribuidores />
-                </OperacionesLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/operaciones/distribuidores/:id"
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'operaciones']}>
-                <OperacionesLayout>
-                  <DistribuidorDetalle />
-                </OperacionesLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
             path="/operaciones/comisiones"
             element={
               <ProtectedRoute allowedRoles={['admin', 'operaciones']}>
                 <OperacionesLayout>
-                  <AdminComisiones />
+                  <AdminComisiones scope="no-afiliacion" />
+                </OperacionesLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/operaciones/bono-afiliacion"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'operaciones']}>
+                <OperacionesLayout>
+                  <AdminComisiones scope="afiliacion" />
                 </OperacionesLayout>
               </ProtectedRoute>
             }

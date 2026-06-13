@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { supabaseAdmin } from '../../lib/supabase';
+import { useAuth } from '../../lib/auth';
 import { useAdminBasePath } from '../../lib/useAdminBasePath';
 import type { Profile, Comision, Pedido } from '../../lib/types';
 
@@ -35,6 +36,7 @@ function estadoPedidoBadge(estado: string) {
 
 export default function DistribuidorDetalle() {
   const basePath = useAdminBasePath();
+  const { isAdmin } = useAuth();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -113,17 +115,23 @@ export default function DistribuidorDetalle() {
             {profile.codigo_distribuidor ?? '—'} · {profile.paquete ? paqueteLabel[profile.paquete] : '—'}
           </p>
         </div>
-        <button
-          onClick={toggleEstado}
-          disabled={toggling}
-          className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${
-            profile.estado === 'activo'
-              ? 'bg-red-600 hover:bg-red-700 text-white'
-              : 'bg-[#1A4E26] hover:bg-[#163F1E] text-white'
-          } disabled:opacity-60`}
-        >
-          {toggling ? '...' : profile.estado === 'activo' ? 'Suspender' : 'Activar'}
-        </button>
+        {isAdmin ? (
+          <button
+            onClick={toggleEstado}
+            disabled={toggling}
+            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${
+              profile.estado === 'activo'
+                ? 'bg-red-600 hover:bg-red-700 text-white'
+                : 'bg-[#1A4E26] hover:bg-[#163F1E] text-white'
+            } disabled:opacity-60`}
+          >
+            {toggling ? '...' : profile.estado === 'activo' ? 'Suspender' : 'Activar'}
+          </button>
+        ) : (
+          <span className="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest text-[#6B7280] bg-[#F4F7F5] border border-[#C8D8CB]">
+            Solo lectura
+          </span>
+        )}
       </div>
 
       {/* Stats */}

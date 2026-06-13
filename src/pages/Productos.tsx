@@ -296,8 +296,8 @@ export default function Productos() {
                           <p className="font-heading font-bold text-base text-[#D4AF37]">{pack.puntos}</p>
                         </div>
                         <div className="bg-[#F4F7F5] border border-[#C8D8CB] rounded-lg p-2 text-center">
-                          <p className="text-[9px] uppercase tracking-wider text-[#9CA3AF] font-bold">Productos</p>
-                          <p className="font-heading font-bold text-base text-[#111111]">{pack.productos}</p>
+                          <p className="text-[9px] uppercase tracking-wider text-[#9CA3AF] font-bold">Cupo</p>
+                          <p className="font-heading font-bold text-base text-[#111111]">${pack.precio}</p>
                         </div>
                       </div>
 

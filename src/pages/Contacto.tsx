@@ -242,18 +242,26 @@ export default function Contacto() {
               </motion.div>
             ))}
 
-            {/* Map */}
+            {/* Map — OpenStreetMap embed (Google bloquea maps.google.com/maps?output=embed
+                en iframes desde 2024 con el mensaje "Este contenido está bloqueado") */}
             <motion.div variants={fadeUp} className="rounded-xl overflow-hidden border border-[#C8D8CB] mt-2">
               <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3990.5!2d-79.534!3d-1.8016!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x91d4e0eee3f1e3d7%3A0x5b1b2b3c4d5e6f7a!2sBabahoyo%2C%20Ecuador!5e0!3m2!1ses!2sec!4v1620000000000!5m2!1ses!2sec"
+                src="https://www.openstreetmap.org/export/embed.html?bbox=-79.5346,-1.8016,-79.5279,-1.7962&layer=mapnik&marker=-1.798915,-79.531299"
                 width="100%"
-                height="300"
-                style={{ border: 0 }}
-                allowFullScreen
+                height="360"
+                style={{ border: 0, display: 'block' }}
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
-                title="Mapa Babahoyo Ecuador"
+                title="Oficina Sumak Vida Ecuador — Babahoyo"
               />
+              <a
+                href="https://www.google.com/maps?q=-1.798915,-79.531299"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block px-4 py-2.5 bg-[#1A4E26] text-white text-xs font-bold text-center hover:bg-[#163F1E] transition-colors"
+              >
+                Abrir en Google Maps ↗
+              </a>
             </motion.div>
           </motion.div>
         </div>

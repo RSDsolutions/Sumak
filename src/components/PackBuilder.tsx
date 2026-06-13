@@ -3,14 +3,34 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   Search, Plus, Minus, X, Check, AlertCircle, Package, Leaf,
 } from 'lucide-react';
-import { products, type Product, type AffiliatePackage } from '../data';
+import { products, getPrecioDistribuidor, type Product, type AffiliatePackage } from '../data';
 import type { PackSelection } from '../lib/cart';
 
 interface PackBuilderProps {
   pack: AffiliatePackage;
   initialSelections?: PackSelection[];
-  onSelectionsChange: (selections: PackSelection[], totalUnits: number) => void;
+  /**
+   * El cupo del pack es por valor en $ a PRECIO DE DISTRIBUIDOR
+   * (no PVP). El cap = pack.precio. Cada producto suma su
+   * precio_distribuidor (PVP × 50% o el override definido).
+   */
+  onSelectionsChange: (selections: PackSelection[], totalValue: number) => void;
 }
+
+/** Suma a precio de distribuidor de una seleccion. */
+function sumValue(sels: Map<string, number>): number {
+  let s = 0;
+  for (const [codigo, qty] of sels.entries()) {
+    const p = products.find((pr) => pr.codigo === codigo);
+    if (!p) continue;
+    s += getPrecioDistribuidor(p) * qty;
+  }
+  // Redondeo a 2 decimales para evitar drift de punto flotante.
+  return Math.round(s * 100) / 100;
+}
+
+/** Tolerancia para considerar dos $ iguales. */
+const EPS = 0.005;
 
 export default function PackBuilder({
   pack,
@@ -24,17 +44,19 @@ export default function PackBuilder({
   });
   const [search, setSearch] = useState('');
 
+  const totalValue = useMemo(() => sumValue(selections), [selections]);
   const totalUnits = useMemo(() => {
     let n = 0;
     for (const q of selections.values()) n += q;
     return n;
   }, [selections]);
 
-  const remaining = pack.productos - totalUnits;
-  const isComplete = remaining === 0;
-  const isOver = remaining < 0;
+  const cap = pack.precio;
+  const remaining = Math.round((cap - totalValue) * 100) / 100;
+  const isComplete = Math.abs(remaining) < EPS;
+  const isOver = totalValue - cap > EPS;
 
-  // Lista filtrada (excluye próximamente)
+  // Productos visibles (excluye proximamente).
   const visibleProducts = useMemo(() => {
     let list = products.filter((p) => !p.proximamente);
     if (search.trim()) {
@@ -43,7 +65,6 @@ export default function PackBuilder({
         p.nombre.toLowerCase().includes(q) ||
         p.categoria.toLowerCase().includes(q));
     }
-    // Ordenar: bestsellers primero
     list.sort((a, b) => {
       const ra = (a.bestseller ? 3 : 0) + (a.destacado ? 2 : 0) + (a.nuevo ? 1 : 0);
       const rb = (b.bestseller ? 3 : 0) + (b.destacado ? 2 : 0) + (b.nuevo ? 1 : 0);
@@ -51,6 +72,14 @@ export default function PackBuilder({
     });
     return list;
   }, [search]);
+
+  function notifyChange(next: Map<string, number>) {
+    const arr: PackSelection[] = Array.from(next.entries()).map(([codigo, cantidad]) => {
+      const p = products.find((pr) => pr.codigo === codigo);
+      return { codigo, cantidad, nombre: p?.nombre ?? codigo };
+    });
+    onSelectionsChange(arr, sumValue(next));
+  }
 
   function updateQty(codigo: string, delta: number) {
     setSelections((prev) => {
@@ -60,26 +89,18 @@ export default function PackBuilder({
       if (newQty <= 0) {
         next.delete(codigo);
       } else {
-        // No permitimos pasar el límite del pack
-        const otherUnits = Array.from(next.entries())
-          .filter(([c]) => c !== codigo)
-          .reduce((s, [, q]) => s + q, 0);
-        if (otherUnits + newQty > pack.productos) {
+        const product = products.find((p) => p.codigo === codigo);
+        if (!product) return prev;
+        // Sumar el nuevo valor total considerando este cambio.
+        const otherValue = sumValue(new Map(Array.from(next.entries()).filter(([c]) => c !== codigo)));
+        const newTotal = otherValue + getPrecioDistribuidor(product) * newQty;
+        if (newTotal - cap > EPS) {
+          // Excederia el cupo: bloquear.
           return prev;
         }
         next.set(codigo, newQty);
       }
-      // Notificar arriba
-      const arr: PackSelection[] = Array.from(next.entries()).map(([codigo, cantidad]) => {
-        const p = products.find((pr) => pr.codigo === codigo);
-        return {
-          codigo,
-          cantidad,
-          nombre: p?.nombre ?? codigo,
-        };
-      });
-      const total = Array.from(next.values()).reduce((s, q) => s + q, 0);
-      onSelectionsChange(arr, total);
+      notifyChange(next);
       return next;
     });
   }
@@ -89,10 +110,8 @@ export default function PackBuilder({
     onSelectionsChange([], 0);
   }
 
+  /** Llenar automaticamente acercandose al cupo (a precio de distribuidor) sin pasarse. */
   function autoFill() {
-    // Llenar con los más destacados/bestsellers hasta completar el pack
-    const next = new Map<string, number>();
-    let remaining = pack.productos;
     const ordered = [...products]
       .filter((p) => !p.proximamente)
       .sort((a, b) => {
@@ -100,19 +119,23 @@ export default function PackBuilder({
         const rb = (b.bestseller ? 3 : 0) + (b.destacado ? 2 : 0) + (b.nuevo ? 1 : 0);
         return rb - ra;
       });
-    let idx = 0;
-    while (remaining > 0 && ordered.length > 0) {
-      const p = ordered[idx % ordered.length];
-      next.set(p.codigo, (next.get(p.codigo) ?? 0) + 1);
-      remaining--;
-      idx++;
+    const next = new Map<string, number>();
+    let acumulado = 0;
+    let iter = 0;
+    while (iter < 500) {
+      iter++;
+      // Buscar el producto mas caro que aun cabe en el cupo restante.
+      const cabe = ordered
+        .filter((p) => acumulado + getPrecioDistribuidor(p) <= cap + EPS)
+        .sort((a, b) => getPrecioDistribuidor(a) - getPrecioDistribuidor(b));
+      if (cabe.length === 0) break;
+      const next_p = cabe[cabe.length - 1];
+      next.set(next_p.codigo, (next.get(next_p.codigo) ?? 0) + 1);
+      acumulado = Math.round((acumulado + getPrecioDistribuidor(next_p)) * 100) / 100;
+      if (Math.abs(cap - acumulado) < EPS) break;
     }
     setSelections(next);
-    const arr: PackSelection[] = Array.from(next.entries()).map(([codigo, cantidad]) => {
-      const p = products.find((pr) => pr.codigo === codigo);
-      return { codigo, cantidad, nombre: p?.nombre ?? codigo };
-    });
-    onSelectionsChange(arr, pack.productos);
+    notifyChange(next);
   }
 
   return (
@@ -146,13 +169,13 @@ export default function PackBuilder({
           </div>
         </div>
 
-        {/* Barra de progreso */}
+        {/* Barra de progreso en $ */}
         <div className="flex items-center gap-3">
           <div className="flex-1">
             <div className="h-2 bg-white rounded-full overflow-hidden border border-[#C8D8CB]">
               <motion.div
                 initial={{ width: 0 }}
-                animate={{ width: `${Math.min(100, (totalUnits / pack.productos) * 100)}%` }}
+                animate={{ width: `${Math.min(100, (totalValue / cap) * 100)}%` }}
                 transition={{ duration: 0.3 }}
                 className={`h-full rounded-full ${
                   isOver ? 'bg-red-500' : isComplete ? 'bg-[#D4AF37]' : 'bg-[#1A4E26]'
@@ -163,24 +186,24 @@ export default function PackBuilder({
           <div className={`text-sm font-bold whitespace-nowrap ${
             isOver ? 'text-red-600' : isComplete ? 'text-[#D4AF37]' : 'text-[#1A4E26]'
           }`}>
-            {totalUnits} / {pack.productos}
+            ${totalValue.toFixed(2)} / ${cap.toFixed(2)}
           </div>
         </div>
 
         {!isComplete && !isOver && (
           <p className="text-[#6B7280] text-xs mt-2">
-            Faltan <strong className="text-[#1A4E26]">{remaining}</strong> producto
-            {remaining !== 1 ? 's' : ''} para completar tu pack.
+            Te falta llenar <strong className="text-[#1A4E26]">${remaining.toFixed(2)}</strong> de tu cupo para completar el pack.
+            <span className="text-[#9CA3AF]"> · {totalUnits} producto{totalUnits !== 1 ? 's' : ''} hasta ahora</span>
           </p>
         )}
         {isComplete && (
           <p className="text-[#D4AF37] text-xs mt-2 font-bold flex items-center gap-1.5">
-            <Check size={13} /> ¡Pack completo! Listo para agregar al carrito.
+            <Check size={13} /> ¡Cupo completo con {totalUnits} producto{totalUnits !== 1 ? 's' : ''}! Listo para agregar al carrito.
           </p>
         )}
         {isOver && (
           <p className="text-red-600 text-xs mt-2 font-bold flex items-center gap-1.5">
-            <AlertCircle size={13} /> Has superado el límite del pack.
+            <AlertCircle size={13} /> Has superado el cupo de ${cap.toFixed(2)}.
           </p>
         )}
       </div>
@@ -189,7 +212,7 @@ export default function PackBuilder({
       {selections.size > 0 && (
         <div className="px-5 py-3 border-b border-[#C8D8CB] bg-[#FAFBFA]">
           <p className="text-[10px] font-bold uppercase tracking-widest text-[#6B7280] mb-2">
-            Tu selección ({selections.size} producto{selections.size !== 1 ? 's' : ''} distinto{selections.size !== 1 ? 's' : ''})
+            Tu selección ({selections.size} producto{selections.size !== 1 ? 's' : ''} distinto{selections.size !== 1 ? 's' : ''} · {totalUnits} unidad{totalUnits !== 1 ? 'es' : ''})
           </p>
           <div className="flex flex-wrap gap-1.5">
             <AnimatePresence>
@@ -207,6 +230,7 @@ export default function PackBuilder({
                   >
                     <span className="bg-white/20 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{qty}</span>
                     <span className="max-w-[140px] truncate">{p.nombre}</span>
+                    <span className="text-white/70 text-[9px] font-mono">${(getPrecioDistribuidor(p) * qty).toFixed(2)}</span>
                     <button
                       type="button"
                       onClick={() => updateQty(codigo, -qty)}
@@ -240,15 +264,21 @@ export default function PackBuilder({
       {/* Grid de productos */}
       <div className="p-3 max-h-[480px] overflow-y-auto">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {visibleProducts.map((p) => (
-            <PackProductCard
-              key={p.codigo}
-              product={p}
-              qty={selections.get(p.codigo) ?? 0}
-              canAdd={!isOver && remaining > 0}
-              onQtyChange={(delta) => updateQty(p.codigo, delta)}
-            />
-          ))}
+          {visibleProducts.map((p) => {
+            const remainingBudget = cap - totalValue;
+            const precioD = getPrecioDistribuidor(p);
+            const canAddOne = !isOver && precioD <= remainingBudget + EPS;
+            return (
+              <PackProductCard
+                key={p.codigo}
+                product={p}
+                precioDistribuidor={precioD}
+                qty={selections.get(p.codigo) ?? 0}
+                canAdd={canAddOne}
+                onQtyChange={(delta) => updateQty(p.codigo, delta)}
+              />
+            );
+          })}
         </div>
         {visibleProducts.length === 0 && (
           <div className="text-center py-10 text-[#9CA3AF]">
@@ -263,11 +293,13 @@ export default function PackBuilder({
 
 function PackProductCard({
   product,
+  precioDistribuidor,
   qty,
   canAdd,
   onQtyChange,
 }: {
   product: Product;
+  precioDistribuidor: number;
   qty: number;
   canAdd: boolean;
   onQtyChange: (delta: number) => void;
@@ -310,10 +342,13 @@ function PackProductCard({
       </div>
 
       <div className="p-2">
-        <p className="font-bold text-[#111111] text-[11px] leading-tight line-clamp-2 mb-1.5 min-h-[28px]">
+        <p className="font-bold text-[#111111] text-[11px] leading-tight line-clamp-2 mb-1 min-h-[28px]">
           {product.nombre}
         </p>
-        <p className="text-[9px] text-[#6B7280] mb-2 truncate">{product.categoria}</p>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[9px] text-[#6B7280] truncate">{product.categoria}</p>
+          <p className="text-[10px] text-[#1A4E26] font-bold font-mono">${precioDistribuidor.toFixed(2)}</p>
+        </div>
 
         {selected ? (
           <div className="flex items-center justify-between bg-[#1A4E26] rounded-md p-0.5">
@@ -343,7 +378,7 @@ function PackProductCard({
             disabled={!canAdd}
             className="w-full inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-md bg-white border border-[#1A4E26]/30 text-[#1A4E26] text-[10px] font-bold hover:bg-[#1A4E26] hover:text-white disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-[#1A4E26] transition-all"
           >
-            <Plus size={11} /> Agregar
+            <Plus size={11} /> {canAdd ? 'Agregar' : 'No cabe'}
           </button>
         )}
       </div>

@@ -14,7 +14,25 @@ import { ESTADO_PEDIDO_LABELS, pedidoBadgeClass } from '../../lib/badges';
 
 type FilterTab = 'todos' | EstadoPedido;
 
-const ESTADOS: EstadoPedido[] = ['pendiente', 'procesando', 'enviado', 'entregado', 'cancelado'];
+/**
+ * Estados a los que se puede transicionar desde cada origen.
+ * Una vez 'entregado' o 'cancelado' no se admite ningun cambio (el
+ * trigger de BD tambien lo impide en pedido entregado).
+ */
+function transicionesValidas(origen: EstadoPedido, esAdmin: boolean): EstadoPedido[] {
+  if (origen === 'entregado' || origen === 'cancelado') return [origen];
+  const todos: EstadoPedido[] = ['pendiente', 'procesando', 'enviado', 'entregado', 'cancelado'];
+  const base = todos.filter((e) => {
+    // entregado solo lo activa el distribuidor via RPC, no aqui.
+    if (e === 'entregado') return false;
+    return true;
+  });
+  if (!esAdmin) {
+    // Operaciones no puede cancelar.
+    return base.filter((e) => e !== 'cancelado');
+  }
+  return base;
+}
 
 // COD-001: usar el catálogo central para no duplicar.
 const ESTADO_LABELS = ESTADO_PEDIDO_LABELS;
@@ -191,6 +209,23 @@ function DetalleModal({ pedido, onClose }: DetalleModalProps) {
           )}
         </div>
 
+        {/* Incidencia abierta reportada por el distribuidor */}
+        {pedido.incidencia && (
+          <div className="px-6 py-4 border-b border-[#C8D8CB] bg-amber-50/60">
+            <p className="text-amber-700 text-xs font-semibold uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <AlertCircle size={12} /> Incidencia reportada
+              {pedido.incidencia_at && (
+                <span className="text-amber-600/80 normal-case tracking-normal font-normal text-[10px]">
+                  · {new Date(pedido.incidencia_at).toLocaleString('es-EC')}
+                </span>
+              )}
+            </p>
+            <p className="text-amber-900 text-sm leading-relaxed bg-white/60 rounded-xl p-3 border border-amber-200">
+              {pedido.incidencia}
+            </p>
+          </div>
+        )}
+
         {/* Notas */}
         {pedido.notas && (
           <div className="px-6 py-4 border-b border-[#C8D8CB]">
@@ -261,7 +296,7 @@ export default function AdminPedidos() {
   const [envioNumero, setEnvioNumero] = useState('');
   const [envioError, setEnvioError] = useState('');
   const toast = useToast();
-  const { profile } = useAuth();
+  const { profile, isAdmin } = useAuth();
 
   function onEnvioVoucherFile(file: File) {
     if (file.size > 5 * 1024 * 1024) {
@@ -750,17 +785,24 @@ export default function AdminPedidos() {
                       </button>
                     </td>
                     <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
-                      <select
-                        value={p.estado}
-                        onChange={(e) => handleEstadoChange(p, e.target.value as EstadoPedido)}
-                        disabled={updatingId === p.id}
-                        aria-label={`Cambiar estado del pedido de ${p.distribuidor_nombre ?? ''}`}
-                        className="bg-white border border-[#C8D8CB] rounded-lg px-2.5 py-1 text-[#111111] text-[11px] focus:outline-none focus:border-[#1A4E26] transition-colors disabled:opacity-50 cursor-pointer"
-                      >
-                        {ESTADOS.map((e) => (
-                          <option key={e} value={e}>{ESTADO_LABELS[e]}</option>
-                        ))}
-                      </select>
+                      {p.estado === 'entregado' || p.estado === 'cancelado' ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-[#9CA3AF] bg-[#F4F7F5] border border-[#C8D8CB] rounded px-2 py-1">
+                          <CheckCircle2 size={10} aria-hidden="true" />
+                          {p.estado === 'entregado' ? 'Cerrado' : 'Final'}
+                        </span>
+                      ) : (
+                        <select
+                          value={p.estado}
+                          onChange={(e) => handleEstadoChange(p, e.target.value as EstadoPedido)}
+                          disabled={updatingId === p.id}
+                          aria-label={`Cambiar estado del pedido de ${p.distribuidor_nombre ?? ''}`}
+                          className="bg-white border border-[#C8D8CB] rounded-lg px-2.5 py-1 text-[#111111] text-[11px] focus:outline-none focus:border-[#1A4E26] transition-colors disabled:opacity-50 cursor-pointer"
+                        >
+                          {transicionesValidas(p.estado, isAdmin).map((e) => (
+                            <option key={e} value={e}>{ESTADO_LABELS[e]}</option>
+                          ))}
+                        </select>
+                      )}
                     </td>
                   </tr>
                 ))}

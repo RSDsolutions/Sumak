@@ -139,6 +139,12 @@ export interface Product {
   categoria: string;
   categoriaKey: string;
   pvp: number;
+  /**
+   * Override opcional del precio de distribuidor. Si no está, se calcula
+   * con `pvp * planConfig.descuentoDistribuidor` (50%). Usar solo para
+   * productos donde el precio de mayorista no sigue el descuento estándar.
+   */
+  precioDistribuidor?: number;
   descripcion: string;
   imagen?: string;
   tagline?: string;
@@ -484,6 +490,7 @@ export const products: Product[] = [
     categoria: 'Mezcla funcional 100% orgánica',
     categoriaKey: 'suplementos',
     pvp: 60.00,
+    precioDistribuidor: 20.00,
     descripcion: 'Bebida nutritiva orgánica con quinua, calostro de bovino, hongos y más. Sabor a vainilla.',
     imagen: '/products/formula-1000-v3.png',
     tagline: 'Más nutrientes y vitaminas',
@@ -740,13 +747,13 @@ export const affiliatePackages: AffiliatePackage[] = [
     paqueteKey: 'emprendedor',
     precio: 225,
     puntos: 225,
-    productos: 27,
+    productos: 17,
     destacado: true,
     beneficios: packageBenefits,
     imagen: '/packs/pack-emprendedor-v2.png',
     tagline: 'Más productos, más alcance, más comisiones',
     descripcion:
-      'El pack más popular. Incluye 27 productos a tu elección, perfecto para arrancar tu negocio con stock variado y ofrecer muestras a tu red.',
+      'El pack más popular. Incluye 17 productos a tu elección, perfecto para arrancar tu negocio con stock variado y ofrecer muestras a tu red.',
   },
   {
     nombre: 'Pack Líder',
@@ -766,6 +773,21 @@ export const affiliatePackages: AffiliatePackage[] = [
 
 export function getPackBySlug(slug: string): AffiliatePackage | undefined {
   return affiliatePackages.find((p) => p.slug === slug);
+}
+
+/**
+ * Precio de distribuidor para un producto.
+ *
+ * - Si el producto define `precioDistribuidor`, ese override tiene prioridad
+ *   (ej. Formula 1000 = $20 fijo aunque su PVP sea $60).
+ * - Si no, se aplica el descuento estándar del plan (50% sobre PVP).
+ *
+ * Se usa en la tienda interna (donde el distribuidor compra) y en el
+ * PackBuilder (cupo del pack a precio de distribuidor).
+ */
+export function getPrecioDistribuidor(product: Pick<Product, 'pvp' | 'precioDistribuidor'>): number {
+  if (typeof product.precioDistribuidor === 'number') return product.precioDistribuidor;
+  return Math.round(product.pvp * planConfig.descuentoDistribuidor * 100) / 100;
 }
 
 // ── Level Commissions ────────────────────────────────────────

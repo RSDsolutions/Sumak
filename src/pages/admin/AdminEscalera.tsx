@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Trophy, Crown, Search, ChevronRight, Users, Sparkles, ExternalLink,
-  Globe, ChefHat, Snowflake, Tv, Laptop, Bike, Car, Home, Plane, MapPin,
   TrendingUp, Award, X, Calendar, ChevronLeft, RefreshCw,
 } from 'lucide-react';
 import { supabaseAdmin } from '../../lib/supabase';
@@ -29,26 +28,6 @@ function monthRange(date: Date): { start: Date; end: Date; label: string } {
   const end = new Date(date.getFullYear(), date.getMonth() + 1, 1);
   const label = start.toLocaleString('es-EC', { month: 'long', year: 'numeric' });
   return { start, end, label };
-}
-
-function getPrizeIcon(text: string, size = 11) {
-  if (text.includes('Internacional')) return <Globe size={size} />;
-  if (text.includes('Nacional')) return <Plane size={size} />;
-  if (text.includes('Local')) return <MapPin size={size} />;
-  return null;
-}
-
-function getExtraIcon(text: string, size = 11) {
-  const t = text.toLowerCase();
-  if (t.includes('viaje') || t.includes('internacional')) return <Globe size={size} />;
-  if (t.includes('cocina')) return <ChefHat size={size} />;
-  if (t.includes('nevera')) return <Snowflake size={size} />;
-  if (t.includes('proyector')) return <Tv size={size} />;
-  if (t.includes('laptop')) return <Laptop size={size} />;
-  if (t.includes('moto')) return <Bike size={size} />;
-  if (t.includes('carro')) return <Car size={size} />;
-  if (t.includes('casa')) return <Home size={size} />;
-  return <Trophy size={size} />;
 }
 
 function Spinner() {
@@ -198,14 +177,15 @@ export default function AdminEscalera() {
   }, [distribuidores, redByUser]);
 
   const t1Ranks: StaircaseRank[] = useMemo(
-    () => tramo1Ranks.map((r) => ({
-      rango: r.rango,
-      requirement: `${r.personasDirectas} direct${r.personasDirectas === 1 ? 'o' : 'os'}`,
-      reward: r.bono.split(' +')[0],
-      extra: r.bono.includes(' + ')
-        ? { icon: getPrizeIcon(r.bono, 10), label: r.bono.split(' + ')[1] }
-        : undefined,
-    })),
+    () => tramo1Ranks.map((r) => {
+      const prizeLabel = r.bono.includes(' + ') ? r.bono.split(' + ')[1] : null;
+      return {
+        rango: r.rango,
+        requirement: `${r.personasDirectas} direct${r.personasDirectas === 1 ? 'o' : 'os'}`,
+        reward: r.bono.split(' +')[0],
+        extra: prizeLabel ? { label: prizeLabel } : undefined,
+      };
+    }),
     [],
   );
 
@@ -214,9 +194,7 @@ export default function AdminEscalera() {
       rango: r.rango,
       requirement: `${r.personasEnRed.toLocaleString('es-EC')} red · Niv ${r.nivelesActivos}`,
       reward: r.recompensa,
-      extra: r.extras
-        ? { icon: getExtraIcon(r.extras, 10), label: r.extras }
-        : undefined,
+      extra: r.extras ? { label: r.extras } : undefined,
     })),
     [],
   );

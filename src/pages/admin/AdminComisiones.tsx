@@ -3,8 +3,7 @@ import { motion } from 'motion/react';
 import {
   DollarSign, X, Eye, ArrowDown, ArrowUp, Calendar, Hash,
   Layers, Sparkles, CheckCircle2, Clock, AlertCircle, Search,
-  Users, Network, TrendingUp, Filter, Upload, Receipt, ImageIcon,
-  ExternalLink,
+  Users, Network, TrendingUp, Filter, Upload,
 } from 'lucide-react';
 import { supabase, supabaseAdmin } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
@@ -251,21 +250,34 @@ function DetalleModal({ comision, onClose }: { comision: ComisionRow; onClose: (
 }
 
 // ── PAGE ──────────────────────────────────────────────────
-export default function AdminComisiones() {
+/**
+ * Scope:
+ * - 'no-afiliacion' (default): todas las comisiones EXCEPTO el bono por
+ *   afiliacion (40% al patrocinador directo). Es lo que ve /admin/comisiones.
+ * - 'afiliacion': SOLO el bono por afiliacion. Es la pagina dedicada
+ *   /admin/bono-afiliacion.
+ */
+export interface AdminComisionesProps {
+  scope?: 'no-afiliacion' | 'afiliacion';
+}
+
+export default function AdminComisiones({ scope = 'no-afiliacion' }: AdminComisionesProps) {
+  const isAfiliacionScope = scope === 'afiliacion';
+
   const [comisiones, setComisiones] = useState<ComisionRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filtros
   const [estadoTab, setEstadoTab] = useState<EstadoComision | 'todas'>('pendiente');
+  // En scope='afiliacion' el filtro de tipo no aplica (todo es afiliacion).
   const [tipoFilter, setTipoFilter] = useState<TipoComision | 'todos'>('todos');
   const [nivelFilter, setNivelFilter] = useState<number | 'todos'>('todos');
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<SortKey>('fecha-desc');
 
-  // Pago batch
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  // Pago uno-a-uno (no mas batch).
+  const [payingId, setPayingId] = useState<string | null>(null);
   const [marking, setMarking] = useState(false);
-  // Voucher en el modal de pago
   const [payModalOpen, setPayModalOpen] = useState(false);
   const [voucherFile, setVoucherFile] = useState<File | null>(null);
   const [voucherPreview, setVoucherPreview] = useState<string | null>(null);
@@ -273,7 +285,7 @@ export default function AdminComisiones() {
   const [payError, setPayError] = useState('');
   const { profile } = useAuth();
 
-  // Modal
+  // Modal de detalle
   const [detalle, setDetalle] = useState<ComisionRow | null>(null);
 
   async function load() {
@@ -297,6 +309,14 @@ export default function AdminComisiones() {
       if (adminIds.length > 0) {
         query = query.not('beneficiario_id', 'in', `(${adminIds.join(',')})`);
       }
+      // Separacion de scope: la pagina de Bono Afiliacion solo muestra
+      // el tipo 'afiliacion' y la pagina principal de Comisiones excluye
+      // ese tipo (queda en su propia seccion).
+      if (isAfiliacionScope) {
+        query = query.eq('tipo', 'afiliacion');
+      } else {
+        query = query.neq('tipo', 'afiliacion');
+      }
       const { data } = await query;
 
       const rows: ComisionRow[] = (data ?? []).map((r: Record<string, unknown>) => {
@@ -311,7 +331,7 @@ export default function AdminComisiones() {
         };
       });
       setComisiones(rows);
-      setSelected(new Set());
+      setPayingId(null);
     } finally {
       setLoading(false);
     }
@@ -399,32 +419,21 @@ export default function AdminComisiones() {
     .filter((c) => c.estado === 'pendiente')
     .reduce((s, c) => s + Number(c.monto), 0);
   const pendientesEnVista = filtered.filter((c) => c.estado === 'pendiente');
+  const comisionEnPago = payingId ? comisiones.find((c) => c.id === payingId) : null;
 
-  function toggleSelect(id: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  function toggleAll() {
-    const ids = pendientesEnVista.map((c) => c.id);
-    if (ids.every((id) => selected.has(id))) {
-      setSelected((prev) => { const next = new Set(prev); for (const id of ids) next.delete(id); return next; });
-    } else {
-      setSelected((prev) => { const next = new Set(prev); for (const id of ids) next.add(id); return next; });
-    }
-  }
-
-  function openPayModal() {
-    if (selected.size === 0) return;
+  function openPayModal(id: string) {
+    setPayingId(id);
     setPayError('');
     setVoucherFile(null);
     setVoucherPreview(null);
     setVoucherNumero('');
     setPayModalOpen(true);
+  }
+
+  function closePayModal() {
+    if (marking) return;
+    setPayModalOpen(false);
+    setPayingId(null);
   }
 
   function onVoucherFile(file: File) {
@@ -439,52 +448,42 @@ export default function AdminComisiones() {
     reader.readAsDataURL(file);
   }
 
-  // Tanda nueva: marca como pagada con voucher opcional. El voucher
-  // se sube a comisiones-vouchers/<comisionId>/voucher.<ext> por cada
-  // comisión seleccionada, así el RLS por carpeta funciona para que
-  // el beneficiario pueda leer solo el suyo.
+  // Marca UNA SOLA comision como pagada. Antes esto era batch, ahora se
+  // procesa de a una para evitar errores de pagar en bloque.
   async function markAsPaid() {
-    if (selected.size === 0) return;
+    if (!payingId) return;
     setMarking(true);
     setPayError('');
     try {
-      const ids = Array.from(selected);
+      const id = payingId;
       const pagadoAt = new Date().toISOString();
-      const payById: Record<string, { voucher_url: string | null }> = {};
+      let voucherUrl: string | null = null;
 
-      // 1. Si hay voucher, subir uno por comision.
       if (voucherFile) {
         const ext = voucherFile.name.split('.').pop()?.toLowerCase() ?? 'jpg';
-        for (const id of ids) {
-          const path = `${id}/voucher-${Date.now()}.${ext}`;
-          const { error: upErr } = await supabase.storage
-            .from('comisiones-vouchers')
-            .upload(path, voucherFile, { upsert: true });
-          if (upErr) throw new Error(upErr.message);
-          payById[id] = { voucher_url: path };
-        }
-      } else {
-        for (const id of ids) payById[id] = { voucher_url: null };
+        const path = `${id}/voucher-${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from('comisiones-vouchers')
+          .upload(path, voucherFile, { upsert: true });
+        if (upErr) throw new Error(upErr.message);
+        voucherUrl = path;
       }
 
-      // 2. Update por comision con metadata individual.
       const numero = voucherNumero.trim() || null;
-      for (const id of ids) {
-        const { error: updErr } = await supabaseAdmin
-          .from('comisiones')
-          .update({
-            estado: 'pagado',
-            pagado_at: pagadoAt,
-            pagado_por: profile?.id ?? null,
-            voucher_url: payById[id].voucher_url,
-            voucher_numero: numero,
-          })
-          .eq('id', id);
-        if (updErr) throw new Error(updErr.message);
-      }
+      const { error: updErr } = await supabaseAdmin
+        .from('comisiones')
+        .update({
+          estado: 'pagado',
+          pagado_at: pagadoAt,
+          pagado_por: profile?.id ?? null,
+          voucher_url: voucherUrl,
+          voucher_numero: numero,
+        })
+        .eq('id', id);
+      if (updErr) throw new Error(updErr.message);
 
       setPayModalOpen(false);
-      setSelected(new Set());
+      setPayingId(null);
       await load();
     } catch (err) {
       logger.error('markAsPaid error', err);
@@ -505,32 +504,95 @@ export default function AdminComisiones() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#111111]">Comisiones de Distribuidores</h1>
+        <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#111111]">
+          {isAfiliacionScope ? 'Bono por Afiliación (Referidos)' : 'Comisiones de Distribuidores'}
+        </h1>
         <p className="text-[#6B7280] text-sm mt-1">
-          {comisiones.length} comisiones · no incluye las del admin (ver <span className="text-[#D4AF37] font-semibold">Mis Comisiones</span> en el menú)
+          {isAfiliacionScope ? (
+            <>{comisiones.length} bono{comisiones.length !== 1 ? 's' : ''} · 40% del paquete del referido. Las comisiones por nivel y binaria se gestionan en <span className="text-[#D4AF37] font-semibold">Comisiones</span>.</>
+          ) : (
+            <>{comisiones.length} comisiones · sin afiliación (ver <span className="text-[#D4AF37] font-semibold">Bono Afiliación</span>) ni admin (ver <span className="text-[#D4AF37] font-semibold">Mis Comisiones</span>)</>
+          )}
         </p>
       </div>
 
-      {/* ── Stat cards por tipo ─────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        {/* Referidos */}
-        <button
-          onClick={() => setTipoFilter('afiliacion')}
-          className={`text-left bg-white border-2 rounded-2xl p-5 transition-all ${
-            tipoFilter === 'afiliacion'
-              ? 'border-blue-400 shadow-[0_8px_24px_rgba(59,130,246,0.15)]'
-              : 'border-[#C8D8CB] hover:border-blue-200'
-          }`}
-        >
+      {/* ── Stat cards por tipo: solo en scope 'no-afiliacion' (en afiliacion no hay tipos) ── */}
+      {!isAfiliacionScope && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          {/* Por nivel */}
+          <button
+            onClick={() => setTipoFilter('nivel')}
+            className={`text-left bg-white border-2 rounded-2xl p-5 transition-all ${
+              tipoFilter === 'nivel'
+                ? 'border-[#D4AF37] shadow-[0_8px_24px_rgba(212,175,55,0.18)]'
+                : 'border-[#C8D8CB] hover:border-[#D4AF37]/40'
+            }`}
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-10 h-10 bg-[#D4AF37]/10 rounded-xl flex items-center justify-center">
+                <Layers size={20} className="text-[#D4AF37]" />
+              </div>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-[#D4AF37] bg-[#D4AF37]/10 px-2 py-0.5 rounded">
+                14 niveles
+              </span>
+            </div>
+            <p className="text-[#6B7280] text-xs mb-1">Por nivel (escalera)</p>
+            <p className="font-heading font-bold text-2xl text-[#111111]">${resumenPorTipo.nivel.total.toFixed(2)}</p>
+            <div className="mt-3 flex items-center justify-between text-[10px]">
+              <span className="text-amber-600">
+                <strong>${resumenPorTipo.nivel.pendiente.toFixed(2)}</strong> pendientes
+              </span>
+              <span className="text-[#1A4E26]">
+                <strong>${resumenPorTipo.nivel.pagado.toFixed(2)}</strong> pagadas
+              </span>
+            </div>
+            <p className="text-[9px] text-[#9CA3AF] mt-1.5">{resumenPorTipo.nivel.count} comisión{resumenPorTipo.nivel.count !== 1 ? 'es' : ''}</p>
+          </button>
+
+          {/* Binaria */}
+          <button
+            onClick={() => setTipoFilter('binaria')}
+            className={`text-left bg-white border-2 rounded-2xl p-5 transition-all ${
+              tipoFilter === 'binaria'
+                ? 'border-purple-400 shadow-[0_8px_24px_rgba(168,85,247,0.15)]'
+                : 'border-[#C8D8CB] hover:border-purple-200'
+            }`}
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
+                <Network size={20} className="text-purple-600" />
+              </div>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
+                50%
+              </span>
+            </div>
+            <p className="text-[#6B7280] text-xs mb-1">Binaria pareada</p>
+            <p className="font-heading font-bold text-2xl text-[#111111]">${resumenPorTipo.binaria.total.toFixed(2)}</p>
+            <div className="mt-3 flex items-center justify-between text-[10px]">
+              <span className="text-amber-600">
+                <strong>${resumenPorTipo.binaria.pendiente.toFixed(2)}</strong> pendientes
+              </span>
+              <span className="text-[#1A4E26]">
+                <strong>${resumenPorTipo.binaria.pagado.toFixed(2)}</strong> pagadas
+              </span>
+            </div>
+            <p className="text-[9px] text-[#9CA3AF] mt-1.5">{resumenPorTipo.binaria.count} comisión{resumenPorTipo.binaria.count !== 1 ? 'es' : ''}</p>
+          </button>
+        </div>
+      )}
+
+      {/* ── Card resumen en scope 'afiliacion' (un solo tipo, sin pills) ── */}
+      {isAfiliacionScope && (
+        <div className="bg-white border-2 border-blue-200 rounded-2xl p-5 mb-6">
           <div className="flex items-start justify-between mb-3">
             <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
               <Users size={20} className="text-blue-600" />
             </div>
             <span className="text-[10px] font-bold uppercase tracking-widest text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
-              40%
+              40% del paquete
             </span>
           </div>
-          <p className="text-[#6B7280] text-xs mb-1">Referidos directos</p>
+          <p className="text-[#6B7280] text-xs mb-1">Total bonos por referido directo</p>
           <p className="font-heading font-bold text-2xl text-[#111111]">${resumenPorTipo.afiliacion.total.toFixed(2)}</p>
           <div className="mt-3 flex items-center justify-between text-[10px]">
             <span className="text-amber-600">
@@ -540,71 +602,11 @@ export default function AdminComisiones() {
               <strong>${resumenPorTipo.afiliacion.pagado.toFixed(2)}</strong> pagadas
             </span>
           </div>
-          <p className="text-[9px] text-[#9CA3AF] mt-1.5">{resumenPorTipo.afiliacion.count} comisión{resumenPorTipo.afiliacion.count !== 1 ? 'es' : ''}</p>
-        </button>
+          <p className="text-[9px] text-[#9CA3AF] mt-1.5">{resumenPorTipo.afiliacion.count} bono{resumenPorTipo.afiliacion.count !== 1 ? 's' : ''} total</p>
+        </div>
+      )}
 
-        {/* Por nivel */}
-        <button
-          onClick={() => setTipoFilter('nivel')}
-          className={`text-left bg-white border-2 rounded-2xl p-5 transition-all ${
-            tipoFilter === 'nivel'
-              ? 'border-[#D4AF37] shadow-[0_8px_24px_rgba(212,175,55,0.18)]'
-              : 'border-[#C8D8CB] hover:border-[#D4AF37]/40'
-          }`}
-        >
-          <div className="flex items-start justify-between mb-3">
-            <div className="w-10 h-10 bg-[#D4AF37]/10 rounded-xl flex items-center justify-center">
-              <Layers size={20} className="text-[#D4AF37]" />
-            </div>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[#D4AF37] bg-[#D4AF37]/10 px-2 py-0.5 rounded">
-              14 niveles
-            </span>
-          </div>
-          <p className="text-[#6B7280] text-xs mb-1">Por nivel (escalera)</p>
-          <p className="font-heading font-bold text-2xl text-[#111111]">${resumenPorTipo.nivel.total.toFixed(2)}</p>
-          <div className="mt-3 flex items-center justify-between text-[10px]">
-            <span className="text-amber-600">
-              <strong>${resumenPorTipo.nivel.pendiente.toFixed(2)}</strong> pendientes
-            </span>
-            <span className="text-[#1A4E26]">
-              <strong>${resumenPorTipo.nivel.pagado.toFixed(2)}</strong> pagadas
-            </span>
-          </div>
-          <p className="text-[9px] text-[#9CA3AF] mt-1.5">{resumenPorTipo.nivel.count} comisión{resumenPorTipo.nivel.count !== 1 ? 'es' : ''}</p>
-        </button>
-
-        {/* Binaria */}
-        <button
-          onClick={() => setTipoFilter('binaria')}
-          className={`text-left bg-white border-2 rounded-2xl p-5 transition-all ${
-            tipoFilter === 'binaria'
-              ? 'border-purple-400 shadow-[0_8px_24px_rgba(168,85,247,0.15)]'
-              : 'border-[#C8D8CB] hover:border-purple-200'
-          }`}
-        >
-          <div className="flex items-start justify-between mb-3">
-            <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
-              <Network size={20} className="text-purple-600" />
-            </div>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
-              50%
-            </span>
-          </div>
-          <p className="text-[#6B7280] text-xs mb-1">Binaria pareada</p>
-          <p className="font-heading font-bold text-2xl text-[#111111]">${resumenPorTipo.binaria.total.toFixed(2)}</p>
-          <div className="mt-3 flex items-center justify-between text-[10px]">
-            <span className="text-amber-600">
-              <strong>${resumenPorTipo.binaria.pendiente.toFixed(2)}</strong> pendientes
-            </span>
-            <span className="text-[#1A4E26]">
-              <strong>${resumenPorTipo.binaria.pagado.toFixed(2)}</strong> pagadas
-            </span>
-          </div>
-          <p className="text-[9px] text-[#9CA3AF] mt-1.5">{resumenPorTipo.binaria.count} comisión{resumenPorTipo.binaria.count !== 1 ? 'es' : ''}</p>
-        </button>
-      </div>
-
-      {/* ── Total pendiente filtrado + pago batch ─────────────────── */}
+      {/* ── Total pendiente filtrado (solo info, ya no batch) ─────────────────── */}
       <div className="bg-gradient-to-r from-[#FFFDF5] to-[#FFFEF7] border border-[#D4AF37]/30 rounded-2xl p-5 mb-6 flex items-center gap-4 flex-wrap">
         <div className="w-12 h-12 bg-[#D4AF37]/10 rounded-xl flex items-center justify-center shrink-0">
           <DollarSign size={24} className="text-[#D4AF37]" />
@@ -613,44 +615,35 @@ export default function AdminComisiones() {
           <p className="text-[#6B7280] text-xs">Total pendiente en la vista actual</p>
           <p className="font-heading font-bold text-2xl text-[#D4AF37]">${totalPendienteFiltrado.toFixed(2)}</p>
           <p className="text-[#9CA3AF] text-[10px] mt-0.5">
-            {pendientesEnVista.length} comisión{pendientesEnVista.length !== 1 ? 'es' : ''} pendiente{pendientesEnVista.length !== 1 ? 's' : ''}
-            {selected.size > 0 && <> · {selected.size} seleccionada{selected.size !== 1 ? 's' : ''}</>}
+            {pendientesEnVista.length} comisión{pendientesEnVista.length !== 1 ? 'es' : ''} pendiente{pendientesEnVista.length !== 1 ? 's' : ''} · pagá una a una desde la tabla
           </p>
         </div>
-        {selected.size > 0 && (
-          <button
-            onClick={openPayModal}
-            disabled={marking}
-            className="px-5 py-3 rounded-xl bg-[#1A4E26] text-white font-bold text-sm hover:bg-[#163F1E] transition-all duration-200 disabled:opacity-60 shadow-[0_4px_16px_rgba(26,78,38,0.25)] inline-flex items-center gap-2"
-          >
-            <CheckCircle2 size={15} />
-            Pagar {selected.size} comisión{selected.size !== 1 ? 'es' : ''}
-          </button>
-        )}
       </div>
 
       {/* ── Filtros ─────────────────── */}
       <div className="bg-white border border-[#C8D8CB] rounded-2xl p-4 mb-4">
-        {/* Tipo pills */}
-        <div className="flex flex-wrap items-center gap-2 mb-3">
-          {TIPO_PILLS.map((pill) => {
-            const isActive = tipoFilter === pill.key;
-            return (
-              <button
-                key={pill.key}
-                onClick={() => { setTipoFilter(pill.key); if (pill.key !== 'nivel') setNivelFilter('todos'); }}
-                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border ${
-                  isActive
-                    ? 'bg-[#1A4E26] text-white border-[#1A4E26] shadow-[0_4px_10px_rgba(26,78,38,0.25)]'
-                    : `bg-white ${pill.color} border-[#C8D8CB] hover:border-[#A8C2AD]`
-                }`}
-              >
-                <span className={isActive ? 'text-white' : pill.color}>{pill.icon}</span>
-                {pill.label}
-              </button>
-            );
-          })}
-        </div>
+        {/* Tipo pills — solo en scope 'no-afiliacion' (filtra entre nivel/binaria) */}
+        {!isAfiliacionScope && (
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            {TIPO_PILLS.filter((p) => p.key !== 'afiliacion').map((pill) => {
+              const isActive = tipoFilter === pill.key;
+              return (
+                <button
+                  key={pill.key}
+                  onClick={() => { setTipoFilter(pill.key); if (pill.key !== 'nivel') setNivelFilter('todos'); }}
+                  className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border ${
+                    isActive
+                      ? 'bg-[#1A4E26] text-white border-[#1A4E26] shadow-[0_4px_10px_rgba(26,78,38,0.25)]'
+                      : `bg-white ${pill.color} border-[#C8D8CB] hover:border-[#A8C2AD]`
+                  }`}
+                >
+                  <span className={isActive ? 'text-white' : pill.color}>{pill.icon}</span>
+                  {pill.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* Nivel sub-filter cuando tipo = nivel */}
         {tipoFilter === 'nivel' && (
@@ -758,17 +751,7 @@ export default function AdminComisiones() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#C8D8CB] bg-[#F4F7F5]">
-                  {estadoTab === 'pendiente' && pendientesEnVista.length > 0 && (
-                    <th className="px-4 py-3 text-left">
-                      <input
-                        type="checkbox"
-                        checked={pendientesEnVista.every((c) => selected.has(c.id))}
-                        onChange={toggleAll}
-                        className="accent-[#1A4E26]"
-                      />
-                    </th>
-                  )}
-                  {['Beneficiario', 'Origen', 'Tipo', 'Monto', 'Fecha y hora', 'Estado', ''].map((h) => (
+                  {['Beneficiario', 'Origen', 'Tipo', 'Monto', 'Fecha y hora', 'Estado', 'Acción'].map((h) => (
                     <th key={h} className="px-5 py-3 text-left text-[#9CA3AF] text-[10px] font-bold uppercase tracking-wider whitespace-nowrap">
                       {h}
                     </th>
@@ -787,18 +770,6 @@ export default function AdminComisiones() {
                       className="border-b border-[#C8D8CB] last:border-0 hover:bg-[#FAFBFA] transition-colors cursor-pointer"
                       onClick={() => setDetalle(c)}
                     >
-                      {estadoTab === 'pendiente' && pendientesEnVista.length > 0 && (
-                        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                          {c.estado === 'pendiente' && (
-                            <input
-                              type="checkbox"
-                              checked={selected.has(c.id)}
-                              onChange={() => toggleSelect(c.id)}
-                              className="accent-[#1A4E26]"
-                            />
-                          )}
-                        </td>
-                      )}
                       <td className="px-5 py-3 whitespace-nowrap">
                         <p className="text-[#111111] text-xs font-bold">{c.beneficiario_nombre || '—'}</p>
                         <p className="text-[#1A4E26] text-[10px] font-mono">{c.beneficiario_codigo || ''}</p>
@@ -840,12 +811,23 @@ export default function AdminComisiones() {
                         </span>
                       </td>
                       <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          onClick={() => setDetalle(c)}
-                          className="inline-flex items-center gap-1.5 text-[#1A4E26] text-[11px] font-bold hover:underline"
-                        >
-                          <Eye size={12} /> Detalle
-                        </button>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {c.estado === 'pendiente' ? (
+                            <button
+                              onClick={() => openPayModal(c.id)}
+                              disabled={marking}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1A4E26] text-white text-[11px] font-bold hover:bg-[#163F1E] transition-all disabled:opacity-60 shadow-[0_2px_8px_rgba(26,78,38,0.2)]"
+                            >
+                              <CheckCircle2 size={12} /> Pagar
+                            </button>
+                          ) : null}
+                          <button
+                            onClick={() => setDetalle(c)}
+                            className="inline-flex items-center gap-1 text-[#1A4E26] text-[11px] font-bold hover:underline"
+                          >
+                            <Eye size={11} /> Detalle
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -865,25 +847,29 @@ export default function AdminComisiones() {
 
       {detalle && <DetalleModal comision={detalle} onClose={() => setDetalle(null)} />}
 
-      {/* Modal de pago con voucher opcional */}
+      {/* Modal de pago con voucher opcional — uno a uno */}
       <Modal
         open={payModalOpen}
-        onClose={() => { if (!marking) setPayModalOpen(false); }}
-        title="Registrar pago de comisiones"
-        subtitle={`${selected.size} comisión${selected.size !== 1 ? 'es' : ''} seleccionada${selected.size !== 1 ? 's' : ''}`}
+        onClose={closePayModal}
+        title="Registrar pago de comisión"
+        subtitle={comisionEnPago ? `${comisionEnPago.beneficiario_nombre ?? '—'} · ${comisionEnPago.beneficiario_codigo ?? ''}` : ''}
         size="md"
         labelledById="pay-comisiones-title"
       >
         <div className="px-6 py-5 space-y-4">
-          {/* Resumen */}
+          {/* Resumen de UNA sola comision */}
           <div className="bg-[#EBF4ED] border border-[#1A4E26]/20 rounded-xl p-4">
-            <p className="text-[10px] uppercase tracking-widest text-[#1A4E26] font-bold mb-1">Monto total a pagar</p>
+            <p className="text-[10px] uppercase tracking-widest text-[#1A4E26] font-bold mb-1">Monto a pagar</p>
             <p className="font-heading font-bold text-2xl text-[#1A4E26]">
-              ${comisiones.filter((c) => selected.has(c.id)).reduce((s, c) => s + Number(c.monto), 0).toFixed(2)}
+              ${comisionEnPago ? Number(comisionEnPago.monto).toFixed(2) : '0.00'}
             </p>
-            <p className="text-[#1A4E26]/80 text-xs mt-1">
-              Las comisiones quedarán como <strong>Pagadas</strong>. El beneficiario verá el voucher en su panel.
-            </p>
+            {comisionEnPago && (
+              <p className="text-[#1A4E26]/80 text-xs mt-1">
+                {TIPO_LABEL[comisionEnPago.tipo] ?? comisionEnPago.tipo}
+                {comisionEnPago.tipo === 'nivel' && comisionEnPago.nivel_red !== null && ` · Nivel ${comisionEnPago.nivel_red}`}
+                {' · '}quedará como <strong>Pagada</strong>.
+              </p>
+            )}
           </div>
 
           {/* N° transferencia */}
@@ -900,9 +886,6 @@ export default function AdminComisiones() {
               autoComplete="off"
               className="w-full bg-white border border-[#C8D8CB] rounded-xl px-4 py-3 text-[#111111] text-sm font-mono placeholder-[#9CA3AF] focus:outline-none focus:border-[#1A4E26] transition-colors"
             />
-            <p className="text-[10px] text-[#9CA3AF] mt-1.5">
-              Mismo número se asocia a todas las comisiones seleccionadas.
-            </p>
           </div>
 
           {/* Voucher */}
@@ -955,7 +938,7 @@ export default function AdminComisiones() {
           <div className="flex gap-3 pt-2">
             <button
               type="button"
-              onClick={() => setPayModalOpen(false)}
+              onClick={closePayModal}
               disabled={marking}
               className="flex-1 py-3 rounded-xl border border-[#C8D8CB] text-[#6B7280] text-sm font-medium hover:border-[#A8C2AD] transition-all disabled:opacity-50"
             >

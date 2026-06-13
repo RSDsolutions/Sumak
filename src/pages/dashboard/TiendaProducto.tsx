@@ -37,7 +37,7 @@ export default function TiendaProducto() {
     );
   }
 
-  const precio = parseFloat((product.pvp * DISCOUNT).toFixed(2));
+  const precio = product.precioDistribuidor ?? parseFloat((product.pvp * DISCOUNT).toFixed(2));
   const total = precio * qty;
   const inCart = items.find((i) => i.codigo === product.codigo);
   const inCartQty = inCart?.cantidad ?? 0;
@@ -638,7 +638,7 @@ export default function TiendaProducto() {
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {related.map((p) => {
-              const pPrecio = parseFloat((p.pvp * DISCOUNT).toFixed(2));
+              const pPrecio = p.precioDistribuidor ?? parseFloat((p.pvp * DISCOUNT).toFixed(2));
               return (
                 <Link
                   key={p.codigo}

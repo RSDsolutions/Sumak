@@ -81,6 +81,12 @@ export interface Pedido {
   enviado_por: string | null;
   /** Número secuencial de pedido (humano-amigable: NV-000123). */
   numero_pedido: number | null;
+  /** Timestamp cuando el distribuidor confirmó la recepción. */
+  recibido_at: string | null;
+  /** Descripción de problema reportado por el distribuidor (no-null = abierta). */
+  incidencia: string | null;
+  /** Cuando se reportó la incidencia. */
+  incidencia_at: string | null;
   created_at: string;
   updated_at: string;
   // joined

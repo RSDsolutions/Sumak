@@ -3,8 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
   Trophy, Crown, Star, ArrowRight, TrendingUp,
-  Sparkles, Globe, ChefHat, Snowflake, Tv, Laptop, Bike, Car, Home,
-  Plane, MapPin, Users, Calendar, ChevronLeft, ChevronRight, RefreshCw,
+  Sparkles, Users, Calendar, ChevronLeft, ChevronRight, RefreshCw,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
@@ -25,26 +24,6 @@ function Spinner() {
       <div className="w-8 h-8 border-2 border-[#1A4E26] border-t-transparent rounded-full animate-spin" />
     </div>
   );
-}
-
-function getPrizeIcon(text: string, size = 14) {
-  if (text.includes('Internacional')) return <Globe size={size} />;
-  if (text.includes('Nacional')) return <Plane size={size} />;
-  if (text.includes('Local')) return <MapPin size={size} />;
-  return null;
-}
-
-function getExtraIcon(text: string, size = 14) {
-  const t = text.toLowerCase();
-  if (t.includes('viaje') || t.includes('internacional')) return <Globe size={size} />;
-  if (t.includes('cocina')) return <ChefHat size={size} />;
-  if (t.includes('nevera')) return <Snowflake size={size} />;
-  if (t.includes('proyector')) return <Tv size={size} />;
-  if (t.includes('laptop')) return <Laptop size={size} />;
-  if (t.includes('moto')) return <Bike size={size} />;
-  if (t.includes('carro')) return <Car size={size} />;
-  if (t.includes('casa')) return <Home size={size} />;
-  return <Trophy size={size} />;
 }
 
 export default function MiEscalera() {
@@ -172,15 +151,17 @@ export default function MiEscalera() {
       )
     : -1;
 
+  // StaircaseVisual auto-resuelve imagen+icono del premio a partir del label.
   const t1RanksForStair: StaircaseRank[] = useMemo(
-    () => tramo1Ranks.map((r) => ({
-      rango: r.rango,
-      requirement: `${r.personasDirectas} direct${r.personasDirectas === 1 ? 'o' : 'os'}`,
-      reward: r.bono.split(' +')[0],
-      extra: r.bono.includes(' + ')
-        ? { icon: getPrizeIcon(r.bono, 10), label: r.bono.split(' + ')[1] }
-        : undefined,
-    })),
+    () => tramo1Ranks.map((r) => {
+      const prizeLabel = r.bono.includes(' + ') ? r.bono.split(' + ')[1] : null;
+      return {
+        rango: r.rango,
+        requirement: `${r.personasDirectas} direct${r.personasDirectas === 1 ? 'o' : 'os'}`,
+        reward: r.bono.split(' +')[0],
+        extra: prizeLabel ? { label: prizeLabel } : undefined,
+      };
+    }),
     [],
   );
 
@@ -189,7 +170,7 @@ export default function MiEscalera() {
       rango: r.rango,
       requirement: `${r.personasEnRed.toLocaleString('es-EC')} red · Niv ${r.nivelesActivos}`,
       reward: r.recompensa,
-      extra: r.extras ? { icon: getExtraIcon(r.extras, 10), label: r.extras } : undefined,
+      extra: r.extras ? { label: r.extras } : undefined,
     })),
     [],
   );
@@ -352,7 +333,7 @@ export default function MiEscalera() {
                   Recompensa: {rangoT2Actual.recompensa}
                   {rangoT2Actual.extras && (
                     <span className="inline-flex items-center gap-1 ml-2 bg-black/25 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                      {getExtraIcon(rangoT2Actual.extras, 11)} {rangoT2Actual.extras}
+                      <Trophy size={11} /> {rangoT2Actual.extras}
                     </span>
                   )}
                 </>

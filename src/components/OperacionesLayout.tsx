@@ -2,10 +2,9 @@ import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
-  FileCheck,
-  Users,
   DollarSign,
   ShoppingCart,
+  UserPlus,
   Menu,
   X,
   LogOut,
@@ -23,18 +22,18 @@ interface NavItem {
 /**
  * Layout del rol "operaciones".
  *
- * Estructuralmente similar al AdminLayout: sidebar verde oscuro a la
- * izquierda, área principal a la derecha, drawer en mobile. Diferencias:
- *  - Menú reducido: SOLO Dashboard, Solicitudes, Distribuidores,
- *    Comisiones, Pedidos. Sin "Mis Comisiones" ni "Red".
- *  - Badge "OPERACIONES" en azul para distinguirse del admin (dorado).
- *  - El user box muestra el nombre + el rol explícito.
+ * Scope (migration 011): el rol se acota a su responsabilidad real:
+ * comisiones e ingresos. Las acciones estructurales (aprobar
+ * afiliaciones, suspender distribuidores, cancelar pedidos) quedan
+ * solo para admin.
+ *
+ * Menu: Dashboard, Comisiones, Pedidos. Nada de Solicitudes,
+ * Distribuidores ni Red.
  */
 const navItems: NavItem[] = [
   { label: 'Dashboard', to: '/operaciones', icon: <LayoutDashboard size={18} aria-hidden="true" />, end: true },
-  { label: 'Solicitudes', to: '/operaciones/solicitudes', icon: <FileCheck size={18} aria-hidden="true" /> },
-  { label: 'Distribuidores', to: '/operaciones/distribuidores', icon: <Users size={18} aria-hidden="true" /> },
   { label: 'Comisiones', to: '/operaciones/comisiones', icon: <DollarSign size={18} aria-hidden="true" /> },
+  { label: 'Bono Afiliación', to: '/operaciones/bono-afiliacion', icon: <UserPlus size={18} aria-hidden="true" /> },
   { label: 'Pedidos', to: '/operaciones/pedidos', icon: <ShoppingCart size={18} aria-hidden="true" /> },
 ];
 

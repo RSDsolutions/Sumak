@@ -1,15 +1,87 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import {
   Crown, Gem, Trophy, Star, Lock, CheckCircle2, Users,
+  Plane, Globe, MapPin, ChefHat, Snowflake, Tv, Laptop, Bike, Car, Home,
 } from 'lucide-react';
 
 export interface StaircaseRank {
   rango: string;
   requirement: string;
   reward: string;
-  extra?: { icon: React.ReactNode; label: string };
+  /**
+   * Premio físico. Solo necesitas el `label` — el componente deriva la
+   * imagen (en `/escalera/premios/<slug>.png`) y el icono fallback
+   * automáticamente. Pasa `image` u `icon` solo si querés overridear.
+   */
+  extra?: {
+    label: string;
+    /** Override opcional de la ruta de imagen. */
+    image?: string;
+    /** Override opcional del icono fallback. */
+    icon?: React.ReactNode;
+  };
   prizeIcon?: React.ReactNode;
+}
+
+/**
+ * Mapeo automático de label de premio → ruta de imagen + icono fallback.
+ * Las imágenes viven en /public/escalera/premios/. Si no existen aún,
+ * cae al icono temático correspondiente.
+ */
+function autoResolvePrize(label: string): { image: string; icon: React.ReactNode } {
+  const t = label.toLowerCase();
+  if (t.includes('internacional')) return { image: '/escalera/premios/viaje-internacional.png', icon: <Globe size={22} /> };
+  if (t.includes('viaje nacional') || (t.includes('viaje') && t.includes('nacional'))) return { image: '/escalera/premios/viaje-nacional.png', icon: <Plane size={22} /> };
+  if (t.includes('viaje local') || (t.includes('viaje') && t.includes('local'))) return { image: '/escalera/premios/viaje-local.png', icon: <MapPin size={22} /> };
+  if (t.includes('viaje')) return { image: '/escalera/premios/viaje-internacional.png', icon: <Globe size={22} /> };
+  if (t.includes('cocina')) return { image: '/escalera/premios/cocina.png', icon: <ChefHat size={22} /> };
+  if (t.includes('nevera') || t.includes('refrigerador')) return { image: '/escalera/premios/nevera.png', icon: <Snowflake size={22} /> };
+  if (t.includes('proyector') || t.includes('television') || t.includes('tv ')) return { image: '/escalera/premios/proyector.png', icon: <Tv size={22} /> };
+  if (t.includes('laptop') || t.includes('computador')) return { image: '/escalera/premios/laptop.png', icon: <Laptop size={22} /> };
+  if (t.includes('moto')) return { image: '/escalera/premios/moto.png', icon: <Bike size={22} /> };
+  if (t.includes('carro') || t.includes('auto')) return { image: '/escalera/premios/carro.png', icon: <Car size={22} /> };
+  if (t.includes('casa')) return { image: '/escalera/premios/casa.png', icon: <Home size={22} /> };
+  return { image: '/escalera/premios/trofeo.png', icon: <Trophy size={22} /> };
+}
+
+/**
+ * Renderiza la imagen del premio si el src carga. Si falla (404),
+ * cae al icono fallback. Esto permite que la pagina funcione antes
+ * de que el equipo suba las imagenes reales a /public/escalera/premios/.
+ */
+function PrizeVisual({
+  image,
+  fallbackIcon,
+  variant,
+  className = 'w-12 h-12',
+}: {
+  image?: string;
+  fallbackIcon: React.ReactNode;
+  variant: 'light' | 'dark';
+  className?: string;
+}) {
+  const [failed, setFailed] = useState(false);
+  if (!image || failed) {
+    return (
+      <div className={`${className} flex items-center justify-center rounded-lg ${
+        variant === 'dark' ? 'bg-[#FFE066]/15 text-[#FFE066]' : 'bg-[#FFF8DC] text-[#92680A]'
+      }`}>
+        {fallbackIcon}
+      </div>
+    );
+  }
+  return (
+    <img
+      src={image}
+      alt="Premio"
+      loading="lazy"
+      onError={() => setFailed(true)}
+      className={`${className} rounded-lg object-cover bg-white border ${
+        variant === 'dark' ? 'border-[#FFE066]/30' : 'border-[#D4AF37]/40'
+      } shadow-[0_2px_8px_rgba(0,0,0,0.15)]`}
+    />
+  );
 }
 
 export interface StaircaseUser {
@@ -115,8 +187,10 @@ export default function StaircaseVisual({
 }: StaircaseProps) {
   const total = ranks.length;
   // Altura mínima y máxima del bloque de escalón
-  const baseHeight = 70;
-  const heightStep = 28;
+  // Subimos baseHeight para que el nombre del rango quepa cómodo
+  // dentro de la barra del escalón (varios nombres tienen 2+ palabras).
+  const baseHeight = 130;
+  const heightStep = 24;
 
   return (
     <div className="w-full">
@@ -154,14 +228,14 @@ export default function StaircaseVisual({
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: '-40px' }}
                   transition={{ duration: 0.35, delay: i * 0.05 }}
-                  className={`flex-1 min-w-[100px] flex flex-col items-stretch text-left ${
+                  className={`flex-1 min-w-[120px] flex flex-col items-stretch text-left ${
                     clickable ? 'cursor-pointer group' : ''
                   } ${isExpanded ? 'z-10' : ''}`}
                 >
-                  {/* Info encima del escalón — letras grandes y premio físico destacado */}
-                  <div className="mb-2 px-1 text-center min-h-[120px] flex flex-col justify-end">
+                  {/* Info encima del escalón — IMAGEN grande del premio + reward */}
+                  <div className="mb-2 px-1 text-center min-h-[140px] flex flex-col justify-end items-center gap-1.5">
                     {usersByRank && users.length > 0 && (
-                      <span className={`inline-flex items-center justify-center gap-1 self-center mb-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                      <span className={`inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold ${
                         isAchieved
                           ? 'bg-[#1A4E26] text-white'
                           : 'bg-[#D4AF37] text-[#3D2400]'
@@ -169,36 +243,34 @@ export default function StaircaseVisual({
                         <Users size={11} /> {users.length}
                       </span>
                     )}
-                    {/* Caja de premio físico — destacada con borde dorado */}
-                    {rank.extra && (
-                      <div className={`mb-2 mx-auto rounded-xl border px-2 py-2 ${
-                        variant === 'dark'
-                          ? 'bg-gradient-to-br from-[#FFE066]/15 to-[#D4AF37]/5 border-[#FFE066]/40'
-                          : 'bg-gradient-to-br from-[#FFF8DC] to-white border-[#D4AF37]/50 shadow-[0_2px_8px_rgba(212,175,55,0.15)]'
-                      }`}>
-                        <div className={`flex items-center justify-center mb-0.5 ${variant === 'dark' ? 'text-[#FFE066]' : 'text-[#92680A]'}`}>
-                          {(() => {
-                            const cloned = rank.extra.icon as React.ReactElement<{ size?: number; className?: string }>;
-                            // Re-render con tamaño mayor para el premio destacado
-                            return React.cloneElement(cloned, { size: 22, className: 'drop-shadow-[0_2px_4px_rgba(0,0,0,0.2)]' });
-                          })()}
+                    {/* Imagen grande del premio físico */}
+                    {rank.extra && (() => {
+                      const resolved = autoResolvePrize(rank.extra.label);
+                      const image = rank.extra.image ?? resolved.image;
+                      const icon = rank.extra.icon ?? resolved.icon;
+                      return (
+                        <div className="flex flex-col items-center gap-1">
+                          <PrizeVisual
+                            image={image}
+                            fallbackIcon={icon}
+                            variant={variant}
+                            className="w-16 h-16"
+                          />
+                          <p className={`text-[10px] font-bold uppercase tracking-wider leading-tight ${
+                            variant === 'dark' ? 'text-[#FFE066]' : 'text-[#92680A]'
+                          }`}>
+                            {rank.extra.label}
+                          </p>
                         </div>
-                        <p className={`text-[10px] font-bold uppercase tracking-wider leading-tight ${
-                          variant === 'dark' ? 'text-[#FFE066]' : 'text-[#92680A]'
-                        }`}>
-                          {rank.extra.label}
-                        </p>
-                      </div>
-                    )}
-                    <p className={`text-sm font-black leading-tight ${variant === 'dark' ? 'text-white' : 'text-[#111111]'}`}>
-                      {rank.rango}
-                    </p>
-                    <p className={`text-base font-black leading-tight mt-0.5 ${variant === 'dark' ? 'text-[#D4AF37]' : 'text-[#1A4E26]'}`}>
+                      );
+                    })()}
+                    {/* Reward ($ del bono) */}
+                    <p className={`text-base font-black leading-tight ${variant === 'dark' ? 'text-[#D4AF37]' : 'text-[#1A4E26]'}`}>
                       {rank.reward}
                     </p>
                   </div>
 
-                  {/* Escalón propiamente */}
+                  {/* Escalón propiamente — el NOMBRE DEL RANGO va aqui adentro */}
                   <motion.div
                     initial={{ height: 0 }}
                     whileInView={{ height }}
@@ -217,9 +289,21 @@ export default function StaircaseVisual({
                     {/* Pequeña sombra de profundidad */}
                     <div className="absolute right-0 top-[6px] bottom-0 w-[3px] bg-black/20" />
 
-                    {/* Marcador central — más grande para que se lea bien */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 px-1 pt-3">
-                      <div className={`w-9 h-9 rounded-full flex items-center justify-center shadow-md ${
+                    {/* Contenido dentro del bar: # + icono + NOMBRE DEL RANGO grande */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-between gap-1 px-2 pt-3 pb-7">
+                      {/* Top: # rango */}
+                      <span className={`text-[10px] font-bold ${tone.text} opacity-80 tracking-wider`}>
+                        #{i + 1}
+                      </span>
+                      {/* Middle: NOMBRE DEL RANGO grande y visible */}
+                      <p
+                        className={`text-[13px] font-black leading-[1.15] text-center ${tone.text} drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]`}
+                        style={{ wordBreak: 'break-word', hyphens: 'auto' }}
+                      >
+                        {rank.rango}
+                      </p>
+                      {/* Bottom: icono check / lock / star */}
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center shadow-md ${
                         isCurrent
                           ? 'bg-white text-[#D4AF37] ring-2 ring-white animate-pulse'
                           : isAchieved
@@ -228,19 +312,16 @@ export default function StaircaseVisual({
                       }`}>
                         <StepIcon isCurrent={isCurrent} isAchieved={isAchieved} tier={tier} rangoName={rank.rango} />
                       </div>
-                      <span className={`text-sm font-black ${tone.text} drop-shadow-[0_1px_2px_rgba(0,0,0,0.25)]`}>
-                        #{i + 1}
-                      </span>
                     </div>
 
                     {/* "Aquí estás" o "Próximo" — etiqueta inferior del escalón */}
                     {isCurrent && (
-                      <div className="absolute bottom-0 inset-x-0 bg-black/80 text-[#D4AF37] text-[10px] font-bold text-center py-1.5 uppercase tracking-wider">
+                      <div className="absolute bottom-0 inset-x-0 bg-black/80 text-[#D4AF37] text-[9px] font-bold text-center py-1 uppercase tracking-wider">
                         Aquí estás
                       </div>
                     )}
                     {isNext && !isCurrent && (
-                      <div className="absolute bottom-0 inset-x-0 bg-white/90 text-[#1A4E26] text-[10px] font-bold text-center py-1.5 uppercase tracking-wider">
+                      <div className="absolute bottom-0 inset-x-0 bg-white/90 text-[#1A4E26] text-[9px] font-bold text-center py-1 uppercase tracking-wider">
                         Próximo
                       </div>
                     )}
@@ -304,9 +385,9 @@ export default function StaircaseVisual({
                     isCurrent ? `ring-2 ${tone.ring}` : ''
                   } ${clickable ? 'active:scale-[0.98] transition-transform' : ''} ${isExpanded ? 'z-10' : ''}`}
                 >
-                  {/* Lado izquierdo: bloque grueso (el escalón) */}
+                  {/* Lado izquierdo: bloque grueso (el escalón) con el NOMBRE adentro */}
                   <div
-                    className="relative w-24 shrink-0 flex flex-col items-center justify-center gap-1.5 py-4"
+                    className="relative w-32 shrink-0 flex flex-col items-center justify-between gap-1 py-3 px-2"
                     style={{ background: tone.body }}
                   >
                     {/* Huella en el tope */}
@@ -314,7 +395,19 @@ export default function StaircaseVisual({
                       className="absolute top-0 left-0 right-0 h-[6px] shadow-[0_2px_3px_rgba(0,0,0,0.3)]"
                       style={{ background: tone.tread }}
                     />
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md ${
+                    {/* Top: # */}
+                    <span className={`text-[10px] font-bold ${tone.text} opacity-80 tracking-wider`}>
+                      #{i + 1}
+                    </span>
+                    {/* Middle: NOMBRE DEL RANGO grande */}
+                    <p
+                      className={`text-[13px] font-black text-center leading-[1.15] ${tone.text} drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]`}
+                      style={{ wordBreak: 'break-word', hyphens: 'auto' }}
+                    >
+                      {rank.rango}
+                    </p>
+                    {/* Bottom: icono */}
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center shadow-md ${
                       isCurrent
                         ? 'bg-white text-[#D4AF37] ring-2 ring-white'
                         : isAchieved
@@ -323,12 +416,9 @@ export default function StaircaseVisual({
                     }`}>
                       <StepIcon isCurrent={isCurrent} isAchieved={isAchieved} tier={tier} rangoName={rank.rango} />
                     </div>
-                    <span className={`text-base font-black ${tone.text} drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]`}>
-                      #{i + 1}
-                    </span>
                   </div>
 
-                  {/* Lado derecho: info — fuentes más grandes */}
+                  {/* Lado derecho: info */}
                   <div className={`flex-1 p-4 ${
                     variant === 'dark'
                       ? isAchieved ? 'bg-white/10 backdrop-blur-sm' : 'bg-black/20'
@@ -340,14 +430,8 @@ export default function StaircaseVisual({
                   }`}>
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <p className={`font-heading font-black text-base leading-tight ${
-                            variant === 'dark'
-                              ? isAchieved ? 'text-white' : 'text-white/55'
-                              : isAchieved ? 'text-[#111111]' : 'text-[#6B7280]'
-                          }`}>
-                            {rank.rango}
-                          </p>
+                        {/* Badges de estado y users */}
+                        <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
                           {isCurrent && (
                             <span className="bg-[#D4AF37] text-[#0B2913] text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded">
                               Aquí
@@ -364,29 +448,37 @@ export default function StaircaseVisual({
                             </span>
                           )}
                         </div>
-                        <p className={`text-xs font-semibold mt-1 ${variant === 'dark' ? 'text-white/65' : 'text-[#6B7280]'}`}>
+                        <p className={`text-xs font-semibold ${variant === 'dark' ? 'text-white/65' : 'text-[#6B7280]'}`}>
                           {rank.requirement}
                         </p>
-                        {/* Premio físico destacado abajo a la izquierda */}
-                        {rank.extra && (
-                          <div className={`mt-2 inline-flex items-center gap-2 rounded-xl px-3 py-2 border ${
-                            variant === 'dark'
-                              ? 'bg-gradient-to-r from-[#FFE066]/15 to-[#D4AF37]/5 border-[#FFE066]/40'
-                              : 'bg-gradient-to-r from-[#FFF8DC] to-white border-[#D4AF37]/50'
-                          }`}>
-                            <div className={variant === 'dark' ? 'text-[#FFE066]' : 'text-[#92680A]'}>
-                              {React.cloneElement(rank.extra.icon as React.ReactElement<{ size?: number }>, { size: 18 })}
+                        {/* Premio: IMAGEN del premio + label */}
+                        {rank.extra && (() => {
+                          const resolved = autoResolvePrize(rank.extra.label);
+                          const image = rank.extra.image ?? resolved.image;
+                          const icon = rank.extra.icon ?? resolved.icon;
+                          return (
+                            <div className={`mt-2 inline-flex items-center gap-2 rounded-xl px-3 py-2 border ${
+                              variant === 'dark'
+                                ? 'bg-gradient-to-r from-[#FFE066]/15 to-[#D4AF37]/5 border-[#FFE066]/40'
+                                : 'bg-gradient-to-r from-[#FFF8DC] to-white border-[#D4AF37]/50'
+                            }`}>
+                              <PrizeVisual
+                                image={image}
+                                fallbackIcon={icon}
+                                variant={variant}
+                                className="w-12 h-12"
+                              />
+                              <div>
+                                <p className={`text-[9px] font-bold uppercase tracking-wider ${variant === 'dark' ? 'text-[#FFE066]/85' : 'text-[#92680A]/85'}`}>
+                                  Premio
+                                </p>
+                                <p className={`text-xs font-bold leading-tight ${variant === 'dark' ? 'text-[#FFE066]' : 'text-[#92680A]'}`}>
+                                  {rank.extra.label}
+                                </p>
+                              </div>
                             </div>
-                            <div>
-                              <p className={`text-[9px] font-bold uppercase tracking-wider ${variant === 'dark' ? 'text-[#FFE066]/85' : 'text-[#92680A]/85'}`}>
-                                Premio
-                              </p>
-                              <p className={`text-xs font-bold leading-tight ${variant === 'dark' ? 'text-[#FFE066]' : 'text-[#92680A]'}`}>
-                                {rank.extra.label}
-                              </p>
-                            </div>
-                          </div>
-                        )}
+                          );
+                        })()}
                       </div>
                       <div className="text-right shrink-0">
                         <p className={`text-[9px] font-bold uppercase tracking-wider mb-0.5 ${variant === 'dark' ? 'text-white/45' : 'text-[#9CA3AF]'}`}>

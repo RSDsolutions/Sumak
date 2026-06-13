@@ -59,8 +59,13 @@ export default function Tienda() {
     return items.find((i) => i.codigo === codigo)?.cantidad ?? 0;
   }
 
+  function precioDistribuidorOf(p: typeof products[number]): number {
+    // Override por producto si está definido; sino aplicamos el descuento estándar.
+    return p.precioDistribuidor ?? parseFloat((p.pvp * DISCOUNT).toFixed(2));
+  }
+
   function handleAdd(p: typeof products[number]) {
-    const precio = parseFloat((p.pvp * DISCOUNT).toFixed(2));
+    const precio = precioDistribuidorOf(p);
     addItem({ codigo: p.codigo, nombre: p.nombre, pvp: p.pvp, precio, imagen: p.imagen }, 1);
     // UX-010: confirmación discreta de que se añadió al carrito.
     toast.success(`${p.nombre} añadido al carrito`);
@@ -166,7 +171,7 @@ export default function Tienda() {
                           ${pack.precio}
                         </p>
                         <p className="text-[10px] text-[#9CA3AF]">
-                          {pack.productos} productos · {pack.puntos} pts
+                          Cupo ${pack.precio} en productos · {pack.puntos} pts
                         </p>
                       </div>
                       <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#1A4E26] group-hover:gap-2 transition-all">
@@ -259,7 +264,7 @@ export default function Tienda() {
       >
         {filtered.map((p) => {
           const qty = qtyOf(p.codigo);
-          const precio = parseFloat((p.pvp * DISCOUNT).toFixed(2));
+          const precio = precioDistribuidorOf(p);
           const inCart = qty > 0;
 
           return (

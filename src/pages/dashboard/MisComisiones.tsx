@@ -250,7 +250,16 @@ function DetalleModal({ comision, onClose }: { comision: Comision; onClose: () =
 }
 
 // ── PAGE ──────────────────────────────────────────────────
-export default function MisComisiones() {
+/**
+ * scope='no-afiliacion' (default): muestra binaria + nivel (las "comisiones").
+ * scope='afiliacion': solo el bono por afiliación (40% por referido directo).
+ */
+export interface MisComisionesProps {
+  scope?: 'no-afiliacion' | 'afiliacion';
+}
+
+export default function MisComisiones({ scope = 'no-afiliacion' }: MisComisionesProps) {
+  const isAfiliacionScope = scope === 'afiliacion';
   const { user } = useAuth();
   const [comisiones, setComisiones] = useState<Comision[]>([]);
   const [loading, setLoading] = useState(true);
@@ -262,15 +271,15 @@ export default function MisComisiones() {
     async function load() {
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      let q = supabase
+        .from('comisiones')
+        .select('*, origen:profiles!origen_id(id, nombre_completo, codigo_distribuidor, paquete, puntos)')
+        .eq('beneficiario_id', user!.id)
+        .order('created_at', { ascending: false });
+      // Separación por scope (espejo de AdminComisiones).
+      q = isAfiliacionScope ? q.eq('tipo', 'afiliacion') : q.neq('tipo', 'afiliacion');
       const [{ data }, { data: compraData }] = await Promise.all([
-        // PERF-004: join al origen en la misma query para evitar N+1
-        // al abrir el modal de detalle. Sólo traemos campos no sensibles
-        // del origen para reducir payload.
-        supabase
-          .from('comisiones')
-          .select('*, origen:profiles!origen_id(id, nombre_completo, codigo_distribuidor, paquete, puntos)')
-          .eq('beneficiario_id', user!.id)
-          .order('created_at', { ascending: false }),
+        q,
         supabase.from('pedidos').select('id').eq('distribuidor_id', user!.id).in('estado', ['procesando', 'enviado', 'entregado']).gte('total', 100).gte('created_at', startOfMonth).limit(1),
       ]);
       setComisiones((data ?? []) as Comision[]);
@@ -278,7 +287,7 @@ export default function MisComisiones() {
       setLoading(false);
     }
     load();
-  }, [user]);
+  }, [user, isAfiliacionScope]);
 
   const totalGanado = comisiones.filter((c) => c.estado === 'pagado').reduce((s, c) => s + Number(c.monto), 0);
   const totalPendiente = comisiones.filter((c) => c.estado === 'pendiente').reduce((s, c) => s + Number(c.monto), 0);
@@ -287,8 +296,14 @@ export default function MisComisiones() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#111111]">Mis Comisiones</h1>
-        <p className="text-[#6B7280] text-sm mt-1">Historial completo de tus comisiones y ganancias · toca cualquier fila para ver el detalle</p>
+        <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#111111]">
+          {isAfiliacionScope ? 'Mi Bono por Afiliación' : 'Mis Comisiones'}
+        </h1>
+        <p className="text-[#6B7280] text-sm mt-1">
+          {isAfiliacionScope
+            ? 'Bonos del 40% por cada referido directo afiliado. Las comisiones por nivel y binaria viven en Comisiones.'
+            : 'Historial de comisiones por nivel y binaria. El bono por afiliación se ve en Bono Afiliación.'}
+        </p>
       </div>
 
       {/* Banner elegibilidad */}

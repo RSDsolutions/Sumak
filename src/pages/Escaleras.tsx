@@ -1,33 +1,10 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useMemo } from 'react';
-import {
-  ArrowRight, Trophy, Plane, Globe, MapPin, Crown, Star,
-  ChefHat, Snowflake, Tv, Laptop, Bike, Car, Home,
-} from 'lucide-react';
+import { ArrowRight, Trophy, Crown, Star } from 'lucide-react';
 import { tramo1Ranks, tramo2Ranks } from '../data';
 import { useSEO } from '../lib/seo';
 import StaircaseVisual, { type StaircaseRank } from '../components/StaircaseVisual';
-
-function getPrizeIcon(text: string, size = 12) {
-  if (text.includes('Internacional')) return <Globe size={size} className="flex-shrink-0" />;
-  if (text.includes('Nacional')) return <Plane size={size} className="flex-shrink-0" />;
-  if (text.includes('Local')) return <MapPin size={size} className="flex-shrink-0" />;
-  return null;
-}
-
-function getExtraIcon(text: string, size = 12) {
-  const t = text.toLowerCase();
-  if (t.includes('viaje') || t.includes('internacional')) return <Globe size={size} className="flex-shrink-0" />;
-  if (t.includes('cocina')) return <ChefHat size={size} className="flex-shrink-0" />;
-  if (t.includes('nevera')) return <Snowflake size={size} className="flex-shrink-0" />;
-  if (t.includes('proyector')) return <Tv size={size} className="flex-shrink-0" />;
-  if (t.includes('laptop')) return <Laptop size={size} className="flex-shrink-0" />;
-  if (t.includes('moto')) return <Bike size={size} className="flex-shrink-0" />;
-  if (t.includes('carro')) return <Car size={size} className="flex-shrink-0" />;
-  if (t.includes('casa')) return <Home size={size} className="flex-shrink-0" />;
-  return <Trophy size={size} className="flex-shrink-0" />;
-}
 
 export default function Escaleras() {
   useSEO({
@@ -37,15 +14,17 @@ export default function Escaleras() {
     url: '/escaleras',
   });
 
+  // StaircaseVisual auto-resuelve imagen+icono del premio a partir del label.
   const t1Ranks: StaircaseRank[] = useMemo(
-    () => tramo1Ranks.map((r) => ({
-      rango: r.rango,
-      requirement: `${r.personasDirectas} direct${r.personasDirectas === 1 ? 'o' : 'os'}`,
-      reward: r.bono.split(' +')[0],
-      extra: r.bono.includes(' + ')
-        ? { icon: getPrizeIcon(r.bono, 10), label: r.bono.split(' + ')[1] }
-        : undefined,
-    })),
+    () => tramo1Ranks.map((r) => {
+      const prizeLabel = r.bono.includes(' + ') ? r.bono.split(' + ')[1] : null;
+      return {
+        rango: r.rango,
+        requirement: `${r.personasDirectas} direct${r.personasDirectas === 1 ? 'o' : 'os'}`,
+        reward: r.bono.split(' +')[0],
+        extra: prizeLabel ? { label: prizeLabel } : undefined,
+      };
+    }),
     [],
   );
 
@@ -54,7 +33,7 @@ export default function Escaleras() {
       rango: r.rango,
       requirement: `${r.personasEnRed.toLocaleString('es-EC')} red · Niv ${r.nivelesActivos}`,
       reward: r.recompensa,
-      extra: r.extras ? { icon: getExtraIcon(r.extras, 10), label: r.extras } : undefined,
+      extra: r.extras ? { label: r.extras } : undefined,
     })),
     [],
   );

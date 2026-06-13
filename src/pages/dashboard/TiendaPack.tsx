@@ -16,8 +16,10 @@ export default function TiendaPack() {
   const { addItem } = useCart();
   const toast = useToast();
   const [selections, setSelections] = useState<PackSelection[]>([]);
-  const [totalUnits, setTotalUnits] = useState(0);
+  const [totalValue, setTotalValue] = useState(0);
   const [justAdded, setJustAdded] = useState(false);
+
+  const totalUnits = selections.reduce((s, x) => s + x.cantidad, 0);
 
   const pack = slug ? getPackBySlug(slug) : undefined;
 
@@ -39,13 +41,14 @@ export default function TiendaPack() {
     );
   }
 
-  const isComplete = totalUnits === pack.productos;
+  const EPS = 0.005;
+  const remainingValue = Math.round((pack.precio - totalValue) * 100) / 100;
+  const isComplete = Math.abs(remainingValue) < EPS;
 
   function handleAddToCart() {
     if (!isComplete) {
       toast.error(
-        `Debes elegir ${pack.productos} productos para completar tu ${pack.nombre}. ` +
-        `Llevas ${totalUnits} / ${pack.productos}.`,
+        `Aún te falta llenar $${remainingValue.toFixed(2)} de tu cupo para completar el ${pack.nombre}.`,
       );
       return;
     }
@@ -58,7 +61,7 @@ export default function TiendaPack() {
       imagen: pack.imagen,
       packSelections: selections,
     }, 1);
-    toast.success(`${pack.nombre} agregado al carrito con ${totalUnits} productos elegidos`);
+    toast.success(`${pack.nombre} agregado al carrito con ${totalUnits} producto${totalUnits !== 1 ? 's' : ''} elegidos`);
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 3000);
   }
@@ -136,8 +139,9 @@ export default function TiendaPack() {
               <p className="font-heading font-black text-2xl text-[#D4AF37]">{pack.puntos}</p>
             </div>
             <div className="bg-white border border-[#C8D8CB] rounded-xl p-3 text-center">
-              <p className="text-[10px] uppercase tracking-wider text-[#9CA3AF] font-bold mb-1">Productos</p>
-              <p className="font-heading font-black text-2xl text-[#111111]">{pack.productos}</p>
+              <p className="text-[10px] uppercase tracking-wider text-[#9CA3AF] font-bold mb-1">Cupo</p>
+              <p className="font-heading font-black text-2xl text-[#111111]">${pack.precio}</p>
+              <p className="text-[9px] text-[#9CA3AF] mt-0.5">a precio distribuidor</p>
             </div>
           </div>
 
@@ -171,16 +175,16 @@ export default function TiendaPack() {
           </h2>
         </div>
         <p className="text-[#6B7280] text-sm mb-4">
-          Selecciona <strong className="text-[#1A4E26]">{pack.productos} productos</strong> del catálogo Sumak.
-          Puedes repetir el mismo producto varias veces. El precio del pack es fijo de
-          <strong className="text-[#1A4E26]"> ${pack.precio}</strong> sin importar qué elijas.
+          Tu cupo es de <strong className="text-[#1A4E26]">${pack.precio}</strong> a precio de distribuidor.
+          La cantidad de productos depende de lo que elijas: opciones más accesibles te dan más
+          unidades, opciones premium te dan menos. Puedes repetir el mismo producto varias veces.
         </p>
 
         <PackBuilder
           pack={pack}
           onSelectionsChange={(sels, total) => {
             setSelections(sels);
-            setTotalUnits(total);
+            setTotalValue(total);
           }}
         />
       </motion.div>
@@ -200,17 +204,17 @@ export default function TiendaPack() {
                 <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
                   isComplete
                     ? 'bg-[#D4AF37] text-[#0B2913]'
-                    : totalUnits > 0
+                    : totalValue > 0
                     ? 'bg-[#1A4E26] text-white'
                     : 'bg-[#F4F7F5] border border-[#C8D8CB] text-[#9CA3AF]'
                 }`}>
-                  {totalUnits} / {pack.productos} productos
+                  ${totalValue.toFixed(2)} / ${pack.precio} · {totalUnits} unid.
                 </span>
               </div>
               <p className="text-[#6B7280] text-xs">
                 {isComplete
-                  ? '¡Pack completo! Listo para agregar al carrito.'
-                  : `Faltan ${pack.productos - totalUnits} para completar tu selección.`}
+                  ? '¡Cupo completo! Listo para agregar al carrito.'
+                  : `Te faltan $${remainingValue.toFixed(2)} de cupo para completar tu selección.`}
               </p>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
@@ -239,7 +243,7 @@ export default function TiendaPack() {
                   </>
                 ) : (
                   <>
-                    <AlertCircle size={15} /> Selecciona {pack.productos - totalUnits} más
+                    <AlertCircle size={15} /> Te faltan ${remainingValue.toFixed(2)}
                   </>
                 )}
               </button>
