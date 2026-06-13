@@ -41,9 +41,9 @@ function autoResolvePrize(label: string): { image?: string; icon: React.ReactNod
   // para reflejar la escala del viaje.
   if (t.includes('internacional')) return { image: '/img/premios/viaje-internacional.jpg', icon: <Globe size={22} /> };
   if (t.includes('viaje nacional') || (t.includes('viaje') && t.includes('nacional'))) return { image: '/img/premios/viaje-internacional.jpg', icon: <Plane size={22} /> };
-  if (t.includes('viaje local') || (t.includes('viaje') && t.includes('local'))) return { image: '/img/premios/viaje-internacional.jpg', icon: <MapPin size={22} /> };
+  if (t.includes('viaje local') || (t.includes('viaje') && t.includes('local'))) return { image: '/img/premios/viaje-local.jfif', icon: <MapPin size={22} /> };
   if (t.includes('viaje')) return { image: '/img/premios/viaje-internacional.jpg', icon: <Globe size={22} /> };
-  if (t.includes('cocina')) return { image: '/img/premios/cocina.avif', icon: <ChefHat size={22} /> };
+  if (t.includes('cocina')) return { image: '/img/premios/cocina.png', icon: <ChefHat size={22} /> };
   if (t.includes('nevera') || t.includes('refrigerador')) return { image: '/img/premios/nevera.png', icon: <Snowflake size={22} /> };
   if (t.includes('proyector') || t.includes('television') || t.includes('tv ')) return { image: '/img/premios/proyector.png', icon: <Tv size={22} /> };
   if (t.includes('laptop') || t.includes('computador')) return { image: '/img/premios/laptop.png', icon: <Laptop size={22} /> };
