@@ -7,6 +7,7 @@ import {
   RefreshCw, Move,
 } from 'lucide-react';
 import { supabaseAdmin } from '../../lib/supabase';
+import { useAdminBasePath } from '../../lib/useAdminBasePath';
 import type { NodoBinario, Profile } from '../../lib/types';
 
 function Spinner() {
@@ -231,13 +232,14 @@ function TreeBranches({ children, gap = 32, drop = 28 }: { children: React.React
 
 // ── Distributor card (no children rendered here, just the box) ──
 function DistribCard({ node }: { node: TreeNode }) {
+  const basePath = useAdminBasePath();
   const pkg = node.profile.paquete ?? 'basico';
   const style = paqueteStyles[pkg] ?? paqueteStyles.basico;
   const total = countNodes(node) - 1;
 
   return (
     <Link
-      to={`/admin/distribuidores/${node.profile.id}`}
+      to={`${basePath}/distribuidores/${node.profile.id}`}
       className={`group block border-2 rounded-2xl p-3 w-44 text-center hover:shadow-[0_8px_24px_rgba(26,78,38,0.15)] transition-all ${style.border} ${style.bg}`}
     >
       <div className={`w-9 h-9 rounded-xl mx-auto mb-2 flex items-center justify-center bg-white ${style.text} border ${style.border}`}>
@@ -360,6 +362,7 @@ function FrontalPair({ izquierda, derecha, maxDepth, idx }: {
 }
 
 export default function AdminRed() {
+  const basePath = useAdminBasePath();
   const [adminNode, setAdminNode] = useState<TreeNode | null>(null);
   const [allNodes, setAllNodes] = useState<TreeNode[]>([]);
   const [loading, setLoading] = useState(true);
@@ -623,7 +626,7 @@ export default function AdminRed() {
                   return (
                     <tr key={node.id} className="border-b border-[#C8D8CB] last:border-0 hover:bg-[#FAFBFA] transition-colors">
                       <td className="px-4 py-2.5">
-                        <Link to={`/admin/distribuidores/${node.profile.id}`} className="block hover:text-[#1A4E26]">
+                        <Link to={`${basePath}/distribuidores/${node.profile.id}`} className="block hover:text-[#1A4E26]">
                           <p className="text-[#111111] text-xs font-bold">{node.profile.nombre_completo}</p>
                           <p className="text-[#1A4E26] text-[10px] font-mono">{node.profile.codigo_distribuidor}</p>
                         </Link>

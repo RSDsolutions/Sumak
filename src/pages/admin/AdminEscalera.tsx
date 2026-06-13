@@ -6,6 +6,7 @@ import {
   TrendingUp, Award, X, Calendar, ChevronLeft, RefreshCw,
 } from 'lucide-react';
 import { supabaseAdmin } from '../../lib/supabase';
+import { useAdminBasePath } from '../../lib/useAdminBasePath';
 import { tramo1Ranks, tramo2Ranks, getRangoActual } from '../../data';
 import StaircaseVisual, {
   type StaircaseRank,
@@ -39,6 +40,7 @@ function Spinner() {
 }
 
 export default function AdminEscalera() {
+  const basePath = useAdminBasePath();
   const [loading, setLoading] = useState(true);
   const [distribuidores, setDistribuidores] = useState<DistribuidorRow[]>([]);
   const [directosByUser, setDirectosByUser] = useState<Map<string, number>>(new Map());
@@ -454,7 +456,7 @@ export default function AdminEscalera() {
                 {filteredExpanded.map((u, idx) => (
                   <Link
                     key={u.id}
-                    to={`/admin/distribuidores/${u.id}`}
+                    to={`${basePath}/distribuidores/${u.id}`}
                     className="flex items-center gap-3 px-5 py-3 hover:bg-[#F4F7F5] transition-colors group"
                   >
                     <div className="w-9 h-9 rounded-full bg-[#1A4E26]/10 text-[#1A4E26] font-bold text-sm flex items-center justify-center shrink-0">

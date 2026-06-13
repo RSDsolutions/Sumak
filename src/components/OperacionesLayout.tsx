@@ -5,6 +5,9 @@ import {
   DollarSign,
   ShoppingCart,
   UserPlus,
+  Users,
+  Network,
+  Trophy,
   Menu,
   X,
   LogOut,
@@ -35,6 +38,9 @@ const navItems: NavItem[] = [
   { label: 'Comisiones', to: '/operaciones/comisiones', icon: <DollarSign size={18} aria-hidden="true" /> },
   { label: 'Bono Afiliación', to: '/operaciones/bono-afiliacion', icon: <UserPlus size={18} aria-hidden="true" /> },
   { label: 'Pedidos', to: '/operaciones/pedidos', icon: <ShoppingCart size={18} aria-hidden="true" /> },
+  { label: 'Distribuidores', to: '/operaciones/distribuidores', icon: <Users size={18} aria-hidden="true" /> },
+  { label: 'Red Binaria', to: '/operaciones/red', icon: <Network size={18} aria-hidden="true" /> },
+  { label: 'Escalera del Éxito', to: '/operaciones/escalera', icon: <Trophy size={18} aria-hidden="true" /> },
 ];
 
 function SidebarContent({ onClose }: { onClose?: () => void }) {

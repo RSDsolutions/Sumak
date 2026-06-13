@@ -494,6 +494,49 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          {/* Operaciones: lectura de la red binaria y la escalera del éxito,
+              y detalle de cualquier distribuidor (read-only — suspender/activar
+              sigue siendo solo admin, ya gateado en cada componente). */}
+          <Route
+            path="/operaciones/distribuidores"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'operaciones']}>
+                <OperacionesLayout>
+                  <Distribuidores />
+                </OperacionesLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/operaciones/distribuidores/:id"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'operaciones']}>
+                <OperacionesLayout>
+                  <DistribuidorDetalle />
+                </OperacionesLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/operaciones/red"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'operaciones']}>
+                <OperacionesLayout>
+                  <AdminRed />
+                </OperacionesLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/operaciones/escalera"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'operaciones']}>
+                <OperacionesLayout>
+                  <AdminEscalera />
+                </OperacionesLayout>
+              </ProtectedRoute>
+            }
+          />
         </Routes>
         </Suspense>
         </ToastProvider>
