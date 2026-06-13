@@ -26,23 +26,29 @@ export interface StaircaseRank {
 
 /**
  * Mapeo automático de label de premio → ruta de imagen + icono fallback.
- * Las imágenes viven en /public/escalera/premios/. Si no existen aún,
- * cae al icono temático correspondiente.
+ * Las imágenes viven en /public/img/premios/ (subidas por el equipo).
+ * Si no existe imagen para un label (ej. "Viaje Local"), cae al icono
+ * temático correspondiente.
+ *
+ * Inventario actual de imágenes:
+ *   carro.png · casa.jfif · cocina.avif · laptop.png · moto.png ·
+ *   nevera.png · proyector.png · viaje-internacional.jpg
  */
-function autoResolvePrize(label: string): { image: string; icon: React.ReactNode } {
+function autoResolvePrize(label: string): { image?: string; icon: React.ReactNode } {
   const t = label.toLowerCase();
-  if (t.includes('internacional')) return { image: '/escalera/premios/viaje-internacional.png', icon: <Globe size={22} /> };
-  if (t.includes('viaje nacional') || (t.includes('viaje') && t.includes('nacional'))) return { image: '/escalera/premios/viaje-nacional.png', icon: <Plane size={22} /> };
-  if (t.includes('viaje local') || (t.includes('viaje') && t.includes('local'))) return { image: '/escalera/premios/viaje-local.png', icon: <MapPin size={22} /> };
-  if (t.includes('viaje')) return { image: '/escalera/premios/viaje-internacional.png', icon: <Globe size={22} /> };
-  if (t.includes('cocina')) return { image: '/escalera/premios/cocina.png', icon: <ChefHat size={22} /> };
-  if (t.includes('nevera') || t.includes('refrigerador')) return { image: '/escalera/premios/nevera.png', icon: <Snowflake size={22} /> };
-  if (t.includes('proyector') || t.includes('television') || t.includes('tv ')) return { image: '/escalera/premios/proyector.png', icon: <Tv size={22} /> };
-  if (t.includes('laptop') || t.includes('computador')) return { image: '/escalera/premios/laptop.png', icon: <Laptop size={22} /> };
-  if (t.includes('moto')) return { image: '/escalera/premios/moto.png', icon: <Bike size={22} /> };
-  if (t.includes('carro') || t.includes('auto')) return { image: '/escalera/premios/carro.png', icon: <Car size={22} /> };
-  if (t.includes('casa')) return { image: '/escalera/premios/casa.png', icon: <Home size={22} /> };
-  return { image: '/escalera/premios/trofeo.png', icon: <Trophy size={22} /> };
+  // Viaje internacional tiene imagen; nacional/local solo icono por ahora.
+  if (t.includes('internacional')) return { image: '/img/premios/viaje-internacional.jpg', icon: <Globe size={22} /> };
+  if (t.includes('viaje nacional') || (t.includes('viaje') && t.includes('nacional'))) return { icon: <Plane size={22} /> };
+  if (t.includes('viaje local') || (t.includes('viaje') && t.includes('local'))) return { icon: <MapPin size={22} /> };
+  if (t.includes('viaje')) return { image: '/img/premios/viaje-internacional.jpg', icon: <Globe size={22} /> };
+  if (t.includes('cocina')) return { image: '/img/premios/cocina.avif', icon: <ChefHat size={22} /> };
+  if (t.includes('nevera') || t.includes('refrigerador')) return { image: '/img/premios/nevera.png', icon: <Snowflake size={22} /> };
+  if (t.includes('proyector') || t.includes('television') || t.includes('tv ')) return { image: '/img/premios/proyector.png', icon: <Tv size={22} /> };
+  if (t.includes('laptop') || t.includes('computador')) return { image: '/img/premios/laptop.png', icon: <Laptop size={22} /> };
+  if (t.includes('moto')) return { image: '/img/premios/moto.png', icon: <Bike size={22} /> };
+  if (t.includes('carro') || t.includes('auto')) return { image: '/img/premios/carro.png', icon: <Car size={22} /> };
+  if (t.includes('casa')) return { image: '/img/premios/casa.jfif', icon: <Home size={22} /> };
+  return { icon: <Trophy size={22} /> };
 }
 
 /**

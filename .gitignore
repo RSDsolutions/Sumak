@@ -12,5 +12,5 @@ coverage/
 *.pdf
 GUIA_PLATAFORMA.md
 INGREDIENTES_LISTA.md
-Productos/
-img/
+/Productos/
+/img/
