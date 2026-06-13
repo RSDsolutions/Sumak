@@ -13,8 +13,12 @@ interface PackBuilderProps {
    * El cupo del pack es por valor en $ a PRECIO DE DISTRIBUIDOR
    * (no PVP). El cap = pack.precio. Cada producto suma su
    * precio_distribuidor (PVP × 50% o el override definido).
+   *
+   * `isComplete` es true cuando el pack se puede enviar — ya sea
+   * porque la suma == cap (exacto), o porque el residuo es menor
+   * que el producto mas barato (no hay nada para canjear el resto).
    */
-  onSelectionsChange: (selections: PackSelection[], totalValue: number) => void;
+  onSelectionsChange: (selections: PackSelection[], totalValue: number, isComplete: boolean) => void;
 }
 
 /** Suma a precio de distribuidor de una seleccion. */
@@ -53,8 +57,29 @@ export default function PackBuilder({
 
   const cap = pack.precio;
   const remaining = Math.round((cap - totalValue) * 100) / 100;
-  const isComplete = Math.abs(remaining) < EPS;
   const isOver = totalValue - cap > EPS;
+
+  // Precio mas barato del catalogo a precio distribuidor. Lo usamos para
+  // decidir si el cupo se puede considerar lleno cuando el residuo es
+  // menor que el producto mas barato (no hay nada para canjearlo).
+  const minPrecio = useMemo(() => {
+    let min = Infinity;
+    for (const p of products) {
+      if (p.proximamente) continue;
+      const pd = getPrecioDistribuidor(p);
+      if (pd > 0 && pd < min) min = pd;
+    }
+    return min === Infinity ? 0 : min;
+  }, []);
+
+  // El pack se considera completo cuando:
+  //  • Suma exacta == cap, o
+  //  • Cap cubierto al menos parcialmente y ya no cabe ni el producto
+  //    mas barato (residuo no aprovechable; el usuario igual paga el
+  //    precio fijo del pack, asi que dejarlo enviar es lo correcto).
+  const isExactlyFull = Math.abs(remaining) < EPS;
+  const isResidualLocked = totalValue > 0 && remaining > 0 && remaining < minPrecio - EPS;
+  const isComplete = isExactlyFull || isResidualLocked;
 
   // Productos visibles (excluye proximamente).
   const visibleProducts = useMemo(() => {
@@ -78,7 +103,11 @@ export default function PackBuilder({
       const p = products.find((pr) => pr.codigo === codigo);
       return { codigo, cantidad, nombre: p?.nombre ?? codigo };
     });
-    onSelectionsChange(arr, sumValue(next));
+    const total = sumValue(next);
+    const remainingNow = Math.round((cap - total) * 100) / 100;
+    const exactly = Math.abs(remainingNow) < EPS;
+    const lockedResidual = total > 0 && remainingNow > 0 && remainingNow < minPrecio - EPS;
+    onSelectionsChange(arr, total, exactly || lockedResidual);
   }
 
   function updateQty(codigo: string, delta: number) {
@@ -107,7 +136,7 @@ export default function PackBuilder({
 
   function clearAll() {
     setSelections(new Map());
-    onSelectionsChange([], 0);
+    onSelectionsChange([], 0, false);
   }
 
   /** Llenar automaticamente acercandose al cupo (a precio de distribuidor) sin pasarse. */
@@ -196,9 +225,14 @@ export default function PackBuilder({
             <span className="text-[#9CA3AF]"> · {totalUnits} producto{totalUnits !== 1 ? 's' : ''} hasta ahora</span>
           </p>
         )}
-        {isComplete && (
+        {isExactlyFull && (
           <p className="text-[#D4AF37] text-xs mt-2 font-bold flex items-center gap-1.5">
             <Check size={13} /> ¡Cupo completo con {totalUnits} producto{totalUnits !== 1 ? 's' : ''}! Listo para agregar al carrito.
+          </p>
+        )}
+        {isResidualLocked && (
+          <p className="text-[#D4AF37] text-xs mt-2 font-bold flex items-center gap-1.5">
+            <Check size={13} /> Cupo lleno con {totalUnits} producto{totalUnits !== 1 ? 's' : ''}. Te queda ${remaining.toFixed(2)} de margen que ya no podes canjear (todos los productos cuestan más). Podes enviar el pack así.
           </p>
         )}
         {isOver && (

@@ -17,6 +17,7 @@ export default function TiendaPack() {
   const toast = useToast();
   const [selections, setSelections] = useState<PackSelection[]>([]);
   const [totalValue, setTotalValue] = useState(0);
+  const [isComplete, setIsComplete] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
 
   const totalUnits = selections.reduce((s, x) => s + x.cantidad, 0);
@@ -41,9 +42,7 @@ export default function TiendaPack() {
     );
   }
 
-  const EPS = 0.005;
   const remainingValue = Math.round((pack.precio - totalValue) * 100) / 100;
-  const isComplete = Math.abs(remainingValue) < EPS;
 
   function handleAddToCart() {
     if (!isComplete) {
@@ -182,9 +181,10 @@ export default function TiendaPack() {
 
         <PackBuilder
           pack={pack}
-          onSelectionsChange={(sels, total) => {
+          onSelectionsChange={(sels, total, complete) => {
             setSelections(sels);
             setTotalValue(total);
+            setIsComplete(complete);
           }}
         />
       </motion.div>
@@ -212,7 +212,9 @@ export default function TiendaPack() {
                 </span>
               </div>
               <p className="text-[#6B7280] text-xs">
-                {isComplete
+                {isComplete && remainingValue > 0
+                  ? `Cupo lleno. Te queda $${remainingValue.toFixed(2)} de margen sin canjear (ningún producto cabe).`
+                  : isComplete
                   ? '¡Cupo completo! Listo para agregar al carrito.'
                   : `Te faltan $${remainingValue.toFixed(2)} de cupo para completar tu selección.`}
               </p>
