@@ -242,11 +242,12 @@ export default function Contacto() {
               </motion.div>
             ))}
 
-            {/* Map — OpenStreetMap embed (Google bloquea maps.google.com/maps?output=embed
-                en iframes desde 2024 con el mensaje "Este contenido está bloqueado") */}
+            {/* Map — OpenStreetMap embed. La CSP de vercel.json permite
+                frame-src https://www.openstreetmap.org e img-src *.tile.openstreetmap.org.
+                Coords: intersección Av. 5 de Junio y Bolívar, Babahoyo. */}
             <motion.div variants={fadeUp} className="rounded-xl overflow-hidden border border-[#C8D8CB] mt-2">
               <iframe
-                src="https://www.openstreetmap.org/export/embed.html?bbox=-79.5346,-1.8016,-79.5279,-1.7962&layer=mapnik&marker=-1.798915,-79.531299"
+                src="https://www.openstreetmap.org/export/embed.html?bbox=-79.5375%2C-1.8060%2C-79.5275%2C-1.7975&layer=mapnik&marker=-1.8015%2C-79.5325"
                 width="100%"
                 height="360"
                 style={{ border: 0, display: 'block' }}
@@ -255,7 +256,7 @@ export default function Contacto() {
                 title="Oficina Sumak Vida Ecuador — Babahoyo"
               />
               <a
-                href="https://www.google.com/maps?q=-1.798915,-79.531299"
+                href="https://www.google.com/maps/search/?api=1&query=Av+5+de+Junio+y+Bolivar%2C+Babahoyo%2C+Los+Rios%2C+Ecuador"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block px-4 py-2.5 bg-[#1A4E26] text-white text-xs font-bold text-center hover:bg-[#163F1E] transition-colors"
