@@ -4,7 +4,7 @@ import { motion, AnimatePresence, type Variants } from 'motion/react';
 import {
   CheckCircle2, Upload, User, FileText, Package, AlertCircle, Sparkles,
   TrendingUp, Users, Wallet, ShieldCheck, Rocket, Heart, Award, Leaf,
-  Landmark, Copy, Check, Info, MessageCircle, AlertTriangle,
+  Landmark, Copy, Check, Info, MessageCircle, AlertTriangle, AtSign,
 } from 'lucide-react';
 import { affiliatePackages, bankAccounts, contactInfo } from '../data';
 import { supabase } from '../lib/supabase';
@@ -17,12 +17,28 @@ type Step = 1 | 2 | 3 | 'done';
 
 interface PersonalData {
   nombre: string;
+  username: string;
   cedula: string;
   email: string;
   telefono: string;
   direccion: string;
   ciudad: string;
   patrocinador: string;
+}
+
+const USERNAME_REGEX = /^[a-z0-9_]{3,30}$/;
+
+function validarUsername(value: string): string | null {
+  if (!value) return 'Elige un nombre de usuario.';
+  if (value.length < 3) return 'Minimo 3 caracteres.';
+  if (value.length > 30) return 'Maximo 30 caracteres.';
+  if (!/^[a-z0-9_]+$/.test(value)) {
+    return 'Solo minusculas, numeros y guion bajo.';
+  }
+  if (value.startsWith('_') || value.endsWith('_')) {
+    return 'No puede empezar ni terminar con guion bajo.';
+  }
+  return null;
 }
 
 interface UploadFiles {
@@ -157,13 +173,35 @@ export default function Registro() {
   const refParam = searchParams.get('ref')?.trim() ?? '';
   const [step, setStep] = useState<Step>(1);
   const [personal, setPersonal] = useState<PersonalData>({
-    nombre: '', cedula: '', email: '', telefono: '', direccion: '', ciudad: '',
+    nombre: '', username: '', cedula: '', email: '', telefono: '', direccion: '', ciudad: '',
     patrocinador: refParam ? refParam.toUpperCase() : '',
   });
+  const [usernameChecking, setUsernameChecking] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [refLocked, setRefLocked] = useState(!!refParam);
   const [sponsorName, setSponsorName] = useState<string | null>(null);
   const [sponsorChecking, setSponsorChecking] = useState(false);
   const [sponsorInvalid, setSponsorInvalid] = useState(false);
+
+  // Verifica disponibilidad del username en vivo via RPC publica
+  // (mig 022). Debounce 400ms para no martillar la DB en cada tecla.
+  useEffect(() => {
+    const u = personal.username.trim().toLowerCase();
+    if (!u || validarUsername(u)) {
+      setUsernameAvailable(null);
+      setUsernameChecking(false);
+      return;
+    }
+    setUsernameChecking(true);
+    const handle = setTimeout(async () => {
+      const { data, error } = await supabase.rpc('check_username_available', {
+        p_username: u,
+      });
+      setUsernameAvailable(error ? null : !!data);
+      setUsernameChecking(false);
+    }, 400);
+    return () => clearTimeout(handle);
+  }, [personal.username]);
 
   useEffect(() => {
     const code = personal.patrocinador.trim().toUpperCase();
@@ -213,6 +251,9 @@ export default function Registro() {
   function step1Valid(): boolean {
     return !!(
       personal.nombre &&
+      personal.username &&
+      USERNAME_REGEX.test(personal.username) &&
+      usernameAvailable === true &&
       personal.cedula &&
       validarCedulaEcuatoriana(personal.cedula) &&
       personal.email &&
@@ -227,6 +268,10 @@ export default function Registro() {
   // (longitud completa de cédula EC) para no marcar inválido mientras escribe.
   const cedulaError =
     personal.cedula.length >= 10 ? explicarCedulaInvalida(personal.cedula) : null;
+
+  const usernameError = personal.username
+    ? validarUsername(personal.username)
+    : null;
 
   async function handleSubmit() {
     if (!selectedPkg) return;
@@ -263,6 +308,7 @@ export default function Registro() {
       const paqueteKey: PaqueteKey = paqueteKeyMap[selectedPkg] ?? 'basico';
 
       const { error } = await supabase.from('afiliaciones').insert({
+        username: personal.username.toLowerCase(),
         nombre_completo: personal.nombre,
         cedula: personal.cedula,
         email: personal.email,
@@ -490,6 +536,64 @@ export default function Registro() {
                         <User size={20} />
                       </div>
                       <h2 className="font-heading font-bold text-xl text-[#111111]">Datos Personales</h2>
+                    </div>
+
+                    {/* Username (fila completa, primer campo) */}
+                    <div className="mb-4">
+                      <label className="block text-[#6B7280] text-xs font-semibold uppercase tracking-wider mb-2">
+                        Nombre de Usuario <span className="text-[#1A4E26]">*</span>
+                      </label>
+                      <div className="relative">
+                        <AtSign size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
+                        <input
+                          name="username"
+                          type="text"
+                          required
+                          autoComplete="username"
+                          placeholder="ej. juanperez"
+                          value={personal.username}
+                          onChange={(e) => {
+                            const v = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                            setPersonal((prev) => ({ ...prev, username: v }));
+                          }}
+                          maxLength={30}
+                          aria-invalid={usernameError || usernameAvailable === false ? 'true' : undefined}
+                          aria-describedby={usernameError || usernameAvailable === false ? 'username-error' : undefined}
+                          className={`w-full bg-white border rounded-xl pl-11 pr-4 py-3 text-[#111111] text-sm placeholder-[#9CA3AF] focus:outline-none transition-colors duration-200 ${
+                            usernameError || usernameAvailable === false
+                              ? 'border-red-300 focus:border-red-500'
+                              : usernameAvailable === true
+                              ? 'border-[#1A4E26]/40 focus:border-[#1A4E26]'
+                              : 'border-[#C8D8CB] focus:border-[#1A4E26]'
+                          }`}
+                        />
+                      </div>
+                      {usernameError && personal.username && (
+                        <p id="username-error" className="mt-1.5 text-red-600 text-xs flex items-center gap-1.5">
+                          <AlertCircle size={12} aria-hidden="true" /> {usernameError}
+                        </p>
+                      )}
+                      {!usernameError && personal.username && usernameChecking && (
+                        <p className="mt-1.5 text-[#9CA3AF] text-xs flex items-center gap-1.5">
+                          <span className="w-3 h-3 border-2 border-[#9CA3AF] border-t-transparent rounded-full animate-spin" />
+                          Verificando disponibilidad...
+                        </p>
+                      )}
+                      {!usernameError && personal.username && !usernameChecking && usernameAvailable === true && (
+                        <p className="mt-1.5 text-[#1A4E26] text-xs flex items-center gap-1.5 font-medium">
+                          <CheckCircle2 size={12} aria-hidden="true" /> Disponible
+                        </p>
+                      )}
+                      {!usernameError && personal.username && !usernameChecking && usernameAvailable === false && (
+                        <p id="username-error" className="mt-1.5 text-red-600 text-xs flex items-center gap-1.5">
+                          <AlertCircle size={12} aria-hidden="true" /> Ya esta en uso, elige otro.
+                        </p>
+                      )}
+                      {!personal.username && (
+                        <p className="mt-1.5 text-[#9CA3AF] text-[11px] leading-relaxed">
+                          Lo usaras para iniciar sesion. Solo minusculas, numeros y guion bajo (3-30 caracteres).
+                        </p>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

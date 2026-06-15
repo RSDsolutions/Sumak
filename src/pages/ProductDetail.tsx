@@ -78,12 +78,12 @@ export default function ProductDetail() {
     .filter((p) => p.categoriaKey === product.categoriaKey && p.slug !== product.slug)
     .slice(0, 4);
 
-  const tabs: { key: TabKey; label: string; available: boolean }[] = [
+  const tabs = ([
     { key: 'ingredientes', label: 'Ingredientes', available: !!product.ingredientes?.length },
     { key: 'beneficios', label: 'Beneficios', available: !!product.beneficios?.length },
     { key: 'modo-uso', label: 'Modo de uso', available: !!product.modoUso },
     { key: 'precauciones', label: 'Precauciones', available: !!product.precauciones },
-  ].filter((t) => t.available);
+  ] satisfies { key: TabKey; label: string; available: boolean }[]).filter((t) => t.available);
 
   // Default active tab to first available
   const currentTab = tabs.find((t) => t.key === activeTab) ?? tabs[0];

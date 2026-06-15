@@ -11,6 +11,8 @@ export type TipoPrecio = 'pvp' | 'distribuidor';
 export interface Profile {
   id: string;
   codigo_distribuidor: string | null;
+  /** Nombre de usuario unico (login + identificador publico). Mig 022. */
+  username: string | null;
   nombre_completo: string;
   cedula: string;
   email: string;
@@ -30,6 +32,8 @@ export interface Profile {
 
 export interface Afiliacion {
   id: string;
+  /** Username elegido al solicitar la afiliacion. Mig 022. */
+  username: string | null;
   nombre_completo: string;
   cedula: string;
   email: string;

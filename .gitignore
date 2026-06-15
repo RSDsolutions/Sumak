@@ -7,10 +7,17 @@ coverage/
 .env*
 !.env.example
 
-# OPS-006: material corporativo fuente. Los assets que SÍ se sirven están en
-# public/. Las imágenes maestras y PDFs no deben subirse al repo público.
+# OPS-006: material corporativo fuente. Los assets que SI se sirven estan en
+# public/. Las imagenes maestras y PDFs no deben subirse al repo publico.
 *.pdf
 GUIA_PLATAFORMA.md
 INGREDIENTES_LISTA.md
 /Productos/
 /img/
+
+# Credenciales del seed inicial (contrasenas temporales en claro)
+CREDENCIALES_SEED.md
+listado por nivel.docx
+ANALISIS_RED_BINARIA.md
+PORTAL.html
+/PORTAL_files/

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Lock, Mail, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { Lock, AtSign, Mail, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import { useSEO } from '../lib/seo';
@@ -15,7 +15,9 @@ export default function Login() {
     noindex: true,
   });
 
-  const [email, setEmail] = useState('');
+  // Identifier puede ser email o username. La traduccion username -> email
+  // ocurre antes de signIn via RPC get_email_for_login (mig 022).
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -27,6 +29,19 @@ export default function Login() {
   const { signIn, homeForProfile } = useAuth();
   const navigate = useNavigate();
 
+  async function resolveEmail(value: string): Promise<string | null> {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    // Si parece email, lo usamos tal cual.
+    if (trimmed.includes('@')) return trimmed;
+    // Si no, lo tratamos como username y traducimos a email.
+    const { data, error: rpcError } = await supabase.rpc('get_email_for_login', {
+      p_username: trimmed.toLowerCase(),
+    });
+    if (rpcError || !data) return null;
+    return data as string;
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (CAPTCHA_ENABLED && !captchaToken) {
@@ -36,8 +51,13 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
+      const resolvedEmail = await resolveEmail(identifier);
+      if (!resolvedEmail) {
+        setError('Credenciales incorrectas. Verifica tu usuario y contraseña.');
+        return;
+      }
       const { error: signInError, profile } = await signIn(
-        email,
+        resolvedEmail,
         password,
         captchaToken || undefined,
       );
@@ -56,13 +76,14 @@ export default function Login() {
   }
 
   async function handleForgotPassword() {
-    if (!email) {
-      setError('Ingresa tu email primero para restablecer la contraseña.');
+    const resolvedEmail = await resolveEmail(identifier);
+    if (!resolvedEmail) {
+      setError('Ingresa tu email o usuario primero para restablecer la contraseña.');
       return;
     }
     setResetLoading(true);
     setError('');
-    await supabase.auth.resetPasswordForEmail(email, {
+    await supabase.auth.resetPasswordForEmail(resolvedEmail, {
       redirectTo: `${window.location.origin}/login`,
     });
     setResetSent(true);
@@ -106,18 +127,23 @@ export default function Login() {
               )}
 
               <div>
-                <label htmlFor="login-email" className="block text-[#6B7280] text-xs font-semibold uppercase tracking-wider mb-2">
-                  Email
+                <label htmlFor="login-identifier" className="block text-[#6B7280] text-xs font-semibold uppercase tracking-wider mb-2">
+                  Usuario o Email
                 </label>
                 <div className="relative">
-                  <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
+                  {identifier.includes('@') ? (
+                    <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
+                  ) : (
+                    <AtSign size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
+                  )}
                   <input
-                    id="login-email"
-                    type="email"
+                    id="login-identifier"
+                    type="text"
                     required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="tu@email.com"
+                    autoComplete="username"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    placeholder="juanperez o tu@email.com"
                     className="w-full bg-white border border-[#C8D8CB] rounded-xl pl-11 pr-4 py-3.5 text-[#111111] text-sm placeholder-[#9CA3AF] focus:outline-none focus:border-[#1A4E26] transition-colors duration-200"
                   />
                 </div>

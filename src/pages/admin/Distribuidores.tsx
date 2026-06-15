@@ -111,6 +111,7 @@ export default function Distribuidores() {
       list = list.filter((d) =>
         d.nombre_completo.toLowerCase().includes(q) ||
         (d.codigo_distribuidor ?? '').toLowerCase().includes(q) ||
+        (d.username ?? '').toLowerCase().includes(q) ||
         d.email.toLowerCase().includes(q) ||
         (d.cedula ?? '').includes(q) ||
         (d.ciudad ?? '').toLowerCase().includes(q)
@@ -308,7 +309,7 @@ export default function Distribuidores() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por nombre, código, email, cédula o ciudad..."
+              placeholder="Buscar por nombre, usuario, código, email, cédula o ciudad..."
               className="w-full pl-9 pr-3 py-2 bg-[#FAFBFA] border border-[#C8D8CB] rounded-xl text-xs text-[#111111] placeholder:text-[#9CA3AF] focus:outline-none focus:border-[#1A4E26] transition-colors"
             />
           </div>
@@ -405,6 +406,9 @@ export default function Distribuidores() {
                       </td>
                       <td className="px-5 py-3 whitespace-nowrap">
                         <p className="text-[#111111] text-xs font-bold">{d.nombre_completo}</p>
+                        {d.username && (
+                          <p className="text-[#6B7280] text-[10px] mt-0.5">@{d.username}</p>
+                        )}
                         {d.ciudad && (
                           <p className="text-[#9CA3AF] text-[10px] flex items-center gap-1 mt-0.5">
                             <MapPin size={9} /> {d.ciudad}

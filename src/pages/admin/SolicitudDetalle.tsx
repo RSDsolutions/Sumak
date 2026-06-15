@@ -491,6 +491,7 @@ export default function SolicitudDetalle() {
           <dl className="space-y-3">
             {[
               { label: 'Nombre', value: afiliacion.nombre_completo },
+              { label: 'Usuario', value: afiliacion.username ? `@${afiliacion.username}` : '—' },
               { label: 'Cédula', value: afiliacion.cedula },
               { label: 'Email', value: afiliacion.email },
               { label: 'Teléfono', value: afiliacion.telefono },

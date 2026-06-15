@@ -160,6 +160,7 @@ export default function DistribuidorDetalle() {
           <h2 className="font-heading font-semibold text-[#111111] mb-4">Información</h2>
           <dl className="space-y-3">
             {[
+              { label: 'Usuario', value: profile.username ? `@${profile.username}` : '—' },
               { label: 'Email', value: profile.email },
               { label: 'Cédula', value: profile.cedula },
               { label: 'Teléfono', value: profile.telefono ?? '—' },
