@@ -291,13 +291,21 @@ export default function AdminComisiones({ scope = 'no-afiliacion' }: AdminComisi
   async function load() {
     setLoading(true);
     try {
-      // Excluir las comisiones donde el beneficiario es un admin
-      // (esas se ven en /admin/mis-comisiones, no aquí)
-      const { data: admins } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('rol', 'admin');
-      const adminIds = (admins ?? []).map((a) => a.id);
+      // En scope='no-afiliacion' excluimos a los admins como beneficiarios
+      // (sus comisiones por nivel/binaria viven en /admin/mis-comisiones).
+      //
+      // En scope='afiliacion' SI incluimos a los admins: cuando el admin
+      // refiere a alguien directamente tambien gana el bono del 40% y
+      // necesita aparecer en esta pagina para que se le pueda registrar
+      // el pago con voucher, igual que cualquier otro patrocinador.
+      let adminIds: string[] = [];
+      if (!isAfiliacionScope) {
+        const { data: admins } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('rol', 'admin');
+        adminIds = (admins ?? []).map((a) => a.id);
+      }
 
       let query = supabase
         .from('comisiones')
@@ -524,7 +532,7 @@ export default function AdminComisiones({ scope = 'no-afiliacion' }: AdminComisi
         </h1>
         <p className="text-[#6B7280] text-sm mt-1">
           {isAfiliacionScope ? (
-            <>{comisiones.length} bono{comisiones.length !== 1 ? 's' : ''} · 40% del paquete del referido. Las comisiones por nivel y binaria se gestionan en <span className="text-[#D4AF37] font-semibold">Comisiones</span>.</>
+            <>{comisiones.length} bono{comisiones.length !== 1 ? 's' : ''} · 40% del paquete del referido. Incluye al admin cuando refiere directamente. Las comisiones por nivel y binaria se gestionan en <span className="text-[#D4AF37] font-semibold">Comisiones</span>.</>
           ) : (
             <>{comisiones.length} comisiones · sin afiliación (ver <span className="text-[#D4AF37] font-semibold">Bono Afiliación</span>) ni admin (ver <span className="text-[#D4AF37] font-semibold">Mis Comisiones</span>)</>
           )}
