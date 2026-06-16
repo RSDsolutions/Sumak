@@ -55,6 +55,7 @@ const AdminMisComisiones = lazy(() => import('./pages/admin/AdminMisComisiones')
 const AdminPedidos = lazy(() => import('./pages/admin/AdminPedidos'));
 const AdminRed = lazy(() => import('./pages/admin/AdminRed'));
 const AdminEscalera = lazy(() => import('./pages/admin/AdminEscalera'));
+const GestionarStaff = lazy(() => import('./pages/admin/GestionarStaff'));
 
 // Operaciones pages (rol delegado para pedidos / comisiones / solicitudes).
 // Reusa componentes de admin/* — sólo cambia el layout (OperacionesLayout)
@@ -445,6 +446,16 @@ export default function App() {
               <ProtectedRoute allowedRoles={['admin']}>
                 <AdminLayout>
                   <AdminEscalera />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/personal"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminLayout>
+                  <GestionarStaff />
                 </AdminLayout>
               </ProtectedRoute>
             }
