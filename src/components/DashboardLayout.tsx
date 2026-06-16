@@ -17,6 +17,7 @@ import { useAuth } from '../lib/auth';
 import { useCart } from '../lib/cart';
 import { useSEO } from '../lib/seo';
 import { displayName } from '../lib/profile';
+import CompleteProfileModal from './CompleteProfileModal';
 
 interface NavItem {
   label: string;
@@ -180,6 +181,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children}
         </main>
       </div>
+
+      <CompleteProfileModal />
     </div>
   );
 }
