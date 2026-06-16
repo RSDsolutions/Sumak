@@ -50,8 +50,10 @@ const paqueteStyles: Record<string, { border: string; bg: string; text: string; 
   lider: { border: 'border-[#D4AF37]/60', bg: 'bg-[#FFFDF0]', text: 'text-[#D4AF37]', label: 'Líder' },
 };
 
-function NodeCard({ node, depth, isRoot }: { node: TreeNode; depth: number; isRoot?: boolean }) {
-  if (depth > 3) return null;
+function NodeCard({ node, depth, maxDepth = 12, isRoot }: {
+  node: TreeNode; depth: number; maxDepth?: number; isRoot?: boolean;
+}) {
+  if (depth > maxDepth) return null;
 
   const pkg = node.profile.paquete ?? 'basico';
   const style = paqueteStyles[pkg] ?? paqueteStyles.basico;
@@ -133,13 +135,13 @@ function NodeCard({ node, depth, isRoot }: { node: TreeNode; depth: number; isRo
       </div>
 
       {/* Children */}
-      {node.children.length > 0 && depth < 3 && (
+      {node.children.length > 0 && depth < maxDepth && (
         <div className="flex gap-5 mt-6 relative">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-6 h-6 w-px bg-[#C8D8CB]" />
           {node.children.map((child) => (
             <div key={child.id} className="flex flex-col items-center relative">
               <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-6 h-6 w-px bg-[#C8D8CB]" />
-              <NodeCard node={child} depth={depth + 1} />
+              <NodeCard node={child} depth={depth + 1} maxDepth={maxDepth} />
             </div>
           ))}
         </div>
@@ -211,6 +213,10 @@ export default function MiRed() {
   const [loading, setLoading] = useState(true);
   const [showList, setShowList] = useState(false);
   const [allInRed, setAllInRed] = useState<TreeNode[]>([]);
+  // Default 6: cubre la mayoria de las redes de un distribuidor. Boton "ver mas"
+  // expande hasta 12 que es la profundidad real maxima del sistema (14 niveles
+  // del plan + margen).
+  const [maxDepth, setMaxDepth] = useState(6);
 
   useEffect(() => {
     if (!user || !profile) return;
@@ -418,19 +424,34 @@ export default function MiRed() {
           <div>
             <h2 className="font-heading font-bold text-[#111111] text-sm flex items-center gap-2">
               <Network size={14} className="text-[#1A4E26]" />
-              Árbol binario · Tú y 3 niveles
+              Árbol binario · Tú + {maxDepth >= 12 ? 'toda tu red' : `${maxDepth} nivel${maxDepth > 1 ? 'es' : ''}`}
             </h2>
-            <p className="text-[#9CA3AF] text-[11px] mt-0.5">Vista limitada a 3 generaciones para mejor visualización.</p>
+            <p className="text-[#9CA3AF] text-[11px] mt-0.5">Ajusta la profundidad para ver más de tu red.</p>
           </div>
-          {allInRed.length > 0 && (
-            <button
-              onClick={() => setShowList(!showList)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1A4E26]/10 text-[#1A4E26] text-xs font-bold hover:bg-[#1A4E26]/15 transition-colors"
-            >
-              {showList ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-              {showList ? 'Ocultar lista' : `Ver lista (${allInRed.length})`}
-            </button>
-          )}
+          <div className="flex items-center gap-2 flex-wrap">
+            <label className="text-xs text-[#6B7280] flex items-center gap-1.5">
+              Profundidad:
+              <select
+                value={maxDepth}
+                onChange={(e) => setMaxDepth(parseInt(e.target.value, 10))}
+                className="bg-white border border-[#C8D8CB] rounded-md px-2 py-1 text-xs font-medium text-[#111111] focus:outline-none cursor-pointer"
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((d) => (
+                  <option key={d} value={d}>{d} nivel{d > 1 ? 'es' : ''}</option>
+                ))}
+                <option value={12}>Toda mi red</option>
+              </select>
+            </label>
+            {allInRed.length > 0 && (
+              <button
+                onClick={() => setShowList(!showList)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1A4E26]/10 text-[#1A4E26] text-xs font-bold hover:bg-[#1A4E26]/15 transition-colors"
+              >
+                {showList ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                {showList ? 'Ocultar lista' : `Ver lista (${allInRed.length})`}
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="p-5 overflow-auto">
@@ -444,7 +465,7 @@ export default function MiRed() {
             </div>
           ) : (
             <div className="flex justify-center overflow-x-auto pb-4 pt-2 min-w-max mx-auto">
-              <NodeCard node={rootNode} depth={0} isRoot />
+              <NodeCard node={rootNode} depth={0} maxDepth={maxDepth} isRoot />
             </div>
           )}
         </div>

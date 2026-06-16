@@ -325,7 +325,9 @@ export default function AdminRed() {
   const [adminNode, setAdminNode] = useState<TreeNode | null>(null);
   const [allNodes, setAllNodes] = useState<TreeNode[]>([]);
   const [loading, setLoading] = useState(true);
-  const [maxDepth, setMaxDepth] = useState(3);
+  // Profundidad max — 12 cubre la red real (10 niveles) con holgura.
+  // 99 = "todo" para arboles que crecen sin que haya que tocar el selector.
+  const [maxDepth, setMaxDepth] = useState(12);
   const [search, setSearch] = useState('');
   const [showTable, setShowTable] = useState(true);
   const [filterPaquete, setFilterPaquete] = useState<string>('todos');
@@ -546,7 +548,8 @@ export default function AdminRed() {
             onChange={(e) => setMaxDepth(parseInt(e.target.value, 10))}
             className="bg-white border border-[#C8D8CB] rounded-md px-2 py-1 text-xs font-medium text-[#111111] focus:outline-none cursor-pointer"
           >
-            {[1, 2, 3, 4, 5].map((d) => <option key={d} value={d}>{d} nivel{d > 1 ? 'es' : ''}</option>)}
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((d) => <option key={d} value={d}>{d} nivel{d > 1 ? 'es' : ''}</option>)}
+            <option value={99}>Toda la red</option>
           </select>
         </div>
       </div>
