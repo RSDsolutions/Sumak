@@ -16,6 +16,7 @@ import {
 import { useAuth } from '../lib/auth';
 import { useCart } from '../lib/cart';
 import { useSEO } from '../lib/seo';
+import { displayName } from '../lib/profile';
 
 interface NavItem {
   label: string;
@@ -75,7 +76,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
       {/* Profile info */}
       {profile && (
         <div className="px-6 py-4 border-b border-white/20">
-          <p className="text-white text-sm font-semibold truncate">{profile.nombre_completo}</p>
+          <p className="text-white text-sm font-semibold truncate">{displayName(profile)}</p>
           <p className="text-white/60 text-xs mt-0.5">{profile.codigo_distribuidor ?? '—'}</p>
         </div>
       )}
@@ -109,7 +110,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
 
       {/* Footer */}
       <div className="px-4 py-4 border-t border-white/20">
-        <p className="text-white/50 text-xs truncate mb-3">{profile?.nombre_completo}</p>
+        <p className="text-white/50 text-xs truncate mb-3">{displayName(profile)}</p>
         <button
           onClick={handleSignOut}
           className="flex items-center gap-2 w-full px-4 py-2.5 rounded-xl text-sm text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200"

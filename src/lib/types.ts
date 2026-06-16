@@ -13,8 +13,10 @@ export interface Profile {
   codigo_distribuidor: string | null;
   /** Nombre de usuario unico (login + identificador publico). Mig 022. */
   username: string | null;
-  nombre_completo: string;
-  cedula: string;
+  /** Nullable desde mig 023 (bulk seed) — usar displayName() para mostrar. */
+  nombre_completo: string | null;
+  /** Nullable desde mig 023 (bulk seed) — usuario completa al primer login. */
+  cedula: string | null;
   email: string;
   telefono: string | null;
   direccion: string | null;

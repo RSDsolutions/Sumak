@@ -8,7 +8,24 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAdminBasePath } from '../../lib/useAdminBasePath';
+import { displayName } from '../../lib/profile';
 import type { NodoBinario, Profile } from '../../lib/types';
+
+// Estilos de posicion en el arbol: izq verde + flecha, der verde + flecha,
+// frontal dorado con estrella. Se usa en card y tabla.
+type PosicionStyle = {
+  bg: string; text: string; border: string; label: string; icon: '←' | '→' | '★';
+};
+const posicionStyles: Record<'izquierda' | 'derecha' | 'frontal', PosicionStyle> = {
+  izquierda: { bg: 'bg-[#1A4E26]/10', text: 'text-[#1A4E26]', border: 'border-[#1A4E26]/40', label: 'Izquierda', icon: '←' },
+  derecha:   { bg: 'bg-[#256B36]/10', text: 'text-[#256B36]', border: 'border-[#256B36]/40', label: 'Derecha',   icon: '→' },
+  frontal:   { bg: 'bg-[#D4AF37]/15', text: 'text-[#B8860B]', border: 'border-[#D4AF37]/50', label: 'Frontal',   icon: '★' },
+};
+
+function posicionKey(pos: string | null): 'izquierda' | 'derecha' | 'frontal' {
+  if (pos === 'izquierda' || pos === 'derecha') return pos;
+  return 'frontal';
+}
 
 function Spinner() {
   return (
@@ -236,30 +253,46 @@ function DistribCard({ node }: { node: TreeNode }) {
   const pkg = node.profile.paquete ?? 'basico';
   const style = paqueteStyles[pkg] ?? paqueteStyles.basico;
   const total = countNodes(node) - 1;
+  const posKey = posicionKey(node.posicion);
+  const posStyle = posicionStyles[posKey];
+  const nombre = displayName(node.profile);
+  const sinPerfil = !node.profile.nombre_completo;
 
   return (
     <Link
       to={`${basePath}/distribuidores/${node.profile.id}`}
-      className={`group block border-2 rounded-2xl p-3 w-44 text-center hover:shadow-[0_8px_24px_rgba(26,78,38,0.15)] transition-all ${style.border} ${style.bg}`}
+      className={`group block border-2 rounded-2xl p-3 w-44 text-center hover:shadow-[0_8px_24px_rgba(26,78,38,0.15)] transition-all relative ${style.border} ${style.bg}`}
     >
+      {/* Badge de posición flotante arriba a la derecha — diferenciación visual fuerte */}
+      <div
+        className={`absolute -top-2 -right-2 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${posStyle.bg} ${posStyle.text} ${posStyle.border} shadow-sm`}
+        title={posStyle.label}
+      >
+        <span>{posStyle.icon}</span>
+        <span>{posStyle.label}</span>
+      </div>
+
       <div className={`w-9 h-9 rounded-xl mx-auto mb-2 flex items-center justify-center bg-white ${style.text} border ${style.border}`}>
         <User size={16} />
       </div>
       <p className={`font-mono text-[11px] font-bold mb-0.5 ${style.text}`}>
         {node.profile.codigo_distribuidor ?? '—'}
       </p>
-      <p className="text-[#111111] text-[11px] font-bold leading-tight line-clamp-2 mb-1" title={node.profile.nombre_completo}>
-        {node.profile.nombre_completo}
+      {node.profile.username && (
+        <p className="text-[#1A4E26] text-[10px] font-bold mb-1 truncate" title={`@${node.profile.username}`}>
+          @{node.profile.username}
+        </p>
+      )}
+      <p
+        className={`text-[11px] font-bold leading-tight line-clamp-2 mb-1 ${sinPerfil ? 'text-[#9CA3AF] italic' : 'text-[#111111]'}`}
+        title={nombre}
+      >
+        {sinPerfil ? 'Perfil sin completar' : nombre}
       </p>
       <p className="text-[#D4AF37] text-[10px] font-bold">★ {node.profile.puntos ?? 0} pts</p>
       <div className={`mt-1 inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${style.text} bg-white/70`}>
         {style.label}
       </div>
-      {node.posicion && (
-        <p className="text-[9px] mt-1 text-[#9CA3AF] uppercase tracking-wider">
-          {node.posicion === 'izquierda' ? '← Izq' : 'Der →'}
-        </p>
-      )}
       {total > 0 && (
         <p className="text-[9px] mt-1 text-[#9CA3AF]">+{total} en su red</p>
       )}
@@ -284,80 +317,6 @@ function BinaryNodeCard({ node, depth, maxDepth }: { node: TreeNode; depth: numb
         </TreeBranches>
       )}
     </div>
-  );
-}
-
-// ── Empty slot card (placeholder for incomplete pair) ──
-function EmptySlot({ position }: { position: 'izquierda' | 'derecha' }) {
-  return (
-    <div className="border-2 border-dashed border-[#C8D8CB] rounded-2xl p-3 w-44 text-center bg-white/40">
-      <div className="w-9 h-9 rounded-xl mx-auto mb-2 flex items-center justify-center bg-[#F4F7F5] text-[#9CA3AF]">
-        <Users size={16} />
-      </div>
-      <p className="text-[10px] uppercase tracking-widest text-[#9CA3AF] font-bold mb-1">Disponible</p>
-      <p className="text-[#9CA3AF] text-[11px]">Sin asignar</p>
-      <p className="text-[9px] mt-1 text-[#9CA3AF] uppercase tracking-wider">
-        {position === 'izquierda' ? '← Izq' : 'Der →'}
-      </p>
-    </div>
-  );
-}
-
-// ── Frontal label "node" — virtual pivot between admin and its L+R children ──
-function FrontalHeader({ idx, completo }: { idx: number; completo: boolean }) {
-  return (
-    <div
-      className={`rounded-xl px-3 py-2 text-center w-44 shadow-sm ${
-        completo ? 'bg-[#D4AF37]/15 border border-[#D4AF37]/40' : 'bg-amber-50 border border-amber-300'
-      }`}
-    >
-      <div className="flex items-center justify-center gap-1.5">
-        <Star size={11} className={completo ? 'text-[#D4AF37]' : 'text-amber-600'} fill="currentColor" />
-        <span className={`text-[10px] uppercase tracking-widest font-bold ${
-          completo ? 'text-[#D4AF37]' : 'text-amber-700'
-        }`}>
-          Frontal {idx + 1}
-        </span>
-      </div>
-      <p className={`text-[9px] font-bold uppercase tracking-wider mt-0.5 ${
-        completo ? 'text-[#1A4E26]/70' : 'text-amber-600/80'
-      }`}>
-        {completo ? 'Par completo' : 'En construcción'}
-      </p>
-    </div>
-  );
-}
-
-// ── Frontal PAIR: header + ramas a izquierda y derecha ──
-function FrontalPair({ izquierda, derecha, maxDepth, idx }: {
-  izquierda: TreeNode | null;
-  derecha: TreeNode | null;
-  maxDepth: number;
-  idx: number;
-}) {
-  const completo = !!(izquierda && derecha);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: idx * 0.05 }}
-      className="flex flex-col items-center shrink-0"
-    >
-      <FrontalHeader idx={idx} completo={completo} />
-
-      {/* Ramas: izquierda + derecha como hijos del header */}
-      <TreeBranches gap={24}>
-        {[
-          izquierda
-            ? <BinaryNodeCard key="izq" node={izquierda} depth={0} maxDepth={maxDepth} />
-            : <EmptySlot key="izq-empty" position="izquierda" />,
-          derecha
-            ? <BinaryNodeCard key="der" node={derecha} depth={0} maxDepth={maxDepth} />
-            : <EmptySlot key="der-empty" position="derecha" />,
-        ]}
-      </TreeBranches>
-    </motion.div>
   );
 }
 
@@ -466,8 +425,9 @@ export default function AdminRed() {
     if (search.trim()) {
       const q = search.toLowerCase().trim();
       list = list.filter((n) =>
-        n.profile.nombre_completo.toLowerCase().includes(q) ||
+        (n.profile.nombre_completo ?? '').toLowerCase().includes(q) ||
         (n.profile.codigo_distribuidor ?? '').toLowerCase().includes(q) ||
+        (n.profile.username ?? '').toLowerCase().includes(q) ||
         n.profile.email.toLowerCase().includes(q)
       );
     }
@@ -511,10 +471,9 @@ export default function AdminRed() {
           className="bg-white border border-[#D4AF37]/40 rounded-2xl p-4"
         >
           <p className="text-[10px] uppercase tracking-widest text-[#D4AF37] mb-1 font-bold">Frontales</p>
-          <p className="font-heading font-bold text-3xl text-[#D4AF37]">{Math.ceil(frontales.length / 2)}</p>
+          <p className="font-heading font-bold text-3xl text-[#D4AF37]">{frontales.length}</p>
           <p className="text-[10px] text-[#9CA3AF] mt-1">
-            {Math.floor(frontales.length / 2)} completo{Math.floor(frontales.length / 2) !== 1 ? 's' : ''}
-            {frontales.length % 2 === 1 && ' · 1 en construcción'}
+            directos del admin
           </p>
         </motion.div>
 
@@ -563,7 +522,7 @@ export default function AdminRed() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nombre, código o email..."
+            placeholder="Buscar por nombre, usuario, código o email..."
             className="w-full pl-9 pr-3 py-2 bg-white border border-[#C8D8CB] rounded-xl text-xs text-[#111111] placeholder:text-[#9CA3AF] focus:outline-none focus:border-[#1A4E26] transition-colors"
           />
         </div>
@@ -623,12 +582,20 @@ export default function AdminRed() {
                   const pkg = node.profile.paquete ?? 'basico';
                   const style = paqueteStyles[pkg] ?? paqueteStyles.basico;
                   const parent = node.padre_id ? allNodes.find((n) => n.id === node.padre_id) : null;
+                  const posKey = posicionKey(node.posicion);
+                  const posStyle = posicionStyles[posKey];
+                  const sinPerfil = !node.profile.nombre_completo;
                   return (
                     <tr key={node.id} className="border-b border-[#C8D8CB] last:border-0 hover:bg-[#FAFBFA] transition-colors">
                       <td className="px-4 py-2.5">
                         <Link to={`${basePath}/distribuidores/${node.profile.id}`} className="block hover:text-[#1A4E26]">
-                          <p className="text-[#111111] text-xs font-bold">{node.profile.nombre_completo}</p>
+                          <p className={`text-xs font-bold ${sinPerfil ? 'text-[#9CA3AF] italic' : 'text-[#111111]'}`}>
+                            {sinPerfil ? 'Perfil sin completar' : displayName(node.profile)}
+                          </p>
                           <p className="text-[#1A4E26] text-[10px] font-mono">{node.profile.codigo_distribuidor}</p>
+                          {node.profile.username && (
+                            <p className="text-[#6B7280] text-[10px] font-semibold">@{node.profile.username}</p>
+                          )}
                         </Link>
                       </td>
                       <td className="px-4 py-2.5">
@@ -638,19 +605,17 @@ export default function AdminRed() {
                       </td>
                       <td className="px-4 py-2.5 text-[#D4AF37] font-bold text-xs">★ {node.profile.puntos ?? 0}</td>
                       <td className="px-4 py-2.5 text-xs">
-                        {!node.posicion ? (
-                          <span className="inline-flex items-center gap-1 bg-[#D4AF37]/10 text-[#D4AF37] px-2 py-0.5 rounded text-[10px] font-bold">
-                            <Star size={9} fill="currentColor" /> Frontal
-                          </span>
-                        ) : node.posicion === 'izquierda' ? (
-                          <span className="text-[#1A4E26] font-medium">← Izquierda</span>
-                        ) : (
-                          <span className="text-[#1A4E26] font-medium">Derecha →</span>
-                        )}
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border ${posStyle.bg} ${posStyle.text} ${posStyle.border}`}>
+                          <span>{posStyle.icon}</span>
+                          {posStyle.label}
+                        </span>
                       </td>
                       <td className="px-4 py-2.5 text-[#6B7280] text-xs">N{node.nivel}</td>
                       <td className="px-4 py-2.5 text-[#6B7280] text-xs font-mono">
-                        {parent?.profile.codigo_distribuidor ?? '—'}
+                        <span>{parent?.profile.codigo_distribuidor ?? '—'}</span>
+                        {parent?.profile.username && (
+                          <span className="block text-[10px] font-sans font-semibold">@{parent.profile.username}</span>
+                        )}
                       </td>
                       <td className="px-4 py-2.5">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${
@@ -684,7 +649,7 @@ export default function AdminRed() {
           </h2>
           <p className="text-[10px] text-[#9CA3AF] flex items-center gap-1">
             <RefreshCw size={10} className="text-[#1A4E26]" />
-            {Math.ceil(frontales.length / 2)} frontal{Math.ceil(frontales.length / 2) !== 1 ? 'es' : ''} ({frontales.length} pos.) · profundidad {maxDepth} · zoom y arrastra para navegar
+            {frontales.length} frontal{frontales.length !== 1 ? 'es' : ''} del admin · profundidad {maxDepth} · zoom y arrastra para navegar
           </p>
         </div>
 
@@ -711,38 +676,35 @@ export default function AdminRed() {
                   <p className="font-mono text-[11px] text-[#D4AF37] font-bold mb-0.5">
                     {adminNode.profile.codigo_distribuidor ?? '—'}
                   </p>
+                  {adminNode.profile.username && (
+                    <p className="text-[#D4AF37] text-[10px] font-bold mb-1 truncate" title={`@${adminNode.profile.username}`}>
+                      @{adminNode.profile.username}
+                    </p>
+                  )}
                   <p className="text-white text-sm font-bold leading-tight mb-1 line-clamp-2">
-                    {adminNode.profile.nombre_completo}
+                    {displayName(adminNode.profile)}
                   </p>
                   <p className="text-[#D4AF37] text-xs font-bold">★ {adminNode.profile.puntos ?? 0} pts</p>
                   <p className="text-white/65 text-[10px] mt-1 font-bold uppercase tracking-wider">
-                    ROOT · {Math.ceil(frontales.length / 2)} frontal{Math.ceil(frontales.length / 2) !== 1 ? 'es' : ''}
+                    ROOT · {frontales.length} frontal{frontales.length !== 1 ? 'es' : ''}
                   </p>
                 </div>
 
-                {/* Tree branches from admin to all FrontalPairs */}
+                {/* Tree branches: cada frontal del admin es una rama independiente.
+                    NO se emparejan en izq/der porque el admin admite N frontales (multi-leg).
+                    Bajo cada frontal SI aplica el binario estricto, manejado por BinaryNodeCard. */}
                 {frontales.length > 0 && (() => {
-                  // Sort by created_at ascendente para pareo estable
                   const ordered = [...frontales].sort((a, b) =>
                     new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
                   );
-                  // Agrupar en pares
-                  const pairs: { izq: TreeNode | null; der: TreeNode | null }[] = [];
-                  for (let i = 0; i < ordered.length; i += 2) {
-                    pairs.push({
-                      izq: ordered[i] ?? null,
-                      der: ordered[i + 1] ?? null,
-                    });
-                  }
                   return (
-                    <TreeBranches gap={56} drop={36}>
-                      {pairs.map((pair, idx) => (
-                        <FrontalPair
-                          key={pair.izq?.id ?? pair.der?.id ?? idx}
-                          izquierda={pair.izq}
-                          derecha={pair.der}
+                    <TreeBranches gap={32} drop={36}>
+                      {ordered.map((frontal) => (
+                        <BinaryNodeCard
+                          key={frontal.id}
+                          node={frontal}
+                          depth={0}
                           maxDepth={maxDepth - 1}
-                          idx={idx}
                         />
                       ))}
                     </TreeBranches>

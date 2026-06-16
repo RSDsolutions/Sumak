@@ -109,7 +109,7 @@ export default function Distribuidores() {
     if (search.trim()) {
       const q = search.toLowerCase().trim();
       list = list.filter((d) =>
-        d.nombre_completo.toLowerCase().includes(q) ||
+        (d.nombre_completo ?? '').toLowerCase().includes(q) ||
         (d.codigo_distribuidor ?? '').toLowerCase().includes(q) ||
         (d.username ?? '').toLowerCase().includes(q) ||
         d.email.toLowerCase().includes(q) ||
@@ -121,8 +121,8 @@ export default function Distribuidores() {
     const sorted = [...list];
     switch (sortBy) {
       case 'fecha-asc': sorted.sort((a, b) => new Date(a.fecha_registro).getTime() - new Date(b.fecha_registro).getTime()); break;
-      case 'nombre-asc': sorted.sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo)); break;
-      case 'nombre-desc': sorted.sort((a, b) => b.nombre_completo.localeCompare(a.nombre_completo)); break;
+      case 'nombre-asc': sorted.sort((a, b) => (a.nombre_completo ?? '').localeCompare(b.nombre_completo ?? '')); break;
+      case 'nombre-desc': sorted.sort((a, b) => (b.nombre_completo ?? '').localeCompare(a.nombre_completo ?? '')); break;
       case 'puntos-desc': sorted.sort((a, b) => (b.puntos ?? 0) - (a.puntos ?? 0)); break;
       case 'puntos-asc': sorted.sort((a, b) => (a.puntos ?? 0) - (b.puntos ?? 0)); break;
       case 'codigo-asc': sorted.sort((a, b) => (a.codigo_distribuidor ?? '').localeCompare(b.codigo_distribuidor ?? '')); break;

@@ -96,9 +96,9 @@ export default function MiPerfil() {
 
           <dl className="space-y-4 mb-6">
             {[
-              { label: 'Nombre Completo', value: profile.nombre_completo },
+              { label: 'Nombre Completo', value: profile.nombre_completo ?? 'Pendiente — completar' },
               { label: 'Usuario', value: profile.username ? `@${profile.username}` : '—' },
-              { label: 'Cédula', value: profile.cedula },
+              { label: 'Cédula', value: profile.cedula ?? 'Pendiente — completar' },
               { label: 'Email', value: profile.email },
               { label: 'Código Distribuidor', value: profile.codigo_distribuidor ?? '—' },
             ].map(({ label, value }) => (

@@ -7,7 +7,21 @@ import {
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { logger } from '../../lib/logger';
+import { displayName } from '../../lib/profile';
 import type { NodoBinario, Profile } from '../../lib/types';
+
+type PosicionStyle = {
+  bg: string; text: string; border: string; label: string; icon: '←' | '→' | '★';
+};
+const posicionStyles: Record<'izquierda' | 'derecha' | 'frontal', PosicionStyle> = {
+  izquierda: { bg: 'bg-[#1A4E26]/10', text: 'text-[#1A4E26]', border: 'border-[#1A4E26]/40', label: 'Izquierda', icon: '←' },
+  derecha:   { bg: 'bg-[#256B36]/10', text: 'text-[#256B36]', border: 'border-[#256B36]/40', label: 'Derecha',   icon: '→' },
+  frontal:   { bg: 'bg-[#D4AF37]/15', text: 'text-[#B8860B]', border: 'border-[#D4AF37]/50', label: 'Frontal',   icon: '★' },
+};
+function posicionKey(pos: string | null): 'izquierda' | 'derecha' | 'frontal' {
+  if (pos === 'izquierda' || pos === 'derecha') return pos;
+  return 'frontal';
+}
 
 function Spinner() {
   return (
@@ -42,17 +56,30 @@ function NodeCard({ node, depth, isRoot }: { node: TreeNode; depth: number; isRo
   const pkg = node.profile.paquete ?? 'basico';
   const style = paqueteStyles[pkg] ?? paqueteStyles.basico;
   const isAdmin = node.profile.rol === 'admin';
+  const nombre = displayName(node.profile);
+  const sinPerfil = !node.profile.nombre_completo && !isAdmin;
+  const posKey = posicionKey(node.posicion);
+  const posStyle = posicionStyles[posKey];
 
   return (
     <div className="flex flex-col items-center">
-      <div className={`border-2 rounded-2xl text-center transition-all ${
+      <div className={`border-2 rounded-2xl text-center transition-all relative ${
         isRoot
           ? 'border-[#1A4E26] bg-gradient-to-br from-[#EBF4ED] to-[#D5ECD9] w-56 shadow-[0_8px_24px_rgba(26,78,38,0.15)]'
           : isAdmin
             ? 'border-[#0B2913] bg-gradient-to-br from-[#0F2E18] to-[#1A4E26] w-48'
             : `${style.border} ${style.bg} w-48`
       } p-3.5`}>
-        {/* Top: icon */}
+        {/* Badge de posicion flotante (no se muestra en root ni admin) */}
+        {!isRoot && !isAdmin && (
+          <div
+            className={`absolute -top-2 -right-2 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border shadow-sm ${posStyle.bg} ${posStyle.text} ${posStyle.border}`}
+          >
+            <span>{posStyle.icon}</span>
+            <span>{posStyle.label}</span>
+          </div>
+        )}
+
         <div className={`w-10 h-10 rounded-xl mx-auto mb-2 flex items-center justify-center ${
           isRoot ? 'bg-[#1A4E26] text-white' :
           isAdmin ? 'bg-[#D4AF37]/20 text-[#D4AF37]' :
@@ -61,42 +88,48 @@ function NodeCard({ node, depth, isRoot }: { node: TreeNode; depth: number; isRo
           {isRoot ? <User size={20} /> : isAdmin ? <Crown size={20} /> : <User size={20} />}
         </div>
 
-        {/* Code */}
         <p className={`font-mono text-[11px] font-bold mb-1 ${
           isRoot ? 'text-[#1A4E26]' : isAdmin ? 'text-[#D4AF37]' : style.text
         }`}>
           {node.profile.codigo_distribuidor ?? '—'}
         </p>
+        {node.profile.username && (
+          <p className={`text-[10px] font-bold mb-1 truncate ${
+            isAdmin ? 'text-[#D4AF37]' : 'text-[#1A4E26]'
+          }`} title={`@${node.profile.username}`}>
+            @{node.profile.username}
+          </p>
+        )}
 
-        {/* Name */}
-        <p className={`text-xs font-bold leading-tight mb-1 line-clamp-2 ${isAdmin ? 'text-white' : 'text-[#111111]'}`} title={node.profile.nombre_completo}>
-          {node.profile.nombre_completo}
+        <p
+          className={`text-xs font-bold leading-tight mb-1 line-clamp-2 ${
+            isAdmin ? 'text-white' : sinPerfil ? 'text-[#9CA3AF] italic' : 'text-[#111111]'
+          }`}
+          title={nombre}
+        >
+          {sinPerfil ? 'Perfil sin completar' : nombre}
         </p>
 
-        {/* Stats */}
-        <div className={`text-[10px] font-semibold ${isAdmin ? 'text-[#D4AF37]' : 'text-[#D4AF37]'}`}>
+        <div className={`text-[10px] font-semibold text-[#D4AF37]`}>
           ★ {node.profile.puntos ?? 0} pts
         </div>
 
-        {/* Package label */}
         {!isAdmin && (
           <div className={`mt-1 inline-block px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${style.text} bg-white/60`}>
             {style.label}
           </div>
         )}
 
-        {/* Position / role */}
-        <div className={`text-[10px] mt-1 font-bold uppercase tracking-wider ${
-          isAdmin ? 'text-[#D4AF37]' :
-          isRoot ? 'text-[#1A4E26]' :
-          'text-[#9CA3AF]'
-        }`}>
-          {isRoot ? 'TÚ'
-            : isAdmin ? 'ADMIN'
-            : node.posicion === 'izquierda' ? '← Izquierda'
-            : node.posicion === 'derecha' ? 'Derecha →'
-            : 'Frontal'}
-        </div>
+        {isRoot && (
+          <div className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[#1A4E26]">
+            TÚ
+          </div>
+        )}
+        {isAdmin && (
+          <div className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[#D4AF37]">
+            ADMIN
+          </div>
+        )}
       </div>
 
       {/* Children */}
@@ -241,6 +274,7 @@ export default function MiRed() {
         const prof = profileMap.get(n.distribuidor_id) ?? ({
           id: n.distribuidor_id,
           codigo_distribuidor: null,
+          username: null,
           nombre_completo: '—',
           cedula: '',
           email: '',
@@ -421,7 +455,7 @@ export default function MiRed() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#C8D8CB] bg-[#F4F7F5]">
-                  {['Código', 'Nombre', 'Paquete', 'Puntos', 'Posición', 'Nivel'].map((h) => (
+                  {['Código / usuario', 'Nombre', 'Paquete', 'Puntos', 'Posición', 'Nivel'].map((h) => (
                     <th key={h} className="px-4 py-2.5 text-left text-[#9CA3AF] text-[10px] font-bold uppercase tracking-wider whitespace-nowrap">
                       {h}
                     </th>
@@ -432,19 +466,31 @@ export default function MiRed() {
                 {allInRed.map((node) => {
                   const pkg = node.profile.paquete ?? 'basico';
                   const style = paqueteStyles[pkg] ?? paqueteStyles.basico;
+                  const posKey = posicionKey(node.posicion);
+                  const posStyle = posicionStyles[posKey];
+                  const sinPerfil = !node.profile.nombre_completo;
                   return (
                     <tr key={node.id} className="border-b border-[#C8D8CB] last:border-0 hover:bg-[#FAFBFA] transition-colors">
-                      <td className="px-4 py-2 font-mono text-xs text-[#1A4E26] font-bold">{node.profile.codigo_distribuidor}</td>
-                      <td className="px-4 py-2 text-[#111111] text-xs font-semibold">{node.profile.nombre_completo}</td>
+                      <td className="px-4 py-2">
+                        <p className="font-mono text-xs text-[#1A4E26] font-bold">{node.profile.codigo_distribuidor}</p>
+                        {node.profile.username && (
+                          <p className="text-[#6B7280] text-[10px] font-semibold">@{node.profile.username}</p>
+                        )}
+                      </td>
+                      <td className={`px-4 py-2 text-xs font-semibold ${sinPerfil ? 'text-[#9CA3AF] italic' : 'text-[#111111]'}`}>
+                        {sinPerfil ? 'Perfil sin completar' : displayName(node.profile)}
+                      </td>
                       <td className="px-4 py-2">
                         <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${style.text} ${style.bg} border ${style.border}`}>
                           {style.label}
                         </span>
                       </td>
                       <td className="px-4 py-2 text-[#D4AF37] font-bold text-xs">★ {node.profile.puntos ?? 0}</td>
-                      <td className="px-4 py-2 text-[#6B7280] text-xs">
-                        {!node.posicion ? <span className="text-[#1A4E26] font-medium">Frontal</span> :
-                          node.posicion === 'izquierda' ? '← Izquierda' : 'Derecha →'}
+                      <td className="px-4 py-2 text-xs">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border ${posStyle.bg} ${posStyle.text} ${posStyle.border}`}>
+                          <span>{posStyle.icon}</span>
+                          {posStyle.label}
+                        </span>
                       </td>
                       <td className="px-4 py-2 text-[#6B7280] text-xs">N{node.nivel}</td>
                     </tr>

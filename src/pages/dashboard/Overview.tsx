@@ -119,7 +119,7 @@ export default function Overview() {
       <div className="mb-6">
         <div className="flex items-center gap-3 flex-wrap">
           <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#111111]">
-            Bienvenido, {profile?.nombre_completo?.split(' ')[0]}
+            Bienvenido, {profile?.nombre_completo?.split(' ')[0] ?? (profile?.username ? `@${profile.username}` : '')}
           </h1>
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold text-[#D4AF37] bg-[#D4AF37]/10 border border-[#D4AF37]/30">
             {loading ? '—' : rangoActual.rango}
