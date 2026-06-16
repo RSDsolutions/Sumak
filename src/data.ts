@@ -203,7 +203,8 @@ export interface ContactInfo {
   emailPrincipal: string;
   emailSecundario: string;
   telefono1: string;
-  telefono2: string;
+  /** Telefono secundario opcional. Si esta vacio no se muestra en la UI. */
+  telefono2?: string;
   direccion: string;
   facebook: string;
   instagram: string;
@@ -861,13 +862,13 @@ export const contactInfo: ContactInfo = {
   gerenteGeneral: 'Dr. Luis Paredes',
   emailPrincipal: 'sumak.vida1979@gmail.com',
   emailSecundario: 'vidalife1979@gmail.com',
-  telefono1: '0988447019',
-  telefono2: '0988447019',
+  telefono1: '0986046654',
+  telefono2: '',
   direccion: '5 de Junio entre Bolívar y Calderón, Edificio Santana, primer piso, Oficina SUMAK, Babahoyo, Los Ríos',
   facebook: 'Sumak Vida Ecuador',
   instagram: '@sumakvidaecuador',
   web: 'www.sumak.com.ec',
-  whatsapp: '593988447019',
+  whatsapp: '593986046654',
 };
 
 // ── Plan Config (COD-002) ────────────────────────────────────

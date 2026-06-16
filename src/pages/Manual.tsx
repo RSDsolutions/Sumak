@@ -639,9 +639,8 @@ export default function Manual() {
                   <Phone size={18} />
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-widest text-[#9CA3AF] font-bold mb-0.5">Teléfonos</p>
+                  <p className="text-[10px] uppercase tracking-widest text-[#9CA3AF] font-bold mb-0.5">Teléfono</p>
                   <p className="text-[#111111] text-sm font-semibold">{contactInfo.telefono1}</p>
-                  <p className="text-[#6B7280] text-xs">{contactInfo.telefono2}</p>
                 </div>
               </a>
               <a

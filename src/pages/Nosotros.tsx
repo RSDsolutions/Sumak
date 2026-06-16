@@ -333,7 +333,7 @@ export default function Nosotros() {
               { label: 'Nombre Comercial', value: contactInfo.nombreComercial },
               { label: 'RUC', value: contactInfo.ruc },
               { label: 'Gerente General', value: contactInfo.gerenteGeneral },
-              { label: 'Teléfonos', value: `${contactInfo.telefono1} — ${contactInfo.telefono2}` },
+              { label: 'Teléfono', value: contactInfo.telefono1 },
               { label: 'Email Principal', value: contactInfo.emailPrincipal },
               { label: 'Email Secundario', value: contactInfo.emailSecundario },
               { label: 'Dirección', value: contactInfo.direccion },

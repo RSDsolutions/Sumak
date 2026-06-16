@@ -56,7 +56,7 @@ export default function Footer() {
               <div className="flex flex-col gap-3">
                 <div className="flex items-start gap-2 text-[#6B7280] text-sm">
                   <Phone size={14} className="mt-0.5 shrink-0 text-[#1A4E26]" />
-                  <span>{contactInfo.telefono1} — {contactInfo.telefono2}</span>
+                  <span>{contactInfo.telefono1}</span>
                 </div>
                 <div className="flex items-start gap-2 text-[#6B7280] text-sm">
                   <Mail size={14} className="mt-0.5 shrink-0 text-[#1A4E26]" />

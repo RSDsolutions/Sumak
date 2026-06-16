@@ -25,7 +25,7 @@ export default function Contacto() {
   useSEO({
     title: 'Contacto — Sumak Vida Ecuador',
     description:
-      'Contáctanos. Oficinas en Babahoyo, Los Ríos. WhatsApp 0988447019. Email sumak.vida1979@gmail.com. Atención en horario de oficina.',
+      'Contáctanos. Oficinas en Babahoyo, Los Ríos. WhatsApp 0986046654. Email sumak.vida1979@gmail.com. Atención en horario de oficina.',
     url: '/contacto',
   });
 
@@ -203,8 +203,8 @@ export default function Contacto() {
             {[
               {
                 icon: <Phone size={18} />,
-                title: 'Teléfonos',
-                content: `${contactInfo.telefono1} — ${contactInfo.telefono2}`,
+                title: 'Teléfono',
+                content: contactInfo.telefono1,
               },
               {
                 icon: <Mail size={18} />,
