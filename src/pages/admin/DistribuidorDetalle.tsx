@@ -126,16 +126,60 @@ function MiniNode({ node, depth, maxDepth, isRoot }: {
       </div>
 
       {node.children.length > 0 && depth < maxDepth && (
-        <div className="flex gap-2 mt-3 relative">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-3 h-3 w-px bg-[#C8D8CB]" />
+        <TreeBranches gap={12} drop={16}>
           {node.children.map((child) => (
-            <div key={child.id} className="flex flex-col items-center relative">
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-3 h-3 w-px bg-[#C8D8CB]" />
-              <MiniNode node={child} depth={depth + 1} maxDepth={maxDepth} />
-            </div>
+            <MiniNode key={child.id} node={child} depth={depth + 1} maxDepth={maxDepth} />
           ))}
-        </div>
+        </TreeBranches>
       )}
+    </div>
+  );
+}
+
+// ── Tree branches helper (mismo patron que MiRed y AdminRed) ──
+function TreeBranches({ children, gap = 12, drop = 16 }: {
+  children: React.ReactNode[];
+  gap?: number;
+  drop?: number;
+}) {
+  if (children.length === 0) return null;
+
+  if (children.length === 1) {
+    return (
+      <div className="flex justify-center">
+        <div className="relative" style={{ paddingTop: drop }}>
+          <div
+            className="absolute top-0 left-1/2 -translate-x-1/2 w-px bg-[#C8D8CB]"
+            style={{ height: drop }}
+          />
+          {children[0]}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex justify-center" style={{ gap }}>
+      {children.map((child, i) => {
+        const isFirst = i === 0;
+        const isLast = i === children.length - 1;
+        return (
+          <div key={i} className="relative" style={{ paddingTop: drop }}>
+            <div
+              className="absolute top-0 h-px bg-[#C8D8CB]"
+              style={{
+                left: isFirst ? '50%' : -gap / 2,
+                right: isLast ? '50%' : -gap / 2,
+              }}
+            />
+            <div
+              className="absolute top-0 left-1/2 -translate-x-1/2 w-px bg-[#C8D8CB]"
+              style={{ height: drop }}
+            />
+            {child}
+          </div>
+        );
+      })}
     </div>
   );
 }
