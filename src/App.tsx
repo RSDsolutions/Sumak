@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { AuthProvider } from './lib/auth';
 import { CartProvider } from './lib/cart';
 import { ToastProvider } from './lib/toast';
+import { ProductsProvider } from './lib/productos';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -56,6 +57,7 @@ const AdminPedidos = lazy(() => import('./pages/admin/AdminPedidos'));
 const AdminRed = lazy(() => import('./pages/admin/AdminRed'));
 const AdminEscalera = lazy(() => import('./pages/admin/AdminEscalera'));
 const GestionarStaff = lazy(() => import('./pages/admin/GestionarStaff'));
+const AdminProductos = lazy(() => import('./pages/admin/AdminProductos'));
 
 // Operaciones pages (rol delegado para pedidos / comisiones / solicitudes).
 // Reusa componentes de admin/* — sólo cambia el layout (OperacionesLayout)
@@ -121,6 +123,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <ProductsProvider>
         <CartProvider>
         <ToastProvider>
         <ScrollToTop />
@@ -460,6 +463,16 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/admin/productos"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminLayout>
+                  <AdminProductos />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
 
           {/* ── OPERACIONES ROUTES ───────────────────────── */}
           {/* Reusan componentes admin/* — la lógica RLS y los gates de UI
@@ -548,10 +561,21 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/operaciones/productos"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'operaciones']}>
+                <OperacionesLayout>
+                  <AdminProductos />
+                </OperacionesLayout>
+              </ProtectedRoute>
+            }
+          />
         </Routes>
         </Suspense>
         </ToastProvider>
         </CartProvider>
+        </ProductsProvider>
       </AuthProvider>
     </BrowserRouter>
   );

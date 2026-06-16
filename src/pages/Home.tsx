@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence, type Variants } from 'motion/react';
 import {
   Leaf, Users, Shield, ArrowRight, Star, CheckCircle, ShoppingBag,
   Sparkles, Heart, Award, TrendingUp, Truck, Lock,
 } from 'lucide-react';
-import { products, categoryFilters } from '../data';
+import { categoryFilters } from '../data';
 import { useSEO } from '../lib/seo';
+import { useProducts } from '../lib/productos';
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 30 },
@@ -26,21 +27,6 @@ const heroCarouselSlugs = [
   'colageno-hidrolizado',
   'formula-1000',
 ];
-const heroProducts = heroCarouselSlugs
-  .map((s) => products.find((p) => p.slug === s)!)
-  .filter(Boolean);
-
-const bestsellers = products.filter((p) => p.bestseller);
-const novelties = products.filter((p) => p.nuevo);
-
-// ── Showcase categories ──
-const showcaseCategories = categoryFilters
-  .filter((c) => !['todos', 'material'].includes(c.key))
-  .map((cat) => {
-    const sample = products.find((p) => p.categoriaKey === cat.key && p.imagen);
-    const count = products.filter((p) => p.categoriaKey === cat.key).length;
-    return { ...cat, sample, count };
-  });
 
 // ── Pillars ──
 const pillars = [
@@ -83,6 +69,25 @@ export default function Home() {
     url: '/',
   });
 
+  const { products } = useProducts();
+
+  const heroProducts = useMemo(
+    () => heroCarouselSlugs.map((s) => products.find((p) => p.slug === s)!).filter(Boolean),
+    [products],
+  );
+  const bestsellers = useMemo(() => products.filter((p) => p.bestseller), [products]);
+  const novelties = useMemo(() => products.filter((p) => p.nuevo), [products]);
+  const showcaseCategories = useMemo(
+    () => categoryFilters
+      .filter((c) => !['todos', 'material'].includes(c.key))
+      .map((cat) => {
+        const sample = products.find((p) => p.categoriaKey === cat.key && p.imagen);
+        const count = products.filter((p) => p.categoriaKey === cat.key).length;
+        return { ...cat, sample, count };
+      }),
+    [products],
+  );
+
   // Carousel del hero — cambia de producto cada 4 segundos
   const [heroIndex, setHeroIndex] = useState(0);
   const heroProduct = heroProducts[heroIndex] ?? heroProducts[0];
@@ -93,7 +98,7 @@ export default function Home() {
       setHeroIndex((i) => (i + 1) % heroProducts.length);
     }, 4000);
     return () => clearInterval(id);
-  }, []);
+  }, [heroProducts.length]);
 
   return (
     <div className="bg-white">

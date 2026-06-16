@@ -4,12 +4,14 @@ import {
   ArrowLeft, Check, Package, Sparkles, Crown, Award, Star, ArrowRight,
   Users, TrendingUp, Wallet, ShieldCheck,
 } from 'lucide-react';
-import { getPackBySlug, affiliatePackages, products } from '../data';
+import { getPackBySlug, affiliatePackages } from '../data';
+import { useProducts } from '../lib/productos';
 import { useSEO } from '../lib/seo';
 
 export default function Pack() {
   const { slug } = useParams<{ slug: string }>();
   const pack = slug ? getPackBySlug(slug) : undefined;
+  const { products } = useProducts();
 
   useSEO({
     title: pack ? `${pack.nombre} — Sumak Vida Ecuador` : 'Pack — Sumak',

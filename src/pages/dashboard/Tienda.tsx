@@ -5,9 +5,10 @@ import {
   Search, X, SlidersHorizontal, ShoppingCart, Plus, Minus,
   Star, ArrowRight, Leaf, Check, Sparkles, Package, Crown, Award,
 } from 'lucide-react';
-import { products, categoryFilters, planConfig, affiliatePackages } from '../../data';
+import { categoryFilters, planConfig, affiliatePackages } from '../../data';
 import { useCart } from '../../lib/cart';
 import { useToast } from '../../lib/toast';
+import { useProducts, type ProductoExtended } from '../../lib/productos';
 
 type SortKey = 'destacado' | 'precio-asc' | 'precio-desc' | 'nombre';
 
@@ -22,6 +23,7 @@ const sortOptions: { key: SortKey; label: string }[] = [
 const DISCOUNT = planConfig.descuentoDistribuidor;
 
 export default function Tienda() {
+  const { products } = useProducts();
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('todos');
   const [sortBy, setSortBy] = useState<SortKey>('destacado');
@@ -53,18 +55,18 @@ export default function Tienda() {
         });
     }
     return sorted;
-  }, [activeCategory, search, sortBy]);
+  }, [products, activeCategory, search, sortBy]);
 
   function qtyOf(codigo: string) {
     return items.find((i) => i.codigo === codigo)?.cantidad ?? 0;
   }
 
-  function precioDistribuidorOf(p: typeof products[number]): number {
+  function precioDistribuidorOf(p: ProductoExtended): number {
     // Override por producto si está definido; sino aplicamos el descuento estándar.
     return p.precioDistribuidor ?? parseFloat((p.pvp * DISCOUNT).toFixed(2));
   }
 
-  function handleAdd(p: typeof products[number]) {
+  function handleAdd(p: ProductoExtended) {
     const precio = precioDistribuidorOf(p);
     addItem({ codigo: p.codigo, nombre: p.nombre, pvp: p.pvp, precio, imagen: p.imagen }, 1);
     // UX-010: confirmación discreta de que se añadió al carrito.

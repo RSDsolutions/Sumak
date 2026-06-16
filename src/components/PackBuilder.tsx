@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   Search, Plus, Minus, X, Check, AlertCircle, Package, Leaf,
 } from 'lucide-react';
-import { products, getPrecioDistribuidor, type Product, type AffiliatePackage } from '../data';
+import { getPrecioDistribuidor, type Product, type AffiliatePackage } from '../data';
+import { useProducts, type ProductoExtended } from '../lib/productos';
 import type { PackSelection } from '../lib/cart';
 
 interface PackBuilderProps {
@@ -22,10 +23,10 @@ interface PackBuilderProps {
 }
 
 /** Suma a precio de distribuidor de una seleccion. */
-function sumValue(sels: Map<string, number>): number {
+function sumValue(sels: Map<string, number>, productos: ProductoExtended[]): number {
   let s = 0;
   for (const [codigo, qty] of sels.entries()) {
-    const p = products.find((pr) => pr.codigo === codigo);
+    const p = productos.find((pr) => pr.codigo === codigo);
     if (!p) continue;
     s += getPrecioDistribuidor(p) * qty;
   }
@@ -50,6 +51,7 @@ export default function PackBuilder({
   initialSelections = [],
   onSelectionsChange,
 }: PackBuilderProps) {
+  const { products } = useProducts();
   const [selections, setSelections] = useState<Map<string, number>>(() => {
     const m = new Map<string, number>();
     for (const s of initialSelections) m.set(s.codigo, s.cantidad);
@@ -57,7 +59,7 @@ export default function PackBuilder({
   });
   const [search, setSearch] = useState('');
 
-  const totalValue = useMemo(() => sumValue(selections), [selections]);
+  const totalValue = useMemo(() => sumValue(selections, products), [selections, products]);
   const totalUnits = useMemo(() => {
     let n = 0;
     for (const q of selections.values()) n += q;
@@ -78,7 +80,7 @@ export default function PackBuilder({
       if (pd > 0 && pd < min) min = pd;
     }
     return min === Infinity ? 0 : min;
-  }, []);
+  }, [products]);
 
   // Margen real que tolera el pack: el mayor entre el producto mas barato
   // y el RESIDUAL_MARGIN_USD configurado. Asi nunca quedamos por debajo
@@ -110,14 +112,14 @@ export default function PackBuilder({
       return rb - ra;
     });
     return list;
-  }, [search]);
+  }, [products, search]);
 
   function notifyChange(next: Map<string, number>) {
     const arr: PackSelection[] = Array.from(next.entries()).map(([codigo, cantidad]) => {
       const p = products.find((pr) => pr.codigo === codigo);
       return { codigo, cantidad, nombre: p?.nombre ?? codigo };
     });
-    const total = sumValue(next);
+    const total = sumValue(next, products);
     const remainingNow = Math.round((cap - total) * 100) / 100;
     const exactly = Math.abs(remainingNow) < EPS;
     const lockedResidual = total > 0 && remainingNow > 0 && remainingNow < allowedResidual - EPS;
@@ -135,7 +137,7 @@ export default function PackBuilder({
         const product = products.find((p) => p.codigo === codigo);
         if (!product) return prev;
         // Sumar el nuevo valor total considerando este cambio.
-        const otherValue = sumValue(new Map(Array.from(next.entries()).filter(([c]) => c !== codigo)));
+        const otherValue = sumValue(new Map(Array.from(next.entries()).filter(([c]) => c !== codigo)), products);
         const newTotal = otherValue + getPrecioDistribuidor(product) * newQty;
         if (newTotal - cap > EPS) {
           // Excederia el cupo: bloquear.

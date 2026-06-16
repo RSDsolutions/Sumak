@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { UserCheck, AlertCircle, CheckCircle2 } from 'lucide-react';
 import Modal from './Modal';
 import { supabase } from '../lib/supabase';
@@ -13,6 +14,7 @@ import { explicarCedulaInvalida } from '../lib/validators';
  */
 export default function CompleteProfileModal() {
   const { user, profile, refreshProfile } = useAuth();
+  const location = useLocation();
 
   const [nombre, setNombre] = useState(profile?.nombre_completo ?? '');
   const [cedula, setCedula] = useState(profile?.cedula ?? '');
@@ -23,7 +25,17 @@ export default function CompleteProfileModal() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const open = !!profile && isProfileIncomplete(profile);
+  // Permitimos cerrar el modal sin guardar, pero se vuelve a abrir cada
+  // vez que el usuario navega a otra ruta dentro del dashboard si aun
+  // tiene datos incompletos. Asi el recordatorio no es agresivo pero
+  // tampoco se puede ignorar para siempre.
+  const [dismissed, setDismissed] = useState(false);
+  useEffect(() => {
+    setDismissed(false);
+  }, [location.pathname]);
+
+  const incomplete = !!profile && isProfileIncomplete(profile);
+  const open = incomplete && !dismissed;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -79,12 +91,12 @@ export default function CompleteProfileModal() {
   return (
     <Modal
       open={open}
-      onClose={() => { /* no-op: bloqueado hasta completar */ }}
+      onClose={() => setDismissed(true)}
       title="Completa tu perfil"
       subtitle="Necesitamos algunos datos para activar tu cuenta de distribuidor"
       size="md"
-      closeOnBackdrop={false}
-      showClose={false}
+      closeOnBackdrop
+      showClose
       labelledById="complete-profile-title"
     >
       <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
@@ -94,6 +106,8 @@ export default function CompleteProfileModal() {
             Tu cuenta fue precargada por el equipo SUMAK. Para continuar,
             confirma tu <strong>nombre completo</strong> y tu <strong>cédula</strong>.
             Los datos de contacto son opcionales pero recomendados.
+            <br />
+            Podés cerrar este aviso, pero volverá a aparecer al cambiar de sección hasta que lo completes.
           </p>
         </div>
 

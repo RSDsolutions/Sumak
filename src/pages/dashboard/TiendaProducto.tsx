@@ -6,9 +6,10 @@ import {
   Sparkles, AlertCircle, Plus, Minus, Check, BookOpen, X, Maximize2, Download, Heart,
   ShieldCheck,
 } from 'lucide-react';
-import { products, parseIngredient, planConfig } from '../../data';
+import { parseIngredient, planConfig } from '../../data';
 import { useCart } from '../../lib/cart';
 import { useToast } from '../../lib/toast';
+import { useProducts } from '../../lib/productos';
 
 type TabKey = 'beneficios' | 'ingredientes' | 'modo-uso' | 'precauciones';
 
@@ -18,6 +19,7 @@ const DISCOUNT = planConfig.descuentoDistribuidor;
 export default function TiendaProducto() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { products } = useProducts();
   const product = products.find((p) => p.slug === slug);
   const { addItem, items, setQty: setCartQty } = useCart();
   const toast = useToast();

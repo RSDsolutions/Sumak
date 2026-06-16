@@ -6,13 +6,15 @@ import {
   Truck, Award, ShieldCheck, Heart, Share2, Minus, Plus,
   Sparkles, AlertCircle, Phone, BookOpen, X, Maximize2, Download,
 } from 'lucide-react';
-import { products, contactInfo, parseIngredient } from '../data';
+import { contactInfo, parseIngredient } from '../data';
 import { useSEO } from '../lib/seo';
+import { useProducts } from '../lib/productos';
 
 type TabKey = 'beneficios' | 'ingredientes' | 'modo-uso' | 'precauciones';
 
 export default function ProductDetail() {
   const { slug } = useParams<{ slug: string }>();
+  const { products } = useProducts();
   const product = products.find((p) => p.slug === slug);
 
   const [qty, setQty] = useState(1);

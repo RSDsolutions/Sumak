@@ -2,8 +2,9 @@ import { useState, useMemo, useEffect } from 'react';
 import { motion, type Variants } from 'motion/react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Leaf, Search, Star, ArrowRight, ShoppingBag, Sparkles, X, SlidersHorizontal, Package, Crown, Award } from 'lucide-react';
-import { products, categoryFilters, contactInfo, affiliatePackages } from '../data';
+import { categoryFilters, contactInfo, affiliatePackages } from '../data';
 import { useSEO } from '../lib/seo';
+import { useProducts } from '../lib/productos';
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 20 },
@@ -25,6 +26,7 @@ const sortOptions: { key: SortKey; label: string }[] = [
 ];
 
 export default function Productos() {
+  const { products } = useProducts();
   const [params, setParams] = useSearchParams();
   const [activeCategory, setActiveCategory] = useState(params.get('cat') ?? 'todos');
   const [search, setSearch] = useState('');
@@ -87,7 +89,7 @@ export default function Productos() {
         });
     }
     return sorted;
-  }, [activeCategory, search, sortBy]);
+  }, [products, activeCategory, search, sortBy]);
 
   const activeCategoryLabel = categoryFilters.find((c) => c.key === activeCategory)?.label ?? 'Todos';
 
