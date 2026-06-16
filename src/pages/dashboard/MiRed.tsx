@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import {
   Network, Users, Star, TrendingUp, Hash, Crown, Award, Copy, Check,
@@ -218,18 +218,32 @@ export default function MiRed() {
   // del plan + margen).
   const [maxDepth, setMaxDepth] = useState(6);
 
+  // Mantenemos el profile en una ref para usarlo dentro del load() sin
+  // forzar re-runs del useEffect cuando solo cambia la referencia del objeto.
+  const profileRef = useRef(profile);
+  profileRef.current = profile;
+
+  // Dependemos solo de user?.id (string estable). Si dependieramos del
+  // objeto `profile`, cada refreshProfile (token refresh, modal de completar
+  // datos, etc.) creaba una nueva referencia y disparaba un segundo load()
+  // que corria en paralelo con el primero y dejaba el estado a medias
+  // (cards visibles arriba, en blanco abajo).
   useEffect(() => {
-    if (!user || !profile) return;
+    const uid = user?.id;
+    if (!uid) return;
+
+    let cancelled = false;
+    setLoading(true);
 
     async function load() {
-      const uid = user!.id;
-
       // 1) Cargar el nodo del usuario. maybeSingle no lanza si no hay row.
       const { data: myNode, error: myNodeErr } = await supabase
         .from('red_binaria')
         .select('*')
-        .eq('distribuidor_id', uid)
+        .eq('distribuidor_id', uid!)
         .maybeSingle();
+
+      if (cancelled) return;
 
       if (myNodeErr) {
         logger.error('MiRed: error leyendo nodo del usuario', myNodeErr);
@@ -239,6 +253,8 @@ export default function MiRed() {
       if (!myNode) {
         // El usuario realmente NO esta en red_binaria. Mostramos el estado vacio.
         logger.warn('MiRed: usuario sin nodo en red_binaria', { uid });
+        setRootNode(null);
+        setAllInRed([]);
         setLoading(false);
         return;
       }
@@ -248,6 +264,9 @@ export default function MiRed() {
         .from('red_binaria')
         .select('*')
         .limit(5000);
+
+      if (cancelled) return;
+
       if (allNodesErr) {
         logger.error('MiRed: error leyendo red_binaria', allNodesErr);
         setLoading(false);
@@ -263,13 +282,18 @@ export default function MiRed() {
       const { data: perfiles, error: perfilesErr } = distIds.length > 0
         ? await supabase.from('profiles').select('*').in('id', distIds)
         : { data: [], error: null };
+
+      if (cancelled) return;
+
       if (perfilesErr) {
         logger.error('MiRed: error leyendo profiles', perfilesErr);
       }
 
       const profileMap = new Map<string, Profile>();
       // Fallback: nuestro propio profile siempre disponible desde auth.
-      if (profile) profileMap.set(profile.id, profile);
+      // Lo leemos via ref para no entrar en el dep array del useEffect.
+      const authProfile = profileRef.current;
+      if (authProfile) profileMap.set(authProfile.id, authProfile);
       for (const p of perfiles ?? []) profileMap.set(p.id, p as Profile);
 
       // 4) Construir el mapa de nodos. Si falta un profile dejamos un
@@ -305,7 +329,7 @@ export default function MiRed() {
       if (!nodeMap.has(myNode.id)) {
         nodeMap.set(myNode.id, {
           ...(myNode as unknown as NodoBinario),
-          profile: profile ?? (profileMap.get(uid) as Profile),
+          profile: authProfile ?? (profileMap.get(uid!) as Profile),
           children: [],
         });
       }
@@ -317,6 +341,8 @@ export default function MiRed() {
           if (parent) parent.children.push(node);
         }
       }
+
+      if (cancelled) return;
 
       const myTreeNode = nodeMap.get(myNode.id) ?? null;
       setRootNode(myTreeNode);
@@ -333,7 +359,9 @@ export default function MiRed() {
     }
 
     load();
-  }, [user, profile]);
+
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   const leftChild = rootNode?.children.find((c) => c.posicion === 'izquierda');
   const rightChild = rootNode?.children.find((c) => c.posicion === 'derecha');
