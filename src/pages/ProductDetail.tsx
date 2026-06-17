@@ -47,7 +47,7 @@ export default function ProductDetail() {
               '@type': 'Offer',
               url: `https://sumak.com.ec/productos/${product.slug}`,
               priceCurrency: 'USD',
-              price: product.pvp.toFixed(2),
+              price: product.pvpFinal.toFixed(2),
               availability: product.proximamente
                 ? 'https://schema.org/PreOrder'
                 : 'https://schema.org/InStock',
@@ -74,7 +74,8 @@ export default function ProductDetail() {
   }
 
   const distributorPrice = product.pvp / 2;
-  const totalPrice = product.pvp * qty;
+  const hasDiscount = product.descuentoActivo && product.pvpFinal !== product.pvp;
+  const totalPrice = product.pvpFinal * qty;
 
   const relatedProducts = products
     .filter((p) => p.categoriaKey === product.categoriaKey && p.slug !== product.slug)
@@ -90,7 +91,7 @@ export default function ProductDetail() {
   // Default active tab to first available
   const currentTab = tabs.find((t) => t.key === activeTab) ?? tabs[0];
 
-  const whatsappMsg = `Hola, quiero adquirir: ${product.nombre} (PVP: $${product.pvp.toFixed(2)})${qty > 1 ? ` × ${qty} = $${totalPrice.toFixed(2)}` : ''}`;
+  const whatsappMsg = `Hola, quiero adquirir: ${product.nombre} (PVP: $${product.pvpFinal.toFixed(2)})${qty > 1 ? ` × ${qty} = $${totalPrice.toFixed(2)}` : ''}`;
   const whatsappUrl = `https://wa.me/${contactInfo.whatsapp}?text=${encodeURIComponent(whatsappMsg)}`;
 
   return (
@@ -125,6 +126,11 @@ export default function ProductDetail() {
                   {product.proximamente && (
                     <span className="inline-flex items-center gap-1 bg-[#0B2913] text-[#D4AF37] text-[10px] font-bold tracking-widest uppercase px-3 py-1 rounded-full shadow-md border border-[#D4AF37]/40">
                       Próximamente
+                    </span>
+                  )}
+                  {hasDiscount && product.descuentoPorcentaje !== null && (
+                    <span className="inline-flex items-center gap-1 bg-red-600 text-white text-[10px] font-bold tracking-widest uppercase px-3 py-1 rounded-full shadow-md">
+                      −{product.descuentoPorcentaje}% OFF
                     </span>
                   )}
                   {product.bestseller && (
@@ -279,9 +285,23 @@ export default function ProductDetail() {
               <div className="grid grid-cols-2 gap-4 pb-5 border-b border-[#C8D8CB]">
                 <div>
                   <p className="text-[#9CA3AF] text-[10px] uppercase tracking-wider mb-1">Precio público</p>
-                  <p className="font-heading font-bold text-3xl text-[#111111] leading-none">
-                    ${product.pvp.toFixed(2)}
-                  </p>
+                  {hasDiscount ? (
+                    <>
+                      <div className="flex items-baseline gap-2">
+                        <p className="font-heading font-bold text-3xl text-[#D4AF37] leading-none">
+                          ${product.pvpFinal.toFixed(2)}
+                        </p>
+                        <p className="text-sm text-[#9CA3AF] line-through">${product.pvp.toFixed(2)}</p>
+                      </div>
+                      <p className="text-[10px] text-red-600 font-bold mt-1 uppercase tracking-wider">
+                        {product.descuentoLabel ?? `Ahorra ${product.descuentoPorcentaje}%`}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="font-heading font-bold text-3xl text-[#111111] leading-none">
+                      ${product.pvp.toFixed(2)}
+                    </p>
+                  )}
                 </div>
                 <div className="text-right">
                   <p className="text-[#9CA3AF] text-[10px] uppercase tracking-wider mb-1">Precio distribuidor</p>
@@ -797,7 +817,14 @@ export default function ProductDetail() {
                     <h3 className="font-heading font-bold text-[#111111] text-sm mb-2 leading-tight line-clamp-2 group-hover:text-[#1A4E26] transition-colors">
                       {p.nombre}
                     </h3>
-                    <p className="font-heading font-bold text-[#111111] text-lg">${p.pvp.toFixed(2)}</p>
+                    {p.descuentoActivo && p.pvpFinal !== p.pvp ? (
+                      <div className="flex items-baseline gap-2">
+                        <p className="font-heading font-bold text-[#D4AF37] text-lg">${p.pvpFinal.toFixed(2)}</p>
+                        <p className="text-[11px] text-[#9CA3AF] line-through">${p.pvp.toFixed(2)}</p>
+                      </div>
+                    ) : (
+                      <p className="font-heading font-bold text-[#111111] text-lg">${p.pvp.toFixed(2)}</p>
+                    )}
                   </div>
                 </Link>
               ))}

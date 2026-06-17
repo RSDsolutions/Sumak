@@ -73,10 +73,10 @@ export default function Productos() {
     const sorted = [...list];
     switch (sortBy) {
       case 'precio-asc':
-        sorted.sort((a, b) => a.pvp - b.pvp);
+        sorted.sort((a, b) => a.pvpFinal - b.pvpFinal);
         break;
       case 'precio-desc':
-        sorted.sort((a, b) => b.pvp - a.pvp);
+        sorted.sort((a, b) => b.pvpFinal - a.pvpFinal);
         break;
       case 'nombre':
         sorted.sort((a, b) => a.nombre.localeCompare(b.nombre));
@@ -344,6 +344,11 @@ export default function Productos() {
                           Próximamente
                         </span>
                       )}
+                      {product.descuentoActivo && product.descuentoPorcentaje !== null && (
+                        <span className="inline-flex items-center gap-1 bg-red-600 text-white text-[9px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full shadow-md">
+                          −{product.descuentoPorcentaje}%
+                        </span>
+                      )}
                       {product.bestseller && (
                         <span className="inline-flex items-center gap-1 bg-[#D4AF37] text-[#0B2913] text-[9px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full">
                           <Star size={9} fill="currentColor" /> Top
@@ -413,7 +418,19 @@ export default function Productos() {
                         <div className="flex items-end justify-between mb-3">
                           <div>
                             <p className="text-[10px] text-[#9CA3AF] mb-0.5 uppercase tracking-wider">Precio público</p>
-                            <p className="font-heading font-bold text-[#111111] text-xl leading-none">${product.pvp.toFixed(2)}</p>
+                            {product.descuentoActivo && product.pvpFinal !== product.pvp ? (
+                              <>
+                                <div className="flex items-baseline gap-2">
+                                  <p className="font-heading font-bold text-[#D4AF37] text-xl leading-none">${product.pvpFinal.toFixed(2)}</p>
+                                  <p className="text-[11px] text-[#9CA3AF] line-through">${product.pvp.toFixed(2)}</p>
+                                </div>
+                                {product.descuentoLabel && (
+                                  <p className="text-[9px] text-red-600 font-bold mt-1 uppercase tracking-wider">{product.descuentoLabel}</p>
+                                )}
+                              </>
+                            ) : (
+                              <p className="font-heading font-bold text-[#111111] text-xl leading-none">${product.pvp.toFixed(2)}</p>
+                            )}
                             <p className="text-[10px] text-[#1A4E26] mt-1 font-medium">
                               Distribuidor: ${(product.pvp / 2).toFixed(2)}
                             </p>
@@ -428,7 +445,7 @@ export default function Productos() {
                             Ver Detalle <ArrowRight size={13} />
                           </Link>
                           <a
-                            href={`https://wa.me/${contactInfo.whatsapp}?text=Hola, quiero adquirir: ${product.nombre} (PVP: $${product.pvp.toFixed(2)})`}
+                            href={`https://wa.me/${contactInfo.whatsapp}?text=Hola, quiero adquirir: ${product.nombre} (PVP: $${product.pvpFinal.toFixed(2)})`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center justify-center w-10 h-10 rounded-xl border border-[#C8D8CB] text-[#1A4E26] hover:bg-[#1A4E26] hover:text-white hover:border-[#1A4E26] transition-all"

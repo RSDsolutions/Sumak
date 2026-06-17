@@ -219,6 +219,10 @@ export interface BankAccount {
   titular: string;
   identificacion: string;
   email?: string;
+  /** Color de marca del banco para accent visual en las cards. */
+  brandColor?: string;
+  /** Tipo de documento del titular: "C.I." para cédula, "RUC" para empresas. */
+  documento?: 'C.I.' | 'RUC';
 }
 
 export interface CategoryFilter {
@@ -902,17 +906,28 @@ export const bankAccounts: BankAccount[] = [
   {
     banco: 'Banco Pichincha',
     tipo: 'Cuenta de Ahorros',
-    numero: '2210123456',
-    titular: 'Sumak Vida Ecuador S.A.',
-    identificacion: 'RUC 1291781000001',
-    email: 'sumak.vida1979@gmail.com',
+    numero: '2209693652',
+    titular: 'Anderson Paredes',
+    identificacion: '095481910-8',
+    documento: 'C.I.',
+    brandColor: '#FFDD00',
   },
   {
-    banco: 'Banco Guayaquil',
-    tipo: 'Cuenta Corriente',
-    numero: '0034567890',
-    titular: 'Sumak Vida Ecuador S.A.',
-    identificacion: 'RUC 1291781000001',
-    email: 'sumak.vida1979@gmail.com',
+    banco: 'Produbanco',
+    tipo: 'Cuenta de Ahorros',
+    numero: '20007560670',
+    titular: 'Luis Paredes Atupaña',
+    identificacion: '060287820-9',
+    documento: 'C.I.',
+    brandColor: '#E30613',
+  },
+  {
+    banco: 'Banco Bolivariano',
+    tipo: 'Cuenta de Ahorros',
+    numero: '2051078767',
+    titular: 'Luis Paredes Atupaña',
+    identificacion: '060287820-9',
+    documento: 'C.I.',
+    brandColor: '#003DA5',
   },
 ];

@@ -530,7 +530,7 @@ export default function MiRed() {
           </div>
         </div>
 
-        <div className="p-5 overflow-auto">
+        <div className="overflow-x-auto">
           {loading ? (
             <Spinner />
           ) : !rootNode ? (
@@ -540,7 +540,10 @@ export default function MiRed() {
               <p className="text-sm">Tu posición aún no ha sido asignada por el administrador.</p>
             </div>
           ) : (
-            <div className="flex justify-center overflow-x-auto pb-4 pt-2 min-w-max mx-auto">
+            <div
+              className="flex justify-center px-5 pt-5 pb-6"
+              style={{ width: 'max-content', minWidth: '100%' }}
+            >
               <NodeCard node={rootNode} depth={0} maxDepth={maxDepth} isRoot />
             </div>
           )}

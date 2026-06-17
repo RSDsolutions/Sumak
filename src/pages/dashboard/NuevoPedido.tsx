@@ -564,25 +564,35 @@ export default function NuevoPedido() {
               <div className="p-5 space-y-3">
                 {bankAccounts.map((b) => {
                   const selected = selectedBanco === b.banco;
+                  const accent = b.brandColor ?? '#1A4E26';
+                  const docLabel = b.documento ?? 'Identificación';
                   return (
                     <div
                       key={b.banco}
-                      className={`rounded-2xl border-2 transition-all overflow-hidden ${
+                      className={`relative rounded-2xl border-2 transition-all overflow-hidden ${
                         selected ? 'border-[#1A4E26] bg-[#EBF4ED] shadow-[0_8px_24px_rgba(26,78,38,0.15)]' : 'border-[#C8D8CB] bg-white hover:border-[#A8C2AD]'
                       }`}
                     >
+                      {/* Brand accent stripe */}
+                      <div className="h-1 w-full" style={{ backgroundColor: accent }} />
                       <button
                         type="button"
                         onClick={() => setSelectedBanco(b.banco)}
                         className="w-full flex items-center justify-between gap-3 p-4 text-left"
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${selected ? 'bg-[#1A4E26]' : 'bg-[#F4F7F5] border border-[#C8D8CB]'}`}>
-                            <Landmark size={18} className={selected ? 'text-white' : 'text-[#1A4E26]'} />
+                          <div
+                            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                            style={{
+                              backgroundColor: selected ? '#1A4E26' : `${accent}20`,
+                              color: selected ? '#FFFFFF' : accent,
+                            }}
+                          >
+                            <Landmark size={18} />
                           </div>
                           <div className="min-w-0">
                             <p className="font-heading font-bold text-[#111111] text-base leading-tight">{b.banco}</p>
-                            <p className="text-[#6B7280] text-xs mt-0.5">{b.tipo}</p>
+                            <p className="text-[#6B7280] text-xs mt-0.5">{b.tipo} · {b.titular}</p>
                           </div>
                         </div>
                         <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${selected ? 'bg-[#1A4E26] border-[#1A4E26]' : 'border-[#C8D8CB]'}`}>
@@ -591,17 +601,36 @@ export default function NuevoPedido() {
                       </button>
 
                       {selected && (
-                        <div className="px-4 pb-4 pt-1 space-y-2 text-xs">
+                        <div className="px-4 pb-4 pt-1 space-y-2">
+                          {/* Big account number row */}
+                          <div className="flex items-center justify-between gap-3 bg-white border-2 border-[#1A4E26]/30 rounded-xl px-4 py-3">
+                            <div className="min-w-0">
+                              <p className="text-[10px] uppercase tracking-widest text-[#9CA3AF] font-bold">Número de cuenta</p>
+                              <p className="text-[#1A4E26] font-mono font-bold text-xl leading-none mt-1 break-all">{b.numero}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => copyToClipboard(b.numero, `${b.banco}-num`)}
+                              className="shrink-0 inline-flex items-center gap-1 bg-[#1A4E26] hover:bg-[#163F1E] text-white rounded-lg px-3 py-2 text-xs font-bold transition-colors"
+                            >
+                              {copiedField === `${b.banco}-num` ? (
+                                <><Check size={13} /> Copiado</>
+                              ) : (
+                                <><Copy size={13} /> Copiar</>
+                              )}
+                            </button>
+                          </div>
+
+                          {/* Other fields */}
                           {[
-                            { label: 'Número de cuenta', value: b.numero, key: `${b.banco}-num` },
-                            { label: 'Titular', value: b.titular, key: `${b.banco}-tit` },
-                            { label: 'Identificación', value: b.identificacion, key: `${b.banco}-id` },
-                            ...(b.email ? [{ label: 'Email', value: b.email, key: `${b.banco}-em` }] : []),
+                            { label: 'Beneficiario', value: b.titular, key: `${b.banco}-tit` },
+                            { label: docLabel, value: b.identificacion, key: `${b.banco}-id`, mono: true },
+                            ...(b.email ? [{ label: 'Email', value: b.email, key: `${b.banco}-em`, mono: true }] : []),
                           ].map((row) => (
                             <div key={row.key} className="flex items-center justify-between gap-3 bg-white border border-[#C8D8CB] rounded-xl px-3 py-2">
                               <div className="min-w-0">
                                 <p className="text-[10px] uppercase tracking-widest text-[#9CA3AF] font-bold">{row.label}</p>
-                                <p className="text-[#111111] font-mono font-semibold truncate">{row.value}</p>
+                                <p className={`text-[#111111] font-semibold truncate text-sm ${row.mono ? 'font-mono' : ''}`}>{row.value}</p>
                               </div>
                               <button
                                 type="button"
@@ -609,13 +638,9 @@ export default function NuevoPedido() {
                                 className="shrink-0 inline-flex items-center gap-1 text-[#1A4E26] hover:bg-[#EBF4ED] rounded-lg px-2 py-1.5 text-[11px] font-semibold transition-colors"
                               >
                                 {copiedField === row.key ? (
-                                  <>
-                                    <Check size={12} /> Copiado
-                                  </>
+                                  <><Check size={12} /> Copiado</>
                                 ) : (
-                                  <>
-                                    <Copy size={12} /> Copiar
-                                  </>
+                                  <><Copy size={12} /> Copiar</>
                                 )}
                               </button>
                             </div>

@@ -752,68 +752,107 @@ export default function Registro() {
                         </p>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {bankAccounts.map((b) => (
-                          <div
-                            key={b.banco}
-                            className="rounded-xl border border-[#C8D8CB] bg-gradient-to-br from-white to-[#F4F7F5] overflow-hidden"
-                          >
-                            <div className="flex items-center gap-3 px-4 py-3 bg-[#1A4E26] text-white">
-                              <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center shrink-0">
-                                <Landmark size={16} className="text-[#FFDD00]" />
-                              </div>
-                              <div className="min-w-0">
-                                <p className="font-heading font-bold text-sm leading-tight">{b.banco}</p>
-                                <p className="text-white/70 text-[11px]">{b.tipo}</p>
-                              </div>
-                            </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {bankAccounts.map((b) => {
+                          const accent = b.brandColor ?? '#1A4E26';
+                          const docLabel = b.documento ?? 'Identificación';
+                          return (
+                            <div
+                              key={b.banco}
+                              className="relative rounded-xl border border-[#C8D8CB] bg-white overflow-hidden shadow-[0_2px_8px_rgba(11,41,19,0.05)] hover:shadow-[0_8px_24px_rgba(11,41,19,0.1)] hover:-translate-y-0.5 transition-all duration-200"
+                            >
+                              {/* Brand accent stripe */}
+                              <div className="h-1 w-full" style={{ backgroundColor: accent }} />
 
-                            <div className="p-3 space-y-2">
-                              {[
-                                { label: 'N° de Cuenta', value: b.numero, key: `${b.banco}-num`, highlight: true },
-                                { label: 'Titular', value: b.titular, key: `${b.banco}-tit` },
-                                { label: 'Identificación', value: b.identificacion, key: `${b.banco}-id` },
-                                ...(b.email ? [{ label: 'Email', value: b.email, key: `${b.banco}-em` }] : []),
-                              ].map((row) => (
+                              <div className="flex items-center gap-2.5 px-3.5 py-3 bg-gradient-to-br from-[#0F2E18] to-[#1A4E26] text-white">
                                 <div
-                                  key={row.key}
-                                  className={`flex items-center justify-between gap-2 rounded-lg px-2.5 py-2 border ${
-                                    row.highlight
-                                      ? 'bg-[#EBF4ED] border-[#1A4E26]/30'
-                                      : 'bg-white border-[#E5E7EB]'
-                                  }`}
+                                  className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                                  style={{ backgroundColor: `${accent}25`, color: accent }}
                                 >
-                                  <div className="min-w-0">
-                                    <p className="text-[9px] uppercase tracking-widest text-[#9CA3AF] font-bold">
-                                      {row.label}
+                                  <Landmark size={15} />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="font-heading font-bold text-[13px] leading-tight truncate">{b.banco}</p>
+                                  <p className="text-white/70 text-[10px]">{b.tipo}</p>
+                                </div>
+                              </div>
+
+                              {/* Big account number */}
+                              <div className="px-3.5 pt-3 pb-2 border-b border-[#E5E7EB]">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-[9px] uppercase tracking-widest text-[#9CA3AF] font-bold mb-0.5">
+                                      Número de cuenta
                                     </p>
-                                    <p className={`font-mono font-semibold truncate ${
-                                      row.highlight ? 'text-[#1A4E26] text-base' : 'text-[#111111] text-xs'
-                                    }`}>
-                                      {row.value}
+                                    <p className="font-mono font-bold text-[#1A4E26] text-lg leading-none break-all">
+                                      {b.numero}
                                     </p>
                                   </div>
                                   <button
                                     type="button"
-                                    onClick={() => copyToClipboard(row.value, row.key)}
-                                    className="shrink-0 inline-flex items-center gap-1 text-[#1A4E26] hover:bg-[#EBF4ED] active:bg-[#D7E8DA] rounded-md px-2 py-1.5 text-[10px] font-semibold transition-colors"
-                                    aria-label={`Copiar ${row.label}`}
+                                    onClick={() => copyToClipboard(b.numero, `${b.banco}-num`)}
+                                    className="shrink-0 inline-flex items-center gap-1 text-white bg-[#1A4E26] hover:bg-[#163F1E] rounded-lg px-2 py-1.5 text-[10px] font-bold transition-colors"
+                                    aria-label="Copiar número de cuenta"
                                   >
-                                    {copiedField === row.key ? (
-                                      <>
-                                        <Check size={11} /> Copiado
-                                      </>
+                                    {copiedField === `${b.banco}-num` ? (
+                                      <><Check size={11} /> Copiado</>
                                     ) : (
-                                      <>
-                                        <Copy size={11} /> Copiar
-                                      </>
+                                      <><Copy size={11} /> Copiar</>
                                     )}
                                   </button>
                                 </div>
-                              ))}
+                              </div>
+
+                              {/* Titular + documento */}
+                              <div className="px-3.5 py-2.5 space-y-1.5 text-[11px]">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="min-w-0">
+                                    <p className="text-[9px] uppercase tracking-widest text-[#9CA3AF] font-bold">Beneficiario</p>
+                                    <p className="text-[#111111] font-semibold truncate">{b.titular}</p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => copyToClipboard(b.titular, `${b.banco}-tit`)}
+                                    className="shrink-0 text-[#1A4E26] hover:bg-[#EBF4ED] rounded p-1 transition-colors"
+                                    aria-label="Copiar titular"
+                                  >
+                                    {copiedField === `${b.banco}-tit` ? <Check size={11} /> : <Copy size={11} />}
+                                  </button>
+                                </div>
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="min-w-0">
+                                    <p className="text-[9px] uppercase tracking-widest text-[#9CA3AF] font-bold">{docLabel}</p>
+                                    <p className="text-[#111111] font-mono font-semibold truncate">{b.identificacion}</p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => copyToClipboard(b.identificacion, `${b.banco}-id`)}
+                                    className="shrink-0 text-[#1A4E26] hover:bg-[#EBF4ED] rounded p-1 transition-colors"
+                                    aria-label={`Copiar ${docLabel}`}
+                                  >
+                                    {copiedField === `${b.banco}-id` ? <Check size={11} /> : <Copy size={11} />}
+                                  </button>
+                                </div>
+                                {b.email && (
+                                  <div className="flex items-center justify-between gap-2">
+                                    <div className="min-w-0">
+                                      <p className="text-[9px] uppercase tracking-widest text-[#9CA3AF] font-bold">Email</p>
+                                      <p className="text-[#111111] font-mono text-[10px] truncate">{b.email}</p>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => copyToClipboard(b.email!, `${b.banco}-em`)}
+                                      className="shrink-0 text-[#1A4E26] hover:bg-[#EBF4ED] rounded p-1 transition-colors"
+                                      aria-label="Copiar email"
+                                    >
+                                      {copiedField === `${b.banco}-em` ? <Check size={11} /> : <Copy size={11} />}
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
 
