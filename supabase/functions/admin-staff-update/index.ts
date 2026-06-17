@@ -85,14 +85,20 @@ Deno.serve(async (req: Request) => {
   // 1) Validar JWT del caller
   const authHeader = req.headers.get("Authorization") ?? "";
   if (!authHeader.startsWith("Bearer ")) {
-    return jsonResponse({ error: "No autenticado" }, 401);
+    return jsonResponse({ error: "Falta el header Authorization" }, 401);
   }
-  const supabaseAnon = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    global: { headers: { Authorization: authHeader } },
-  });
-  const { data: userRes, error: userErr } = await supabaseAnon.auth.getUser();
+  const jwt = authHeader.slice("Bearer ".length).trim();
+  if (!jwt) {
+    return jsonResponse({ error: "Token vacio" }, 401);
+  }
+  const supabaseAnon = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // Pasamos el JWT explicitamente — en edge functions el cliente no
+  // tiene session storage, asi que getUser() sin args devuelve null.
+  const { data: userRes, error: userErr } = await supabaseAnon.auth.getUser(jwt);
   if (userErr || !userRes?.user) {
-    return jsonResponse({ error: "No autenticado" }, 401);
+    return jsonResponse({
+      error: `Token invalido o expirado${userErr ? `: ${userErr.message}` : ""}. Cierra sesion y vuelve a entrar.`,
+    }, 401);
   }
   const callerId = userRes.user.id;
 

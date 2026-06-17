@@ -34,7 +34,7 @@ export async function callEdgeFunction<TResp = unknown>(
 ): Promise<TResp> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) {
-    throw new Error('No autenticado');
+    throw new Error('Tu sesion ha expirado. Cierra sesion y vuelve a entrar.');
   }
   const res = await fetch(`${url}/functions/v1/${name}`, {
     method: 'POST',
