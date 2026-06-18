@@ -113,13 +113,11 @@ export interface StaircaseProps {
 function StepIcon({
   isCurrent,
   isAchieved,
-  isLocked,
   tier,
   rangoName,
 }: {
   isCurrent: boolean;
   isAchieved: boolean;
-  isLocked: boolean;
   tier: 1 | 2;
   rangoName: string;
 }) {
@@ -127,15 +125,11 @@ function StepIcon({
   const isDiamond = rangoName.includes('Diamante');
 
   if (isCurrent) return <Star size={14} fill="currentColor" />;
-  // Solo mostramos candado cuando hay un progreso real registrado (plataforma).
-  // En la web publica (sin currentIndex), el escalon se ve como objetivo
-  // por conquistar — sin candado.
-  if (isLocked) return <Lock size={12} />;
+  if (!isAchieved) return <Lock size={12} />;
   if (tier === 2 && isFounder) return <Crown size={14} />;
   if (tier === 2 && isDiamond) return <Gem size={13} />;
   if (tier === 2) return <Trophy size={13} />;
-  if (isAchieved) return <CheckCircle2 size={13} />;
-  return <Trophy size={13} />;
+  return <CheckCircle2 size={13} />;
 }
 
 // Paletas por rango — cada uno tiene su identidad visual distintiva.
@@ -225,10 +219,8 @@ export default function StaircaseVisual({
 
           <div className="flex items-end gap-0 pb-4 w-full">
             {ranks.map((rank, i) => {
-              const hasProgress = currentIndex >= 0;
               const isCurrent = i === currentIndex;
               const isAchieved = currentIndex >= 0 && i <= currentIndex;
-              const isLocked = currentIndex >= 0 && i > currentIndex;
               const isNext = i === currentIndex + 1;
               const height = baseHeight + i * heightStep;
               const tone = getStepTone(i, total, tier, rank.rango);
@@ -348,18 +340,16 @@ export default function StaircaseVisual({
                           );
                         })()}
                       </div>
-                      {/* Bottom: icono check / lock / star — solo en la plataforma con progreso real */}
-                      {hasProgress && (
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center shadow-md ${
-                          isCurrent
-                            ? 'bg-white text-[#D4AF37] ring-2 ring-white animate-pulse'
-                            : isLocked
-                            ? 'bg-black/30 text-white/60'
-                            : 'bg-white/95 ' + tone.text
-                        }`}>
-                          <StepIcon isCurrent={isCurrent} isAchieved={isAchieved} isLocked={isLocked} tier={tier} rangoName={rank.rango} />
-                        </div>
-                      )}
+                      {/* Bottom: icono check / lock / star */}
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center shadow-md ${
+                        isCurrent
+                          ? 'bg-white text-[#D4AF37] ring-2 ring-white animate-pulse'
+                          : isAchieved
+                          ? 'bg-white/95 ' + tone.text
+                          : 'bg-black/30 text-white/60'
+                      }`}>
+                        <StepIcon isCurrent={isCurrent} isAchieved={isAchieved} tier={tier} rangoName={rank.rango} />
+                      </div>
                     </div>
 
                     {/* "Aquí estás" o "Próximo" — etiqueta inferior del escalón */}
@@ -404,10 +394,8 @@ export default function StaircaseVisual({
           <div className="flex flex-col gap-3">
             {[...ranks].reverse().map((rank, revIdx) => {
               const i = total - 1 - revIdx;
-              const hasProgress = currentIndex >= 0;
               const isCurrent = i === currentIndex;
               const isAchieved = currentIndex >= 0 && i <= currentIndex;
-              const isLocked = currentIndex >= 0 && i > currentIndex;
               const isNext = i === currentIndex + 1;
               const tone = getStepTone(i, total, tier, rank.rango);
               const users = usersByRank?.get(i) ?? [];
@@ -480,18 +468,16 @@ export default function StaircaseVisual({
                         );
                       })()}
                     </div>
-                    {/* Bottom: icono — solo en la plataforma con progreso real */}
-                    {hasProgress && (
-                      <div className={`w-9 h-9 rounded-full flex items-center justify-center shadow-md ${
-                        isCurrent
-                          ? 'bg-white text-[#D4AF37] ring-2 ring-white'
-                          : isLocked
-                          ? 'bg-black/30 text-white/60'
-                          : 'bg-white/95 ' + tone.text
-                      }`}>
-                        <StepIcon isCurrent={isCurrent} isAchieved={isAchieved} isLocked={isLocked} tier={tier} rangoName={rank.rango} />
-                      </div>
-                    )}
+                    {/* Bottom: icono */}
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center shadow-md ${
+                      isCurrent
+                        ? 'bg-white text-[#D4AF37] ring-2 ring-white'
+                        : isAchieved
+                        ? 'bg-white/95 ' + tone.text
+                        : 'bg-black/30 text-white/60'
+                    }`}>
+                      <StepIcon isCurrent={isCurrent} isAchieved={isAchieved} tier={tier} rangoName={rank.rango} />
+                    </div>
                   </div>
 
                   {/* Lado derecho: info */}
