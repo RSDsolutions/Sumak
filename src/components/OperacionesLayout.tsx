@@ -56,12 +56,12 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-6 border-b border-white/20">
+      {/* Header — esquina blanca para que el logo se vea bien */}
+      <div className="flex items-center justify-between px-6 py-6 bg-white border-b border-[#C8D8CB]">
         <div>
           <img src="/LOGO_SUMAK.png" alt="Sumak Vida" className="h-14 w-auto object-contain" />
           <div className="mt-2">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-sky-300 bg-sky-400/20 border border-sky-400/40 rounded px-2 py-0.5">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-sky-700 bg-sky-100 border border-sky-300 rounded px-2 py-0.5">
               OPERACIONES
             </span>
           </div>
@@ -70,7 +70,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
           <button
             onClick={onClose}
             aria-label="Cerrar menú"
-            className="text-white/60 hover:text-white transition-colors"
+            className="text-[#6B7280] hover:text-[#111111] transition-colors"
           >
             <X size={20} aria-hidden="true" />
           </button>

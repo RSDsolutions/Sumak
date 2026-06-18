@@ -51,18 +51,18 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-6 border-b border-white/20">
+      {/* Header — esquina blanca para que el logo se vea bien */}
+      <div className="flex items-center justify-between px-6 py-6 bg-white border-b border-[#C8D8CB]">
         <div>
           <img src="/LOGO_SUMAK.png" alt="Sumak Vida" className="h-14 w-auto object-contain" />
           <div className="mt-2">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[#D4AF37] bg-[#D4AF37]/20 border border-[#D4AF37]/40 rounded px-2 py-0.5">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#92680A] bg-[#D4AF37]/15 border border-[#D4AF37]/50 rounded px-2 py-0.5">
               ADMIN
             </span>
           </div>
         </div>
         {onClose && (
-          <button onClick={onClose} className="text-white/60 hover:text-white transition-colors">
+          <button onClick={onClose} className="text-[#6B7280] hover:text-[#111111] transition-colors">
             <X size={20} />
           </button>
         )}
