@@ -192,6 +192,9 @@ export interface Tramo2Rank {
   personasEnRed: number;
   recompensa: string;
   extras?: string;
+  // Sobrescribe la imagen del premio físico (autoResolvePrize) para diferenciar
+  // visualmente premios con el mismo label "Carro" en distintos rangos.
+  extraImage?: string;
 }
 
 export interface ContactInfo {
@@ -851,9 +854,9 @@ export const tramo2Ranks: Tramo2Rank[] = [
   { rango: 'Gerente', nivelesActivos: '1–8', personasEnRed: 500, recompensa: '$50,000.00', extras: 'Proyector' },
   { rango: 'Diamante', nivelesActivos: '1–9', personasEnRed: 1000, recompensa: '$100,000.00', extras: 'Laptop' },
   { rango: 'Diamante Bronce', nivelesActivos: '1–10', personasEnRed: 2000, recompensa: '$200,000.00', extras: 'Moto' },
-  { rango: 'Diamante Plata', nivelesActivos: '1–11', personasEnRed: 3000, recompensa: '$300,000.00', extras: 'Carro' },
-  { rango: 'Diamante Oro', nivelesActivos: '1–12', personasEnRed: 5000, recompensa: '$500,000.00', extras: 'Carro' },
-  { rango: 'Fundador Nacional', nivelesActivos: '1–13', personasEnRed: 7000, recompensa: '$700,000.00', extras: 'Carro' },
+  { rango: 'Diamante Plata', nivelesActivos: '1–11', personasEnRed: 3000, recompensa: '$300,000.00', extras: 'Carro', extraImage: '/img/premios/Carro 1.png' },
+  { rango: 'Diamante Oro', nivelesActivos: '1–12', personasEnRed: 5000, recompensa: '$500,000.00', extras: 'Carro', extraImage: '/img/premios/Carro 2.png' },
+  { rango: 'Fundador Nacional', nivelesActivos: '1–13', personasEnRed: 7000, recompensa: '$700,000.00', extras: 'Carro', extraImage: '/img/premios/Carro 3.png' },
   { rango: 'Fundador Internacional', nivelesActivos: '1–14', personasEnRed: 10000, recompensa: '$1,000,000.00', extras: 'Casa' },
 ];
 

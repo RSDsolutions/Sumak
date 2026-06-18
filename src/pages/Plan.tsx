@@ -221,7 +221,7 @@ function IncomeStreams() {
         rango: r.rango,
         requirement: `${r.personasEnRed.toLocaleString('es-EC')} red · Niv ${r.nivelesActivos}`,
         reward: r.recompensa,
-        extra: r.extras ? { label: r.extras } : undefined,
+        extra: r.extras ? { label: r.extras, image: r.extraImage } : undefined,
       })),
     [],
   );
