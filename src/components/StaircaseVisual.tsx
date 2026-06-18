@@ -243,7 +243,7 @@ export default function StaircaseVisual({
                   } ${isExpanded ? 'z-10' : ''}`}
                 >
                   {/* Info encima del escalón — IMAGEN del premio + reward */}
-                  <div className="mb-2 px-0.5 text-center min-h-[110px] flex flex-col justify-end items-center gap-1">
+                  <div className="mb-2 px-0.5 text-center min-h-[130px] flex flex-col justify-end items-center gap-1">
                     {usersByRank && users.length > 0 && (
                       <span className={`inline-flex items-center justify-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
                         isAchieved
@@ -264,7 +264,7 @@ export default function StaircaseVisual({
                             image={image}
                             fallbackIcon={icon}
                             variant={variant}
-                            className="w-12 h-12"
+                            className="w-16 h-16"
                           />
                           <p className={`text-[9px] font-bold uppercase tracking-wider leading-tight ${
                             variant === 'dark' ? 'text-[#FFE066]' : 'text-[#92680A]'
@@ -299,7 +299,7 @@ export default function StaircaseVisual({
                     {/* Pequeña sombra de profundidad */}
                     <div className="absolute right-0 top-[6px] bottom-0 w-[3px] bg-black/20" />
 
-                    {/* Contenido dentro del bar: logo SUMAK + # + NOMBRE DEL RANGO grande + icono */}
+                    {/* Contenido dentro del bar: logo SUMAK + # + NOMBRE DEL RANGO + requisito + icono */}
                     <div className="absolute inset-0 flex flex-col items-center justify-between gap-1 px-1.5 pt-2 pb-7">
                       {/* Top: chip blanco con logo SUMAK grande + # rango */}
                       <div className="flex items-center gap-1 bg-white/95 rounded-lg px-1.5 py-1 shadow-md">
@@ -312,13 +312,21 @@ export default function StaircaseVisual({
                           #{i + 1}
                         </span>
                       </div>
-                      {/* Middle: NOMBRE DEL RANGO grande y visible */}
-                      <p
-                        className={`text-[12px] font-black leading-[1.1] text-center ${tone.text} drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]`}
-                        style={{ wordBreak: 'break-word', hyphens: 'auto' }}
-                      >
-                        {rank.rango}
-                      </p>
+                      {/* Middle: NOMBRE DEL RANGO + requisito (directos) */}
+                      <div className="flex flex-col items-center gap-0.5">
+                        <p
+                          className={`text-[12px] font-black leading-[1.1] text-center ${tone.text} drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]`}
+                          style={{ wordBreak: 'break-word', hyphens: 'auto' }}
+                        >
+                          {rank.rango}
+                        </p>
+                        <div className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 bg-black/30 backdrop-blur-sm border border-white/15`}>
+                          <Users size={9} className={`${tone.text} opacity-90 shrink-0`} />
+                          <span className={`text-[9px] font-bold ${tone.text} opacity-95 leading-none whitespace-nowrap`}>
+                            {rank.requirement}
+                          </span>
+                        </div>
+                      </div>
                       {/* Bottom: icono check / lock / star */}
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center shadow-md ${
                         isCurrent
@@ -344,10 +352,6 @@ export default function StaircaseVisual({
                     )}
                   </motion.div>
 
-                  {/* Requisito debajo */}
-                  <p className={`text-[11px] font-semibold text-center mt-2 leading-tight ${variant === 'dark' ? 'text-white/65' : 'text-[#6B7280]'}`}>
-                    {rank.requirement}
-                  </p>
                 </motion.button>
               );
             })}
@@ -423,13 +427,21 @@ export default function StaircaseVisual({
                         #{i + 1}
                       </span>
                     </div>
-                    {/* Middle: NOMBRE DEL RANGO grande */}
-                    <p
-                      className={`text-[13px] font-black text-center leading-[1.15] ${tone.text} drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]`}
-                      style={{ wordBreak: 'break-word', hyphens: 'auto' }}
-                    >
-                      {rank.rango}
-                    </p>
+                    {/* Middle: NOMBRE DEL RANGO + requisito (directos) */}
+                    <div className="flex flex-col items-center gap-1">
+                      <p
+                        className={`text-[13px] font-black text-center leading-[1.15] ${tone.text} drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]`}
+                        style={{ wordBreak: 'break-word', hyphens: 'auto' }}
+                      >
+                        {rank.rango}
+                      </p>
+                      <div className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 bg-black/30 backdrop-blur-sm border border-white/15">
+                        <Users size={9} className={`${tone.text} opacity-90 shrink-0`} />
+                        <span className={`text-[9px] font-bold ${tone.text} opacity-95 leading-none whitespace-nowrap`}>
+                          {rank.requirement}
+                        </span>
+                      </div>
+                    </div>
                     {/* Bottom: icono */}
                     <div className={`w-9 h-9 rounded-full flex items-center justify-center shadow-md ${
                       isCurrent
@@ -472,16 +484,13 @@ export default function StaircaseVisual({
                             </span>
                           )}
                         </div>
-                        <p className={`text-xs font-semibold ${variant === 'dark' ? 'text-white/65' : 'text-[#6B7280]'}`}>
-                          {rank.requirement}
-                        </p>
-                        {/* Premio: IMAGEN del premio + label */}
+                        {/* Premio: IMAGEN del premio + label (requirement ya va dentro del escalon) */}
                         {rank.extra && (() => {
                           const resolved = autoResolvePrize(rank.extra.label);
                           const image = rank.extra.image ?? resolved.image;
                           const icon = rank.extra.icon ?? resolved.icon;
                           return (
-                            <div className={`mt-2 inline-flex items-center gap-2 rounded-xl px-3 py-2 border ${
+                            <div className={`mt-1 inline-flex items-center gap-2 rounded-xl px-3 py-2 border ${
                               variant === 'dark'
                                 ? 'bg-gradient-to-r from-[#FFE066]/15 to-[#D4AF37]/5 border-[#FFE066]/40'
                                 : 'bg-gradient-to-r from-[#FFF8DC] to-white border-[#D4AF37]/50'
@@ -490,7 +499,7 @@ export default function StaircaseVisual({
                                 image={image}
                                 fallbackIcon={icon}
                                 variant={variant}
-                                className="w-12 h-12"
+                                className="w-14 h-14"
                               />
                               <div>
                                 <p className={`text-[9px] font-bold uppercase tracking-wider ${variant === 'dark' ? 'text-[#FFE066]/85' : 'text-[#92680A]/85'}`}>

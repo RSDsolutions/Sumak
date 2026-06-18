@@ -59,7 +59,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
       {/* Header — esquina blanca para que el logo se vea bien */}
       <div className="flex items-center justify-between px-6 py-6 bg-white border-b border-[#C8D8CB]">
         <div>
-          <img src="/LOGO_SUMAK.png" alt="Sumak Vida" className="h-14 w-auto object-contain" />
+          <img src="/LOGO_SUMAK.png" alt="Sumak Vida" className="h-20 w-auto object-contain" />
           <div className="mt-2">
             <span className="text-[10px] font-bold uppercase tracking-widest text-sky-700 bg-sky-100 border border-sky-300 rounded px-2 py-0.5">
               OPERACIONES
