@@ -835,7 +835,7 @@ function BinaryCalculator() {
             ¿Cuánto cobras con la comisión binaria?
           </h2>
           <p className="text-white/65 text-base max-w-2xl mx-auto">
-            Mueve los sliders para simular el volumen de cada lado y mira tu comisión en tiempo real.
+            Mueve los lados para simular el volumen de cada lado y mira tu comisión en tiempo real.
           </p>
         </motion.div>
 
