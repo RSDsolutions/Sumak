@@ -217,7 +217,7 @@ export default function StaircaseVisual({
             </span>
           </div>
 
-          <div className="flex items-end gap-0 overflow-x-auto pb-4">
+          <div className="flex items-end gap-0 pb-4 w-full">
             {ranks.map((rank, i) => {
               const isCurrent = i === currentIndex;
               const isAchieved = currentIndex >= 0 && i <= currentIndex;
@@ -238,35 +238,35 @@ export default function StaircaseVisual({
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: '-40px' }}
                   transition={{ duration: 0.35, delay: i * 0.05 }}
-                  className={`flex-1 min-w-[120px] flex flex-col items-stretch text-left ${
+                  className={`flex-1 basis-0 min-w-0 flex flex-col items-stretch text-left ${
                     clickable ? 'cursor-pointer group' : ''
                   } ${isExpanded ? 'z-10' : ''}`}
                 >
-                  {/* Info encima del escalón — IMAGEN grande del premio + reward */}
-                  <div className="mb-2 px-1 text-center min-h-[140px] flex flex-col justify-end items-center gap-1.5">
+                  {/* Info encima del escalón — IMAGEN del premio + reward */}
+                  <div className="mb-2 px-0.5 text-center min-h-[110px] flex flex-col justify-end items-center gap-1">
                     {usersByRank && users.length > 0 && (
-                      <span className={`inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                      <span className={`inline-flex items-center justify-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
                         isAchieved
                           ? 'bg-[#1A4E26] text-white'
                           : 'bg-[#D4AF37] text-[#3D2400]'
                       }`}>
-                        <Users size={11} /> {users.length}
+                        <Users size={10} /> {users.length}
                       </span>
                     )}
-                    {/* Imagen grande del premio físico */}
+                    {/* Imagen del premio físico */}
                     {rank.extra && (() => {
                       const resolved = autoResolvePrize(rank.extra.label);
                       const image = rank.extra.image ?? resolved.image;
                       const icon = rank.extra.icon ?? resolved.icon;
                       return (
-                        <div className="flex flex-col items-center gap-1">
+                        <div className="flex flex-col items-center gap-0.5">
                           <PrizeVisual
                             image={image}
                             fallbackIcon={icon}
                             variant={variant}
-                            className="w-16 h-16"
+                            className="w-12 h-12"
                           />
-                          <p className={`text-[10px] font-bold uppercase tracking-wider leading-tight ${
+                          <p className={`text-[9px] font-bold uppercase tracking-wider leading-tight ${
                             variant === 'dark' ? 'text-[#FFE066]' : 'text-[#92680A]'
                           }`}>
                             {rank.extra.label}
@@ -275,7 +275,7 @@ export default function StaircaseVisual({
                       );
                     })()}
                     {/* Reward ($ del bono) */}
-                    <p className={`text-base font-black leading-tight ${variant === 'dark' ? 'text-[#D4AF37]' : 'text-[#1A4E26]'}`}>
+                    <p className={`text-sm font-black leading-tight ${variant === 'dark' ? 'text-[#D4AF37]' : 'text-[#1A4E26]'}`}>
                       {rank.reward}
                     </p>
                   </div>
@@ -300,27 +300,27 @@ export default function StaircaseVisual({
                     <div className="absolute right-0 top-[6px] bottom-0 w-[3px] bg-black/20" />
 
                     {/* Contenido dentro del bar: logo SUMAK + # + NOMBRE DEL RANGO grande + icono */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-between gap-1 px-2 pt-3 pb-7">
-                      {/* Top: chip blanco con logo SUMAK + # rango */}
-                      <div className="flex items-center gap-1.5 bg-white/95 rounded-full px-1.5 py-0.5 shadow-sm">
+                    <div className="absolute inset-0 flex flex-col items-center justify-between gap-1 px-1.5 pt-2 pb-7">
+                      {/* Top: chip blanco con logo SUMAK grande + # rango */}
+                      <div className="flex items-center gap-1 bg-white/95 rounded-lg px-1.5 py-1 shadow-md">
                         <img
                           src="/LOGO_SUMAK.png"
                           alt="SUMAK"
-                          className="h-3 w-auto"
+                          className="h-5 w-auto"
                         />
-                        <span className="text-[9px] font-bold text-[#0F2E18] tracking-wider">
+                        <span className="text-[10px] font-black text-[#0F2E18] tracking-wider leading-none">
                           #{i + 1}
                         </span>
                       </div>
                       {/* Middle: NOMBRE DEL RANGO grande y visible */}
                       <p
-                        className={`text-[13px] font-black leading-[1.15] text-center ${tone.text} drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]`}
+                        className={`text-[12px] font-black leading-[1.1] text-center ${tone.text} drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]`}
                         style={{ wordBreak: 'break-word', hyphens: 'auto' }}
                       >
                         {rank.rango}
                       </p>
                       {/* Bottom: icono check / lock / star */}
-                      <div className={`w-7 h-7 rounded-full flex items-center justify-center shadow-md ${
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center shadow-md ${
                         isCurrent
                           ? 'bg-white text-[#D4AF37] ring-2 ring-white animate-pulse'
                           : isAchieved
@@ -412,14 +412,14 @@ export default function StaircaseVisual({
                       className="absolute top-0 left-0 right-0 h-[6px] shadow-[0_2px_3px_rgba(0,0,0,0.3)]"
                       style={{ background: tone.tread }}
                     />
-                    {/* Top: chip blanco con logo SUMAK + # */}
-                    <div className="flex items-center gap-1.5 bg-white/95 rounded-full px-1.5 py-0.5 shadow-sm">
+                    {/* Top: chip blanco con logo SUMAK grande + # */}
+                    <div className="flex items-center gap-1 bg-white/95 rounded-lg px-1.5 py-1 shadow-md">
                       <img
                         src="/LOGO_SUMAK.png"
                         alt="SUMAK"
-                        className="h-3 w-auto"
+                        className="h-5 w-auto"
                       />
-                      <span className="text-[9px] font-bold text-[#0F2E18] tracking-wider">
+                      <span className="text-[10px] font-black text-[#0F2E18] tracking-wider leading-none">
                         #{i + 1}
                       </span>
                     </div>
