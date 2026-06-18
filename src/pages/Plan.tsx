@@ -492,18 +492,19 @@ function IncomeStreams() {
                     <li className="flex items-start gap-3">
                       <CheckCircle2 size={17} className="text-[#1A4E26] shrink-0 mt-0.5" />
                       <span>
-                        <strong className="text-[#111111]">Los rangos NO se pierden:</strong> los rangos
-                        alcanzados son permanentes. Una vez subiste a Líder, Diamante o Fundador, ese rango es
-                        tuyo para siempre — solo necesitas mantener tu activación mensual para seguir cobrando.
+                        <strong className="text-[#111111]">Los rangos también se reinician cada mes:</strong>{' '}
+                        todos los rangos de las 2 escaleras (Tramo 1 y Tramo 2) se recalculan al iniciar cada
+                        mes. Cada nuevo ciclo arrancas desde Socio y vuelves a escalar según los afiliados
+                        directos y el volumen de red que generes ese mes.
                       </span>
                     </li>
                     <li className="flex items-start gap-3">
                       <CheckCircle2 size={17} className="text-[#1A4E26] shrink-0 mt-0.5" />
                       <span>
-                        <strong className="text-[#111111]">Los premios físicos son acumulativos:</strong> cada
-                        viaje, electrodoméstico, moto, carro y la casa se entregan <em>una sola vez</em> al
-                        alcanzar el rango por primera vez. Conservas todos los anteriores al escalar al
-                        siguiente.
+                        <strong className="text-[#111111]">Los bonos y premios se cobran cada vez que alcanzas el rango:</strong>{' '}
+                        si vuelves a alcanzar Líder, Gerente o Diamante el siguiente mes, vuelves a cobrar el
+                        bono económico correspondiente. Los premios físicos (viajes, electrodomésticos, moto,
+                        carro y casa) se entregan solo la <em>primera vez</em> que alcanzas el rango.
                       </span>
                     </li>
                   </ul>
@@ -512,7 +513,7 @@ function IncomeStreams() {
                     <Info size={14} className="text-[#92680A] shrink-0 mt-0.5" />
                     <p className="text-[#92680A] text-xs leading-relaxed">
                       El reseteo mensual mantiene la red activa y honesta: premia a quien construye de forma
-                      constante en vez de a quien acumula volumen estancado.
+                      constante mes a mes en vez de quedarse con logros pasados.
                     </p>
                   </div>
                 </div>

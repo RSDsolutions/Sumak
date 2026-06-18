@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import {
   DollarSign, X, Eye, ArrowDown, ArrowUp, Calendar, Hash,
   Layers, Sparkles, CheckCircle2, Clock, AlertCircle, Search,
-  Users, Network, TrendingUp, Crown, Trophy, Filter,
+  Users, Network, TrendingUp, Crown, Trophy, Filter, RefreshCw,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
@@ -263,17 +263,17 @@ export default function AdminMisComisiones({ scope = 'no-afiliacion' }: AdminMis
 
       const [
         { data: comsData },
-        { count: directosCount },
-        { count: redCount },
+        { data: hijosData },
+        { data: distribData },
       ] = await Promise.all([
         comQuery,
         supabase
           .from('profiles')
-          .select('*', { count: 'exact', head: true })
+          .select('id, fecha_aprobacion, fecha_registro')
           .eq('patrocinador_id', user.id),
         supabase
           .from('profiles')
-          .select('*', { count: 'exact', head: true })
+          .select('id, fecha_aprobacion, fecha_registro')
           .eq('rol', 'distribuidor'),
       ]);
 
@@ -286,9 +286,25 @@ export default function AdminMisComisiones({ scope = 'no-afiliacion' }: AdminMis
         };
       });
 
+      // BIZ: los rangos de las 2 escaleras se reinician cada mes.
+      // Solo cuentan los directos y la red afiliados en el mes actual.
+      const now = new Date();
+      const startMs = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+      const endMs = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
+      const isInMonth = (p: { fecha_aprobacion: string | null; fecha_registro: string | null }) => {
+        const dateStr = p.fecha_aprobacion ?? p.fecha_registro;
+        if (!dateStr) return false;
+        const t = new Date(dateStr).getTime();
+        return t >= startMs && t < endMs;
+      };
+      const directosMes = ((hijosData ?? []) as { fecha_aprobacion: string | null; fecha_registro: string | null }[])
+        .filter(isInMonth).length;
+      const redMes = ((distribData ?? []) as { fecha_aprobacion: string | null; fecha_registro: string | null }[])
+        .filter(isInMonth).length;
+
       setComisiones(rows);
-      setDirectos(directosCount ?? 0);
-      setRedTotal(redCount ?? 0);
+      setDirectos(directosMes);
+      setRedTotal(redMes);
       setSelected(new Set());
     } finally {
       setLoading(false);
@@ -487,17 +503,23 @@ export default function AdminMisComisiones({ scope = 'no-afiliacion' }: AdminMis
         </div>
       </div>
 
-      {/* ── Mi Escalera ─────────────────── */}
+      {/* ── Mi Escalera (se reinicia cada mes) ─────────────────── */}
+      <div className="bg-gradient-to-r from-[#FFF8DC]/60 to-transparent border border-[#D4AF37]/30 rounded-xl p-3 mb-3 flex items-center gap-2 text-xs text-[#92680A]">
+        <RefreshCw size={13} className="shrink-0" />
+        <span>
+          Los rangos de las 2 escaleras se reinician cada mes. Aquí ves tu rango del mes calendario actual.
+        </span>
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-6">
         {/* Tramo 1 */}
         <div className="bg-white border border-[#D4AF37]/30 rounded-2xl p-5">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Trophy size={18} className="text-[#D4AF37]" />
-              <p className="text-[10px] uppercase tracking-widest text-[#D4AF37] font-bold">Tramo 1 · Mi rango actual</p>
+              <p className="text-[10px] uppercase tracking-widest text-[#D4AF37] font-bold">Tramo 1 · Rango del mes</p>
             </div>
             <span className="text-[10px] font-bold bg-[#D4AF37]/10 text-[#D4AF37] px-2 py-0.5 rounded">
-              {directos} directo{directos !== 1 ? 's' : ''}
+              {directos} directo{directos !== 1 ? 's' : ''} este mes
             </span>
           </div>
           <div className="flex items-baseline justify-between mb-3">
@@ -528,10 +550,10 @@ export default function AdminMisComisiones({ scope = 'no-afiliacion' }: AdminMis
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Crown size={18} className="text-[#D4AF37]" />
-              <p className="text-[10px] uppercase tracking-widest text-[#D4AF37] font-bold">Tramo 2 · Red total</p>
+              <p className="text-[10px] uppercase tracking-widest text-[#D4AF37] font-bold">Tramo 2 · Red del mes</p>
             </div>
             <span className="text-[10px] font-bold bg-[#D4AF37]/10 text-[#D4AF37] px-2 py-0.5 rounded">
-              {redTotal.toLocaleString('es-EC')} en red
+              {redTotal.toLocaleString('es-EC')} este mes
             </span>
           </div>
           <div className="flex items-baseline justify-between mb-3">

@@ -67,12 +67,12 @@ export default function Overview() {
 
       const [
         { data: comsData },
-        { count: directos },
+        { data: hijosData },
         { data: pedidosMesData },
         { data: ultimosPedidosData },
       ] = await Promise.all([
         supabase.from('comisiones').select('*').eq('beneficiario_id', uid).order('created_at', { ascending: false }).limit(6),
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('patrocinador_id', uid),
+        supabase.from('profiles').select('id, fecha_aprobacion, fecha_registro').eq('patrocinador_id', uid),
         supabase.from('pedidos').select('id, total, estado, created_at').eq('distribuidor_id', uid).gte('created_at', startOfMonth),
         supabase.from('pedidos').select('*, items:pedido_items(*)').eq('distribuidor_id', uid).order('created_at', { ascending: false }).limit(3),
       ]);
@@ -80,6 +80,18 @@ export default function Overview() {
       const coms = (comsData ?? []) as Comision[];
       const pendiente = coms.filter((c) => c.estado === 'pendiente').reduce((s, c) => s + Number(c.monto), 0);
       const pagadas = coms.filter((c) => c.estado === 'pagado').reduce((s, c) => s + Number(c.monto), 0);
+
+      // BIZ: el rango se reinicia cada mes. Solo cuentan los directos
+      // afiliados dentro del mes calendario actual.
+      const startMs = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+      const endMs = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
+      const directosMes = ((hijosData ?? []) as { fecha_aprobacion: string | null; fecha_registro: string | null }[])
+        .filter((h) => {
+          const dateStr = h.fecha_aprobacion ?? h.fecha_registro;
+          if (!dateStr) return false;
+          const t = new Date(dateStr).getTime();
+          return t >= startMs && t < endMs;
+        }).length;
 
       const pedidosMes = (pedidosMesData ?? []) as { id: string; total: number; estado: string; created_at: string }[];
       const calificadosMes = pedidosMes.filter((p) => ['procesando', 'enviado', 'entregado'].includes(p.estado));
@@ -91,7 +103,7 @@ export default function Overview() {
       setStats({
         comisionesPendientes: pendiente,
         comisionesPagadas: pagadas,
-        afiliadosDirectos: directos ?? 0,
+        afiliadosDirectos: directosMes,
         pedidosMes: pedidosMes.length,
         totalCompradoMes: totalMes,
         compraCalificada: calificada,
@@ -375,9 +387,14 @@ export default function Overview() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
             {/* Rango progress */}
             <div className="bg-white border border-[#D4AF37]/30 rounded-2xl p-5 lg:col-span-1">
-              <div className="flex items-center gap-2 mb-3">
-                <TrendingUp size={15} className="text-[#D4AF37]" />
-                <p className="text-[#6B7280] text-xs font-semibold uppercase tracking-wider">Mi rango — Tramo 1</p>
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <div className="flex items-center gap-2">
+                  <TrendingUp size={15} className="text-[#D4AF37]" />
+                  <p className="text-[#6B7280] text-xs font-semibold uppercase tracking-wider">Mi rango del mes — Tramo 1</p>
+                </div>
+                <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider bg-[#D4AF37]/15 text-[#92680A] px-1.5 py-0.5 rounded-full">
+                  <Calendar size={9} /> {monthName}
+                </span>
               </div>
               <div className="flex items-baseline justify-between mb-1">
                 <p className="font-heading font-bold text-xl text-[#D4AF37]">{rangoActual.rango}</p>
@@ -399,8 +416,11 @@ export default function Overview() {
                   </p>
                 </>
               ) : (
-                <p className="text-[#1A4E26] text-xs font-semibold mt-2">Rango máximo alcanzado</p>
+                <p className="text-[#1A4E26] text-xs font-semibold mt-2">Rango máximo alcanzado este mes</p>
               )}
+              <p className="text-[10px] text-[#9CA3AF] mt-2 italic">
+                Se reinicia el día 1 de cada mes.
+              </p>
             </div>
 
             {/* Latest orders */}

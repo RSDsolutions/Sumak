@@ -220,13 +220,13 @@ export default function DistribuidorDetalle() {
         { data: comisionesData },
         { data: pedidosUltimos },
         { data: todosLosPedidos },
-        { count: directosCount },
+        { data: hijosData },
       ] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', uid).single(),
         supabase.from('comisiones').select('*').eq('beneficiario_id', uid).order('created_at', { ascending: false }).limit(10),
         supabase.from('pedidos').select('*').eq('distribuidor_id', uid).order('created_at', { ascending: false }).limit(5),
         supabase.from('pedidos').select('id, total, estado, created_at').eq('distribuidor_id', uid),
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('patrocinador_id', uid),
+        supabase.from('profiles').select('id, fecha_aprobacion, fecha_registro').eq('patrocinador_id', uid),
       ]);
 
       if (cancelled) return;
@@ -339,8 +339,20 @@ export default function DistribuidorDetalle() {
       const volumenDer = rightChild ? sumPuntos(rightChild) : 0;
       const redTotal = myTreeNode ? countSubtree(myTreeNode) : 0;
 
+      // BIZ: el rango se reinicia cada mes. Solo cuentan los directos
+      // afiliados dentro del mes calendario actual.
+      const startMsRng = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+      const endMsRng = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
+      const directosMes = ((hijosData ?? []) as { fecha_aprobacion: string | null; fecha_registro: string | null }[])
+        .filter((h) => {
+          const dateStr = h.fecha_aprobacion ?? h.fecha_registro;
+          if (!dateStr) return false;
+          const t = new Date(dateStr).getTime();
+          return t >= startMsRng && t < endMsRng;
+        }).length;
+
       const newStats: Stats = {
-        directos: directosCount ?? 0,
+        directos: directosMes,
         redTotal,
         izquierdaCount,
         derechaCount,
@@ -426,8 +438,11 @@ export default function DistribuidorDetalle() {
               </span>
             )}
             {rango && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/30 uppercase tracking-widest">
-                <Award size={10} /> {rango.rango}
+              <span
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/30 uppercase tracking-widest"
+                title={`Rango del mes (se reinicia el 1 de cada mes). Calculado con ${stats?.directos ?? 0} directos afiliados en ${monthName}.`}
+              >
+                <Award size={10} /> {rango.rango} · {monthName}
               </span>
             )}
             {stats?.activacionMes ? (
