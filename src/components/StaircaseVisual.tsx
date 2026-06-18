@@ -299,12 +299,19 @@ export default function StaircaseVisual({
                     {/* Pequeña sombra de profundidad */}
                     <div className="absolute right-0 top-[6px] bottom-0 w-[3px] bg-black/20" />
 
-                    {/* Contenido dentro del bar: # + icono + NOMBRE DEL RANGO grande */}
+                    {/* Contenido dentro del bar: logo SUMAK + # + NOMBRE DEL RANGO grande + icono */}
                     <div className="absolute inset-0 flex flex-col items-center justify-between gap-1 px-2 pt-3 pb-7">
-                      {/* Top: # rango */}
-                      <span className={`text-[10px] font-bold ${tone.text} opacity-80 tracking-wider`}>
-                        #{i + 1}
-                      </span>
+                      {/* Top: chip blanco con logo SUMAK + # rango */}
+                      <div className="flex items-center gap-1.5 bg-white/95 rounded-full px-1.5 py-0.5 shadow-sm">
+                        <img
+                          src="/LOGO_SUMAK.png"
+                          alt="SUMAK"
+                          className="h-3 w-auto"
+                        />
+                        <span className="text-[9px] font-bold text-[#0F2E18] tracking-wider">
+                          #{i + 1}
+                        </span>
+                      </div>
                       {/* Middle: NOMBRE DEL RANGO grande y visible */}
                       <p
                         className={`text-[13px] font-black leading-[1.15] text-center ${tone.text} drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]`}
@@ -405,10 +412,17 @@ export default function StaircaseVisual({
                       className="absolute top-0 left-0 right-0 h-[6px] shadow-[0_2px_3px_rgba(0,0,0,0.3)]"
                       style={{ background: tone.tread }}
                     />
-                    {/* Top: # */}
-                    <span className={`text-[10px] font-bold ${tone.text} opacity-80 tracking-wider`}>
-                      #{i + 1}
-                    </span>
+                    {/* Top: chip blanco con logo SUMAK + # */}
+                    <div className="flex items-center gap-1.5 bg-white/95 rounded-full px-1.5 py-0.5 shadow-sm">
+                      <img
+                        src="/LOGO_SUMAK.png"
+                        alt="SUMAK"
+                        className="h-3 w-auto"
+                      />
+                      <span className="text-[9px] font-bold text-[#0F2E18] tracking-wider">
+                        #{i + 1}
+                      </span>
+                    </div>
                     {/* Middle: NOMBRE DEL RANGO grande */}
                     <p
                       className={`text-[13px] font-black text-center leading-[1.15] ${tone.text} drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]`}

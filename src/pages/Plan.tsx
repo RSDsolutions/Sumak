@@ -72,9 +72,9 @@ function Hero() {
           transition={{ duration: 0.7, delay: 0.1 }}
           className="font-heading font-black text-5xl sm:text-6xl lg:text-7xl text-white leading-[1.02] mb-6"
         >
-          6 formas de ganar
+          Más de 10 formas
           <br />
-          con <span className="bg-gradient-to-r from-[#FFE066] via-[#D4AF37] to-[#FFE066] bg-clip-text text-transparent">SUMAK</span>
+          de ganar con <span className="bg-gradient-to-r from-[#FFE066] via-[#D4AF37] to-[#FFE066] bg-clip-text text-transparent">SUMAK</span>
         </motion.h1>
 
         <motion.p
