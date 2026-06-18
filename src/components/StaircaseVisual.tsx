@@ -113,11 +113,13 @@ export interface StaircaseProps {
 function StepIcon({
   isCurrent,
   isAchieved,
+  isLocked,
   tier,
   rangoName,
 }: {
   isCurrent: boolean;
   isAchieved: boolean;
+  isLocked: boolean;
   tier: 1 | 2;
   rangoName: string;
 }) {
@@ -125,11 +127,15 @@ function StepIcon({
   const isDiamond = rangoName.includes('Diamante');
 
   if (isCurrent) return <Star size={14} fill="currentColor" />;
-  if (!isAchieved) return <Lock size={12} />;
+  // Solo mostramos candado cuando hay un progreso real registrado (plataforma).
+  // En la web publica (sin currentIndex), el escalon se ve como objetivo
+  // por conquistar — sin candado.
+  if (isLocked) return <Lock size={12} />;
   if (tier === 2 && isFounder) return <Crown size={14} />;
   if (tier === 2 && isDiamond) return <Gem size={13} />;
   if (tier === 2) return <Trophy size={13} />;
-  return <CheckCircle2 size={13} />;
+  if (isAchieved) return <CheckCircle2 size={13} />;
+  return <Trophy size={13} />;
 }
 
 // Paletas por rango — cada uno tiene su identidad visual distintiva.
@@ -221,6 +227,7 @@ export default function StaircaseVisual({
             {ranks.map((rank, i) => {
               const isCurrent = i === currentIndex;
               const isAchieved = currentIndex >= 0 && i <= currentIndex;
+              const isLocked = currentIndex >= 0 && i > currentIndex;
               const isNext = i === currentIndex + 1;
               const height = baseHeight + i * heightStep;
               const tone = getStepTone(i, total, tier, rank.rango);
@@ -344,11 +351,11 @@ export default function StaircaseVisual({
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center shadow-md ${
                         isCurrent
                           ? 'bg-white text-[#D4AF37] ring-2 ring-white animate-pulse'
-                          : isAchieved
-                          ? 'bg-white/95 ' + tone.text
-                          : 'bg-black/30 text-white/60'
+                          : isLocked
+                          ? 'bg-black/30 text-white/60'
+                          : 'bg-white/95 ' + tone.text
                       }`}>
-                        <StepIcon isCurrent={isCurrent} isAchieved={isAchieved} tier={tier} rangoName={rank.rango} />
+                        <StepIcon isCurrent={isCurrent} isAchieved={isAchieved} isLocked={isLocked} tier={tier} rangoName={rank.rango} />
                       </div>
                     </div>
 
@@ -396,6 +403,7 @@ export default function StaircaseVisual({
               const i = total - 1 - revIdx;
               const isCurrent = i === currentIndex;
               const isAchieved = currentIndex >= 0 && i <= currentIndex;
+              const isLocked = currentIndex >= 0 && i > currentIndex;
               const isNext = i === currentIndex + 1;
               const tone = getStepTone(i, total, tier, rank.rango);
               const users = usersByRank?.get(i) ?? [];
@@ -472,11 +480,11 @@ export default function StaircaseVisual({
                     <div className={`w-9 h-9 rounded-full flex items-center justify-center shadow-md ${
                       isCurrent
                         ? 'bg-white text-[#D4AF37] ring-2 ring-white'
-                        : isAchieved
-                        ? 'bg-white/95 ' + tone.text
-                        : 'bg-black/30 text-white/60'
+                        : isLocked
+                        ? 'bg-black/30 text-white/60'
+                        : 'bg-white/95 ' + tone.text
                     }`}>
-                      <StepIcon isCurrent={isCurrent} isAchieved={isAchieved} tier={tier} rangoName={rank.rango} />
+                      <StepIcon isCurrent={isCurrent} isAchieved={isAchieved} isLocked={isLocked} tier={tier} rangoName={rank.rango} />
                     </div>
                   </div>
 
