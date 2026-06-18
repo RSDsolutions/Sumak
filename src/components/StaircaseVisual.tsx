@@ -243,7 +243,7 @@ export default function StaircaseVisual({
                   } ${isExpanded ? 'z-10' : ''}`}
                 >
                   {/* Info encima del escalón — IMAGEN del premio + reward */}
-                  <div className="mb-2 px-0.5 text-center min-h-[130px] flex flex-col justify-end items-center gap-1">
+                  <div className="mb-2 px-0.5 text-center min-h-[160px] flex flex-col justify-end items-center gap-1">
                     {usersByRank && users.length > 0 && (
                       <span className={`inline-flex items-center justify-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
                         isAchieved
@@ -264,9 +264,9 @@ export default function StaircaseVisual({
                             image={image}
                             fallbackIcon={icon}
                             variant={variant}
-                            className="w-16 h-16"
+                            className="w-24 h-24"
                           />
-                          <p className={`text-[9px] font-bold uppercase tracking-wider leading-tight ${
+                          <p className={`text-[10px] font-bold uppercase tracking-wider leading-tight ${
                             variant === 'dark' ? 'text-[#FFE066]' : 'text-[#92680A]'
                           }`}>
                             {rank.extra.label}
@@ -313,16 +313,16 @@ export default function StaircaseVisual({
                         </span>
                       </div>
                       {/* Middle: NOMBRE DEL RANGO + requisito (directos) */}
-                      <div className="flex flex-col items-center gap-0.5">
+                      <div className="flex flex-col items-center gap-1">
                         <p
                           className={`text-[12px] font-black leading-[1.1] text-center ${tone.text} drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]`}
                           style={{ wordBreak: 'break-word', hyphens: 'auto' }}
                         >
                           {rank.rango}
                         </p>
-                        <div className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 bg-black/30 backdrop-blur-sm border border-white/15`}>
-                          <Users size={9} className={`${tone.text} opacity-90 shrink-0`} />
-                          <span className={`text-[9px] font-bold ${tone.text} opacity-95 leading-none whitespace-nowrap`}>
+                        <div className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 bg-black/40 backdrop-blur-sm border border-white/20`}>
+                          <Users size={11} className={`${tone.text} opacity-95 shrink-0`} />
+                          <span className={`text-[11px] font-bold ${tone.text} opacity-100 leading-none whitespace-nowrap`}>
                             {rank.requirement}
                           </span>
                         </div>
@@ -435,9 +435,9 @@ export default function StaircaseVisual({
                       >
                         {rank.rango}
                       </p>
-                      <div className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 bg-black/30 backdrop-blur-sm border border-white/15">
-                        <Users size={9} className={`${tone.text} opacity-90 shrink-0`} />
-                        <span className={`text-[9px] font-bold ${tone.text} opacity-95 leading-none whitespace-nowrap`}>
+                      <div className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 bg-black/40 backdrop-blur-sm border border-white/20">
+                        <Users size={11} className={`${tone.text} opacity-95 shrink-0`} />
+                        <span className={`text-[11px] font-bold ${tone.text} opacity-100 leading-none whitespace-nowrap`}>
                           {rank.requirement}
                         </span>
                       </div>
@@ -499,7 +499,7 @@ export default function StaircaseVisual({
                                 image={image}
                                 fallbackIcon={icon}
                                 variant={variant}
-                                className="w-14 h-14"
+                                className="w-20 h-20"
                               />
                               <div>
                                 <p className={`text-[9px] font-bold uppercase tracking-wider ${variant === 'dark' ? 'text-[#FFE066]/85' : 'text-[#92680A]/85'}`}>
