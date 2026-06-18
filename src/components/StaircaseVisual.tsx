@@ -312,7 +312,7 @@ export default function StaircaseVisual({
                           #{i + 1}
                         </span>
                       </div>
-                      {/* Middle: NOMBRE DEL RANGO + requisito (directos) */}
+                      {/* Middle: NOMBRE DEL RANGO + requisito (directos / red+niveles) */}
                       <div className="flex flex-col items-center gap-1">
                         <p
                           className={`text-[12px] font-black leading-[1.1] text-center ${tone.text} drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]`}
@@ -320,12 +320,25 @@ export default function StaircaseVisual({
                         >
                           {rank.rango}
                         </p>
-                        <div className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 bg-black/40 backdrop-blur-sm border border-white/20`}>
-                          <Users size={11} className={`${tone.text} opacity-95 shrink-0`} />
-                          <span className={`text-[11px] font-bold ${tone.text} opacity-100 leading-none whitespace-nowrap`}>
-                            {rank.requirement}
-                          </span>
-                        </div>
+                        {(() => {
+                          const lines = rank.requirement.split(' · ');
+                          const isMulti = lines.length > 1;
+                          return (
+                            <div className={`inline-flex items-center gap-1.5 ${isMulti ? 'rounded-xl px-2 py-1' : 'rounded-full px-2 py-0.5'} bg-black/40 backdrop-blur-sm border border-white/20`}>
+                              <Users size={11} className={`${tone.text} opacity-95 shrink-0`} />
+                              <div className="flex flex-col items-start leading-[1.15]">
+                                {lines.map((line, idx) => (
+                                  <span
+                                    key={idx}
+                                    className={`text-[11px] font-bold ${tone.text} opacity-100 whitespace-nowrap`}
+                                  >
+                                    {line}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
                       {/* Bottom: icono check / lock / star */}
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center shadow-md ${
@@ -427,7 +440,7 @@ export default function StaircaseVisual({
                         #{i + 1}
                       </span>
                     </div>
-                    {/* Middle: NOMBRE DEL RANGO + requisito (directos) */}
+                    {/* Middle: NOMBRE DEL RANGO + requisito (directos / red+niveles) */}
                     <div className="flex flex-col items-center gap-1">
                       <p
                         className={`text-[13px] font-black text-center leading-[1.15] ${tone.text} drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]`}
@@ -435,12 +448,25 @@ export default function StaircaseVisual({
                       >
                         {rank.rango}
                       </p>
-                      <div className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 bg-black/40 backdrop-blur-sm border border-white/20">
-                        <Users size={11} className={`${tone.text} opacity-95 shrink-0`} />
-                        <span className={`text-[11px] font-bold ${tone.text} opacity-100 leading-none whitespace-nowrap`}>
-                          {rank.requirement}
-                        </span>
-                      </div>
+                      {(() => {
+                        const lines = rank.requirement.split(' · ');
+                        const isMulti = lines.length > 1;
+                        return (
+                          <div className={`inline-flex items-center gap-1.5 ${isMulti ? 'rounded-xl px-2 py-1' : 'rounded-full px-2 py-0.5'} bg-black/40 backdrop-blur-sm border border-white/20`}>
+                            <Users size={11} className={`${tone.text} opacity-95 shrink-0`} />
+                            <div className="flex flex-col items-start leading-[1.15]">
+                              {lines.map((line, idx) => (
+                                <span
+                                  key={idx}
+                                  className={`text-[11px] font-bold ${tone.text} opacity-100 whitespace-nowrap`}
+                                >
+                                  {line}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                     {/* Bottom: icono */}
                     <div className={`w-9 h-9 rounded-full flex items-center justify-center shadow-md ${
