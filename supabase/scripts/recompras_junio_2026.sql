@@ -24,6 +24,12 @@
 -- Comisiones nivel: mismos porcentajes que submit_pedido vigente
 -- (15/10/8/5/4/3/2/2/1/1/1/1/1/1). Eligibilidad upline = pedido
 -- propio >= $100 en el mes (cualquiera de estos 4 cuenta).
+--
+-- IMPORTANTE: si el comprador no tiene patrocinador_id en profiles,
+-- el script NO genera comisiones nivel para ese pedido. Esto pasa
+-- con seeds historicos o registros donde no se capturo upline. En
+-- esos casos la comision binaria sigue aplicando via el padre en
+-- red_binaria al cierre mensual. Vease el RAISE NOTICE 'AVISO:'.
 -- ============================================================
 
 do $$
@@ -207,6 +213,19 @@ begin
     if exists (select 1 from public.comisiones
                where pedido_id = v_pedido_id and tipo = 'nivel') then
       raise notice 'SKIP comisiones: ya existen para pedido %', v_pedido_id;
+      continue;
+    end if;
+
+    -- Guarda: si el comprador no tiene patrocinador_id en profiles,
+    -- la linea de patrocinio esta vacia y no hay a quien pagar
+    -- comision por nivel. Es valido para recompras de tienda cuando
+    -- el cliente entro sin upline declarado: la comision binaria
+    -- sigue aplicando via el padre en red_binaria al cierre mensual,
+    -- pero la nivel no genera nada. Avisamos y seguimos.
+    perform 1 from public.profiles
+      where id = v_distrib_id and patrocinador_id is not null;
+    if not found then
+      raise notice 'AVISO: % no tiene patrocinador_id. Sin comisiones nivel (la binaria del padre en red_binaria sigue aplicando al cierre mensual).', v_email;
       continue;
     end if;
 
