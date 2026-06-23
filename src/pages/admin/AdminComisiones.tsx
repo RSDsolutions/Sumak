@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import {
   DollarSign, X, Eye, ArrowDown, ArrowUp, Calendar, Hash,
   Layers, Sparkles, CheckCircle2, Clock, AlertCircle, Search,
-  Users, Network, TrendingUp, Filter, Upload,
+  Users, Network, TrendingUp, Filter, Upload, Lock,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { levelCommissions } from '../../data';
@@ -14,6 +14,7 @@ import type { Comision, Profile, TipoComision, EstadoComision } from '../../lib/
 // ── Tabs by estado ──
 const ESTADO_TABS: { key: EstadoComision | 'todas'; label: string }[] = [
   { key: 'pendiente', label: 'Pendientes' },
+  { key: 'retenida', label: 'Retenidas' },
   { key: 'pagado', label: 'Pagadas' },
   { key: 'cancelado', label: 'Canceladas' },
   { key: 'todas', label: 'Todas' },
@@ -47,6 +48,7 @@ function estadoBadge(estado: string) {
     pendiente: 'bg-amber-50 text-amber-600 border border-amber-200',
     pagado: 'bg-[#EBF4ED] text-[#1A4E26] border border-[#1A4E26]/30',
     cancelado: 'bg-red-50 text-red-600 border border-red-200',
+    retenida: 'bg-slate-100 text-slate-600 border border-slate-300',
   };
   return map[estado] ?? '';
 }
@@ -70,6 +72,7 @@ const ESTADO_LABEL: Record<string, string> = {
   pendiente: 'Pendiente',
   pagado: 'Pagado',
   cancelado: 'Cancelado',
+  retenida: 'Retenida',
 };
 
 function Spinner() {
@@ -132,6 +135,7 @@ function DetalleModal({ comision, onClose }: { comision: ComisionRow; onClose: (
                   {comision.estado === 'pagado' && <CheckCircle2 size={10} />}
                   {comision.estado === 'pendiente' && <Clock size={10} />}
                   {comision.estado === 'cancelado' && <AlertCircle size={10} />}
+                  {comision.estado === 'retenida' && <Lock size={10} />}
                   {ESTADO_LABEL[comision.estado] ?? comision.estado}
                 </span>
                 {porcentaje !== null && (
@@ -435,6 +439,7 @@ export default function AdminComisiones({ scope = 'no-afiliacion' }: AdminComisi
     };
     return {
       pendiente: filterByTipo(comisiones.filter((c) => c.estado === 'pendiente')).length,
+      retenida: filterByTipo(comisiones.filter((c) => c.estado === 'retenida')).length,
       pagado: filterByTipo(comisiones.filter((c) => c.estado === 'pagado')).length,
       cancelado: filterByTipo(comisiones.filter((c) => c.estado === 'cancelado')).length,
       todas: filterByTipo(comisiones).length,
@@ -843,6 +848,13 @@ export default function AdminComisiones({ scope = 'no-afiliacion' }: AdminComisi
                             >
                               <CheckCircle2 size={12} /> Pagar
                             </button>
+                          ) : c.estado === 'retenida' ? (
+                            <span
+                              title="El beneficiario debe activarse (>= $100 en el mes) para poder pagar esta comision"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-500 text-[11px] font-bold cursor-not-allowed"
+                            >
+                              <Lock size={12} /> Bloqueada
+                            </span>
                           ) : null}
                           <button
                             onClick={() => setDetalle(c)}

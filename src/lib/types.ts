@@ -1,7 +1,7 @@
 export type PaqueteKey = 'basico' | 'emprendedor' | 'lider';
 export type EstadoAfiliacion = 'pendiente' | 'aprobada' | 'rechazada';
 export type EstadoPedido = 'pendiente' | 'procesando' | 'enviado' | 'entregado' | 'cancelado';
-export type EstadoComision = 'pendiente' | 'pagado' | 'cancelado';
+export type EstadoComision = 'pendiente' | 'pagado' | 'cancelado' | 'retenida';
 export type RolUsuario = 'distribuidor' | 'admin' | 'operaciones';
 export type EstadoDistribuidor = 'activo' | 'suspendido';
 export type PosicionBinaria = 'izquierda' | 'derecha';

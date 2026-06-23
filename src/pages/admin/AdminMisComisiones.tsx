@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import {
   DollarSign, X, Eye, ArrowDown, ArrowUp, Calendar, Hash,
   Layers, Sparkles, CheckCircle2, Clock, AlertCircle, Search,
-  Users, Network, TrendingUp, Crown, Trophy, Filter, RefreshCw,
+  Users, Network, TrendingUp, Crown, Trophy, Filter, RefreshCw, Lock,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
@@ -19,6 +19,7 @@ import {
 
 const ESTADO_TABS: { key: EstadoComision | 'todas'; label: string }[] = [
   { key: 'pendiente', label: 'Pendientes' },
+  { key: 'retenida', label: 'Retenidas' },
   { key: 'pagado', label: 'Pagadas' },
   { key: 'cancelado', label: 'Canceladas' },
   { key: 'todas', label: 'Todas' },
@@ -91,6 +92,7 @@ function DetalleModal({ comision, onClose }: { comision: ComisionRow; onClose: (
                   {comision.estado === 'pagado' && <CheckCircle2 size={10} />}
                   {comision.estado === 'pendiente' && <Clock size={10} />}
                   {comision.estado === 'cancelado' && <AlertCircle size={10} />}
+                  {comision.estado === 'retenida' && <Lock size={10} />}
                   {ESTADO_LABEL[comision.estado] ?? comision.estado}
                 </span>
                 {porcentaje !== null && (
@@ -138,6 +140,8 @@ function DetalleModal({ comision, onClose }: { comision: ComisionRow; onClose: (
                 <p className="text-[#111111] text-sm leading-relaxed">
                   {comision.estado === 'pagado'
                     ? 'Esta comisión ya fue marcada como pagada al admin.'
+                    : comision.estado === 'retenida'
+                    ? 'Esta comisión está retenida hasta que el admin se active con un pedido de al menos $100 en el mes. Pasará a pendiente automáticamente cuando se active.'
                     : comision.estado === 'cancelado'
                     ? 'Esta comisión fue cancelada (por ejemplo, el pedido origen fue anulado).'
                     : 'Esta comisión está pendiente. Como admin puedes marcarla como pagada cuando confirmes el cobro.'}
@@ -387,6 +391,7 @@ export default function AdminMisComisiones({ scope = 'no-afiliacion' }: AdminMis
     };
     return {
       pendiente: filterByTipo(comisiones.filter((c) => c.estado === 'pendiente')).length,
+      retenida: filterByTipo(comisiones.filter((c) => c.estado === 'retenida')).length,
       pagado: filterByTipo(comisiones.filter((c) => c.estado === 'pagado')).length,
       cancelado: filterByTipo(comisiones.filter((c) => c.estado === 'cancelado')).length,
       todas: filterByTipo(comisiones).length,

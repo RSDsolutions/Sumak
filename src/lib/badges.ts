@@ -51,12 +51,14 @@ export const ESTADO_COMISION_LABELS: Record<EstadoComision, string> = {
   pendiente: 'Pendiente',
   pagado: 'Pagado',
   cancelado: 'Cancelado',
+  retenida: 'Retenida',
 };
 
 export const ESTADO_COMISION_BADGE: Record<EstadoComision, string> = {
   pendiente: 'bg-amber-50 text-amber-600 border border-amber-200',
   pagado: 'bg-[#EBF4ED] text-[#1A4E26] border border-[#1A4E26]/30',
   cancelado: 'bg-red-50 text-red-600 border border-red-200',
+  retenida: 'bg-slate-100 text-slate-600 border border-slate-300',
 };
 
 export const TIPO_COMISION_LABELS: Record<TipoComision, string> = {

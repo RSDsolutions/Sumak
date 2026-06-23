@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import {
   DollarSign, TrendingUp, Clock, CheckCircle2, AlertCircle, X, Eye,
-  ArrowUp, ArrowDown, Calendar, Hash, Layers, Sparkles, ExternalLink,
+  ArrowUp, ArrowDown, Calendar, Hash, Layers, Sparkles, ExternalLink, Lock,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
@@ -119,6 +119,7 @@ function DetalleModal({ comision, onClose }: { comision: Comision; onClose: () =
                   {comision.estado === 'pagado' && <CheckCircle2 size={10} />}
                   {comision.estado === 'pendiente' && <Clock size={10} />}
                   {comision.estado === 'cancelado' && <AlertCircle size={10} />}
+                  {comision.estado === 'retenida' && <Lock size={10} />}
                   {ESTADO_LABEL[comision.estado] ?? comision.estado}
                 </span>
                 {porcentaje !== null && (
@@ -170,6 +171,8 @@ function DetalleModal({ comision, onClose }: { comision: Comision; onClose: () =
                     ? 'Esta comisión ya fue marcada como pagada por el administrador.'
                     : comision.estado === 'cancelado'
                     ? 'Esta comisión fue cancelada (por ejemplo, si el pedido origen fue anulado).'
+                    : comision.estado === 'retenida'
+                    ? 'Esta comisión está retenida hasta que actives tu mes con un pedido de al menos $100. Cuando te actives, pasará automáticamente a pendiente y podrá pagarse.'
                     : 'Esta comisión está pendiente de pago por parte del administrador.'}
                 </p>
               </div>
