@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { User, Lock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Lock, CheckCircle2, AlertCircle, Camera, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
+import Avatar from '../../components/Avatar';
 
 const paqueteLabel: Record<string, string> = {
   basico: 'Básico ($125)',
@@ -9,8 +10,16 @@ const paqueteLabel: Record<string, string> = {
   lider: 'Líder ($525)',
 };
 
+const AVATAR_BUCKET = 'avatares';
+const AVATAR_MAX_MB = 3;
+const AVATAR_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
 export default function MiPerfil() {
-  const { profile, user } = useAuth();
+  const { profile, user, refreshProfile } = useAuth();
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarMsg, setAvatarMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const [telefono, setTelefono] = useState(profile?.telefono ?? '');
   const [direccion, setDireccion] = useState(profile?.direccion ?? '');
@@ -69,6 +78,46 @@ export default function MiPerfil() {
     }
   }
 
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !user) return;
+
+    if (!AVATAR_MIME_TYPES.includes(file.type)) {
+      setAvatarMsg({ type: 'error', text: 'Formato no soportado. Usa JPG, PNG o WEBP.' });
+      return;
+    }
+    if (file.size > AVATAR_MAX_MB * 1024 * 1024) {
+      setAvatarMsg({ type: 'error', text: `La imagen no debe superar los ${AVATAR_MAX_MB} MB.` });
+      return;
+    }
+
+    setUploadingAvatar(true);
+    setAvatarMsg(null);
+    try {
+      const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg';
+      const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from(AVATAR_BUCKET)
+        .upload(path, file, { contentType: file.type });
+      if (upErr) throw new Error(upErr.message);
+
+      const { data } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(path);
+      const { error: updErr } = await supabase
+        .from('profiles')
+        .update({ avatar_url: data.publicUrl })
+        .eq('id', user.id);
+      if (updErr) throw new Error(updErr.message);
+
+      await refreshProfile();
+      setAvatarMsg({ type: 'success', text: 'Foto de perfil actualizada.' });
+    } catch (err) {
+      setAvatarMsg({ type: 'error', text: err instanceof Error ? err.message : 'Error al subir la foto.' });
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
+
   if (!profile) return null;
 
   const paqueteBadgeClass = profile.paquete === 'lider'
@@ -87,12 +136,42 @@ export default function MiPerfil() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Profile info — non-editable */}
         <div className="bg-white border border-[#C8D8CB] rounded-2xl p-6 shadow-[0_0_8px_rgba(26,78,38,0.04)]">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-[#1A4E26]/10 rounded-xl flex items-center justify-center">
-              <User size={20} className="text-[#1A4E26]" />
+          <div className="flex items-center gap-4 mb-6">
+            <div className="relative">
+              <Avatar profile={profile} size={64} />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingAvatar}
+                title="Cambiar foto de perfil"
+                className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#1A4E26] text-white flex items-center justify-center border-2 border-white shadow-sm hover:bg-[#163F1E] disabled:opacity-60 transition-colors"
+              >
+                {uploadingAvatar ? <Loader2 size={13} className="animate-spin" /> : <Camera size={13} />}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={AVATAR_MIME_TYPES.join(',')}
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
             </div>
-            <h2 className="font-heading font-semibold text-[#111111]">Información Personal</h2>
+            <div>
+              <h2 className="font-heading font-semibold text-[#111111]">Información Personal</h2>
+              <p className="text-[#9CA3AF] text-xs mt-0.5">Toca el ícono para cambiar tu foto (JPG, PNG o WEBP, máx. {AVATAR_MAX_MB} MB)</p>
+            </div>
           </div>
+
+          {avatarMsg && (
+            <div className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm mb-4 ${
+              avatarMsg.type === 'success'
+                ? 'bg-[#EBF4ED] border border-[#1A4E26]/30 text-[#1A4E26]'
+                : 'bg-red-50 border border-red-200 text-red-600'
+            }`}>
+              {avatarMsg.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+              {avatarMsg.text}
+            </div>
+          )}
 
           <dl className="space-y-4 mb-6">
             {[

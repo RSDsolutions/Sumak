@@ -18,6 +18,7 @@ import { useCart } from '../lib/cart';
 import { useSEO } from '../lib/seo';
 import { displayName } from '../lib/profile';
 import CompleteProfileModal from './CompleteProfileModal';
+import Avatar from './Avatar';
 
 interface NavItem {
   label: string;
@@ -76,9 +77,12 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
 
       {/* Profile info */}
       {profile && (
-        <div className="px-6 py-4 border-b border-white/20">
-          <p className="text-white text-sm font-semibold truncate">{displayName(profile)}</p>
-          <p className="text-white/60 text-xs mt-0.5">{profile.codigo_distribuidor ?? '—'}</p>
+        <div className="px-6 py-4 border-b border-white/20 flex items-center gap-3">
+          <Avatar profile={profile} size={40} className="ring-2 ring-white/20" />
+          <div className="min-w-0">
+            <p className="text-white text-sm font-semibold truncate">{displayName(profile)}</p>
+            <p className="text-white/60 text-xs mt-0.5">{profile.codigo_distribuidor ?? '—'}</p>
+          </div>
         </div>
       )}
 

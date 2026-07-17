@@ -473,6 +473,16 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/admin/perfil"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminLayout>
+                  <MiPerfil />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
 
           {/* ── OPERACIONES ROUTES ───────────────────────── */}
           {/* Reusan componentes admin/* — la lógica RLS y los gates de UI
@@ -567,6 +577,16 @@ export default function App() {
               <ProtectedRoute allowedRoles={['admin', 'operaciones']}>
                 <OperacionesLayout>
                   <AdminProductos />
+                </OperacionesLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/operaciones/perfil"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'operaciones']}>
+                <OperacionesLayout>
+                  <MiPerfil />
                 </OperacionesLayout>
               </ProtectedRoute>
             }

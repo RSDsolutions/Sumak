@@ -9,12 +9,14 @@ import {
   Network,
   Trophy,
   Package,
+  User,
   Menu,
   X,
   LogOut,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useSEO } from '../lib/seo';
+import Avatar from './Avatar';
 
 interface NavItem {
   label: string;
@@ -43,6 +45,7 @@ const navItems: NavItem[] = [
   { label: 'Distribuidores', to: '/operaciones/distribuidores', icon: <Users size={18} aria-hidden="true" /> },
   { label: 'Red Binaria', to: '/operaciones/red', icon: <Network size={18} aria-hidden="true" /> },
   { label: 'Escalera del Éxito', to: '/operaciones/escalera', icon: <Trophy size={18} aria-hidden="true" /> },
+  { label: 'Mi Perfil', to: '/operaciones/perfil', icon: <User size={18} aria-hidden="true" /> },
 ];
 
 function SidebarContent({ onClose }: { onClose?: () => void }) {
@@ -79,9 +82,12 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
 
       {/* Profile info */}
       {profile && (
-        <div className="px-6 py-4 border-b border-white/20">
-          <p className="text-white text-sm font-semibold truncate">{profile.nombre_completo}</p>
-          <p className="text-white/60 text-xs mt-0.5 truncate">{profile.email}</p>
+        <div className="px-6 py-4 border-b border-white/20 flex items-center gap-3">
+          <Avatar profile={profile} size={40} className="ring-2 ring-white/20" />
+          <div className="min-w-0">
+            <p className="text-white text-sm font-semibold truncate">{profile.nombre_completo}</p>
+            <p className="text-white/60 text-xs mt-0.5 truncate">{profile.email}</p>
+          </div>
         </div>
       )}
 

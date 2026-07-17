@@ -12,12 +12,14 @@ import {
   UserPlus,
   UserCog,
   Package,
+  User,
   Menu,
   X,
   LogOut,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useSEO } from '../lib/seo';
+import Avatar from './Avatar';
 
 interface NavItem {
   label: string;
@@ -38,6 +40,7 @@ const navItems: NavItem[] = [
   { label: 'Red Binaria', to: '/admin/red', icon: <Network size={18} /> },
   { label: 'Escalera del Éxito', to: '/admin/escalera', icon: <Trophy size={18} /> },
   { label: 'Gestionar Personal', to: '/admin/personal', icon: <UserCog size={18} /> },
+  { label: 'Mi Perfil', to: '/admin/perfil', icon: <User size={18} /> },
 ];
 
 function SidebarContent({ onClose }: { onClose?: () => void }) {
@@ -92,7 +95,10 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
 
       {/* Footer */}
       <div className="px-4 py-4 border-t border-white/20">
-        <p className="text-white/50 text-xs truncate mb-3">{profile?.email}</p>
+        <div className="flex items-center gap-2 mb-3">
+          <Avatar profile={profile} size={28} className="ring-2 ring-white/20" />
+          <p className="text-white/50 text-xs truncate">{profile?.email}</p>
+        </div>
         <button
           onClick={handleSignOut}
           className="flex items-center gap-2 w-full px-4 py-2.5 rounded-xl text-sm text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200"
