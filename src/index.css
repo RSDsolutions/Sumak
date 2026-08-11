@@ -55,6 +55,25 @@
   .shadow-emerald-glow {
     box-shadow: 0 0 20px rgba(26, 78, 38, 0.25);
   }
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+  .transform-style-3d {
+    transform-style: preserve-3d;
+  }
+  .backface-hidden {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  .rotate-y-180 {
+    transform: rotateY(180deg);
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
 }
 
 body {

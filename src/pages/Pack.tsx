@@ -7,11 +7,13 @@ import {
 import { getPackBySlug, affiliatePackages } from '../data';
 import { useProducts } from '../lib/productos';
 import { useSEO } from '../lib/seo';
+import { useAuth } from '../lib/auth';
 
 export default function Pack() {
   const { slug } = useParams<{ slug: string }>();
   const pack = slug ? getPackBySlug(slug) : undefined;
   const { products } = useProducts();
+  const { user } = useAuth();
 
   useSEO({
     title: pack ? `${pack.nombre} — Sumak Vida Ecuador` : 'Pack — Sumak',
@@ -136,17 +138,26 @@ export default function Pack() {
 
               {/* CTA */}
               <div className="flex flex-col sm:flex-row gap-3">
+                {user ? (
+                  <Link
+                    to={`/dashboard/tienda/pack/${pack.slug}`}
+                    className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-[#D4AF37] text-[#0B2913] font-bold text-sm hover:bg-[#E8C94A] transition-all shadow-[0_8px_24px_rgba(212,175,55,0.4)] cursor-pointer"
+                  >
+                    <Package size={16} /> Armar pack <ArrowRight size={16} />
+                  </Link>
+                ) : (
+                  <Link
+                    to={`/registro?paquete=${pack.paqueteKey}`}
+                    className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-[#D4AF37] text-[#0B2913] font-bold text-sm hover:bg-[#E8C94A] transition-all shadow-[0_8px_24px_rgba(212,175,55,0.4)]"
+                  >
+                    Afiliarme con este pack <ArrowRight size={16} />
+                  </Link>
+                )}
                 <Link
-                  to={`/registro?paquete=${pack.paqueteKey}`}
-                  className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-[#D4AF37] text-[#0B2913] font-bold text-sm hover:bg-[#E8C94A] transition-all shadow-[0_8px_24px_rgba(212,175,55,0.4)]"
-                >
-                  Afiliarme con este pack <ArrowRight size={16} />
-                </Link>
-                <Link
-                  to="/oportunidad"
+                  to={user ? '/dashboard/tienda' : '/oportunidad'}
                   className="inline-flex items-center justify-center gap-2 px-6 py-4 rounded-xl border border-white/30 text-white font-bold text-sm hover:bg-white/10 transition-all"
                 >
-                  Conoce más
+                  {user ? 'Ver tienda' : 'Conoce más'}
                 </Link>
               </div>
 

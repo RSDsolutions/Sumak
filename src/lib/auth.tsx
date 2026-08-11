@@ -26,6 +26,66 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+const LOCAL_MOCK_ADMIN: Profile = {
+  id: '16092a90-3e8e-466d-a509-eb6b074a92cd',
+  codigo_distribuidor: 'ADM-001',
+  username: 'admin',
+  nombre_completo: 'Administrador Local',
+  cedula: '0000000000',
+  email: 'admin@sumak.com',
+  telefono: '0999999999',
+  direccion: 'Oficina Central',
+  ciudad: 'Quito',
+  codigo_patrocinador: null,
+  patrocinador_id: null,
+  paquete: 'lider',
+  puntos: 9999,
+  estado: 'activo',
+  rol: 'admin',
+  avatar_url: null,
+  fecha_registro: '2026-01-01T00:00:00Z',
+  fecha_aprobacion: '2026-01-01T00:00:00Z',
+};
+
+const LOCAL_MOCK_ADMIN_USER: User = {
+  id: '16092a90-3e8e-466d-a509-eb6b074a92cd',
+  app_metadata: {},
+  user_metadata: {},
+  aud: 'authenticated',
+  created_at: '2026-01-01T00:00:00Z',
+  email: 'admin@sumak.com',
+} as User;
+
+const LOCAL_MOCK_USER_PROFILE: Profile = {
+  id: '04210cbe-dab8-4047-9d36-0a3f33c29856',
+  codigo_distribuidor: 'SUMAK-00030',
+  username: 'user',
+  nombre_completo: 'Usuario Distribuidor Local',
+  cedula: '0928374651',
+  email: 'user@sumak.com',
+  telefono: '0987654321',
+  direccion: 'Av. 9 de Octubre y Malecón',
+  ciudad: 'Guayaquil',
+  codigo_patrocinador: 'SUMAK-00001',
+  patrocinador_id: '16092a90-3e8e-466d-a509-eb6b074a92cd',
+  paquete: 'emprendedor',
+  puntos: 1250,
+  estado: 'activo',
+  rol: 'distribuidor',
+  avatar_url: null,
+  fecha_registro: '2026-01-15T10:00:00Z',
+  fecha_aprobacion: '2026-01-15T12:00:00Z',
+};
+
+const LOCAL_MOCK_REGULAR_USER: User = {
+  id: '04210cbe-dab8-4047-9d36-0a3f33c29856',
+  app_metadata: {},
+  user_metadata: {},
+  aud: 'authenticated',
+  created_at: '2026-01-15T10:00:00Z',
+  email: 'user@sumak.com',
+} as User;
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -47,6 +107,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
+    // Check for local mock session first
+    const mockRole = localStorage.getItem('sumak_local_mock_role');
+    const isMockAdmin = localStorage.getItem('sumak_local_mock_admin') === 'true';
+
+    if (mockRole === 'admin' || isMockAdmin) {
+      setUser(LOCAL_MOCK_ADMIN_USER);
+      setProfile(LOCAL_MOCK_ADMIN);
+      setLoading(false);
+      return;
+    }
+
+    if (mockRole === 'user' || mockRole === 'distribuidor') {
+      setUser(LOCAL_MOCK_REGULAR_USER);
+      setProfile(LOCAL_MOCK_USER_PROFILE);
+      setLoading(false);
+      return;
+    }
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
@@ -59,6 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (localStorage.getItem('sumak_local_mock_role') || localStorage.getItem('sumak_local_mock_admin')) return;
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
@@ -73,6 +152,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function signIn(
     email: string, password: string, captchaToken?: string,
   ): Promise<{ error: string | null; profile: Profile | null }> {
+    const trimmed = email.trim().toLowerCase();
+    
+    // Bypass local admin
+    if ((trimmed === 'admin' || trimmed === 'admin@sumak.com') && password === 'admin') {
+      localStorage.setItem('sumak_local_mock_role', 'admin');
+      localStorage.setItem('sumak_local_mock_admin', 'true');
+      setUser(LOCAL_MOCK_ADMIN_USER);
+      setProfile(LOCAL_MOCK_ADMIN);
+      return { error: null, profile: LOCAL_MOCK_ADMIN };
+    }
+
+    // Bypass local user / distribuidor
+    if ((trimmed === 'user' || trimmed === 'user@sumak.com') && password === 'user') {
+      localStorage.setItem('sumak_local_mock_role', 'user');
+      localStorage.removeItem('sumak_local_mock_admin');
+      setUser(LOCAL_MOCK_REGULAR_USER);
+      setProfile(LOCAL_MOCK_USER_PROFILE);
+      return { error: null, profile: LOCAL_MOCK_USER_PROFILE };
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -89,12 +188,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function signOut(): Promise<void> {
-    await supabase.auth.signOut();
+    localStorage.removeItem('sumak_local_mock_role');
+    localStorage.removeItem('sumak_local_mock_admin');
+    await supabase.auth.signOut().catch(() => {});
     setUser(null);
     setProfile(null);
   }
 
   async function refreshProfile(): Promise<void> {
+    const mockRole = localStorage.getItem('sumak_local_mock_role');
+    const isMockAdmin = localStorage.getItem('sumak_local_mock_admin') === 'true';
+
+    if (mockRole === 'admin' || isMockAdmin) {
+      setUser(LOCAL_MOCK_ADMIN_USER);
+      setProfile(LOCAL_MOCK_ADMIN);
+      return;
+    }
+    if (mockRole === 'user' || mockRole === 'distribuidor') {
+      setUser(LOCAL_MOCK_REGULAR_USER);
+      setProfile(LOCAL_MOCK_USER_PROFILE);
+      return;
+    }
+
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) await fetchProfile(session.user.id);
   }

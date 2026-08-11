@@ -9,6 +9,7 @@ import { categoryFilters, planConfig, affiliatePackages } from '../../data';
 import { useCart } from '../../lib/cart';
 import { useToast } from '../../lib/toast';
 import { useProducts, type ProductoExtended } from '../../lib/productos';
+import StockBadge from '../../components/StockBadge';
 
 type SortKey = 'destacado' | 'precio-asc' | 'precio-desc' | 'nombre';
 
@@ -329,6 +330,13 @@ export default function Tienda() {
                 </Link>
                 {p.tagline && (
                   <p className="text-[#1A4E26] text-xs italic mb-2 line-clamp-1">{p.tagline}</p>
+                )}
+
+                {/* Stock Urgency Indicator */}
+                {!p.proximamente && (
+                  <div className="mb-2">
+                    <StockBadge stock={p.stock ?? (p.bestseller ? 4 : 18)} />
+                  </div>
                 )}
 
                 <div className="mt-auto pt-3 border-t border-[#C8D8CB]">

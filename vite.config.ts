@@ -11,8 +11,13 @@ export default defineConfig({
     },
   },
   server: {
+    host: '0.0.0.0',
+    port: 3000,
+    cors: true,
     hmr: process.env.DISABLE_HMR !== 'true',
-    watch: process.env.DISABLE_HMR === 'true' ? null : {},
+    watch: process.env.DISABLE_HMR === 'true' ? null : {
+      ignored: ['**/*.zip', '**/output_qr/**', '**/.git/**', '**/distribuidores_snapshot.json'],
+    },
   },
   build: {
     // PERF-002: separar vendors pesados en chunks dedicados.

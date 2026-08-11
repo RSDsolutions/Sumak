@@ -4,11 +4,14 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   CheckCircle2, ShoppingBag, Leaf, ArrowLeft, ArrowRight, Star,
   Truck, Award, ShieldCheck, Heart, Share2, Minus, Plus,
-  Sparkles, AlertCircle, Phone, BookOpen, X, Maximize2, Download,
+  Sparkles, AlertCircle, Phone, BookOpen, X, Maximize2, Download, ShoppingCart, Check,
 } from 'lucide-react';
 import { contactInfo, parseIngredient } from '../data';
 import { useSEO } from '../lib/seo';
 import { useProducts } from '../lib/productos';
+import { useAuth } from '../lib/auth';
+import { useCart } from '../lib/cart';
+import { useToast } from '../lib/toast';
 
 type TabKey = 'beneficios' | 'ingredientes' | 'modo-uso' | 'precauciones';
 
@@ -16,6 +19,9 @@ export default function ProductDetail() {
   const { slug } = useParams<{ slug: string }>();
   const { products } = useProducts();
   const product = products.find((p) => p.slug === slug);
+  const { user } = useAuth();
+  const { addItem } = useCart();
+  const toast = useToast();
 
   const [qty, setQty] = useState(1);
   const [activeTab, setActiveTab] = useState<TabKey>('ingredientes');
@@ -345,20 +351,57 @@ export default function ProductDetail() {
 
             {/* CTAs */}
             <div className="space-y-3">
-              <a
-                href={whatsappUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full py-4 rounded-2xl bg-[#1A4E26] text-white font-bold text-base flex items-center justify-center gap-2 hover:bg-[#163F1E] shadow-[0_8px_24px_rgba(26,78,38,0.3)] transition-all duration-200"
-              >
-                <ShoppingBag size={18} /> Comprar por WhatsApp
-              </a>
-              <Link
-                to="/registro"
-                className="w-full py-4 rounded-2xl border-2 border-[#D4AF37] text-[#1A4E26] font-bold text-base flex items-center justify-center gap-2 hover:bg-[#D4AF37] hover:text-[#0B2913] transition-all duration-200 bg-white"
-              >
-                <Heart size={18} /> Únete y compra a ${distributorPrice.toFixed(2)}
-              </Link>
+              {user ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!product) return;
+                      addItem({
+                        codigo: product.codigo,
+                        nombre: product.nombre,
+                        pvp: product.pvpFinal,
+                        precio: distributorPrice,
+                        imagen: product.imagen,
+                      }, qty);
+                      toast.success(
+                        qty === 1
+                          ? `${product.nombre} añadido a tu carrito`
+                          : `${qty} × ${product.nombre} añadidos a tu carrito`
+                      );
+                    }}
+                    className="w-full py-4 rounded-2xl bg-[#1A4E26] hover:bg-[#163F1E] text-white font-bold text-base flex items-center justify-center gap-2 shadow-[0_8px_24px_rgba(26,78,38,0.3)] transition-all duration-200 cursor-pointer active:scale-98"
+                  >
+                    <ShoppingCart size={18} />
+                    <span>Añadir al carrito (${(distributorPrice * qty).toFixed(2)})</span>
+                  </button>
+
+                  <Link
+                    to="/dashboard/pedido/nuevo"
+                    className="w-full py-3.5 rounded-2xl border-2 border-[#1A4E26] text-[#1A4E26] font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#EBF4ED] transition-all duration-200 bg-white"
+                  >
+                    <span>Ir a Mi Carrito / Procesar Pedido</span>
+                    <ArrowRight size={16} />
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <a
+                    href={whatsappUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-4 rounded-2xl bg-[#1A4E26] text-white font-bold text-base flex items-center justify-center gap-2 hover:bg-[#163F1E] shadow-[0_8px_24px_rgba(26,78,38,0.3)] transition-all duration-200"
+                  >
+                    <ShoppingBag size={18} /> Comprar por WhatsApp
+                  </a>
+                  <Link
+                    to="/registro"
+                    className="w-full py-4 rounded-2xl border-2 border-[#D4AF37] text-[#1A4E26] font-bold text-base flex items-center justify-center gap-2 hover:bg-[#D4AF37] hover:text-[#0B2913] transition-all duration-200 bg-white"
+                  >
+                    <Heart size={18} /> Únete y compra a ${distributorPrice.toFixed(2)}
+                  </Link>
+                </>
+              )}
             </div>
               </>
             )}

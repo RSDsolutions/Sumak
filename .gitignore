@@ -21,3 +21,7 @@ listado por nivel.docx
 ANALISIS_RED_BINARIA.md
 PORTAL.html
 /PORTAL_files/
+output_qr/
+*.zip
+test_*.png
+/logo_qr.png

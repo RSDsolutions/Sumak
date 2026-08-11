@@ -29,6 +29,8 @@ export interface ProductoExtended extends Product {
   pvpFinal: number;
   /** Orden de listado (menor primero). */
   orden: number;
+  /** Unidades disponibles en inventario. */
+  stock?: number | null;
   /** ISO de la ultima actualizacion (solo si viene de DB). */
   updatedAt: string | null;
 }
@@ -75,6 +77,7 @@ interface DbRow {
   descuento_activo: boolean;
   descuento_label: string | null;
   orden: number;
+  stock?: number | string | null;
   updated_at: string;
 }
 
@@ -126,6 +129,7 @@ function fromDbRow(row: DbRow): ProductoExtended {
     descuentoLabel: row.descuento_label ?? null,
     pvpFinal,
     orden: row.orden ?? 0,
+    stock: numOrNull(row.stock),
     updatedAt: row.updated_at,
   };
 }
@@ -140,6 +144,7 @@ function fromStatic(p: Product, index: number): ProductoExtended {
     descuentoLabel: null,
     pvpFinal: p.pvp,
     orden: index,
+    stock: p.bestseller ? 4 : (index === 1 ? 8 : 24),
     updatedAt: null,
   };
 }

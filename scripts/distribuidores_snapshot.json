@@ -1,0 +1,1262 @@
+[
+  {
+    "id": "16092a90-3e8e-466d-a509-eb6b074a92cd",
+    "codigo_distribuidor": "SUMAK-00001",
+    "username": null,
+    "nombre_completo": "Dr. Luis Paredes",
+    "email": "admin@sumak.com",
+    "rol": "admin",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "57a816fd-9fdb-4f8b-915e-36d5c704ab0c",
+    "codigo_distribuidor": "SUMAK-00002",
+    "username": null,
+    "nombre_completo": "Operaciones Sumak",
+    "email": "operaciones@sumak.com.ec",
+    "rol": "operaciones",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "0b40e6f4-a259-45fe-a452-8a643a92754c",
+    "codigo_distribuidor": "SUMAK-00003",
+    "username": "anderson2025",
+    "nombre_completo": "ANDERSON NEZARETH PAREDES POMA",
+    "email": "nezareth2005poma@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "07549829-46de-4ad9-b16d-52c70d102dde",
+    "codigo_distribuidor": "SUMAK-00004",
+    "username": "mirian2025",
+    "nombre_completo": null,
+    "email": "mirianzurita46@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "4752f866-e872-47bd-8722-5b3b4914af22",
+    "codigo_distribuidor": "SUMAK-00005",
+    "username": "carmelaerreyes",
+    "nombre_completo": "CARMELA  ERREYES PALTA",
+    "email": "carmitaeleudine@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "9f5afa91-eba5-41f1-b650-40e33994c7a5",
+    "codigo_distribuidor": "SUMAK-00006",
+    "username": "nancyvillacis",
+    "nombre_completo": null,
+    "email": "nancy_sanjines20@outlook.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "934b0e5c-8309-4bbc-8ffe-6ac53bba26b1",
+    "codigo_distribuidor": "SUMAK-00007",
+    "username": "oliviavillacis",
+    "nombre_completo": null,
+    "email": "oliviavillacis@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "fea8d841-dd6a-49aa-b35e-44464cbe0419",
+    "codigo_distribuidor": "SUMAK-00008",
+    "username": "raquelochoa",
+    "nombre_completo": "MARIA RAQUEL OCHOA LUZURIAGA",
+    "email": "mariaraquelochoa@hotmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "ec0ed3d6-0dcd-492a-ac98-6731164e0c72",
+    "codigo_distribuidor": "SUMAK-00009",
+    "username": "luzmejia",
+    "nombre_completo": null,
+    "email": "mejiaocoaluzamerica@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "d820d6de-9c61-4be0-b49b-1f961d75b990",
+    "codigo_distribuidor": "SUMAK-00010",
+    "username": "marthamedina",
+    "nombre_completo": null,
+    "email": "marthabelgicamedina1956@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "a4912b69-dcd7-476f-bacf-e7da3a0dfd59",
+    "codigo_distribuidor": "SUMAK-00011",
+    "username": "rivasbeatriz1",
+    "nombre_completo": null,
+    "email": "daglysrivas208@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": "basico"
+  },
+  {
+    "id": "dafbf718-4163-4574-8a9b-0c8c57264a2a",
+    "codigo_distribuidor": "SUMAK-00012",
+    "username": "nancyvera",
+    "nombre_completo": null,
+    "email": "nancyvera683@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "d5c007ea-0843-4ca4-8966-4b76e2860399",
+    "codigo_distribuidor": "SUMAK-00013",
+    "username": "rocioosorio",
+    "nombre_completo": null,
+    "email": "rociosorio2018@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "51b7ad57-0be7-4e2e-98d7-4f1b9e5dc688",
+    "codigo_distribuidor": "SUMAK-00014",
+    "username": "nancyrodriguez",
+    "nombre_completo": "Nancy  edith rodriguez gavilanes",
+    "email": "laalondradelosrios@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "37c7743e-496b-4797-ba76-a01ffc092ee8",
+    "codigo_distribuidor": "SUMAK-00015",
+    "username": "emelyorraala",
+    "nombre_completo": "EMELY SABRINA ORRALA RODRIGUEZ",
+    "email": "emelysabrina1bguo@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "f0af27ea-566d-4836-b1fa-a940de5d7af9",
+    "codigo_distribuidor": "SUMAK-00016",
+    "username": "eduardomoreira",
+    "nombre_completo": null,
+    "email": "moreiraedduardo@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "a447093f-e388-452b-85ec-7db7be1d4a8f",
+    "codigo_distribuidor": "SUMAK-00017",
+    "username": "luisflorentino",
+    "nombre_completo": null,
+    "email": "lajeflorentino@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "037f4a75-5188-4735-b68b-9c91aeadb846",
+    "codigo_distribuidor": "SUMAK-00018",
+    "username": "ramonorrala",
+    "nombre_completo": "RAMON FERMANDO ORRALA TORRES",
+    "email": "6109927500correo@jmil.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "4cc6bead-f6ba-4c9e-80e1-ebe532657d8d",
+    "codigo_distribuidor": "SUMAK-00019",
+    "username": "ineslopez",
+    "nombre_completo": null,
+    "email": "ad095414@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "5fc7bffb-fec0-4288-bc98-2d6e96cd017f",
+    "codigo_distribuidor": "SUMAK-00020",
+    "username": "narcisamoran",
+    "nombre_completo": null,
+    "email": "agdanarcisa90@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "dbfb513e-bfd0-4f7e-a620-0052eb3b371e",
+    "codigo_distribuidor": "SUMAK-00021",
+    "username": "melinacotto",
+    "nombre_completo": null,
+    "email": "melinacotto16@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "9460e09d-9861-425a-8b5f-83062f678bc7",
+    "codigo_distribuidor": "SUMAK-00022",
+    "username": "liliadelgado1",
+    "nombre_completo": "Lilia Geoconda Delgado Cruz",
+    "email": "geocondadelgado03@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "9a0a10eb-f050-40b8-875e-0aef6699f40d",
+    "codigo_distribuidor": "SUMAK-00023",
+    "username": "miriam1981",
+    "nombre_completo": null,
+    "email": "mery19812025@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "663a39b5-fbc2-46d7-97e8-bb4b07e7f889",
+    "codigo_distribuidor": "SUMAK-00024",
+    "username": "anapacheco",
+    "nombre_completo": null,
+    "email": "anapachecojacome@hotmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "74bdcbe2-feb3-40c4-b46e-a0c42ed58c7b",
+    "codigo_distribuidor": "SUMAK-00025",
+    "username": "anitaroca",
+    "nombre_completo": null,
+    "email": "anita.roca1783@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "d184a2ee-4292-4954-b126-5481041e16d2",
+    "codigo_distribuidor": "SUMAK-00026",
+    "username": "anasandoval",
+    "nombre_completo": "Ana Tomasa Sandoval Morante",
+    "email": "asandovalm1972@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "d4eb212a-8b53-45e2-9350-8b21b1aa8676",
+    "codigo_distribuidor": "SUMAK-00027",
+    "username": "jennymiranda",
+    "nombre_completo": "Jenny Elita Miranda Cabrera",
+    "email": "jennymiranda57@yahoo.ec",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "fca036d9-0e43-4503-b052-8afcf083ed8a",
+    "codigo_distribuidor": "SUMAK-00028",
+    "username": "ymaleniaolvera",
+    "nombre_completo": null,
+    "email": "ymalenia@hotmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "8cdc7050-6df3-4ea5-ac8e-a57714e24d26",
+    "codigo_distribuidor": "SUMAK-00029",
+    "username": "marianaquijije",
+    "nombre_completo": null,
+    "email": "marianasantosquijije@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "04210cbe-dab8-4047-9d36-0a3f33c29856",
+    "codigo_distribuidor": "SUMAK-00030",
+    "username": "felixalvarez",
+    "nombre_completo": "FELIX GREGORIO ALVAREZ MORAN",
+    "email": "alvarezfeliz83@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "c5b2b7d6-be0f-46ba-8c6a-cd15d24ed5c2",
+    "codigo_distribuidor": "SUMAK-00031",
+    "username": "fredyroldan",
+    "nombre_completo": null,
+    "email": "fredyroldan74@yahoo.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "9e7a417e-0016-4a91-82f8-e63a7af707d2",
+    "codigo_distribuidor": "SUMAK-00032",
+    "username": "andrealvarez",
+    "nombre_completo": null,
+    "email": "andyonna@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "357e4e83-4c96-4447-a012-1c7d1038ab1c",
+    "codigo_distribuidor": "SUMAK-00033",
+    "username": "andreinavera",
+    "nombre_completo": null,
+    "email": "andreinavers812@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "1f82b491-80da-413f-b0a7-34547ffcb5c0",
+    "codigo_distribuidor": "SUMAK-00034",
+    "username": "jessicaherrera",
+    "nombre_completo": null,
+    "email": "herrerajessica451@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "16c595c7-8f64-4fd3-a1e1-eab5a7f0d73c",
+    "codigo_distribuidor": "SUMAK-00035",
+    "username": "bolanocarolina",
+    "nombre_completo": null,
+    "email": "carolinabolano155@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "348196c7-23ea-40ce-bcfc-076504d2bc32",
+    "codigo_distribuidor": "SUMAK-00036",
+    "username": "nellyflor",
+    "nombre_completo": "NELLY FOR",
+    "email": "nellyjudithflorcastro@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "906e737f-7a77-467d-8eb7-aee5abf02f71",
+    "codigo_distribuidor": "SUMAK-00037",
+    "username": "karinacabrera",
+    "nombre_completo": null,
+    "email": "merlinavalencia365@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "afe6f907-0c14-45d4-97cd-7db962c9d678",
+    "codigo_distribuidor": "SUMAK-00038",
+    "username": "jairomayorga",
+    "nombre_completo": null,
+    "email": "harryleny-17-@hotmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "d7d3fc57-a4a1-4d29-808d-605412898257",
+    "codigo_distribuidor": "SUMAK-00039",
+    "username": "lauraflor",
+    "nombre_completo": null,
+    "email": "lauflormary@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "fc1216a2-f9d4-4bd1-85c3-1787b262fbd9",
+    "codigo_distribuidor": "SUMAK-00040",
+    "username": "violetacontreras",
+    "nombre_completo": null,
+    "email": "velezarleth108@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "3b7438fe-e123-4815-b1be-ad54dd7d51ae",
+    "codigo_distribuidor": "SUMAK-00041",
+    "username": "karlacruz",
+    "nombre_completo": "Martha Cecilia Pilay Chica",
+    "email": "pilaychicamartha@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "e021122c-ab6a-4064-a159-bf20606c653e",
+    "codigo_distribuidor": "SUMAK-00042",
+    "username": "aurorabanchon",
+    "nombre_completo": "AURORA MATILDE BANCHON PILAY",
+    "email": "banchonmatilde@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "ac666d89-8f0e-4ffb-b3cd-979bef307922",
+    "codigo_distribuidor": "SUMAK-00043",
+    "username": "carmenrojas",
+    "nombre_completo": null,
+    "email": "cr9398823@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "6c7357c6-d614-4450-9ab4-aa9e574d9e54",
+    "codigo_distribuidor": "SUMAK-00044",
+    "username": "karherinepilay",
+    "nombre_completo": null,
+    "email": "katherinecruzpilay@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "88dd184d-6ec9-453f-9229-e0b1a91e8406",
+    "codigo_distribuidor": "SUMAK-00045",
+    "username": "olimpiacadena",
+    "nombre_completo": "olimpia elinda cadena castro",
+    "email": "olimpiaelindacadenacastro@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "8af1fe72-e1c8-49f5-826f-92e205670f4c",
+    "codigo_distribuidor": "SUMAK-00046",
+    "username": "lourdesvillamar",
+    "nombre_completo": "Lourdes Viviana Villamar Onofre",
+    "email": "lourdesvillamar48@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "2e7bd1a7-27de-46d3-8898-3eb2b7fcd351",
+    "codigo_distribuidor": "SUMAK-00047",
+    "username": "marjoriechichande",
+    "nombre_completo": null,
+    "email": "mayrachichande474@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "17ed9619-c183-43f7-92e0-cae6d7ec8a6b",
+    "codigo_distribuidor": "SUMAK-00048",
+    "username": "jessicavega",
+    "nombre_completo": null,
+    "email": "raquelvegajim1978@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "9d2a9845-aa94-4142-b2da-0ae9dfaabbd5",
+    "codigo_distribuidor": "SUMAK-00049",
+    "username": "mayrafranco",
+    "nombre_completo": null,
+    "email": "mayrafrancog85@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "0181daad-7a09-4662-a56c-30fef4e26455",
+    "codigo_distribuidor": "SUMAK-00050",
+    "username": "eulaliaati",
+    "nombre_completo": null,
+    "email": "eulalilaati@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "aff3ada3-09f2-468e-af6e-bc5eb41089b3",
+    "codigo_distribuidor": "SUMAK-00051",
+    "username": "zaidasambrano",
+    "nombre_completo": null,
+    "email": "karinaderondon30@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "a6c73ae7-840f-4f11-b8e1-349896c369e6",
+    "codigo_distribuidor": "SUMAK-00052",
+    "username": "pedromiranda",
+    "nombre_completo": null,
+    "email": "pmiranda59@yahoo.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "59e886ee-2791-4aad-b217-bb45240ac92b",
+    "codigo_distribuidor": "SUMAK-00053",
+    "username": "pedromirandahijo",
+    "nombre_completo": null,
+    "email": "pedroluismiranda.10@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "f8114972-5926-40e4-b9d4-b681670dffa7",
+    "codigo_distribuidor": "SUMAK-00054",
+    "username": "elisiaquinto",
+    "nombre_completo": null,
+    "email": "elisiaquinto@hotmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "7afd580b-d678-4a8e-9111-338deebfaadd",
+    "codigo_distribuidor": "SUMAK-00055",
+    "username": "ramoslilian",
+    "nombre_completo": null,
+    "email": "jacqueramospluas@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "1997e535-2a49-4115-81a7-b1ac1fe448b3",
+    "codigo_distribuidor": "SUMAK-00056",
+    "username": "mirlaaveiga",
+    "nombre_completo": null,
+    "email": "maveigabravo@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "ae6aac11-441e-4c6f-b867-795d3a447d0a",
+    "codigo_distribuidor": "SUMAK-00057",
+    "username": "pedromontenegro",
+    "nombre_completo": null,
+    "email": "gm6290664@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "74ce8212-6bf8-4cff-9baa-99643295bbfe",
+    "codigo_distribuidor": "SUMAK-00058",
+    "username": "maritzagarcia",
+    "nombre_completo": null,
+    "email": "garciamontoyamaritza@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "315032b7-6d5d-417a-8252-2d0fccba5b54",
+    "codigo_distribuidor": "SUMAK-00059",
+    "username": "sararamos",
+    "nombre_completo": null,
+    "email": "sararamos2005aro@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "3cb6b36a-050f-4ac0-858f-f98f1a724d4e",
+    "codigo_distribuidor": "SUMAK-00060",
+    "username": "jonathancabello",
+    "nombre_completo": null,
+    "email": "cabellojona1987@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "843f75e2-9760-44b4-918b-b568b1d1e56a",
+    "codigo_distribuidor": "SUMAK-00061",
+    "username": "nancyramos",
+    "nombre_completo": null,
+    "email": "anitarodmery1980@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "5546f8ff-6237-4dc2-be01-c87840a2cb1f",
+    "codigo_distribuidor": "SUMAK-00062",
+    "username": "normacox",
+    "nombre_completo": null,
+    "email": "pachecocoxgaby@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "2faf5bf3-1104-4c40-970b-15782de395d6",
+    "codigo_distribuidor": "SUMAK-00063",
+    "username": "marthaacosta",
+    "nombre_completo": null,
+    "email": "marthaacosta052019@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "2f1e6508-08b7-4155-b4a8-bb741a2f917a",
+    "codigo_distribuidor": "SUMAK-00064",
+    "username": "katiuskazamora",
+    "nombre_completo": null,
+    "email": "camilober33@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "011140a4-cb41-434e-8038-842e481cc2dc",
+    "codigo_distribuidor": "SUMAK-00065",
+    "username": "rosavera",
+    "nombre_completo": "ROSA NIEVE VERA ECHEVERRIA",
+    "email": "rosanieve1955@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "cd8a11e7-9f25-448c-8825-bb22acea73a3",
+    "codigo_distribuidor": "SUMAK-00066",
+    "username": "mariamolina",
+    "nombre_completo": null,
+    "email": "lissett.mlfm@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "a31a1bd1-1907-41db-b45c-c51eb31f232c",
+    "codigo_distribuidor": "SUMAK-00067",
+    "username": "amandacontreras",
+    "nombre_completo": null,
+    "email": "paulaamadacontrerasaviles@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "f2ebc5bc-d7d6-4467-9dd3-8145d9a88271",
+    "codigo_distribuidor": "SUMAK-00068",
+    "username": "carmensanchez",
+    "nombre_completo": null,
+    "email": "carmenjudithsanchez1972@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "587d84df-e1ca-49d4-85cc-c7768a961388",
+    "codigo_distribuidor": "SUMAK-00069",
+    "username": "juliayepez",
+    "nombre_completo": null,
+    "email": "rosiyepez1973@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "b0f09383-46bf-47f0-94f6-64a072ffd6d7",
+    "codigo_distribuidor": "SUMAK-00070",
+    "username": "noravergara",
+    "nombre_completo": null,
+    "email": "vergarafer802@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "0429a397-e535-42a6-9350-3ad11d7fc76f",
+    "codigo_distribuidor": "SUMAK-00071",
+    "username": "juanacampoverde",
+    "nombre_completo": null,
+    "email": "juanamariacampoverdechica@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "48b641c7-88c2-442e-a886-1bf9c95dc16a",
+    "codigo_distribuidor": "SUMAK-00072",
+    "username": "anamariscal",
+    "nombre_completo": null,
+    "email": "mariscaltania84@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "8de5b887-05ea-4b8d-8f4b-6ff4771d2592",
+    "codigo_distribuidor": "SUMAK-00073",
+    "username": "gloriarocafuerte",
+    "nombre_completo": null,
+    "email": "rocafuerteortizgloriapascuala@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "a9c2277a-2519-4f25-b4d6-0cf5f57b32c8",
+    "codigo_distribuidor": "SUMAK-00074",
+    "username": "marthaarguello",
+    "nombre_completo": null,
+    "email": "marthaarguello4587@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "73ada922-9644-482b-8518-1245412cf9ee",
+    "codigo_distribuidor": "SUMAK-00075",
+    "username": "pilarfructuoso",
+    "nombre_completo": null,
+    "email": "pilarfruct@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "ef46d25d-fc34-478d-a564-f234734d5bf8",
+    "codigo_distribuidor": "SUMAK-00076",
+    "username": "galafajardo",
+    "nombre_completo": null,
+    "email": "galafajardo55@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "a0e66a78-861a-453a-97ce-d384d85ddd9c",
+    "codigo_distribuidor": "SUMAK-00077",
+    "username": "lasteniaalvarado",
+    "nombre_completo": null,
+    "email": "maryalvarado1975@gmil.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "35982747-e025-4bfb-9f17-a2a088ef7721",
+    "codigo_distribuidor": "SUMAK-00078",
+    "username": "juliotomala",
+    "nombre_completo": null,
+    "email": "linoganoderma@hotmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "bbfe4133-06ef-4a19-9651-b431cdff33d0",
+    "codigo_distribuidor": "SUMAK-00079",
+    "username": "albinacontreras",
+    "nombre_completo": null,
+    "email": "albinacontreras1939@yahoo.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "16d0c76f-8b65-4b61-9179-0773352fa8c7",
+    "codigo_distribuidor": "SUMAK-00080",
+    "username": "claralopez",
+    "nombre_completo": null,
+    "email": "albertonico16@autlook.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "14e03671-febe-46aa-9483-1831ff2e9c65",
+    "codigo_distribuidor": "SUMAK-00081",
+    "username": "virginiaaguayo",
+    "nombre_completo": null,
+    "email": "virginiaaguayo@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "e08d54fc-de57-4ab5-a574-92cb1fc4b835",
+    "codigo_distribuidor": "SUMAK-00082",
+    "username": "mariamanzaba",
+    "nombre_completo": "MARIA  MANZABA",
+    "email": "mariamanzaba297@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "014bc6ee-1246-43e8-86a1-c7d580ddda2f",
+    "codigo_distribuidor": "SUMAK-00083",
+    "username": "alejandro1996",
+    "nombre_completo": null,
+    "email": "mendezperezkarlagabriela@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "468ae5f5-81af-4c52-a068-bf100a7d74a4",
+    "codigo_distribuidor": "SUMAK-00084",
+    "username": "luzrodriguez",
+    "nombre_completo": null,
+    "email": "luzrodriguezzurita@hotmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "7f9b52a3-3d44-4880-b0d0-0c53257c7cfa",
+    "codigo_distribuidor": "SUMAK-00085",
+    "username": "virginiamoreno",
+    "nombre_completo": "dolores virginia moreno castillo",
+    "email": "lolitamorenocastillo@gmil.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "da1ccf3d-2a09-4699-8555-6c6083daec0c",
+    "codigo_distribuidor": "SUMAK-00086",
+    "username": "danielcabezas",
+    "nombre_completo": "Daniel Educardo Cabezas Salvatierra",
+    "email": "pinochito87901234cfhcgm@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "49edfefd-f277-49a9-94e9-1e5aae40d144",
+    "codigo_distribuidor": "SUMAK-00087",
+    "username": "irenefranco",
+    "nombre_completo": null,
+    "email": "irenefranco367@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "4a938aeb-285f-466e-aaa5-f0a4db7758e5",
+    "codigo_distribuidor": "SUMAK-00088",
+    "username": "isabellopez",
+    "nombre_completo": null,
+    "email": "noeanaozlem18@hotmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "722a84f4-913b-4c8b-9d18-ea6c51dd6631",
+    "codigo_distribuidor": "SUMAK-00089",
+    "username": "ceciliaazu",
+    "nombre_completo": null,
+    "email": "comercializadora.azu@hotmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "e0749c8a-660b-4a98-b9b9-7f26812fcb55",
+    "codigo_distribuidor": "SUMAK-00090",
+    "username": "leydyvasquez",
+    "nombre_completo": null,
+    "email": "ponceleydi@yahoo.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "017fc5f0-e1d2-4be6-b7bb-573ef328f81b",
+    "codigo_distribuidor": "SUMAK-00091",
+    "username": "enriquecontrera",
+    "nombre_completo": null,
+    "email": "5911emrique@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "bece19d6-d8f0-4e35-9e88-e2c62f11e5ee",
+    "codigo_distribuidor": "SUMAK-00092",
+    "username": "washingtonquintero",
+    "nombre_completo": null,
+    "email": "danielquintero203@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "e689c150-16ba-415d-8c5a-ff68d40823b1",
+    "codigo_distribuidor": "SUMAK-00093",
+    "username": "arlixcifuentes32",
+    "nombre_completo": null,
+    "email": "oasisnatural44@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": "basico"
+  },
+  {
+    "id": "709e24df-b971-4290-b5bb-1bce4cb4944b",
+    "codigo_distribuidor": "SUMAK-00094",
+    "username": "nellyvaldez",
+    "nombre_completo": null,
+    "email": "nellycarmenv@hotmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "e61603e2-1db1-40fb-a023-12ecb47608c8",
+    "codigo_distribuidor": "SUMAK-00095",
+    "username": "rosaorellana",
+    "nombre_completo": null,
+    "email": "rosatashay123@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "8b8042a9-1c4f-491c-81d7-55321c16fa8b",
+    "codigo_distribuidor": "SUMAK-00096",
+    "username": "greciavivas",
+    "nombre_completo": null,
+    "email": "greciabevim@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "91ef172d-3b4a-4f42-b108-695800a5159a",
+    "codigo_distribuidor": "SUMAK-00097",
+    "username": "belgicavalle",
+    "nombre_completo": null,
+    "email": "belgica_valle@hotmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "b841ba87-d83e-4cf6-b51f-86887041e808",
+    "codigo_distribuidor": "SUMAK-00098",
+    "username": "juliacoello",
+    "nombre_completo": null,
+    "email": "julialucialyj@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "99b8bdf9-fc0a-4d9f-b058-648421291c4d",
+    "codigo_distribuidor": "SUMAK-00099",
+    "username": "alfonsoorellana",
+    "nombre_completo": null,
+    "email": "alfonfeli2024@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "dc82ebfd-45b5-492f-a9a8-1236d7b8e7b9",
+    "codigo_distribuidor": "SUMAK-00100",
+    "username": "bellavivas",
+    "nombre_completo": null,
+    "email": "bellavivas85@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "8b49bf4e-7039-40a8-9b22-3c81ac488531",
+    "codigo_distribuidor": "SUMAK-00101",
+    "username": "monicavivanco",
+    "nombre_completo": null,
+    "email": "monicaalexavivanco19@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "42e39843-5408-47c5-8f5b-852fa984a677",
+    "codigo_distribuidor": "SUMAK-00102",
+    "username": "maritzacarrion",
+    "nombre_completo": null,
+    "email": "maritzacarrion@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "c730d432-ce38-4c17-a2fc-a7b172575f80",
+    "codigo_distribuidor": "SUMAK-00103",
+    "username": "jessicasilva",
+    "nombre_completo": null,
+    "email": "j27102656@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "83e80200-288f-45aa-ba63-51041422b590",
+    "codigo_distribuidor": "SUMAK-00104",
+    "username": "daniellaje",
+    "nombre_completo": null,
+    "email": "danielito_509@hotmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "eae6c448-a94e-4816-a814-364d6aaf780b",
+    "codigo_distribuidor": "SUMAK-00105",
+    "username": "maximamora",
+    "nombre_completo": null,
+    "email": "maxima.m.m73@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "623ac48b-3db3-4705-981c-585544c1094b",
+    "codigo_distribuidor": "SUMAK-00106",
+    "username": "ottofreire",
+    "nombre_completo": null,
+    "email": "grupofreyre1@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "dd24a59c-e7d3-469a-8356-85e6522c22f4",
+    "codigo_distribuidor": "SUMAK-00107",
+    "username": "mayratorres",
+    "nombre_completo": null,
+    "email": "maytoca2010@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "f8740767-6c30-4eb2-819e-c2ad5de6848d",
+    "codigo_distribuidor": "SUMAK-00108",
+    "username": "miriantorres",
+    "nombre_completo": null,
+    "email": "miriantc@hotmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "7ef7a3eb-cf29-48ce-989f-41bfdaffdfbc",
+    "codigo_distribuidor": "SUMAK-00109",
+    "username": "gingermontes",
+    "nombre_completo": null,
+    "email": "gigo_2395@hotmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "f4b399ba-dbc7-4196-9403-a235c613f348",
+    "codigo_distribuidor": "SUMAK-00110",
+    "username": "williambrown",
+    "nombre_completo": null,
+    "email": "willyferrur123@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "9b213ec5-adc5-4721-9eb3-5f4011a11730",
+    "codigo_distribuidor": "SUMAK-00111",
+    "username": "franciscacercado",
+    "nombre_completo": null,
+    "email": "francobety97@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "8881c9d5-ad18-4f69-90ab-7e5994f0ced6",
+    "codigo_distribuidor": "SUMAK-00112",
+    "username": "willmanaguirre",
+    "nombre_completo": null,
+    "email": "willman7@live.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "4a9b6860-2106-4c4a-8cdf-695fe03c8a2a",
+    "codigo_distribuidor": "SUMAK-00113",
+    "username": "karlaobando",
+    "nombre_completo": null,
+    "email": "lisbeth1996_princess@hotmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "931682a1-452c-4fe3-af93-bde2c5fab7b0",
+    "codigo_distribuidor": "SUMAK-00114",
+    "username": "josuevelasquez2004",
+    "nombre_completo": null,
+    "email": "velasquezjosue210@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": "basico"
+  },
+  {
+    "id": "7f48f124-537c-4800-bd38-6708b34fb1fe",
+    "codigo_distribuidor": "SUMAK-00115",
+    "username": null,
+    "nombre_completo": "Angela leon",
+    "email": "angelalourdesleon@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": "basico"
+  },
+  {
+    "id": "90ab6473-0388-4491-a6b9-3fcd313cba6e",
+    "codigo_distribuidor": "SUMAK-00116",
+    "username": null,
+    "nombre_completo": "Tania anabell Reategui Ramírez ",
+    "email": "taniareategui7@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": "basico"
+  },
+  {
+    "id": "e234bd57-f61d-4279-a037-23df1bbd0be2",
+    "codigo_distribuidor": "SUMAK-00117",
+    "username": null,
+    "nombre_completo": "Edison Calle ",
+    "email": "estoicoshistorias@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": "basico"
+  },
+  {
+    "id": "1dd20e3a-a174-477e-a130-3686b24d633b",
+    "codigo_distribuidor": "SUMAK-00118",
+    "username": null,
+    "nombre_completo": "MARCO VINICIO PILAMUNGA PADILLA",
+    "email": "pilamungamarco8@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": "basico"
+  },
+  {
+    "id": "b0233962-49b7-4d3f-b2c6-7e33dd399799",
+    "codigo_distribuidor": "SUMAK-00119",
+    "username": null,
+    "nombre_completo": "luz germania calderon cordova",
+    "email": "calgema@hotmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": "basico"
+  },
+  {
+    "id": "0e9cebe0-8a7c-4406-8369-dcf804fd2ac7",
+    "codigo_distribuidor": "SUMAK-00120",
+    "username": null,
+    "nombre_completo": "JUANA ELOISA VERA CHIRIGUAYO",
+    "email": "veraeloiza831@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": "basico"
+  },
+  {
+    "id": "be1cbf2a-7a0c-4b7f-8d0d-3160f6e688d8",
+    "codigo_distribuidor": "SUMAK-00121",
+    "username": null,
+    "nombre_completo": "HOLGER MELCHOR VEGA VELASQUEZ",
+    "email": "Holgervega443@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": "basico"
+  },
+  {
+    "id": "5c746164-74ad-46bc-ba71-ea10cd7db827",
+    "codigo_distribuidor": "SUMAK-00122",
+    "username": null,
+    "nombre_completo": "MERCEDES DALILA QUIÑONEZ RIVERA",
+    "email": "yosoyarmonia@outlook.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": "basico"
+  },
+  {
+    "id": "cf3c2990-3337-4ab3-bd08-650795eda05d",
+    "codigo_distribuidor": "SUMAK-00123",
+    "username": null,
+    "nombre_completo": "NARCISA GOMEZ",
+    "email": "narcizagomez48@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": null
+  },
+  {
+    "id": "a479d3b4-8a9c-4a15-84e5-83c99d966a32",
+    "codigo_distribuidor": "SUMAK-00124",
+    "username": null,
+    "nombre_completo": "EDINSON JAVIER BECERRA PINO",
+    "email": "edisonbecerrap@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": "basico"
+  },
+  {
+    "id": "2e66e130-79ed-4e6d-80f7-f17409cac98a",
+    "codigo_distribuidor": "SUMAK-00125",
+    "username": null,
+    "nombre_completo": "WALTER JAVIER FLOR VERA",
+    "email": "florverawalterjavier@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": "basico"
+  },
+  {
+    "id": "e01cca8d-7f29-41b8-9c66-ce78cde4bf96",
+    "codigo_distribuidor": "SUMAK-00126",
+    "username": null,
+    "nombre_completo": "JORGE MIGUEL LOOR VERA",
+    "email": "dr.philanthropy@gmail.com",
+    "rol": "distribuidor",
+    "estado": "activo",
+    "paquete": "basico"
+  }
+]

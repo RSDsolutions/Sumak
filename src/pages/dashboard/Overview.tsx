@@ -9,6 +9,8 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { getRangoActual, getNextRango, planConfig, affiliatePackages } from '../../data';
 import type { Comision, Pedido } from '../../lib/types';
+import CountdownTimer from '../../components/CountdownTimer';
+import QuickReorder from '../../components/QuickReorder';
 
 function Spinner() {
   return (
@@ -204,6 +206,14 @@ export default function Overview() {
             );
           })()}
 
+          {/* ─── BANNER DE RECOMPRA Y CIERRE DE CICLO ────── */}
+          <CountdownTimer
+            variant="banner"
+            title={`Cierre de Ciclo de Calificación — ${monthName.toUpperCase()}`}
+            subtitle="Realiza tu recompra mensual para mantener activo tu rango, asegurar tus comisiones binarias y comprar a precio mayorista."
+            className="mb-6"
+          />
+
           {/* ─── ACTIVATION HERO ─────────────────────────── */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -382,6 +392,9 @@ export default function Overview() {
               </p>
             </motion.div>
           </div>
+
+          {/* ─── MÓDULO DE RECOMPRA RÁPIDA (TUS FAVORITOS) ─── */}
+          <QuickReorder className="mb-6" />
 
           {/* ─── RANGO + LATEST ORDERS ─────────────────── */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">

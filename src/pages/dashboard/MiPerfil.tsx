@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react';
-import { Lock, CheckCircle2, AlertCircle, Camera, Loader2 } from 'lucide-react';
+import { Lock, CheckCircle2, AlertCircle, Camera, Loader2, QrCode } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import Avatar from '../../components/Avatar';
+import DigitalCardModal from '../../components/DigitalCardModal';
 
 const paqueteLabel: Record<string, string> = {
   basico: 'Básico ($125)',
@@ -20,6 +21,7 @@ export default function MiPerfil() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarMsg, setAvatarMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [showCardModal, setShowCardModal] = useState(false);
 
   const [telefono, setTelefono] = useState(profile?.telefono ?? '');
   const [direccion, setDireccion] = useState(profile?.direccion ?? '');
@@ -158,7 +160,18 @@ export default function MiPerfil() {
             </div>
             <div>
               <h2 className="font-heading font-semibold text-[#111111]">Información Personal</h2>
-              <p className="text-[#9CA3AF] text-xs mt-0.5">Toca el ícono para cambiar tu foto (JPG, PNG o WEBP, máx. {AVATAR_MAX_MB} MB)</p>
+              <div className="flex flex-wrap items-center gap-2 mt-1">
+                <p className="text-[#9CA3AF] text-xs">Toca el ícono para cambiar tu foto (JPG, PNG o WEBP, máx. {AVATAR_MAX_MB} MB)</p>
+                <button
+                  type="button"
+                  onClick={() => setShowCardModal(true)}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#EBF4ED] text-[#1A4E26] hover:bg-[#1A4E26] hover:text-white border border-[#1A4E26]/30 text-xs font-semibold transition-all shadow-sm active:scale-95 cursor-pointer"
+                  title="Generar Tarjeta Digital QR"
+                >
+                  <QrCode size={14} className="shrink-0" />
+                  <span>Tarjeta Digital QR</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -337,6 +350,11 @@ export default function MiPerfil() {
         </div>
       </div>
 
+      <DigitalCardModal 
+        open={showCardModal} 
+        onClose={() => setShowCardModal(false)} 
+        profile={profile} 
+      />
     </div>
   );
 }

@@ -10,6 +10,9 @@ import { parseIngredient, planConfig } from '../../data';
 import { useCart } from '../../lib/cart';
 import { useToast } from '../../lib/toast';
 import { useProducts } from '../../lib/productos';
+import StockBadge from '../../components/StockBadge';
+import CountdownTimer from '../../components/CountdownTimer';
+import ProductReviews from '../../components/ProductReviews';
 
 type TabKey = 'beneficios' | 'ingredientes' | 'modo-uso' | 'precauciones';
 
@@ -140,9 +143,14 @@ export default function TiendaProducto() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <span className="inline-block text-xs font-semibold uppercase tracking-[0.2em] text-[#1A4E26] bg-[#1A4E26]/10 border border-[#1A4E26]/20 px-3 py-1.5 rounded-full mb-3">
-            {product.categoria}
-          </span>
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            <span className="inline-block text-xs font-semibold uppercase tracking-[0.2em] text-[#1A4E26] bg-[#1A4E26]/10 border border-[#1A4E26]/20 px-3 py-1.5 rounded-full">
+              {product.categoria}
+            </span>
+            {!product.proximamente && (
+              <StockBadge stock={product.stock ?? (product.bestseller ? 4 : 18)} />
+            )}
+          </div>
           <h1 className="font-heading font-bold text-3xl sm:text-4xl text-[#111111] mb-2 leading-tight">
             {product.nombre}
           </h1>
@@ -205,6 +213,12 @@ export default function TiendaProducto() {
             <>
               {/* Price + qty + actions */}
               <div className="bg-white border border-[#C8D8CB] rounded-2xl p-5 mb-4">
+                <div className="mb-3">
+                  <CountdownTimer
+                    variant="inline"
+                    title="Descuento de Recompra Activo"
+                  />
+                </div>
                 <div className="grid grid-cols-2 gap-3 pb-4 border-b border-[#C8D8CB]">
                   <div>
                     <p className="text-[#9CA3AF] text-[10px] uppercase tracking-wider mb-1">Precio público</p>
@@ -625,6 +639,9 @@ export default function TiendaProducto() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Verified Social Proof / Reviews */}
+      <ProductReviews productName={product.nombre} className="mt-12" />
 
       {/* Related */}
       {related.length > 0 && (

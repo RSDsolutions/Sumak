@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { AuthProvider } from './lib/auth';
+import { NotificationProvider } from './lib/notifications';
 import { CartProvider } from './lib/cart';
 import { ToastProvider } from './lib/toast';
 import { ProductsProvider } from './lib/productos';
@@ -40,6 +41,7 @@ const MisComisiones = lazy(() => import('./pages/dashboard/MisComisiones'));
 const MisPedidos = lazy(() => import('./pages/dashboard/MisPedidos'));
 const NuevoPedido = lazy(() => import('./pages/dashboard/NuevoPedido'));
 const MiPerfil = lazy(() => import('./pages/dashboard/MiPerfil'));
+const CredencialDigital = lazy(() => import('./pages/dashboard/CredencialDigital'));
 const MiEscalera = lazy(() => import('./pages/dashboard/MiEscalera'));
 const Tienda = lazy(() => import('./pages/dashboard/Tienda'));
 const TiendaProducto = lazy(() => import('./pages/dashboard/TiendaProducto'));
@@ -123,12 +125,13 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <ProductsProvider>
-        <CartProvider>
-        <ToastProvider>
-        <ScrollToTop />
-        <Suspense fallback={<RouteFallback />}>
-        <Routes>
+        <NotificationProvider>
+          <ProductsProvider>
+          <CartProvider>
+          <ToastProvider>
+          <ScrollToTop />
+          <Suspense fallback={<RouteFallback />}>
+          <Routes>
           {/* ── PUBLIC ROUTES ─────────────────────────────── */}
           <Route
             path="/"
@@ -328,6 +331,46 @@ export default function App() {
                 <DashboardLayout>
                   <MiPerfil />
                 </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tarjetadigital"
+            element={
+              <ProtectedRoute allowedRoles={['distribuidor', 'admin', 'operaciones']}>
+                <CredencialDigital />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/TarjetaDigital"
+            element={
+              <ProtectedRoute allowedRoles={['distribuidor', 'admin', 'operaciones']}>
+                <CredencialDigital />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/tarjetadigital"
+            element={
+              <ProtectedRoute allowedRoles={['distribuidor', 'admin', 'operaciones']}>
+                <CredencialDigital />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/tarjetadigital"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <CredencialDigital />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/credencial"
+            element={
+              <ProtectedRoute allowedRoles={['distribuidor', 'admin', 'operaciones']}>
+                <CredencialDigital />
               </ProtectedRoute>
             }
           />
@@ -596,6 +639,7 @@ export default function App() {
         </ToastProvider>
         </CartProvider>
         </ProductsProvider>
+        </NotificationProvider>
       </AuthProvider>
     </BrowserRouter>
   );

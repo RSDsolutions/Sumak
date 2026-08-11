@@ -1,12 +1,19 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Menu, X, ArrowRight } from 'lucide-react';
+import { Menu, X, ArrowRight, LayoutDashboard, ShoppingCart } from 'lucide-react';
+import { useAuth } from '../lib/auth';
+import { useCart } from '../lib/cart';
+import Avatar from './Avatar';
+import NotificationsPopover from './NotificationsPopover';
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const { user, profile } = useAuth();
+  const { items } = useCart();
+  const cartCount = items.reduce((s, i) => s + i.cantidad, 0);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -34,6 +41,10 @@ export default function Navbar() {
     { name: 'Contacto', path: '/contacto' },
   ];
 
+  const dashboardPath = profile?.rol === 'admin'
+    ? '/admin'
+    : (profile?.rol === 'operaciones' ? '/operaciones' : '/dashboard');
+
   // Header siempre blanco — solo cambia la sombra al hacer scroll
   const headerClasses = `fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white border-b ${
     isScrolled || mobileMenuOpen
@@ -41,17 +52,15 @@ export default function Navbar() {
       : 'border-transparent'
   }`;
 
-  const headerHeight = isScrolled ? 'h-14' : 'h-16';
-
   return (
     <>
       <header className={headerClasses}>
-        <div className={`max-w-7xl mx-auto px-4 sm:px-6 ${headerHeight} flex items-center justify-between transition-all duration-300`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
 
           {/* Logo */}
           <Link
             to="/"
-            className="flex items-center shrink-0 group"
+            className="flex items-center gap-2 group"
           >
             <motion.img
               src="/LOGO_SUMAK.png"
@@ -89,7 +98,7 @@ export default function Navbar() {
                   {isActive && (
                     <motion.span
                       layoutId="active-nav-dot"
-                      className="absolute -bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#D4AF37]"
+                      className="absolute -bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#D4AF37] transition-all"
                       transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                     />
                   )}
@@ -98,28 +107,65 @@ export default function Navbar() {
             })}
           </nav>
 
-          {/* Desktop CTA buttons */}
-          <div className="hidden xl:flex items-center gap-2 shrink-0">
-            <Link
-              to="/login"
-              className="relative px-4 py-2 rounded-lg text-sm font-medium text-[#6B7280] hover:text-[#1A4E26] transition-colors duration-200 group"
-            >
-              <span className="relative z-10">Iniciar Sesión</span>
-              <span className="absolute inset-0 rounded-lg bg-[#F4F7F5] opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-            </Link>
-            <Link
-              to="/registro"
-              className="group relative px-5 py-2.5 rounded-lg bg-[#1A4E26] text-white text-sm font-semibold overflow-hidden transition-all duration-300 hover:shadow-[0_8px_24px_rgba(26,78,38,0.35)]"
-            >
-              {/* Animated background */}
-              <span
-                className="absolute inset-0 bg-gradient-to-r from-[#1A4E26] via-[#2B6E3A] to-[#1A4E26] bg-[length:200%_100%] group-hover:bg-[position:100%_0%] transition-[background-position] duration-700"
-              />
-              <span className="relative flex items-center gap-1.5">
-                Únete Ahora
-                <ArrowRight size={14} className="transition-transform duration-300 group-hover:translate-x-1" />
-              </span>
-            </Link>
+          {/* Desktop CTA buttons or Authenticated Widget */}
+          <div className="hidden xl:flex items-center gap-3 shrink-0">
+            {user ? (
+              <div className="flex items-center gap-2.5 sm:gap-3">
+                {/* Cart Button */}
+                <Link
+                  to="/dashboard/pedido/nuevo"
+                  className="relative p-2 sm:p-2.5 rounded-xl text-[#1A4E26] bg-[#F4F7F5] hover:bg-[#EBF4ED] border border-[#C8D8CB]/80 hover:border-[#1A4E26]/40 transition-all duration-200 flex items-center justify-center shadow-xs cursor-pointer"
+                  title="Mi Carrito de Pedido"
+                  aria-label="Ver carrito"
+                >
+                  <ShoppingCart size={20} />
+                  {cartCount > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[19px] h-[19px] px-1 bg-[#D4AF37] text-[#0B2913] text-[10px] font-black rounded-full flex items-center justify-center ring-2 ring-white shadow-xs">
+                      {cartCount > 9 ? '9+' : cartCount}
+                    </span>
+                  )}
+                </Link>
+
+                {/* Global Notification Popover */}
+                <NotificationsPopover variant="light" />
+
+                {/* Dashboard Profile Access */}
+                <Link
+                  to={dashboardPath}
+                  className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-[#EBF4ED] hover:bg-[#dcefe0] border border-[#1A4E26]/20 transition-all duration-200 group cursor-pointer"
+                  title="Ir a mi panel"
+                >
+                  <Avatar profile={profile} size={28} className="ring-2 ring-[#1A4E26]/20" />
+                  <span className="text-xs font-bold text-[#1A4E26] flex items-center gap-1">
+                    <LayoutDashboard size={14} />
+                    <span>Mi Panel</span>
+                  </span>
+                </Link>
+              </div>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="relative px-4 py-2 rounded-lg text-sm font-medium text-[#6B7280] hover:text-[#1A4E26] transition-colors duration-200 group"
+                >
+                  <span className="relative z-10">Iniciar Sesión</span>
+                  <span className="absolute inset-0 rounded-lg bg-[#F4F7F5] opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                </Link>
+                <Link
+                  to="/registro"
+                  className="group relative px-5 py-2.5 rounded-lg bg-[#1A4E26] text-white text-sm font-semibold overflow-hidden transition-all duration-300 hover:shadow-[0_8px_24px_rgba(26,78,38,0.35)]"
+                >
+                  {/* Animated background */}
+                  <span
+                    className="absolute inset-0 bg-gradient-to-r from-[#1A4E26] via-[#2B6E3A] to-[#1A4E26] bg-[length:200%_100%] group-hover:bg-[position:100%_0%] transition-[background-position] duration-700"
+                  />
+                  <span className="relative flex items-center gap-1.5">
+                    Únete Ahora
+                    <ArrowRight size={14} className="transition-transform duration-300 group-hover:translate-x-1" />
+                  </span>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile hamburger */}

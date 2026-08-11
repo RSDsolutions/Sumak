@@ -3,6 +3,7 @@ import { motion, type Variants } from 'motion/react';
 import { CheckCircle2, ArrowRight, Package, TrendingUp, DollarSign, FileText, User } from 'lucide-react';
 import { affiliatePackages } from '../data';
 import { useSEO } from '../lib/seo';
+import { useAuth } from '../lib/auth';
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 30 },
@@ -47,6 +48,8 @@ const whatYouReceive = [
 ];
 
 export default function Oportunidad() {
+  const { user } = useAuth();
+
   useSEO({
     title: 'Oportunidad de Negocio — Sumak Vida Ecuador',
     description:
@@ -209,14 +212,14 @@ export default function Oportunidad() {
                 </ul>
 
                 <Link
-                  to="/registro"
+                  to={user ? `/dashboard/tienda/pack/${pkg.slug}` : '/registro'}
                   className={`w-full py-3.5 rounded-xl text-center font-bold text-sm transition-all duration-200 ${
                     pkg.destacado
                       ? 'bg-[#1A4E26] text-white hover:bg-[#163F1E] shadow-[0_0_20px_rgba(26,78,38,0.3)]'
                       : 'border border-[#C8D8CB] text-[#111111] hover:border-[#1A4E26] hover:text-[#1A4E26]'
                   }`}
                 >
-                  Elegir este paquete
+                  {user ? 'Armar este paquete' : 'Elegir este paquete'}
                 </Link>
               </motion.div>
             ))}

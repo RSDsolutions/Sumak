@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, Link } from 'react-router-dom';
 import {
   LayoutDashboard,
   FileCheck,
@@ -20,6 +20,7 @@ import {
 import { useAuth } from '../lib/auth';
 import { useSEO } from '../lib/seo';
 import Avatar from './Avatar';
+import NotificationsPopover from './NotificationsPopover';
 
 interface NavItem {
   label: string;
@@ -57,7 +58,9 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
       {/* Header — esquina blanca para que el logo se vea bien */}
       <div className="flex items-center justify-between px-6 py-6 bg-white border-b border-[#C8D8CB]">
         <div>
-          <img src="/LOGO_SUMAK.png" alt="Sumak Vida" className="h-20 w-auto object-contain" />
+          <Link to="/" className="block group cursor-pointer" title="Ir a la página principal">
+            <img src="/LOGO_SUMAK.png" alt="Sumak Vida" className="h-20 w-auto object-contain transition-transform duration-200 group-hover:scale-105" />
+          </Link>
           <div className="mt-2">
             <span className="text-[10px] font-bold uppercase tracking-widest text-[#92680A] bg-[#D4AF37]/15 border border-[#D4AF37]/50 rounded px-2 py-0.5">
               ADMIN
@@ -120,6 +123,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   });
 
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { profile } = useAuth();
 
   return (
     <div className="flex min-h-screen bg-[#F4F7F5]">
@@ -144,21 +148,58 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <SidebarContent onClose={() => setMobileOpen(false)} />
       </aside>
 
-      {/* Main */}
+      {/* Main Container */}
       <div className="flex-1 lg:ml-60 flex flex-col min-h-screen min-w-0">
-        {/* Mobile top bar */}
-        <div className="lg:hidden flex items-center gap-3 px-4 py-4 border-b border-[#C8D8CB] bg-white shadow-sm">
-          <button
-            onClick={() => setMobileOpen(true)}
-            className="text-[#6B7280] hover:text-[#111111] transition-colors"
-          >
-            <Menu size={22} />
-          </button>
-          <img src="/LOGO_SUMAK.png" alt="Sumak Vida" className="h-9 w-auto object-contain" />
-          <span className="text-[10px] font-bold uppercase tracking-widest text-[#D4AF37] bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded px-2 py-0.5">
-            ADMIN
-          </span>
-        </div>
+        {/* Top Header Bar (Desktop & Mobile) */}
+        <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-[#C8D8CB] px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between shadow-xs">
+          {/* Left: Mobile hamburger & Logo / Breadcrumb */}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setMobileOpen(true)}
+              className="lg:hidden text-[#6B7280] hover:text-[#111111] transition-colors p-1 cursor-pointer"
+              aria-label="Abrir menú"
+            >
+              <Menu size={22} />
+            </button>
+            <Link to="/" className="lg:hidden flex items-center gap-2 group cursor-pointer" title="Ir a la página principal">
+              <img src="/LOGO_SUMAK.png" alt="Sumak Vida" className="h-8 w-auto object-contain transition-transform duration-200 group-hover:scale-105" />
+              <span className="text-[9px] font-bold uppercase tracking-widest text-[#D4AF37] bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded px-1.5 py-0.5">
+                ADMIN
+              </span>
+            </Link>
+            <div className="hidden lg:flex items-center gap-2">
+              <span className="text-xs font-semibold text-[#6B7280]">Panel de Administración</span>
+              <span className="text-xs text-slate-300">/</span>
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#D4AF37] bg-[#1A4E26] text-white px-2 py-0.5 rounded border border-[#163F1E]">
+                ADMINISTRADOR
+              </span>
+            </div>
+          </div>
+
+          {/* Right: Notifications & Profile Widget */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Notification Bell Popover */}
+            <NotificationsPopover variant="light" />
+
+            {/* Profile Avatar Widget */}
+            <Link
+              to="/admin/perfil"
+              className="flex items-center gap-2.5 p-1 sm:px-2.5 sm:py-1 rounded-xl hover:bg-[#F4F7F5] border border-transparent hover:border-[#C8D8CB]/80 transition-all duration-200 group cursor-pointer"
+              title="Ir a Perfil de Administrador"
+            >
+              <Avatar profile={profile} size={32} className="ring-2 ring-[#D4AF37]/40" />
+              <div className="hidden md:block text-left">
+                <p className="text-xs font-bold text-[#111111] group-hover:text-[#1A4E26] transition-colors leading-tight truncate max-w-[130px]">
+                  {profile?.nombre_completo || 'Administrador'}
+                </p>
+                <p className="text-[10px] text-[#6B7280] font-medium leading-none mt-0.5">
+                  {profile?.email || 'admin@sumak.com'}
+                </p>
+              </div>
+            </Link>
+          </div>
+        </header>
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">
           {children}
@@ -167,3 +208,4 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     </div>
   );
 }
+
