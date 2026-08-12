@@ -12,6 +12,19 @@ interface OnboardingTourProps {
   onComplete?: () => void;
 }
 
+type TourPhase = 'dashboard' | 'tienda' | 'red' | 'escalera' | 'comisiones';
+
+function getVisibleElement(selector: string): HTMLElement | null {
+  const elements = Array.from(document.querySelectorAll(selector)) as HTMLElement[];
+  for (const el of elements) {
+    const rect = el.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      return el;
+    }
+  }
+  return elements[0] || null;
+}
+
 export default function OnboardingTour({ forceStart = false, onComplete }: OnboardingTourProps) {
   const { profile, isDistribuidor, completeOnboarding } = useAuth();
   const navigate = useNavigate();
@@ -21,25 +34,37 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
   const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
   const isNavigatingRef = useRef<boolean>(false);
   const isTourCompletedRef = useRef<boolean>(false);
-  const currentStepRef = useRef<number>(0);
-  const currentPhaseRef = useRef<'phase1' | 'phase2' | 'phase3'>('phase1');
+  const currentPhaseRef = useRef<TourPhase>('dashboard');
+  const currentStepIndexRef = useRef<number>(0);
+
+  const updateProgressBadge = (globalStep: number, total: number = 9) => {
+    setTimeout(() => {
+      const progressEl = document.querySelector('.driver-popover-progress-text');
+      if (progressEl) {
+        progressEl.textContent = `Paso ${globalStep} de ${total}`;
+      }
+    }, 15);
+  };
 
   const handleDismissTour = useCallback(() => {
     setShowConfirmModal(false);
     sessionStorage.removeItem('sumak_active_tour_stage');
     completeOnboarding();
+    window.dispatchEvent(new CustomEvent('sumak-tour-close-mobile-sidebar'));
     if (driverRef.current) {
       driverRef.current.destroy();
       driverRef.current = null;
     }
   }, [completeOnboarding]);
 
-  // FASE 1: En /dashboard
-  const startDashboardTourPhase1 = useCallback((initialIndex: number = 0) => {
-    const welcomeEl = document.querySelector('#tour-welcome-banner') || document.querySelector('[data-tour="welcome-banner"]');
+  // ==========================================
+  // FASE 1: /dashboard (Pasos 1, 2, 3 de 9)
+  // ==========================================
+  const startDashboardTour = useCallback((initialIndex: number = 0) => {
+    const welcomeEl = getVisibleElement('#tour-welcome-banner') || getVisibleElement('[data-tour="welcome-banner"]');
     if (!welcomeEl && !forceStart) return;
 
-    currentPhaseRef.current = 'phase1';
+    currentPhaseRef.current = 'dashboard';
 
     const driverObj = driver({
       showProgress: true,
@@ -50,48 +75,55 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
       stageRadius: 16,
       popoverClass: 'sumak-driver-popover',
       nextBtnText: 'Siguiente →',
-      prevBtnText: '← Anterior',
-      doneBtnText: 'Explorar Tienda 🛍️',
-      progressText: 'Paso {{current}} de 6',
+      prevBtnText: '← Atrás',
+      doneBtnText: 'Ir a Tienda 🛍️',
       showButtons: ['next', 'previous', 'close'],
-      onHighlightStarted: (element, _step, options) => {
+      onHighlightStarted: (element, step, options) => {
         if (element) {
           element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
         }
-        if (options && options.driver) {
-          const idx = options.driver.getActiveIndex();
-          if (typeof idx === 'number') currentStepRef.current = idx;
+        const idx = options?.driver?.getActiveIndex() ?? 0;
+        currentStepIndexRef.current = idx;
+
+        // Si es el paso 2 o 3, en móviles abrimos automáticamente el drawer de navegación
+        if (idx >= 1 && window.innerWidth < 1024) {
+          window.dispatchEvent(new CustomEvent('sumak-tour-open-mobile-sidebar'));
+        } else if (idx === 0 && window.innerWidth < 1024) {
+          window.dispatchEvent(new CustomEvent('sumak-tour-close-mobile-sidebar'));
         }
+
+        updateProgressBadge(idx + 1, 9);
       },
       steps: [
         {
           element: '#tour-welcome-banner',
           popover: {
-            title: '✨ ¡Bienvenido a tu Panel de Distribuidor!',
-            description: 'Aquí puedes consultar el estado de tu paquete activo, armar tu pack de productos y revisar la activación mensual necesaria para cobrar comisiones.',
+            title: '✨ Bienvenido a tu Panel',
+            description: 'Aquí puedes consultar el estado de tu paquete activo, pedidos recientes y tu activación mensual necesaria para cobrar comisiones.',
             side: 'bottom',
             align: 'start',
           },
         },
         {
-          element: '#tour-sidebar-nav',
+          element: () => (getVisibleElement('#tour-sidebar-nav') || getVisibleElement('[data-tour="sidebar-nav"]') || document.querySelector('#tour-sidebar-nav') || document.body) as Element,
           popover: {
             title: '📋 Menú de Control',
-            description: 'Desde esta barra de navegación puedes acceder a la Tienda, tu Carrito, el Historial de Pedidos, tu Red de afiliados, tu Escalera de éxito y Comisiones.',
-            side: 'right',
+            description: 'Desde esta barra de navegación puedes acceder a la Tienda, Carrito, Pedidos, Red de afiliados, Escalera de éxito y Comisiones.',
+            side: window.innerWidth < 1024 ? 'bottom' : 'right',
             align: 'start',
           },
         },
         {
-          element: '[data-tour="nav-tienda"]',
+          element: () => (getVisibleElement('[data-tour="nav-tienda"]') || document.querySelector('[data-tour="nav-tienda"]') || document.body) as Element,
           popover: {
-            title: '🛍️ Catálogo y Paquetes de Inicio',
-            description: 'Accede a tus productos con 50% de descuento mayorista y arma tus paquetes de afiliación. ¡Vamos a conocer la tienda interactiva!',
-            side: 'right',
+            title: '🛍️ Catálogo y Tienda',
+            description: 'Accede a tus productos con 50% de descuento mayorista y arma tus paquetes de afiliación. ¡Vamos a ver la tienda interactiva!',
+            side: window.innerWidth < 1024 ? 'top' : 'right',
             align: 'center',
             onNextClick: () => {
               isNavigatingRef.current = true;
               sessionStorage.setItem('sumak_active_tour_stage', 'tienda');
+              window.dispatchEvent(new CustomEvent('sumak-tour-close-mobile-sidebar'));
               driverObj.destroy();
               navigate('/dashboard/tienda');
             },
@@ -101,7 +133,7 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
       onDestroyStarted: () => {
         if (!isNavigatingRef.current && !isTourCompletedRef.current) {
           const idx = driverObj.getActiveIndex();
-          if (typeof idx === 'number') currentStepRef.current = idx;
+          if (typeof idx === 'number') currentStepIndexRef.current = idx;
           driverObj.destroy();
           driverRef.current = null;
           setShowConfirmModal(true);
@@ -116,12 +148,15 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
     driverObj.drive(initialIndex);
   }, [forceStart, navigate]);
 
-  // FASE 2: En /dashboard/tienda
-  const startTiendaTourPhase2 = useCallback((initialIndex: number = 0) => {
-    const packBanner = document.querySelector('[data-tour="tienda-pack-banner"]');
+  // ==========================================
+  // FASE 2: /dashboard/tienda (Pasos 4, 5, 6 de 9)
+  // ==========================================
+  const startTiendaTour = useCallback((initialIndex: number = 0) => {
+    const packBanner = getVisibleElement('[data-tour="tienda-pack-banner"]');
     if (!packBanner) return;
 
-    currentPhaseRef.current = 'phase2';
+    currentPhaseRef.current = 'tienda';
+    window.dispatchEvent(new CustomEvent('sumak-tour-close-mobile-sidebar'));
 
     const driverObj = driver({
       showProgress: true,
@@ -132,18 +167,16 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
       stageRadius: 16,
       popoverClass: 'sumak-driver-popover',
       nextBtnText: 'Siguiente →',
-      prevBtnText: '← Anterior',
-      doneBtnText: 'Ver Mi Red y Comisiones →',
-      progressText: 'Paso {{current}} de 6',
+      prevBtnText: '← Atrás',
+      doneBtnText: 'Ver Mi Red 👥',
       showButtons: ['next', 'previous', 'close'],
       onHighlightStarted: (element, _step, options) => {
         if (element) {
           element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
         }
-        if (options && options.driver) {
-          const idx = options.driver.getActiveIndex();
-          if (typeof idx === 'number') currentStepRef.current = idx;
-        }
+        const idx = options?.driver?.getActiveIndex() ?? 0;
+        currentStepIndexRef.current = idx;
+        updateProgressBadge(idx + 4, 9);
       },
       steps: [
         {
@@ -167,15 +200,15 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
         {
           element: '[data-tour="tienda-producto-card"]',
           popover: {
-            title: '🛒 Compra con 50% de Descuento',
+            title: '🛒 50% de Descuento',
             description: 'Agrega cualquier producto a tu carrito a precio mayorista y revisa las insignias de stock en tiempo real.',
             side: 'top',
             align: 'center',
             onNextClick: () => {
               isNavigatingRef.current = true;
-              sessionStorage.setItem('sumak_active_tour_stage', 'dashboard_final');
+              sessionStorage.setItem('sumak_active_tour_stage', 'red');
               driverObj.destroy();
-              navigate('/dashboard');
+              navigate('/dashboard/red');
             },
           },
         },
@@ -183,7 +216,7 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
       onDestroyStarted: () => {
         if (!isNavigatingRef.current && !isTourCompletedRef.current) {
           const idx = driverObj.getActiveIndex();
-          if (typeof idx === 'number') currentStepRef.current = idx;
+          if (typeof idx === 'number') currentStepIndexRef.current = idx;
           driverObj.destroy();
           driverRef.current = null;
           setShowConfirmModal(true);
@@ -198,12 +231,16 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
     driverObj.drive(initialIndex);
   }, [navigate]);
 
-  // FASE 3: En /dashboard (Red, Escalera, Comisiones)
-  const startDashboardTourPhase3 = useCallback((initialIndex: number = 0) => {
-    const redNav = document.querySelector('[data-tour="nav-red"]');
-    if (!redNav) return;
+  // ==========================================
+  // FASE 3: /dashboard/red (Paso 7 de 9)
+  // ==========================================
+  const startRedTour = useCallback(() => {
+    const redTree = getVisibleElement('[data-tour="red-tree-container"]');
+    if (!redTree) return;
 
-    currentPhaseRef.current = 'phase3';
+    currentPhaseRef.current = 'red';
+    currentStepIndexRef.current = 0;
+    window.dispatchEvent(new CustomEvent('sumak-tour-close-mobile-sidebar'));
 
     const driverObj = driver({
       showProgress: true,
@@ -213,85 +250,192 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
       stagePadding: 8,
       stageRadius: 16,
       popoverClass: 'sumak-driver-popover',
-      nextBtnText: 'Siguiente →',
-      prevBtnText: '← Anterior',
-      doneBtnText: '¡Comenzar a Trabajar! 🚀',
-      progressText: 'Paso {{current}} de 6',
-      showButtons: ['next', 'previous', 'close'],
-      onHighlightStarted: (element, _step, options) => {
+      nextBtnText: 'Ver Escalera 🏆',
+      prevBtnText: '← Atrás',
+      doneBtnText: 'Ver Escalera 🏆',
+      showButtons: ['next', 'close'],
+      onHighlightStarted: (element) => {
         if (element) {
           element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
         }
-        if (options && options.driver) {
-          const idx = options.driver.getActiveIndex();
-          if (typeof idx === 'number') currentStepRef.current = idx;
-        }
+        updateProgressBadge(7, 9);
       },
       steps: [
         {
-          element: '[data-tour="nav-red"]',
+          element: '[data-tour="red-tree-container"]',
           popover: {
-            title: '👥 Construye tu Red de Distribuidores',
-            description: 'Revisa tu árbol binario y copia tu código o enlace de afiliación para invitar a nuevos miembros a tu equipo.',
-            side: 'right',
-            align: 'center',
+            title: '👥 Mi Red de Distribuidores',
+            description: 'Visualiza tu árbol binario en tiempo real, verifica el balance de tus ramas izquierda y derecha y comparte tu código de patrocinador.',
+            side: 'top',
+            align: 'start',
+            onNextClick: () => {
+              isNavigatingRef.current = true;
+              sessionStorage.setItem('sumak_active_tour_stage', 'escalera');
+              driverObj.destroy();
+              navigate('/dashboard/escalera');
+            },
           },
         },
+      ],
+      onDestroyStarted: () => {
+        if (!isNavigatingRef.current && !isTourCompletedRef.current) {
+          driverObj.destroy();
+          driverRef.current = null;
+          setShowConfirmModal(true);
+        } else {
+          driverObj.destroy();
+          driverRef.current = null;
+        }
+      },
+    });
+
+    driverRef.current = driverObj;
+    driverObj.drive(0);
+  }, [navigate]);
+
+  // ==========================================
+  // FASE 4: /dashboard/escalera (Paso 8 de 9)
+  // ==========================================
+  const startEscaleraTour = useCallback(() => {
+    const escaleraHero = getVisibleElement('[data-tour="escalera-staircase-container"]');
+    if (!escaleraHero) return;
+
+    currentPhaseRef.current = 'escalera';
+    currentStepIndexRef.current = 0;
+    window.dispatchEvent(new CustomEvent('sumak-tour-close-mobile-sidebar'));
+
+    const driverObj = driver({
+      showProgress: true,
+      animate: true,
+      allowClose: true,
+      overlayColor: 'rgba(11, 41, 19, 0.75)',
+      stagePadding: 8,
+      stageRadius: 16,
+      popoverClass: 'sumak-driver-popover',
+      nextBtnText: 'Ver Comisiones 💰',
+      prevBtnText: '← Atrás',
+      doneBtnText: 'Ver Comisiones 💰',
+      showButtons: ['next', 'close'],
+      onHighlightStarted: (element) => {
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+        }
+        updateProgressBadge(8, 9);
+      },
+      steps: [
         {
-          element: '[data-tour="nav-escalera"]',
+          element: '[data-tour="escalera-staircase-container"]',
           popover: {
-            title: '🏆 Rangos y Recompensas',
-            description: 'Monitorea tu progreso mensual, sube de rango y desbloquea bonos adicionales por volumen y afiliados.',
-            side: 'right',
-            align: 'center',
+            title: '🏆 Mi Escalera de Éxito',
+            description: 'Monitorea tu rango mensual, los afiliados que te faltan para subir de nivel y los bonos en efectivo que desbloqueas cada mes.',
+            side: 'top',
+            align: 'start',
+            onNextClick: () => {
+              isNavigatingRef.current = true;
+              sessionStorage.setItem('sumak_active_tour_stage', 'comisiones');
+              driverObj.destroy();
+              navigate('/dashboard/comisiones');
+            },
           },
         },
+      ],
+      onDestroyStarted: () => {
+        if (!isNavigatingRef.current && !isTourCompletedRef.current) {
+          driverObj.destroy();
+          driverRef.current = null;
+          setShowConfirmModal(true);
+        } else {
+          driverObj.destroy();
+          driverRef.current = null;
+        }
+      },
+    });
+
+    driverRef.current = driverObj;
+    driverObj.drive(0);
+  }, [navigate]);
+
+  // ==========================================
+  // FASE 5: /dashboard/comisiones (Paso 9 de 9)
+  // ==========================================
+  const startComisionesTour = useCallback(() => {
+    const cards = getVisibleElement('[data-tour="comisiones-summary-cards"]');
+    if (!cards) return;
+
+    currentPhaseRef.current = 'comisiones';
+    currentStepIndexRef.current = 0;
+    window.dispatchEvent(new CustomEvent('sumak-tour-close-mobile-sidebar'));
+
+    const driverObj = driver({
+      showProgress: true,
+      animate: true,
+      allowClose: true,
+      overlayColor: 'rgba(11, 41, 19, 0.75)',
+      stagePadding: 8,
+      stageRadius: 16,
+      popoverClass: 'sumak-driver-popover',
+      nextBtnText: '¡Finalizar! 🎉',
+      prevBtnText: '← Atrás',
+      doneBtnText: '¡Finalizar! 🎉',
+      showButtons: ['next', 'close'],
+      onHighlightStarted: (element) => {
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+        }
+        updateProgressBadge(9, 9);
+      },
+      steps: [
         {
-          element: '[data-tour="nav-comisiones"]',
+          element: '[data-tour="comisiones-summary-cards"]',
           popover: {
-            title: '💰 Gestión de Ingresos',
-            description: 'Consulta el saldo acumulado, las comisiones pendientes de cobro y los detalles de tus bonos por afiliación directa.',
-            side: 'right',
-            align: 'center',
+            title: '💰 Gestión de Comisiones',
+            description: 'Consulta tus ganancias generadas por afiliación directa, bonos binarios liquidados y el estado de tu calificación mensual.',
+            side: 'top',
+            align: 'start',
+            onNextClick: () => {
+              isTourCompletedRef.current = true;
+              sessionStorage.removeItem('sumak_active_tour_stage');
+              completeOnboarding();
+              if (onComplete) onComplete();
+              driverObj.destroy();
+              driverRef.current = null;
+              navigate('/dashboard');
+            },
           },
         },
       ],
       onDestroyStarted: () => {
         if (!isNavigatingRef.current) {
-          const idx = driverObj.getActiveIndex();
-          if (typeof idx === 'number' && idx < 2) {
-            currentStepRef.current = idx;
-            driverObj.destroy();
-            driverRef.current = null;
-            setShowConfirmModal(true);
-            return;
-          }
+          isTourCompletedRef.current = true;
+          sessionStorage.removeItem('sumak_active_tour_stage');
+          completeOnboarding();
+          if (onComplete) onComplete();
         }
-        isTourCompletedRef.current = true;
-        sessionStorage.removeItem('sumak_active_tour_stage');
-        completeOnboarding();
-        if (onComplete) onComplete();
         driverObj.destroy();
         driverRef.current = null;
       },
     });
 
     driverRef.current = driverObj;
-    driverObj.drive(initialIndex);
-  }, [completeOnboarding, onComplete]);
+    driverObj.drive(0);
+  }, [completeOnboarding, onComplete, navigate]);
 
   const handleContinueTour = useCallback(() => {
     setShowConfirmModal(false);
     setTimeout(() => {
-      if (currentPhaseRef.current === 'phase1') {
-        startDashboardTourPhase1(currentStepRef.current);
-      } else if (currentPhaseRef.current === 'phase2') {
-        startTiendaTourPhase2(currentStepRef.current);
-      } else {
-        startDashboardTourPhase3(currentStepRef.current);
+      if (currentPhaseRef.current === 'dashboard') {
+        startDashboardTour(currentStepIndexRef.current);
+      } else if (currentPhaseRef.current === 'tienda') {
+        startTiendaTour(currentStepIndexRef.current);
+      } else if (currentPhaseRef.current === 'red') {
+        startRedTour();
+      } else if (currentPhaseRef.current === 'escalera') {
+        startEscaleraTour();
+      } else if (currentPhaseRef.current === 'comisiones') {
+        startComisionesTour();
       }
     }, 150);
-  }, [startDashboardTourPhase1, startTiendaTourPhase2, startDashboardTourPhase3]);
+  }, [startDashboardTour, startTiendaTour, startRedTour, startEscaleraTour, startComisionesTour]);
 
   useEffect(() => {
     if (!profile) return;
@@ -305,13 +449,17 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
       isNavigatingRef.current = false;
 
       if (location.pathname === '/dashboard') {
-        if (currentStage === 'dashboard_final') {
-          startDashboardTourPhase3(0);
-        } else {
-          startDashboardTourPhase1(0);
+        if (!currentStage) {
+          startDashboardTour(0);
         }
       } else if (location.pathname === '/dashboard/tienda' && currentStage === 'tienda') {
-        startTiendaTourPhase2(0);
+        startTiendaTour(0);
+      } else if (location.pathname === '/dashboard/red' && currentStage === 'red') {
+        startRedTour();
+      } else if (location.pathname === '/dashboard/escalera' && currentStage === 'escalera') {
+        startEscaleraTour();
+      } else if (location.pathname === '/dashboard/comisiones' && currentStage === 'comisiones') {
+        startComisionesTour();
       }
     }, 600);
 
@@ -327,9 +475,11 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
     isDistribuidor,
     forceStart,
     location.pathname,
-    startDashboardTourPhase1,
-    startTiendaTourPhase2,
-    startDashboardTourPhase3,
+    startDashboardTour,
+    startTiendaTour,
+    startRedTour,
+    startEscaleraTour,
+    startComisionesTour,
   ]);
 
   if (typeof document === 'undefined') return null;
@@ -345,7 +495,7 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
             initial={{ scale: 0.92, opacity: 0, y: 12 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.92, opacity: 0, y: 12 }}
-            className="bg-white rounded-3xl border border-[#C8D8CB] p-6 max-w-sm w-full shadow-2xl text-center relative"
+            className="bg-white/90 backdrop-blur-xl rounded-3xl border border-white/80 p-6 max-w-sm w-full shadow-[0_24px_60px_-12px_rgba(11,41,19,0.35)] text-center relative"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-12 h-12 rounded-2xl bg-[#D4AF37]/15 text-[#D4AF37] flex items-center justify-center mx-auto mb-4 border border-[#D4AF37]/30">

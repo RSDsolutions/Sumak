@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, useNavigate, Link } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -146,6 +146,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { profile } = useAuth();
   const { items } = useCart();
   const cartCount = items.reduce((s, i) => s + i.cantidad, 0);
+
+  useEffect(() => {
+    const handleOpen = () => setMobileOpen(true);
+    const handleClose = () => setMobileOpen(false);
+    window.addEventListener('sumak-tour-open-mobile-sidebar', handleOpen);
+    window.addEventListener('sumak-tour-close-mobile-sidebar', handleClose);
+    return () => {
+      window.removeEventListener('sumak-tour-open-mobile-sidebar', handleOpen);
+      window.removeEventListener('sumak-tour-close-mobile-sidebar', handleClose);
+    };
+  }, []);
 
   return (
     <div className="flex min-h-screen bg-[#F4F7F5]">

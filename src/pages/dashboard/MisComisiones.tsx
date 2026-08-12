@@ -430,7 +430,7 @@ export default function MisComisiones({ scope = 'no-afiliacion' }: MisComisiones
       )}
 
       {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      <div data-tour="comisiones-summary-cards" className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <div className="bg-white border border-[#C8D8CB] rounded-2xl p-6 shadow-[0_0_8px_rgba(26,78,38,0.04)]">
           <div className="w-10 h-10 bg-[#D4AF37]/10 rounded-xl flex items-center justify-center mb-4">
             <TrendingUp size={20} className="text-[#D4AF37]" />

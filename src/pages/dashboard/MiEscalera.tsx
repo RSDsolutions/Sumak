@@ -260,7 +260,7 @@ export default function MiEscalera() {
       </div>
 
       {/* ── Hero con posición actual ───────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+      <div data-tour="escalera-staircase-container" className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         {/* Tramo 1 hero */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}

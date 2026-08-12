@@ -148,7 +148,7 @@ export default function ProfileTour({ forceStart = false, onComplete }: ProfileT
             initial={{ scale: 0.92, opacity: 0, y: 12 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.92, opacity: 0, y: 12 }}
-            className="bg-white rounded-3xl border border-[#C8D8CB] p-6 max-w-sm w-full shadow-2xl text-center relative"
+            className="bg-white/90 backdrop-blur-xl rounded-3xl border border-white/80 p-6 max-w-sm w-full shadow-[0_24px_60px_-12px_rgba(11,41,19,0.35)] text-center relative"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-12 h-12 rounded-2xl bg-[#D4AF37]/15 text-[#D4AF37] flex items-center justify-center mx-auto mb-4 border border-[#D4AF37]/30">

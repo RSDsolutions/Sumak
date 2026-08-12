@@ -581,7 +581,7 @@ export default function MiRed() {
       </div>
 
       {/* Tree visualization */}
-      <div className="bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden">
+      <div data-tour="red-tree-container" className="bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[#C8D8CB] bg-[#FAFBFA] flex items-center justify-between flex-wrap gap-3">
           <div>
             <h2 className="font-heading font-bold text-[#111111] text-sm flex items-center gap-2">
