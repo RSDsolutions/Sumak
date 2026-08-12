@@ -27,7 +27,7 @@ function Spinner() {
 }
 
 export default function MiEscalera() {
-  const { user, profile, isMockUser } = useAuth();
+  const { user, profile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [directos, setDirectos] = useState(0);
   const [redTotal, setRedTotal] = useState(0);
@@ -47,14 +47,6 @@ export default function MiEscalera() {
   const isCurrentMonth = monthOffset === 0;
 
   useEffect(() => {
-    if (isMockUser) {
-      const isDemo = !profile?.has_completed_onboarding;
-      setDirectos(isDemo ? 3 : 0);
-      setRedTotal(isDemo ? 8 : 0);
-      setLoading(false);
-      return;
-    }
-
     async function load() {
       setLoading(true);
       try {
@@ -120,16 +112,15 @@ export default function MiEscalera() {
         setDirectos(directosCount);
         setRedTotal(total);
       } catch {
-        const isDemo = !profile?.has_completed_onboarding;
-        setDirectos(isDemo ? 3 : 0);
-        setRedTotal(isDemo ? 8 : 0);
+        setDirectos(0);
+        setRedTotal(0);
       } finally {
         setLoading(false);
       }
     }
 
     load();
-  }, [user, monthStart, monthEnd, isMockUser, profile?.has_completed_onboarding]);
+  }, [user, monthStart, monthEnd]);
 
   // ── Tramo 1 ──
   const rangoT1Actual = useMemo(() => getRangoActual(directos), [directos]);

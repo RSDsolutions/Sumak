@@ -261,80 +261,9 @@ export interface MisComisionesProps {
   scope?: 'no-afiliacion' | 'afiliacion';
 }
 
-const MOCK_COMISIONES_LIST: Comision[] = [
-  {
-    id: 'com-mock-1',
-    beneficiario_id: '04210cbe-dab8-4047-9d36-0a3f33c29856',
-    origen_id: 'mock-dist-2',
-    pedido_id: 'ped-mock-1038',
-    monto: 37.5,
-    tipo: 'afiliacion',
-    nivel_red: 1,
-    estado: 'pendiente',
-    descripcion: 'Bono de afiliación directa (40%)',
-    created_at: new Date(Date.now() - 1 * 86400000).toISOString(),
-    pagado_at: null,
-    voucher_url: null,
-    voucher_numero: null,
-    pagado_por: null,
-    origen: {
-      id: 'mock-dist-2',
-      nombre_completo: 'Carlos Mendoza',
-      codigo_distribuidor: 'SUMAK-00045',
-      paquete: 'basico',
-      puntos: 100,
-      username: 'cmendoza',
-      cedula: null,
-      email: 'carlos@ejemplo.com',
-      telefono: null,
-      direccion: null,
-      ciudad: 'Quito',
-      codigo_patrocinador: 'SUMAK-00030',
-      patrocinador_id: '04210cbe-dab8-4047-9d36-0a3f33c29856',
-      estado: 'activo',
-      rol: 'distribuidor',
-      avatar_url: null,
-      fecha_registro: '2026-02-01T10:00:00Z',
-      fecha_aprobacion: '2026-02-01T12:00:00Z',
-    },
-  },
-  {
-    id: 'com-mock-2',
-    beneficiario_id: '04210cbe-dab8-4047-9d36-0a3f33c29856',
-    origen_id: null,
-    pedido_id: null,
-    monto: 50.0,
-    tipo: 'binaria',
-    nivel_red: null,
-    estado: 'pendiente',
-    descripcion: 'Comisión binaria por pareo',
-    created_at: new Date(Date.now() - 4 * 86400000).toISOString(),
-    pagado_at: null,
-    voucher_url: null,
-    voucher_numero: null,
-    pagado_por: null,
-  },
-  {
-    id: 'com-mock-3',
-    beneficiario_id: '04210cbe-dab8-4047-9d36-0a3f33c29856',
-    origen_id: null,
-    pedido_id: null,
-    monto: 120.0,
-    tipo: 'binaria',
-    nivel_red: null,
-    estado: 'pagado',
-    descripcion: 'Comisión binaria liquidada',
-    created_at: new Date(Date.now() - 18 * 86400000).toISOString(),
-    pagado_at: new Date(Date.now() - 17 * 86400000).toISOString(),
-    voucher_url: null,
-    voucher_numero: 'TR-8927419',
-    pagado_por: null,
-  },
-];
-
 export default function MisComisiones({ scope = 'no-afiliacion' }: MisComisionesProps) {
   const isAfiliacionScope = scope === 'afiliacion';
-  const { user, profile, isMockUser } = useAuth();
+  const { user } = useAuth();
   const [comisiones, setComisiones] = useState<Comision[]>([]);
   const [loading, setLoading] = useState(true);
   const [compraCalificada, setCompraCalificada] = useState(false);
@@ -342,22 +271,6 @@ export default function MisComisiones({ scope = 'no-afiliacion' }: MisComisiones
 
   useEffect(() => {
     if (!user) return;
-
-    if (isMockUser) {
-      const isDemo = !profile?.has_completed_onboarding;
-      if (isDemo) {
-        const filtered = isAfiliacionScope
-          ? MOCK_COMISIONES_LIST.filter((c) => c.tipo === 'afiliacion')
-          : MOCK_COMISIONES_LIST.filter((c) => c.tipo !== 'afiliacion');
-        setComisiones(filtered);
-        setCompraCalificada(true);
-      } else {
-        setComisiones([]);
-        setCompraCalificada(false);
-      }
-      setLoading(false);
-      return;
-    }
 
     async function load() {
       try {
@@ -385,7 +298,7 @@ export default function MisComisiones({ scope = 'no-afiliacion' }: MisComisiones
       }
     }
     load();
-  }, [user, isAfiliacionScope, isMockUser, profile?.has_completed_onboarding]);
+  }, [user, isAfiliacionScope]);
 
   const totalGanado = comisiones.filter((c) => c.estado === 'pagado').reduce((s, c) => s + Number(c.monto), 0);
   const totalPendiente = comisiones.filter((c) => c.estado === 'pendiente').reduce((s, c) => s + Number(c.monto), 0);

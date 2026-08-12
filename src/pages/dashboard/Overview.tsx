@@ -52,128 +52,14 @@ interface Stats {
   ultimosPedidos: Pedido[];
 }
 
-const MOCK_ULTIMOS_PEDIDOS: Pedido[] = [
-  {
-    id: 'ped-mock-1038',
-    distribuidor_id: '04210cbe-dab8-4047-9d36-0a3f33c29856',
-    estado: 'enviado',
-    tipo_precio: 'distribuidor',
-    total: 125,
-    puntos_generados: 100,
-    notas: 'Entregar en horario de oficina',
-    voucher_url: null,
-    voucher_numero: null,
-    banco_destino: null,
-    pago_expira_en: null,
-    idempotency_key: null,
-    envio_voucher_url: null,
-    envio_numero: '92837410',
-    enviado_por: null,
-    numero_pedido: 1038,
-    recibido_at: null,
-    incidencia: null,
-    incidencia_at: null,
-    created_at: new Date(Date.now() - 2 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 2 * 86400000).toISOString(),
-    items: [
-      {
-        id: 'item-1',
-        pedido_id: 'ped-mock-1038',
-        producto_codigo: 'PROD-001',
-        producto_nombre: 'Sumak Moringa Premium',
-        cantidad: 5,
-        precio_unitario: 12.5,
-        subtotal: 62.5,
-      },
-      {
-        id: 'item-2',
-        pedido_id: 'ped-mock-1038',
-        producto_codigo: 'PROD-002',
-        producto_nombre: 'Sumak Clorofila Líquida',
-        cantidad: 5,
-        precio_unitario: 12.5,
-        subtotal: 62.5,
-      },
-    ],
-  },
-];
-
-const MOCK_COMISIONES: Comision[] = [
-  {
-    id: 'com-mock-1',
-    beneficiario_id: '04210cbe-dab8-4047-9d36-0a3f33c29856',
-    origen_id: 'mock-dist-2',
-    pedido_id: 'ped-mock-1038',
-    monto: 37.5,
-    tipo: 'afiliacion',
-    nivel_red: 1,
-    estado: 'pendiente',
-    descripcion: 'Bono de afiliación directa',
-    created_at: new Date(Date.now() - 1 * 86400000).toISOString(),
-    pagado_at: null,
-    voucher_url: null,
-    voucher_numero: null,
-    pagado_por: null,
-  },
-  {
-    id: 'com-mock-2',
-    beneficiario_id: '04210cbe-dab8-4047-9d36-0a3f33c29856',
-    origen_id: null,
-    pedido_id: null,
-    monto: 50.0,
-    tipo: 'binaria',
-    nivel_red: null,
-    estado: 'pendiente',
-    descripcion: 'Comisión binaria por pareo',
-    created_at: new Date(Date.now() - 4 * 86400000).toISOString(),
-    pagado_at: null,
-    voucher_url: null,
-    voucher_numero: null,
-    pagado_por: null,
-  },
-  {
-    id: 'com-mock-3',
-    beneficiario_id: '04210cbe-dab8-4047-9d36-0a3f33c29856',
-    origen_id: null,
-    pedido_id: null,
-    monto: 120.0,
-    tipo: 'binaria',
-    nivel_red: null,
-    estado: 'pagado',
-    descripcion: 'Comisión binaria liquidada',
-    created_at: new Date(Date.now() - 18 * 86400000).toISOString(),
-    pagado_at: new Date(Date.now() - 17 * 86400000).toISOString(),
-    voucher_url: null,
-    voucher_numero: 'TR-8927419',
-    pagado_por: null,
-  },
-];
-
 export default function Overview() {
-  const { profile, user, isMockUser, refreshProfile } = useAuth();
+  const { profile, user, refreshProfile } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
   const [comisiones, setComisiones] = useState<Comision[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
-
-    if (isMockUser) {
-      const isDemo = !profile?.has_completed_onboarding;
-      setComisiones(isDemo ? MOCK_COMISIONES : []);
-      setStats({
-        comisionesPendientes: isDemo ? 87.5 : 0,
-        comisionesPagadas: isDemo ? 120.0 : 0,
-        afiliadosDirectos: isDemo ? 3 : 0,
-        pedidosMes: isDemo ? 2 : 0,
-        totalCompradoMes: isDemo ? 125 : 0,
-        compraCalificada: isDemo ? true : false,
-        maxPedido: isDemo ? 125 : 0,
-        ultimosPedidos: isDemo ? MOCK_ULTIMOS_PEDIDOS : [],
-      });
-      setLoading(false);
-      return;
-    }
 
     async function load() {
       const uid = user!.id;
@@ -231,25 +117,23 @@ export default function Overview() {
           ultimosPedidos: (ultimosPedidosData ?? []) as Pedido[],
         });
       } catch {
-        // Fallback gracefully respecting onboarding completion status
-        const isDemo = !profile?.has_completed_onboarding;
-        setComisiones(isDemo ? MOCK_COMISIONES : []);
+        setComisiones([]);
         setStats({
-          comisionesPendientes: isDemo ? 87.5 : 0,
-          comisionesPagadas: isDemo ? 120.0 : 0,
-          afiliadosDirectos: isDemo ? 3 : 0,
-          pedidosMes: isDemo ? 2 : 0,
-          totalCompradoMes: isDemo ? 125 : 0,
-          compraCalificada: isDemo ? true : false,
-          maxPedido: isDemo ? 125 : 0,
-          ultimosPedidos: isDemo ? MOCK_ULTIMOS_PEDIDOS : [],
+          comisionesPendientes: 0,
+          comisionesPagadas: 0,
+          afiliadosDirectos: 0,
+          pedidosMes: 0,
+          totalCompradoMes: 0,
+          compraCalificada: false,
+          maxPedido: 0,
+          ultimosPedidos: [],
         });
       } finally {
         setLoading(false);
       }
     }
     load();
-  }, [user, isMockUser, profile?.has_completed_onboarding]);
+  }, [user]);
 
   const directos = stats?.afiliadosDirectos ?? 0;
   const rangoActual = getRangoActual(directos);

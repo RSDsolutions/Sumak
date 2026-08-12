@@ -255,97 +255,8 @@ function ReferralCard({ codigo }: { codigo: string }) {
   );
 }
 
-const MOCK_TREE_NODE: TreeNode = {
-  id: 'node-mock-root',
-  distribuidor_id: '04210cbe-dab8-4047-9d36-0a3f33c29856',
-  padre_id: null,
-  posicion: null,
-  nivel: 1,
-  created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
-  profile: {
-    id: '04210cbe-dab8-4047-9d36-0a3f33c29856',
-    codigo_distribuidor: 'SUMAK-00030',
-    username: 'user',
-    nombre_completo: 'Usuario Distribuidor Local',
-    cedula: '0928374651',
-    email: 'user@sumak.com',
-    telefono: '0987654321',
-    direccion: 'Av. 9 de Octubre y Malecón',
-    ciudad: 'Guayaquil',
-    codigo_patrocinador: 'SUMAK-00001',
-    patrocinador_id: '16092a90-3e8e-466d-a509-eb6b074a92cd',
-    paquete: 'emprendedor',
-    puntos: 1250,
-    estado: 'activo',
-    rol: 'distribuidor',
-    avatar_url: null,
-    fecha_registro: '2026-01-15T10:00:00Z',
-    fecha_aprobacion: '2026-01-15T12:00:00Z',
-  },
-  children: [
-    {
-      id: 'node-mock-child-1',
-      distribuidor_id: 'mock-dist-2',
-      padre_id: 'node-mock-root',
-      posicion: 'izquierda',
-      nivel: 2,
-      created_at: new Date(Date.now() - 10 * 86400000).toISOString(),
-      profile: {
-        id: 'mock-dist-2',
-        codigo_distribuidor: 'SUMAK-00045',
-        username: 'cmendoza',
-        nombre_completo: 'Carlos Mendoza',
-        cedula: '0918273645',
-        email: 'carlos@ejemplo.com',
-        telefono: '0991234567',
-        direccion: null,
-        ciudad: 'Quito',
-        codigo_patrocinador: 'SUMAK-00030',
-        patrocinador_id: '04210cbe-dab8-4047-9d36-0a3f33c29856',
-        paquete: 'basico',
-        puntos: 450,
-        estado: 'activo',
-        rol: 'distribuidor',
-        avatar_url: null,
-        fecha_registro: '2026-02-01T10:00:00Z',
-        fecha_aprobacion: '2026-02-01T12:00:00Z',
-      },
-      children: [],
-    },
-    {
-      id: 'node-mock-child-2',
-      distribuidor_id: 'mock-dist-3',
-      padre_id: 'node-mock-root',
-      posicion: 'derecha',
-      nivel: 2,
-      created_at: new Date(Date.now() - 5 * 86400000).toISOString(),
-      profile: {
-        id: 'mock-dist-3',
-        codigo_distribuidor: 'SUMAK-00049',
-        username: 'mvaldez',
-        nombre_completo: 'María Valdez',
-        cedula: '0981726354',
-        email: 'maria@ejemplo.com',
-        telefono: '0987654321',
-        direccion: null,
-        ciudad: 'Cuenca',
-        codigo_patrocinador: 'SUMAK-00030',
-        patrocinador_id: '04210cbe-dab8-4047-9d36-0a3f33c29856',
-        paquete: 'emprendedor',
-        puntos: 350,
-        estado: 'activo',
-        rol: 'distribuidor',
-        avatar_url: null,
-        fecha_registro: '2026-02-05T10:00:00Z',
-        fecha_aprobacion: '2026-02-05T12:00:00Z',
-      },
-      children: [],
-    },
-  ],
-};
-
 export default function MiRed() {
-  const { user, profile, isMockUser } = useAuth();
+  const { user, profile } = useAuth();
   const [rootNode, setRootNode] = useState<TreeNode | null>(null);
   const [loading, setLoading] = useState(true);
   const [showList, setShowList] = useState(false);
@@ -358,23 +269,6 @@ export default function MiRed() {
   useEffect(() => {
     const uid = user?.id;
     if (!uid) return;
-
-    if (isMockUser) {
-      const isDemo = !profile?.has_completed_onboarding;
-      if (isDemo) {
-        setRootNode(MOCK_TREE_NODE);
-        setAllInRed([MOCK_TREE_NODE, ...MOCK_TREE_NODE.children]);
-      } else {
-        const cleanRoot: TreeNode = {
-          ...MOCK_TREE_NODE,
-          children: [],
-        };
-        setRootNode(cleanRoot);
-        setAllInRed([cleanRoot]);
-      }
-      setLoading(false);
-      return;
-    }
 
     let cancelled = false;
     setLoading(true);
@@ -505,7 +399,7 @@ export default function MiRed() {
     load();
 
     return () => { cancelled = true; };
-  }, [user?.id, isMockUser, profile?.has_completed_onboarding]);
+  }, [user?.id]);
 
   const leftChild = rootNode?.children.find((c) => c.posicion === 'izquierda');
   const rightChild = rootNode?.children.find((c) => c.posicion === 'derecha');
