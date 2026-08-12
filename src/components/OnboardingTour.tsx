@@ -34,6 +34,7 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
   const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
   const isNavigatingRef = useRef<boolean>(false);
   const isTourCompletedRef = useRef<boolean>(false);
+  const isCleanupRef = useRef<boolean>(false); // true when destroyed by React useEffect cleanup
   const currentPhaseRef = useRef<TourPhase>('dashboard');
   const currentStepIndexRef = useRef<number>(0);
 
@@ -136,7 +137,16 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
         },
       ],
       onDestroyStarted: () => {
-        if (!isNavigatingRef.current && !isTourCompletedRef.current) {
+        const byCleanup = isCleanupRef.current;
+        isCleanupRef.current = false;
+        if (byCleanup && !isNavigatingRef.current && !isTourCompletedRef.current) {
+          // User navigated away from the route manually — silently complete
+          driverObj.destroy();
+          driverRef.current = null;
+          sessionStorage.removeItem('sumak_active_tour_stage');
+          completeOnboarding();
+          window.dispatchEvent(new CustomEvent('sumak-tour-close-mobile-sidebar'));
+        } else if (!isNavigatingRef.current && !isTourCompletedRef.current) {
           const idx = driverObj.getActiveIndex();
           if (typeof idx === 'number') currentStepIndexRef.current = idx;
           driverObj.destroy();
@@ -151,7 +161,7 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
 
     driverRef.current = driverObj;
     driverObj.drive(initialIndex);
-  }, [forceStart, navigate]);
+  }, [forceStart, navigate, completeOnboarding]);
 
   // ==========================================
   // FASE 2: /dashboard/tienda (Pasos 4, 5, 6, 7 de 12)
@@ -252,7 +262,15 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
         },
       ],
       onDestroyStarted: () => {
-        if (!isNavigatingRef.current && !isTourCompletedRef.current) {
+        const byCleanup = isCleanupRef.current;
+        isCleanupRef.current = false;
+        if (byCleanup && !isNavigatingRef.current && !isTourCompletedRef.current) {
+          driverObj.destroy();
+          driverRef.current = null;
+          sessionStorage.removeItem('sumak_active_tour_stage');
+          completeOnboarding();
+          window.dispatchEvent(new CustomEvent('sumak-tour-close-mobile-sidebar'));
+        } else if (!isNavigatingRef.current && !isTourCompletedRef.current) {
           const idx = driverObj.getActiveIndex();
           if (typeof idx === 'number') currentStepIndexRef.current = idx;
           driverObj.destroy();
@@ -267,7 +285,7 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
 
     driverRef.current = driverObj;
     driverObj.drive(initialIndex);
-  }, [navigate]);
+  }, [navigate, completeOnboarding]);
 
   // ==========================================
   // FASE 3: /dashboard/red (Pasos 8, 9 de 12)
@@ -348,7 +366,15 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
         },
       ],
       onDestroyStarted: () => {
-        if (!isNavigatingRef.current && !isTourCompletedRef.current) {
+        const byCleanup = isCleanupRef.current;
+        isCleanupRef.current = false;
+        if (byCleanup && !isNavigatingRef.current && !isTourCompletedRef.current) {
+          driverObj.destroy();
+          driverRef.current = null;
+          sessionStorage.removeItem('sumak_active_tour_stage');
+          completeOnboarding();
+          window.dispatchEvent(new CustomEvent('sumak-tour-close-mobile-sidebar'));
+        } else if (!isNavigatingRef.current && !isTourCompletedRef.current) {
           const idx = driverObj.getActiveIndex();
           if (typeof idx === 'number') currentStepIndexRef.current = idx;
           driverObj.destroy();
@@ -363,7 +389,7 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
 
     driverRef.current = driverObj;
     driverObj.drive(initialIndex);
-  }, [navigate]);
+  }, [navigate, completeOnboarding]);
 
   // ==========================================
   // FASE 4: /dashboard/escalera (Pasos 10, 11 de 12)
@@ -444,7 +470,15 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
         },
       ],
       onDestroyStarted: () => {
-        if (!isNavigatingRef.current && !isTourCompletedRef.current) {
+        const byCleanup = isCleanupRef.current;
+        isCleanupRef.current = false;
+        if (byCleanup && !isNavigatingRef.current && !isTourCompletedRef.current) {
+          driverObj.destroy();
+          driverRef.current = null;
+          sessionStorage.removeItem('sumak_active_tour_stage');
+          completeOnboarding();
+          window.dispatchEvent(new CustomEvent('sumak-tour-close-mobile-sidebar'));
+        } else if (!isNavigatingRef.current && !isTourCompletedRef.current) {
           const idx = driverObj.getActiveIndex();
           if (typeof idx === 'number') currentStepIndexRef.current = idx;
           driverObj.destroy();
@@ -459,7 +493,7 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
 
     driverRef.current = driverObj;
     driverObj.drive(initialIndex);
-  }, [navigate]);
+  }, [navigate, completeOnboarding]);
 
   // ==========================================
   // FASE 5: /dashboard/comisiones (Paso 12 de 12)
@@ -585,6 +619,7 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
     return () => {
       clearTimeout(timer);
       if (driverRef.current) {
+        isCleanupRef.current = true; // signal onDestroyStarted this is a React cleanup
         driverRef.current.destroy();
         driverRef.current = null;
       }
@@ -601,32 +636,7 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
     startComisionesTour,
   ]);
 
-  // Detect manual navigation away from the tour (user clicks sidebar without tour guiding)
-  const hasMountedRef = useRef(false);
-  useEffect(() => {
-    if (!hasMountedRef.current) {
-      hasMountedRef.current = true;
-      return;
-    }
-    if (!profile || profile.has_completed_onboarding) return;
-    // If driver is NOT active and NOT in a programmatic navigation
-    if (!driverRef.current && !isNavigatingRef.current && !isTourCompletedRef.current) {
-      const stage = sessionStorage.getItem('sumak_active_tour_stage');
-      const validStages: Record<string, string> = {
-        '/dashboard/tienda': 'tienda',
-        '/dashboard/red': 'red',
-        '/dashboard/escalera': 'escalera',
-        '/dashboard/comisiones': 'comisiones',
-      };
-      const expectedStage = validStages[location.pathname];
-      // User navigated to a route the tour didn't guide them to → end demo mode
-      if (location.pathname !== '/dashboard' && stage !== expectedStage) {
-        sessionStorage.removeItem('sumak_active_tour_stage');
-        completeOnboarding();
-        window.dispatchEvent(new CustomEvent('sumak-tour-close-mobile-sidebar'));
-      }
-    }
-  }, [location.pathname, profile, completeOnboarding]);
+  // (Navigation cleanup is handled via isCleanupRef + onDestroyStarted in each phase)
 
   return createPortal(
     <AnimatePresence>
