@@ -47,11 +47,10 @@ export default function MiEscalera() {
   const isCurrentMonth = monthOffset === 0;
 
   useEffect(() => {
-    if (!user) return;
-
     if (isMockUser) {
-      setDirectos(3);
-      setRedTotal(8);
+      const isDemo = !profile?.has_completed_onboarding;
+      setDirectos(isDemo ? 3 : 0);
+      setRedTotal(isDemo ? 8 : 0);
       setLoading(false);
       return;
     }
@@ -129,7 +128,7 @@ export default function MiEscalera() {
     }
 
     load();
-  }, [user, monthStart, monthEnd, isMockUser]);
+  }, [user, monthStart, monthEnd, isMockUser, profile?.has_completed_onboarding]);
 
   // ── Tramo 1 ──
   const rangoT1Actual = useMemo(() => getRangoActual(directos), [directos]);

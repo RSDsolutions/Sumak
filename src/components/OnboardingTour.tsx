@@ -37,15 +37,6 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
   const currentPhaseRef = useRef<TourPhase>('dashboard');
   const currentStepIndexRef = useRef<number>(0);
 
-  const updateProgressBadge = (globalStep: number, total: number = 9) => {
-    setTimeout(() => {
-      const progressEl = document.querySelector('.driver-popover-progress-text');
-      if (progressEl) {
-        progressEl.textContent = `Paso ${globalStep} de ${total}`;
-      }
-    }, 15);
-  };
-
   const handleDismissTour = useCallback(() => {
     setShowConfirmModal(false);
     sessionStorage.removeItem('sumak_active_tour_stage');
@@ -78,6 +69,12 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
       prevBtnText: '← Atrás',
       doneBtnText: 'Ir a Tienda 🛍️',
       showButtons: ['next', 'previous', 'close'],
+      onPopoverRender: (popover, { state }) => {
+        const globalStep = (state?.activeIndex ?? 0) + 1;
+        if (popover.progress) {
+          popover.progress.innerText = `Paso ${globalStep} de 9`;
+        }
+      },
       onHighlightStarted: (element, step, options) => {
         if (element) {
           element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
@@ -85,14 +82,19 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
         const idx = options?.driver?.getActiveIndex() ?? 0;
         currentStepIndexRef.current = idx;
 
-        // Si es el paso 2 o 3, en móviles abrimos automáticamente el drawer de navegación
+        // En móviles, desplegar drawer en pasos 2 y 3
         if (idx >= 1 && window.innerWidth < 1024) {
           window.dispatchEvent(new CustomEvent('sumak-tour-open-mobile-sidebar'));
         } else if (idx === 0 && window.innerWidth < 1024) {
           window.dispatchEvent(new CustomEvent('sumak-tour-close-mobile-sidebar'));
         }
 
-        updateProgressBadge(idx + 1, 9);
+        const syncBadge = () => {
+          const badge = document.querySelector('.driver-popover-progress-text');
+          if (badge) badge.textContent = `Paso ${idx + 1} de 9`;
+        };
+        requestAnimationFrame(syncBadge);
+        setTimeout(syncBadge, 30);
       },
       steps: [
         {
@@ -102,6 +104,7 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
             description: 'Aquí puedes consultar el estado de tu paquete activo, pedidos recientes y tu activación mensual necesaria para cobrar comisiones.',
             side: 'bottom',
             align: 'start',
+            progressText: 'Paso 1 de 9',
           },
         },
         {
@@ -111,6 +114,7 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
             description: 'Desde esta barra de navegación puedes acceder a la Tienda, Carrito, Pedidos, Red de afiliados, Escalera de éxito y Comisiones.',
             side: window.innerWidth < 1024 ? 'bottom' : 'right',
             align: 'start',
+            progressText: 'Paso 2 de 9',
           },
         },
         {
@@ -120,6 +124,7 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
             description: 'Accede a tus productos con 50% de descuento mayorista y arma tus paquetes de afiliación. ¡Vamos a ver la tienda interactiva!',
             side: window.innerWidth < 1024 ? 'top' : 'right',
             align: 'center',
+            progressText: 'Paso 3 de 9',
             onNextClick: () => {
               isNavigatingRef.current = true;
               sessionStorage.setItem('sumak_active_tour_stage', 'tienda');
@@ -170,13 +175,24 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
       prevBtnText: '← Atrás',
       doneBtnText: 'Ver Mi Red 👥',
       showButtons: ['next', 'previous', 'close'],
+      onPopoverRender: (popover, { state }) => {
+        const globalStep = (state?.activeIndex ?? 0) + 4;
+        if (popover.progress) {
+          popover.progress.innerText = `Paso ${globalStep} de 9`;
+        }
+      },
       onHighlightStarted: (element, _step, options) => {
         if (element) {
           element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
         }
         const idx = options?.driver?.getActiveIndex() ?? 0;
         currentStepIndexRef.current = idx;
-        updateProgressBadge(idx + 4, 9);
+        const syncBadge = () => {
+          const badge = document.querySelector('.driver-popover-progress-text');
+          if (badge) badge.textContent = `Paso ${idx + 4} de 9`;
+        };
+        requestAnimationFrame(syncBadge);
+        setTimeout(syncBadge, 30);
       },
       steps: [
         {
@@ -186,6 +202,7 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
             description: 'En esta sección puedes seleccionar y configurar tu paquete de afiliación con los productos exactos que desees agregar a tu pedido.',
             side: 'bottom',
             align: 'start',
+            progressText: 'Paso 4 de 9',
           },
         },
         {
@@ -195,6 +212,7 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
             description: 'Filtra rápidamente por líneas de nutrición, belleza o salud y encuentra los productos disponibles al instante.',
             side: 'bottom',
             align: 'start',
+            progressText: 'Paso 5 de 9',
           },
         },
         {
@@ -204,6 +222,7 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
             description: 'Agrega cualquier producto a tu carrito a precio mayorista y revisa las insignias de stock en tiempo real.',
             side: 'top',
             align: 'center',
+            progressText: 'Paso 6 de 9',
             onNextClick: () => {
               isNavigatingRef.current = true;
               sessionStorage.setItem('sumak_active_tour_stage', 'red');
@@ -254,11 +273,21 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
       prevBtnText: '← Atrás',
       doneBtnText: 'Ver Escalera 🏆',
       showButtons: ['next', 'close'],
+      onPopoverRender: (popover) => {
+        if (popover.progress) {
+          popover.progress.innerText = 'Paso 7 de 9';
+        }
+      },
       onHighlightStarted: (element) => {
         if (element) {
           element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
         }
-        updateProgressBadge(7, 9);
+        const syncBadge = () => {
+          const badge = document.querySelector('.driver-popover-progress-text');
+          if (badge) badge.textContent = 'Paso 7 de 9';
+        };
+        requestAnimationFrame(syncBadge);
+        setTimeout(syncBadge, 30);
       },
       steps: [
         {
@@ -268,6 +297,7 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
             description: 'Visualiza tu árbol binario en tiempo real, verifica el balance de tus ramas izquierda y derecha y comparte tu código de patrocinador.',
             side: 'top',
             align: 'start',
+            progressText: 'Paso 7 de 9',
             onNextClick: () => {
               isNavigatingRef.current = true;
               sessionStorage.setItem('sumak_active_tour_stage', 'escalera');
@@ -316,11 +346,21 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
       prevBtnText: '← Atrás',
       doneBtnText: 'Ver Comisiones 💰',
       showButtons: ['next', 'close'],
+      onPopoverRender: (popover) => {
+        if (popover.progress) {
+          popover.progress.innerText = 'Paso 8 de 9';
+        }
+      },
       onHighlightStarted: (element) => {
         if (element) {
           element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
         }
-        updateProgressBadge(8, 9);
+        const syncBadge = () => {
+          const badge = document.querySelector('.driver-popover-progress-text');
+          if (badge) badge.textContent = 'Paso 8 de 9';
+        };
+        requestAnimationFrame(syncBadge);
+        setTimeout(syncBadge, 30);
       },
       steps: [
         {
@@ -330,6 +370,7 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
             description: 'Monitorea tu rango mensual, los afiliados que te faltan para subir de nivel y los bonos en efectivo que desbloqueas cada mes.',
             side: 'top',
             align: 'start',
+            progressText: 'Paso 8 de 9',
             onNextClick: () => {
               isNavigatingRef.current = true;
               sessionStorage.setItem('sumak_active_tour_stage', 'comisiones');
@@ -378,11 +419,21 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
       prevBtnText: '← Atrás',
       doneBtnText: '¡Finalizar! 🎉',
       showButtons: ['next', 'close'],
+      onPopoverRender: (popover) => {
+        if (popover.progress) {
+          popover.progress.innerText = 'Paso 9 de 9';
+        }
+      },
       onHighlightStarted: (element) => {
         if (element) {
           element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
         }
-        updateProgressBadge(9, 9);
+        const syncBadge = () => {
+          const badge = document.querySelector('.driver-popover-progress-text');
+          if (badge) badge.textContent = 'Paso 9 de 9';
+        };
+        requestAnimationFrame(syncBadge);
+        setTimeout(syncBadge, 30);
       },
       steps: [
         {
@@ -392,6 +443,7 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
             description: 'Consulta tus ganancias generadas por afiliación directa, bonos binarios liquidados y el estado de tu calificación mensual.',
             side: 'top',
             align: 'start',
+            progressText: 'Paso 9 de 9',
             onNextClick: () => {
               isTourCompletedRef.current = true;
               sessionStorage.removeItem('sumak_active_tour_stage');

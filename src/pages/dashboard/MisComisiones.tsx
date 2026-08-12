@@ -334,7 +334,7 @@ const MOCK_COMISIONES_LIST: Comision[] = [
 
 export default function MisComisiones({ scope = 'no-afiliacion' }: MisComisionesProps) {
   const isAfiliacionScope = scope === 'afiliacion';
-  const { user, isMockUser } = useAuth();
+  const { user, profile, isMockUser } = useAuth();
   const [comisiones, setComisiones] = useState<Comision[]>([]);
   const [loading, setLoading] = useState(true);
   const [compraCalificada, setCompraCalificada] = useState(false);
@@ -344,11 +344,17 @@ export default function MisComisiones({ scope = 'no-afiliacion' }: MisComisiones
     if (!user) return;
 
     if (isMockUser) {
-      const filtered = isAfiliacionScope
-        ? MOCK_COMISIONES_LIST.filter((c) => c.tipo === 'afiliacion')
-        : MOCK_COMISIONES_LIST.filter((c) => c.tipo !== 'afiliacion');
-      setComisiones(filtered);
-      setCompraCalificada(true);
+      const isDemo = !profile?.has_completed_onboarding;
+      if (isDemo) {
+        const filtered = isAfiliacionScope
+          ? MOCK_COMISIONES_LIST.filter((c) => c.tipo === 'afiliacion')
+          : MOCK_COMISIONES_LIST.filter((c) => c.tipo !== 'afiliacion');
+        setComisiones(filtered);
+        setCompraCalificada(true);
+      } else {
+        setComisiones([]);
+        setCompraCalificada(false);
+      }
       setLoading(false);
       return;
     }
@@ -372,17 +378,14 @@ export default function MisComisiones({ scope = 'no-afiliacion' }: MisComisiones
         setComisiones((data ?? []) as Comision[]);
         setCompraCalificada((compraData?.length ?? 0) > 0);
       } catch {
-        const filtered = isAfiliacionScope
-          ? MOCK_COMISIONES_LIST.filter((c) => c.tipo === 'afiliacion')
-          : MOCK_COMISIONES_LIST.filter((c) => c.tipo !== 'afiliacion');
-        setComisiones(filtered);
-        setCompraCalificada(true);
+        setComisiones([]);
+        setCompraCalificada(false);
       } finally {
         setLoading(false);
       }
     }
     load();
-  }, [user, isAfiliacionScope, isMockUser]);
+  }, [user, isAfiliacionScope, isMockUser, profile?.has_completed_onboarding]);
 
   const totalGanado = comisiones.filter((c) => c.estado === 'pagado').reduce((s, c) => s + Number(c.monto), 0);
   const totalPendiente = comisiones.filter((c) => c.estado === 'pendiente').reduce((s, c) => s + Number(c.monto), 0);

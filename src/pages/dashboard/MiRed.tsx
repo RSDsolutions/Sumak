@@ -360,8 +360,18 @@ export default function MiRed() {
     if (!uid) return;
 
     if (isMockUser) {
-      setRootNode(MOCK_TREE_NODE);
-      setAllInRed([MOCK_TREE_NODE, ...MOCK_TREE_NODE.children]);
+      const isDemo = !profile?.has_completed_onboarding;
+      if (isDemo) {
+        setRootNode(MOCK_TREE_NODE);
+        setAllInRed([MOCK_TREE_NODE, ...MOCK_TREE_NODE.children]);
+      } else {
+        const cleanRoot: TreeNode = {
+          ...MOCK_TREE_NODE,
+          children: [],
+        };
+        setRootNode(cleanRoot);
+        setAllInRed([cleanRoot]);
+      }
       setLoading(false);
       return;
     }
@@ -495,7 +505,7 @@ export default function MiRed() {
     load();
 
     return () => { cancelled = true; };
-  }, [user?.id]);
+  }, [user?.id, isMockUser, profile?.has_completed_onboarding]);
 
   const leftChild = rootNode?.children.find((c) => c.posicion === 'izquierda');
   const rightChild = rootNode?.children.find((c) => c.posicion === 'derecha');

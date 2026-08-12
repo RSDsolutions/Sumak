@@ -159,16 +159,17 @@ export default function Overview() {
     if (!user) return;
 
     if (isMockUser) {
-      setComisiones(MOCK_COMISIONES);
+      const isDemo = !profile?.has_completed_onboarding;
+      setComisiones(isDemo ? MOCK_COMISIONES : []);
       setStats({
-        comisionesPendientes: 87.5,
-        comisionesPagadas: 120.0,
-        afiliadosDirectos: 3,
-        pedidosMes: 2,
-        totalCompradoMes: 125,
-        compraCalificada: true,
-        maxPedido: 125,
-        ultimosPedidos: MOCK_ULTIMOS_PEDIDOS,
+        comisionesPendientes: isDemo ? 87.5 : 0,
+        comisionesPagadas: isDemo ? 120.0 : 0,
+        afiliadosDirectos: isDemo ? 3 : 0,
+        pedidosMes: isDemo ? 2 : 0,
+        totalCompradoMes: isDemo ? 125 : 0,
+        compraCalificada: isDemo ? true : false,
+        maxPedido: isDemo ? 125 : 0,
+        ultimosPedidos: isDemo ? MOCK_ULTIMOS_PEDIDOS : [],
       });
       setLoading(false);
       return;
@@ -247,7 +248,7 @@ export default function Overview() {
       }
     }
     load();
-  }, [user, isMockUser]);
+  }, [user, isMockUser, profile?.has_completed_onboarding]);
 
   const directos = stats?.afiliadosDirectos ?? 0;
   const rangoActual = getRangoActual(directos);

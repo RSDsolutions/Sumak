@@ -400,7 +400,8 @@ export default function MisPedidos() {
     if (!user) return;
 
     if (isMockUser) {
-      setPedidos(MOCK_PEDIDOS_LIST);
+      const isDemo = !profile?.has_completed_onboarding;
+      setPedidos(isDemo ? MOCK_PEDIDOS_LIST : []);
       setLoading(false);
       return;
     }
@@ -415,13 +416,13 @@ export default function MisPedidos() {
         if (error) throw error;
         setPedidos((data ?? []) as Pedido[]);
       } catch {
-        setPedidos(MOCK_PEDIDOS_LIST);
+        setPedidos([]);
       } finally {
         setLoading(false);
       }
     }
     load();
-  }, [user, isMockUser]);
+  }, [user, isMockUser, profile?.has_completed_onboarding]);
 
   // Refresca el pedido en el state local con los campos nuevos.
   function patchPedido(id: string, patch: Partial<Pedido>) {
