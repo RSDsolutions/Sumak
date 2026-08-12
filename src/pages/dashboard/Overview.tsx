@@ -231,17 +231,18 @@ export default function Overview() {
           ultimosPedidos: (ultimosPedidosData ?? []) as Pedido[],
         });
       } catch {
-        // Fallback gracefully
-        setComisiones(MOCK_COMISIONES);
+        // Fallback gracefully respecting onboarding completion status
+        const isDemo = !profile?.has_completed_onboarding;
+        setComisiones(isDemo ? MOCK_COMISIONES : []);
         setStats({
-          comisionesPendientes: 87.5,
-          comisionesPagadas: 120.0,
-          afiliadosDirectos: 3,
-          pedidosMes: 2,
-          totalCompradoMes: 125,
-          compraCalificada: true,
-          maxPedido: 125,
-          ultimosPedidos: MOCK_ULTIMOS_PEDIDOS,
+          comisionesPendientes: isDemo ? 87.5 : 0,
+          comisionesPagadas: isDemo ? 120.0 : 0,
+          afiliadosDirectos: isDemo ? 3 : 0,
+          pedidosMes: isDemo ? 2 : 0,
+          totalCompradoMes: isDemo ? 125 : 0,
+          compraCalificada: isDemo ? true : false,
+          maxPedido: isDemo ? 125 : 0,
+          ultimosPedidos: isDemo ? MOCK_ULTIMOS_PEDIDOS : [],
         });
       } finally {
         setLoading(false);

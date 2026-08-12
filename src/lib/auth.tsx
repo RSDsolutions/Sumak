@@ -104,8 +104,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq('id', uid)
       .single();
     if (!error && data) {
-      const isCompleted = data.has_completed_onboarding ?? (localStorage.getItem(`sumak_onboarding_completed_${uid}`) === 'true');
-      const p = { ...(data as Profile), has_completed_onboarding: !!isCompleted };
+      const localVal = localStorage.getItem(`sumak_onboarding_completed_${uid}`);
+      const isCompleted = localVal !== null
+        ? localVal === 'true'
+        : Boolean(data.has_completed_onboarding);
+      const p = { ...(data as Profile), has_completed_onboarding: isCompleted };
       setProfile(p);
       return p;
     }
@@ -127,6 +130,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (mockRole === 'user' || mockRole === 'distribuidor') {
       const isCompleted = localStorage.getItem(`sumak_onboarding_completed_${LOCAL_MOCK_USER_PROFILE.id}`) === 'true';
+      if (!isCompleted && sessionStorage.getItem('sumak_tour_in_progress') === null) {
+        sessionStorage.setItem('sumak_tour_in_progress', 'true');
+      }
       setUser(LOCAL_MOCK_REGULAR_USER);
       setProfile({ ...LOCAL_MOCK_USER_PROFILE, has_completed_onboarding: isCompleted });
       setLoading(false);
@@ -234,6 +240,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const updated: Profile = { ...profile, has_completed_onboarding: true };
     setProfile(updated);
     localStorage.setItem(`sumak_onboarding_completed_${profile.id}`, 'true');
+    sessionStorage.removeItem('sumak_tour_in_progress');
+    sessionStorage.removeItem('sumak_active_tour_stage');
 
     if (!isMockUser) {
       try {
@@ -251,7 +259,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!profile) return;
     const updated: Profile = { ...profile, has_completed_onboarding: false };
     setProfile(updated);
-    localStorage.removeItem(`sumak_onboarding_completed_${profile.id}`);
+    localStorage.setItem(`sumak_onboarding_completed_${profile.id}`, 'false');
+    sessionStorage.setItem('sumak_tour_in_progress', 'true');
+    sessionStorage.removeItem('sumak_active_tour_stage');
 
     if (!isMockUser) {
       try {

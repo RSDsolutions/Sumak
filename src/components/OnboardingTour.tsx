@@ -560,11 +560,13 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
       return;
     }
 
+    // Reset completed flag so the tour can restart after resetOnboarding()
+    isTourCompletedRef.current = false;
+    isNavigatingRef.current = false;
+
     const currentStage = sessionStorage.getItem('sumak_active_tour_stage');
 
     const timer = setTimeout(() => {
-      isNavigatingRef.current = false;
-
       if (location.pathname === '/dashboard') {
         if (!currentStage) {
           startDashboardTour(0);
@@ -599,7 +601,32 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
     startComisionesTour,
   ]);
 
-  if (typeof document === 'undefined') return null;
+  // Detect manual navigation away from the tour (user clicks sidebar without tour guiding)
+  const hasMountedRef = useRef(false);
+  useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      return;
+    }
+    if (!profile || profile.has_completed_onboarding) return;
+    // If driver is NOT active and NOT in a programmatic navigation
+    if (!driverRef.current && !isNavigatingRef.current && !isTourCompletedRef.current) {
+      const stage = sessionStorage.getItem('sumak_active_tour_stage');
+      const validStages: Record<string, string> = {
+        '/dashboard/tienda': 'tienda',
+        '/dashboard/red': 'red',
+        '/dashboard/escalera': 'escalera',
+        '/dashboard/comisiones': 'comisiones',
+      };
+      const expectedStage = validStages[location.pathname];
+      // User navigated to a route the tour didn't guide them to → end demo mode
+      if (location.pathname !== '/dashboard' && stage !== expectedStage) {
+        sessionStorage.removeItem('sumak_active_tour_stage');
+        completeOnboarding();
+        window.dispatchEvent(new CustomEvent('sumak-tour-close-mobile-sidebar'));
+      }
+    }
+  }, [location.pathname, profile, completeOnboarding]);
 
   return createPortal(
     <AnimatePresence>
@@ -607,6 +634,7 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
         <div
           className="fixed inset-0 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs select-none"
           style={{ zIndex: 2147483647 }}
+          onClick={handleDismissTour}
         >
           <motion.div
             initial={{ scale: 0.92, opacity: 0, y: 12 }}

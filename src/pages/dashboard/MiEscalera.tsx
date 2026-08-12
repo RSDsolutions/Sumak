@@ -120,8 +120,9 @@ export default function MiEscalera() {
         setDirectos(directosCount);
         setRedTotal(total);
       } catch {
-        setDirectos(3);
-        setRedTotal(8);
+        const isDemo = !profile?.has_completed_onboarding;
+        setDirectos(isDemo ? 3 : 0);
+        setRedTotal(isDemo ? 8 : 0);
       } finally {
         setLoading(false);
       }
