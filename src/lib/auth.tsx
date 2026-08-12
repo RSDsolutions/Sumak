@@ -18,6 +18,12 @@ interface AuthContextValue {
   isDistribuidor: boolean;
   /** true si el usuario tiene rol 'operaciones' (gestiona pedidos, comisiones y solicitudes). */
   isOperaciones: boolean;
+  /** true si el usuario está en sesión local mock/bypass (sin JWT Supabase). */
+  isMockUser: boolean;
+  /** Marca el tour de bienvenida / onboarding como completado en DB y localmente. */
+  completeOnboarding: () => Promise<void>;
+  /** Reinicia el tour para volver a verlo. */
+  resetOnboarding: () => Promise<void>;
   /** Ruta home según el rol — usar en redirects de Login y ProtectedRoute. */
   homeForRole: () => '/admin' | '/operaciones' | '/dashboard' | '/login';
   /** Igual que homeForRole pero recibe un profile específico (útil tras signIn). */
@@ -98,7 +104,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq('id', uid)
       .single();
     if (!error && data) {
-      const p = data as Profile;
+      const isCompleted = data.has_completed_onboarding ?? (localStorage.getItem(`sumak_onboarding_completed_${uid}`) === 'true');
+      const p = { ...(data as Profile), has_completed_onboarding: !!isCompleted };
       setProfile(p);
       return p;
     }
@@ -119,8 +126,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (mockRole === 'user' || mockRole === 'distribuidor') {
+      const isCompleted = localStorage.getItem(`sumak_onboarding_completed_${LOCAL_MOCK_USER_PROFILE.id}`) === 'true';
       setUser(LOCAL_MOCK_REGULAR_USER);
-      setProfile(LOCAL_MOCK_USER_PROFILE);
+      setProfile({ ...LOCAL_MOCK_USER_PROFILE, has_completed_onboarding: isCompleted });
       setLoading(false);
       return;
     }
@@ -214,6 +222,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (session?.user) await fetchProfile(session.user.id);
   }
 
+  const isMockUser = Boolean(
+    user?.id === LOCAL_MOCK_REGULAR_USER.id ||
+    user?.id === LOCAL_MOCK_ADMIN_USER.id ||
+    localStorage.getItem('sumak_local_mock_role') ||
+    localStorage.getItem('sumak_local_mock_admin')
+  );
+
+  async function completeOnboarding(): Promise<void> {
+    if (!profile) return;
+    const updated: Profile = { ...profile, has_completed_onboarding: true };
+    setProfile(updated);
+    localStorage.setItem(`sumak_onboarding_completed_${profile.id}`, 'true');
+
+    if (!isMockUser) {
+      try {
+        await supabase
+          .from('profiles')
+          .update({ has_completed_onboarding: true })
+          .eq('id', profile.id);
+      } catch {
+        // Graceful fallback
+      }
+    }
+  }
+
+  async function resetOnboarding(): Promise<void> {
+    if (!profile) return;
+    const updated: Profile = { ...profile, has_completed_onboarding: false };
+    setProfile(updated);
+    localStorage.removeItem(`sumak_onboarding_completed_${profile.id}`);
+
+    if (!isMockUser) {
+      try {
+        await supabase
+          .from('profiles')
+          .update({ has_completed_onboarding: false })
+          .eq('id', profile.id);
+      } catch {
+        // Graceful fallback
+      }
+    }
+  }
+
   const isAdmin = profile?.rol === 'admin';
   const isDistribuidor = profile?.rol === 'distribuidor';
   const isOperaciones = profile?.rol === 'operaciones';
@@ -235,6 +286,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user, profile, loading,
         signIn, signOut, refreshProfile,
         isAdmin, isDistribuidor, isOperaciones,
+        isMockUser,
+        completeOnboarding, resetOnboarding,
         homeForRole, homeForProfile,
       }}
     >

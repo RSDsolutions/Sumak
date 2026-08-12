@@ -300,8 +300,88 @@ function DetalleModal({ pedido, clienteNombre, clienteCodigo, onClose, onConfirm
   );
 }
 
+const MOCK_PEDIDOS_LIST: Pedido[] = [
+  {
+    id: 'ped-mock-1038',
+    distribuidor_id: '04210cbe-dab8-4047-9d36-0a3f33c29856',
+    estado: 'enviado',
+    tipo_precio: 'distribuidor',
+    total: 125,
+    puntos_generados: 100,
+    notas: 'Entregar en horario de oficina',
+    voucher_url: null,
+    voucher_numero: null,
+    banco_destino: null,
+    pago_expira_en: null,
+    idempotency_key: null,
+    envio_voucher_url: null,
+    envio_numero: '92837410',
+    enviado_por: null,
+    numero_pedido: 1038,
+    recibido_at: null,
+    incidencia: null,
+    incidencia_at: null,
+    created_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+    updated_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+    items: [
+      {
+        id: 'item-1',
+        pedido_id: 'ped-mock-1038',
+        producto_codigo: 'PROD-001',
+        producto_nombre: 'Sumak Moringa Premium',
+        cantidad: 5,
+        precio_unitario: 12.5,
+        subtotal: 62.5,
+      },
+      {
+        id: 'item-2',
+        pedido_id: 'ped-mock-1038',
+        producto_codigo: 'PROD-002',
+        producto_nombre: 'Sumak Clorofila Líquida',
+        cantidad: 5,
+        precio_unitario: 12.5,
+        subtotal: 62.5,
+      },
+    ],
+  },
+  {
+    id: 'ped-mock-1012',
+    distribuidor_id: '04210cbe-dab8-4047-9d36-0a3f33c29856',
+    estado: 'entregado',
+    tipo_precio: 'distribuidor',
+    total: 150,
+    puntos_generados: 120,
+    notas: null,
+    voucher_url: null,
+    voucher_numero: null,
+    banco_destino: null,
+    pago_expira_en: null,
+    idempotency_key: null,
+    envio_voucher_url: null,
+    envio_numero: '81726354',
+    enviado_por: null,
+    numero_pedido: 1012,
+    recibido_at: new Date(Date.now() - 12 * 86400000).toISOString(),
+    incidencia: null,
+    incidencia_at: null,
+    created_at: new Date(Date.now() - 14 * 86400000).toISOString(),
+    updated_at: new Date(Date.now() - 12 * 86400000).toISOString(),
+    items: [
+      {
+        id: 'item-3',
+        pedido_id: 'ped-mock-1012',
+        producto_codigo: 'PROD-003',
+        producto_nombre: 'Sumak Colágeno Hidrolizado',
+        cantidad: 10,
+        precio_unitario: 15.0,
+        subtotal: 150.0,
+      },
+    ],
+  },
+];
+
 export default function MisPedidos() {
-  const { user, profile } = useAuth();
+  const { user, profile, isMockUser } = useAuth();
   const toast = useToast();
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(true);
@@ -318,17 +398,30 @@ export default function MisPedidos() {
 
   useEffect(() => {
     if (!user) return;
-    async function load() {
-      const { data } = await supabase
-        .from('pedidos')
-        .select('*, items:pedido_items(*)')
-        .eq('distribuidor_id', user!.id)
-        .order('created_at', { ascending: false });
-      setPedidos((data ?? []) as Pedido[]);
+
+    if (isMockUser) {
+      setPedidos(MOCK_PEDIDOS_LIST);
       setLoading(false);
+      return;
+    }
+
+    async function load() {
+      try {
+        const { data, error } = await supabase
+          .from('pedidos')
+          .select('*, items:pedido_items(*)')
+          .eq('distribuidor_id', user!.id)
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+        setPedidos((data ?? []) as Pedido[]);
+      } catch {
+        setPedidos(MOCK_PEDIDOS_LIST);
+      } finally {
+        setLoading(false);
+      }
     }
     load();
-  }, [user]);
+  }, [user, isMockUser]);
 
   // Refresca el pedido en el state local con los campos nuevos.
   function patchPedido(id: string, patch: Partial<Pedido>) {

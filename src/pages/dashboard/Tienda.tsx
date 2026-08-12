@@ -102,11 +102,12 @@ export default function Tienda() {
         </div>
       </div>
 
-      {/* ── Packs destacados ────────────────────────────── */}
+      {/* ── Affiliate Packages Promo ────────────────────── */}
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
+        data-tour="tienda-pack-banner"
         className="mb-6"
       >
         <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
@@ -189,29 +190,31 @@ export default function Tienda() {
         </div>
       </motion.div>
 
-      {/* ── Search bar ──────────────────────────────────── */}
-      <div className="relative mb-4">
-        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar producto, ingrediente o categoría..."
-          className="w-full pl-12 pr-12 py-3.5 bg-white border border-[#C8D8CB] rounded-2xl text-[#111111] placeholder:text-[#9CA3AF] text-sm focus:outline-none focus:border-[#1A4E26] transition-colors"
-        />
-        {search && (
-          <button
-            onClick={() => setSearch('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-[#F4F7F5] hover:bg-[#EBF0EC] flex items-center justify-center"
-            aria-label="Limpiar"
-          >
-            <X size={14} className="text-[#6B7280]" />
-          </button>
-        )}
-      </div>
+      {/* ── Search & Filter bar ────────────────────────── */}
+      <div data-tour="tienda-filtros">
+        {/* ── Search bar ──────────────────────────────────── */}
+        <div className="relative mb-4">
+          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar producto, ingrediente o categoría..."
+            className="w-full pl-12 pr-12 py-3.5 bg-white border border-[#C8D8CB] rounded-2xl text-[#111111] placeholder:text-[#9CA3AF] text-sm focus:outline-none focus:border-[#1A4E26] transition-colors"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-[#F4F7F5] hover:bg-[#EBF0EC] flex items-center justify-center"
+              aria-label="Limpiar"
+            >
+              <X size={14} className="text-[#6B7280]" />
+            </button>
+          )}
+        </div>
 
-      {/* ── Category pills + Sort ──────────────────────── */}
-      <div className="bg-white border border-[#C8D8CB] rounded-2xl mb-6">
+        {/* ── Category pills + Sort ──────────────────────── */}
+        <div className="bg-white border border-[#C8D8CB] rounded-2xl mb-6">
         <div className="overflow-x-auto px-4 py-3">
           <div className="flex gap-2 min-w-max">
             {categoryFilters.map((cat) => {
@@ -256,6 +259,7 @@ export default function Tienda() {
           </label>
         </div>
       </div>
+      </div>
 
       {/* ── Product grid ───────────────────────────────── */}
       <motion.div
@@ -265,7 +269,7 @@ export default function Tienda() {
         variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.04 } } }}
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4"
       >
-        {filtered.map((p) => {
+        {filtered.map((p, pIdx) => {
           const qty = qtyOf(p.codigo);
           const precio = precioDistribuidorOf(p);
           const inCart = qty > 0;
@@ -274,6 +278,7 @@ export default function Tienda() {
             <motion.div
               key={p.codigo}
               variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.3 } } }}
+              data-tour={pIdx === 0 ? 'tienda-producto-card' : undefined}
               className={`bg-white border rounded-2xl overflow-hidden flex flex-col hover:shadow-[0_15px_40px_rgba(26,78,38,0.12)] hover:-translate-y-0.5 transition-all duration-300 group ${
                 inCart ? 'border-[#1A4E26]/50' : 'border-[#C8D8CB]'
               }`}

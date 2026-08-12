@@ -114,3 +114,148 @@ h1, h2, h3, h4, h5, h6, .font-heading {
     border-color: #1A4E26;
   }
 }
+
+/* ========================================================
+   CUSTOM SCROLLBAR FOR SIDEBAR & PANELS
+   ======================================================== */
+.custom-sidebar-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(212, 175, 55, 0.4) transparent;
+}
+.custom-sidebar-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.custom-sidebar-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(212, 175, 55, 0.35);
+  border-radius: 9999px;
+  transition: background-color 0.2s ease;
+}
+.custom-sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(212, 175, 55, 0.7);
+}
+
+/* ========================================================
+   SUMAK ONBOARDING TOUR (DRIVER.JS) THEME
+   ======================================================== */
+.driver-popover.sumak-driver-popover {
+  background-color: #FFFFFF !important;
+  color: #111111 !important;
+  border-radius: 1.25rem !important; /* rounded-2xl */
+  padding: 1.25rem 1.5rem !important;
+  box-shadow: 0 20px 45px -10px rgba(11, 41, 19, 0.28), 0 0 0 1px #C8D8CB !important;
+  max-width: 360px !important;
+  font-family: var(--font-sans) !important;
+  z-index: 1000000 !important;
+}
+
+.driver-popover.sumak-driver-popover .driver-popover-title {
+  font-family: var(--font-heading) !important;
+  font-weight: 700 !important;
+  font-size: 1.05rem !important;
+  line-height: 1.35 !important;
+  color: #0B2913 !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.driver-popover.sumak-driver-popover .driver-popover-description {
+  font-size: 0.875rem !important;
+  line-height: 1.55 !important;
+  color: #4B5563 !important;
+  margin-bottom: 1rem !important;
+}
+
+.driver-popover.sumak-driver-popover .driver-popover-footer {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 0.5rem !important;
+  margin-top: 0.75rem !important;
+  padding-top: 0.75rem !important;
+  border-top: 1px solid #EBF0EC !important;
+}
+
+.driver-popover.sumak-driver-popover .driver-popover-progress-text {
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  color: #D4AF37 !important;
+  background-color: rgba(212, 175, 55, 0.12) !important;
+  padding: 0.2rem 0.6rem !important;
+  border-radius: 9999px !important;
+  border: 1px solid rgba(212, 175, 55, 0.3) !important;
+}
+
+.driver-popover.sumak-driver-popover .driver-popover-navigation-btns {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+}
+
+.driver-popover.sumak-driver-popover .driver-popover-next-btn,
+.driver-popover.sumak-driver-popover .driver-popover-prev-btn,
+.driver-popover.sumak-driver-popover .driver-popover-close-btn {
+  font-size: 0.8125rem !important;
+  font-weight: 700 !important;
+  border-radius: 0.75rem !important;
+  padding: 0.5rem 0.85rem !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  text-shadow: none !important;
+}
+
+.driver-popover.sumak-driver-popover .driver-popover-next-btn {
+  background: linear-gradient(135deg, #1A4E26 0%, #256B36 100%) !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(26, 78, 38, 0.25) !important;
+}
+
+.driver-popover.sumak-driver-popover .driver-popover-next-btn:hover {
+  background: linear-gradient(135deg, #163F1E 0%, #1F5A2D 100%) !important;
+  transform: translateY(-1px) !important;
+}
+
+.driver-popover.sumak-driver-popover .driver-popover-prev-btn {
+  background-color: #F4F7F5 !important;
+  color: #4B5563 !important;
+  border: 1px solid #C8D8CB !important;
+}
+
+.driver-popover.sumak-driver-popover .driver-popover-prev-btn:hover {
+  background-color: #EBF0EC !important;
+  color: #111111 !important;
+}
+
+.driver-popover.sumak-driver-popover .driver-popover-close-btn {
+  position: absolute !important;
+  top: 0.75rem !important;
+  right: 0.75rem !important;
+  width: 1.75rem !important;
+  height: 1.75rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  color: #9CA3AF !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.driver-popover.sumak-driver-popover .driver-popover-close-btn:hover {
+  color: #111111 !important;
+}
+
+.driver-popover.sumak-driver-popover .driver-popover-arrow {
+  border-color: #FFFFFF !important;
+}
+
+/* Modal de confirmacion cuando el usuario da click afuera del tour */
+body.has-tour-confirm-modal .driver-overlay,
+body.has-tour-confirm-modal .driver-stage,
+body.has-tour-confirm-modal .driver-popover {
+  pointer-events: none !important;
+}
+
+

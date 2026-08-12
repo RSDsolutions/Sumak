@@ -20,6 +20,7 @@ import { displayName } from '../lib/profile';
 import CompleteProfileModal from './CompleteProfileModal';
 import Avatar from './Avatar';
 import NotificationsPopover from './NotificationsPopover';
+import OnboardingTour from './OnboardingTour';
 
 interface NavItem {
   label: string;
@@ -27,17 +28,18 @@ interface NavItem {
   icon: React.ReactNode;
   end?: boolean;
   showBadge?: boolean;
+  dataTour?: string;
 }
 
 const navItems: NavItem[] = [
   { label: 'Mi Panel', to: '/dashboard', icon: <LayoutDashboard size={18} />, end: true },
-  { label: 'Tienda', to: '/dashboard/tienda', icon: <Store size={18} /> },
+  { label: 'Tienda', to: '/dashboard/tienda', icon: <Store size={18} />, dataTour: 'nav-tienda' },
   { label: 'Mi Carrito', to: '/dashboard/pedido/nuevo', icon: <ShoppingCart size={18} />, showBadge: true },
   { label: 'Mis Pedidos', to: '/dashboard/pedidos', icon: <ShoppingCart size={18} /> },
-  { label: 'Mi Red', to: '/dashboard/red', icon: <Network size={18} /> },
-  { label: 'Mi Escalera', to: '/dashboard/escalera', icon: <Trophy size={18} /> },
-  { label: 'Comisiones', to: '/dashboard/comisiones', icon: <DollarSign size={18} /> },
-  { label: 'Bono Afiliación', to: '/dashboard/bono-afiliacion', icon: <UserPlus size={18} /> },
+  { label: 'Mi Red', to: '/dashboard/red', icon: <Network size={18} />, dataTour: 'nav-red' },
+  { label: 'Mi Escalera', to: '/dashboard/escalera', icon: <Trophy size={18} />, dataTour: 'nav-escalera' },
+  { label: 'Comisiones', to: '/dashboard/comisiones', icon: <DollarSign size={18} />, dataTour: 'nav-comisiones' },
+  { label: 'Bono Afiliación', to: '/dashboard/bono-afiliacion', icon: <UserPlus size={18} />, dataTour: 'nav-bono-afiliacion' },
   { label: 'Mi Perfil', to: '/dashboard/perfil', icon: <User size={18} /> },
 ];
 
@@ -90,12 +92,13 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
       )}
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 overflow-y-auto">
+      <nav id="tour-sidebar-nav" data-tour="sidebar-nav" className="flex-1 px-3 py-4 overflow-y-auto custom-sidebar-scrollbar scroll-smooth">
         {navItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             end={item.end}
+            data-tour={item.dataTour}
             onClick={onClose}
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-3 rounded-xl mb-1 text-sm font-medium transition-all duration-200 ${
@@ -243,6 +246,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
 
       <CompleteProfileModal />
+      <OnboardingTour />
     </div>
   );
 }

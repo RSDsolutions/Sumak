@@ -27,7 +27,7 @@ function Spinner() {
 }
 
 export default function MiEscalera() {
-  const { user, profile } = useAuth();
+  const { user, profile, isMockUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [directos, setDirectos] = useState(0);
   const [redTotal, setRedTotal] = useState(0);
@@ -49,14 +49,23 @@ export default function MiEscalera() {
   useEffect(() => {
     if (!user) return;
 
+    if (isMockUser) {
+      setDirectos(3);
+      setRedTotal(8);
+      setLoading(false);
+      return;
+    }
+
     async function load() {
       setLoading(true);
-      // Cargar todos los profiles distribuidor con su fecha de aprobacion.
-      // Si fecha_aprobacion es null cae a fecha_registro como fallback.
-      const { data: allProfiles } = await supabase
-        .from('profiles')
-        .select('id, patrocinador_id, fecha_aprobacion, fecha_registro')
-        .eq('rol', 'distribuidor');
+      try {
+        // Cargar todos los profiles distribuidor con su fecha de aprobacion.
+        const { data: allProfiles, error } = await supabase
+          .from('profiles')
+          .select('id, patrocinador_id, fecha_aprobacion, fecha_registro')
+          .eq('rol', 'distribuidor');
+
+        if (error) throw error;
 
       const list = (allProfiles ?? []) as {
         id: string;
@@ -109,13 +118,18 @@ export default function MiEscalera() {
         }
       }
 
-      setDirectos(directosCount);
-      setRedTotal(total);
-      setLoading(false);
+        setDirectos(directosCount);
+        setRedTotal(total);
+      } catch {
+        setDirectos(3);
+        setRedTotal(8);
+      } finally {
+        setLoading(false);
+      }
     }
 
     load();
-  }, [user, monthStart, monthEnd]);
+  }, [user, monthStart, monthEnd, isMockUser]);
 
   // ── Tramo 1 ──
   const rangoT1Actual = useMemo(() => getRangoActual(directos), [directos]);

@@ -30,6 +30,8 @@ export interface Profile {
   avatar_url: string | null;
   fecha_registro: string;
   fecha_aprobacion: string | null;
+  /** Flag para el tour guiado de bienvenida/onboarding de distribuidores. */
+  has_completed_onboarding?: boolean | null;
 }
 
 export interface Afiliacion {

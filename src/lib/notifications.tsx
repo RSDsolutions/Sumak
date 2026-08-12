@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './auth';
-import { supabase } from './supabase';
 
 export type TipoNotificacion = 
   | 'pedido' 
@@ -160,25 +159,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     setLoading(true);
     try {
-      // 1. Intentar leer desde base de datos Supabase si la tabla existe
-      try {
-        const { data, error } = await supabase
-          .from('notificaciones')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-
-        if (!error && data && data.length > 0) {
-          setNotifications(data as AppNotification[]);
-          localStorage.setItem(storageKey, JSON.stringify(data));
-          setLoading(false);
-          return;
-        }
-      } catch {
-        // Fallback a localStorage
-      }
-
-      // 2. Leer desde localStorage
+      // 1. Leer desde localStorage
       const cached = localStorage.getItem(storageKey);
       if (cached) {
         try {
@@ -193,7 +174,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         }
       }
 
-      // 3. Generar notificaciones iniciales contextuales
+      // 2. Generar notificaciones iniciales contextuales
       const role = profile?.rol || 'distribuidor';
       const initial = generateInitialNotifications(user.id, role, profile?.nombre_completo);
       setNotifications(initial);
@@ -214,15 +195,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       if (storageKey) localStorage.setItem(storageKey, JSON.stringify(updated));
       return updated;
     });
-
-    try {
-      await supabase
-        .from('notificaciones')
-        .update({ leido: true })
-        .eq('id', id);
-    } catch {
-      // No bloqueante
-    }
   };
 
   // Marcar todas como leídas
@@ -232,17 +204,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       if (storageKey) localStorage.setItem(storageKey, JSON.stringify(updated));
       return updated;
     });
-
-    if (user) {
-      try {
-        await supabase
-          .from('notificaciones')
-          .update({ leido: true })
-          .eq('user_id', user.id);
-      } catch {
-        // No bloqueante
-      }
-    }
   };
 
   // Eliminar una notificación
@@ -252,26 +213,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       if (storageKey) localStorage.setItem(storageKey, JSON.stringify(updated));
       return updated;
     });
-
-    try {
-      await supabase.from('notificaciones').delete().eq('id', id);
-    } catch {
-      // No bloqueante
-    }
   };
 
   // Limpiar todas
   const clearAll = async () => {
     setNotifications([]);
     if (storageKey) localStorage.removeItem(storageKey);
-
-    if (user) {
-      try {
-        await supabase.from('notificaciones').delete().eq('user_id', user.id);
-      } catch {
-        // No bloqueante
-      }
-    }
   };
 
   // Añadir notificación en tiempo real

@@ -1,9 +1,11 @@
 import { useRef, useState } from 'react';
-import { Lock, CheckCircle2, AlertCircle, Camera, Loader2, QrCode } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Lock, CheckCircle2, AlertCircle, Camera, Loader2, QrCode, HelpCircle, Compass } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import Avatar from '../../components/Avatar';
 import DigitalCardModal from '../../components/DigitalCardModal';
+import ProfileTour from '../../components/ProfileTour';
 
 const paqueteLabel: Record<string, string> = {
   basico: 'Básico ($125)',
@@ -16,7 +18,8 @@ const AVATAR_MAX_MB = 3;
 const AVATAR_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 export default function MiPerfil() {
-  const { profile, user, refreshProfile } = useAuth();
+  const { profile, user, refreshProfile, resetOnboarding } = useAuth();
+  const navigate = useNavigate();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -138,7 +141,7 @@ export default function MiPerfil() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Profile info — non-editable */}
         <div className="bg-white border border-[#C8D8CB] rounded-2xl p-6 shadow-[0_0_8px_rgba(26,78,38,0.04)]">
-          <div className="flex items-center gap-4 mb-6">
+          <div data-tour="perfil-avatar-info" className="flex items-center gap-4 mb-6">
             <div className="relative">
               <Avatar profile={profile} size={64} />
               <button
@@ -164,6 +167,7 @@ export default function MiPerfil() {
                 <p className="text-[#9CA3AF] text-xs">Toca el ícono para cambiar tu foto (JPG, PNG o WEBP, máx. {AVATAR_MAX_MB} MB)</p>
                 <button
                   type="button"
+                  data-tour="perfil-tarjeta-qr"
                   onClick={() => setShowCardModal(true)}
                   className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#EBF4ED] text-[#1A4E26] hover:bg-[#1A4E26] hover:text-white border border-[#1A4E26]/30 text-xs font-semibold transition-all shadow-sm active:scale-95 cursor-pointer"
                   title="Generar Tarjeta Digital QR"
@@ -188,13 +192,13 @@ export default function MiPerfil() {
 
           <dl className="space-y-4 mb-6">
             {[
-              { label: 'Nombre Completo', value: profile.nombre_completo ?? 'Pendiente — completar' },
-              { label: 'Usuario', value: profile.username ? `@${profile.username}` : '—' },
-              { label: 'Cédula', value: profile.cedula ?? 'Pendiente — completar' },
-              { label: 'Email', value: profile.email },
-              { label: 'Código Distribuidor', value: profile.codigo_distribuidor ?? '—' },
-            ].map(({ label, value }) => (
-              <div key={label}>
+              { label: 'Nombre Completo', value: profile.nombre_completo ?? 'Pendiente — completar', tourId: undefined },
+              { label: 'Usuario', value: profile.username ? `@${profile.username}` : '—', tourId: undefined },
+              { label: 'Cédula', value: profile.cedula ?? 'Pendiente — completar', tourId: undefined },
+              { label: 'Email', value: profile.email, tourId: undefined },
+              { label: 'Código Distribuidor', value: profile.codigo_distribuidor ?? '—', tourId: 'perfil-codigo-distribuidor' },
+            ].map(({ label, value, tourId }) => (
+              <div key={label} data-tour={tourId}>
                 <dt className="text-[#9CA3AF] text-xs font-semibold uppercase tracking-wider mb-1">{label}</dt>
                 <dd className="text-[#111111] text-sm bg-[#F4F7F5] border border-[#C8D8CB] rounded-xl px-4 py-3">
                   {value}
@@ -347,6 +351,33 @@ export default function MiPerfil() {
               </button>
             </form>
           </div>
+
+          {/* Ayuda y Tour Guiado */}
+          <div className="bg-white border border-[#C8D8CB] rounded-2xl p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-9 h-9 rounded-xl bg-[#D4AF37]/15 flex items-center justify-center text-[#D4AF37]">
+                <HelpCircle size={18} />
+              </div>
+              <div>
+                <h3 className="font-heading font-bold text-base text-[#111111]">Tour Guiado del Panel</h3>
+                <p className="text-xs text-[#6B7280]">Repasa las funciones clave de tu plataforma</p>
+              </div>
+            </div>
+            <p className="text-xs text-[#6B7280] leading-relaxed mb-4">
+              ¿Quieres volver a ver la guía interactiva para conocer cómo funcionan la tienda, tu red y tus comisiones?
+            </p>
+            <button
+              type="button"
+              onClick={async () => {
+                await resetOnboarding();
+                navigate('/dashboard');
+              }}
+              className="w-full py-2.5 px-4 rounded-xl border border-[#1A4E26] text-[#1A4E26] hover:bg-[#EBF4ED] font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+            >
+              <Compass size={15} />
+              <span>Reiniciar Tour de Bienvenida</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -355,6 +386,8 @@ export default function MiPerfil() {
         onClose={() => setShowCardModal(false)} 
         profile={profile} 
       />
+
+      <ProfileTour />
     </div>
   );
 }
