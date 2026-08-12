@@ -138,17 +138,17 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 }
 
 /* ========================================================
-   SUMAK ONBOARDING TOUR (DRIVER.JS) THEME - GLASS AERO
+   SUMAK ONBOARDING TOUR (DRIVER.JS) THEME - GLASS AERO 50%
    ======================================================== */
 .driver-popover.sumak-driver-popover {
-  background: rgba(255, 255, 255, 0.90) !important;
-  backdrop-filter: blur(20px) saturate(190%) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(190%) !important;
+  background: rgba(255, 255, 255, 0.50) !important;
+  backdrop-filter: blur(24px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(200%) !important;
   color: #111111 !important;
   border-radius: 1.5rem !important; /* rounded-3xl */
   padding: 1.15rem 1.35rem !important;
-  border: 1px solid rgba(255, 255, 255, 0.85) !important;
-  box-shadow: 0 24px 60px -12px rgba(11, 41, 19, 0.28), 0 0 0 1px rgba(26, 78, 38, 0.12), inset 0 1px 2px rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.65) !important;
+  box-shadow: 0 24px 60px -12px rgba(11, 41, 19, 0.22), 0 0 0 1px rgba(255, 255, 255, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.9) !important;
   max-width: 350px !important;
   font-family: var(--font-sans) !important;
   z-index: 1000000 !important;
@@ -166,7 +166,7 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 .driver-popover.sumak-driver-popover .driver-popover-description {
   font-size: 0.8125rem !important;
   line-height: 1.5 !important;
-  color: #4B5563 !important;
+  color: #2D3748 !important;
   margin-bottom: 0.75rem !important;
 }
 
@@ -179,7 +179,7 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   gap: 0.35rem !important;
   margin-top: 0.5rem !important;
   padding-top: 0.5rem !important;
-  border-top: 1px solid rgba(200, 216, 203, 0.5) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.5) !important;
   overflow: hidden !important;
 }
 
@@ -187,11 +187,12 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   font-size: 0.7rem !important;
   font-weight: 700 !important;
   color: #B8860B !important;
-  background: rgba(212, 175, 55, 0.15) !important;
-  backdrop-filter: blur(8px) !important;
+  background: rgba(212, 175, 55, 0.20) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
   padding: 0.15rem 0.45rem !important;
   border-radius: 9999px !important;
-  border: 1px solid rgba(212, 175, 55, 0.35) !important;
+  border: 1px solid rgba(212, 175, 55, 0.4) !important;
   white-space: nowrap !important;
   flex-shrink: 0 !important;
 }
@@ -221,10 +222,10 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 }
 
 .driver-popover.sumak-driver-popover .driver-popover-next-btn {
-  background: linear-gradient(135deg, #1A4E26 0%, #256B36 100%) !important;
+  background: linear-gradient(135deg, rgba(26, 78, 38, 0.95) 0%, rgba(37, 107, 54, 0.95) 100%) !important;
   color: #FFFFFF !important;
   border: none !important;
-  box-shadow: 0 4px 12px rgba(26, 78, 38, 0.3) !important;
+  box-shadow: 0 4px 12px rgba(26, 78, 38, 0.35) !important;
 }
 
 .driver-popover.sumak-driver-popover .driver-popover-next-btn:hover {
@@ -233,14 +234,15 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 }
 
 .driver-popover.sumak-driver-popover .driver-popover-prev-btn {
-  background: rgba(244, 247, 245, 0.8) !important;
-  backdrop-filter: blur(8px) !important;
-  color: #4B5563 !important;
-  border: 1px solid rgba(200, 216, 203, 0.8) !important;
+  background: rgba(255, 255, 255, 0.50) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  color: #2D3748 !important;
+  border: 1px solid rgba(255, 255, 255, 0.75) !important;
 }
 
 .driver-popover.sumak-driver-popover .driver-popover-prev-btn:hover {
-  background: rgba(235, 240, 236, 0.9) !important;
+  background: rgba(255, 255, 255, 0.75) !important;
   color: #111111 !important;
 }
 
@@ -254,19 +256,21 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   align-items: center !important;
   justify-content: center !important;
   padding: 0 !important;
-  color: #9CA3AF !important;
-  background: rgba(0, 0, 0, 0.04) !important;
+  color: #6B7280 !important;
+  background: rgba(255, 255, 255, 0.40) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
   border-radius: 9999px !important;
-  border: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
 }
 
 .driver-popover.sumak-driver-popover .driver-popover-close-btn:hover {
   color: #111111 !important;
-  background: rgba(0, 0, 0, 0.08) !important;
+  background: rgba(255, 255, 255, 0.70) !important;
 }
 
 .driver-popover.sumak-driver-popover .driver-popover-arrow {
-  border-color: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.50) !important;
 }
 
 /* Modal de confirmacion cuando el usuario da click afuera del tour */
