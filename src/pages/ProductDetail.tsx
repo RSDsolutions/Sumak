@@ -14,7 +14,9 @@ import { useAuth } from '../lib/auth';
 import { useCart } from '../lib/cart';
 import { useToast } from '../lib/toast';
 import {
+  getPayPhoneCheckoutUrl,
   isPayPalConfigured,
+  isPayPhoneConfigured,
   isStripeConfigured,
   getStripeCheckoutUrl,
 } from '../lib/payments';
@@ -117,6 +119,22 @@ export default function ProductDetail() {
 
     if (selectedPaymentMethod === 'transferencia') {
       navigate('/registro?checkout=transferencia');
+      return;
+    }
+
+    if (selectedPaymentMethod === 'payphone') {
+      if (!isPayPhoneConfigured()) {
+        toast.error('Payphone aún no está configurado. Prueba otra opción o contacta con soporte.');
+        return;
+      }
+
+      const payphoneUrl = getPayPhoneCheckoutUrl();
+      if (payphoneUrl) {
+        window.open(payphoneUrl, '_blank', 'noopener,noreferrer');
+        return;
+      }
+
+      navigate(user ? '/dashboard/pedido/nuevo' : '/registro');
       return;
     }
 

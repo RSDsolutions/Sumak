@@ -1,4 +1,4 @@
-export type PaymentMethod = 'transferencia' | 'paypal' | 'stripe';
+export type PaymentMethod = 'transferencia' | 'payphone' | 'paypal' | 'stripe';
 
 export const paymentMethodOptions: Array<{
   value: PaymentMethod;
@@ -11,6 +11,11 @@ export const paymentMethodOptions: Array<{
     description: 'Paga con depósito o transferencia y luego sube el comprobante.',
   },
   {
+    value: 'payphone',
+    label: 'Payphone',
+    description: 'Paga de forma segura con tarjeta o saldo disponible en Payphone.',
+  },
+  {
     value: 'paypal',
     label: 'PayPal',
     description: 'Pago seguro con PayPal para compras rápidas y verificables.',
@@ -21,6 +26,14 @@ export const paymentMethodOptions: Array<{
     description: 'Pago con tarjeta u otros métodos habilitados en Stripe.',
   },
 ];
+
+export function getPayPhoneCheckoutUrl() {
+  return (import.meta.env.VITE_PAYPHONE_CHECKOUT_URL ?? '').trim();
+}
+
+export function isPayPhoneConfigured() {
+  return Boolean(getPayPhoneCheckoutUrl());
+}
 
 export function getPayPalClientId() {
   return (import.meta.env.VITE_PAYPAL_CLIENT_ID ?? '').trim();

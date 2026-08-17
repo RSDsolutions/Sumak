@@ -16,8 +16,10 @@ import { logger } from '../../lib/logger';
 import {
   type PaymentMethod,
   getPayPalClientId,
+  getPayPhoneCheckoutUrl,
   getStripeCheckoutUrl,
   isPayPalConfigured,
+  isPayPhoneConfigured,
   isStripeConfigured,
   paymentMethodOptions,
 } from '../../lib/payments';
@@ -673,6 +675,7 @@ export default function NuevoPedido() {
                 {paymentMethodOptions.map((method) => {
                   const enabled =
                     method.value === 'transferencia' ||
+                    (method.value === 'payphone' && isPayPhoneConfigured()) ||
                     (method.value === 'paypal' && isPayPalConfigured()) ||
                     (method.value === 'stripe' && isStripeConfigured());
                   const selected = selectedPaymentMethod === method.value;
@@ -702,6 +705,27 @@ export default function NuevoPedido() {
                     </button>
                   );
                 })}
+
+                {selectedPaymentMethod === 'payphone' && isPayPhoneConfigured() && (
+                  <div className="rounded-2xl border border-[#C8D8CB] bg-[#F4F7F5] p-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const checkoutUrl = getPayPhoneCheckoutUrl();
+                        if (!checkoutUrl) {
+                          setError('Payphone no está configurado para pagos directos. Añade VITE_PAYPHONE_CHECKOUT_URL o el valor del checkout en la configuración del proyecto.');
+                          return;
+                        }
+                        window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
+                        setError('');
+                        setStep('voucher');
+                      }}
+                      className="w-full rounded-xl bg-[#1A4E26] text-white font-bold py-3 hover:bg-[#163F1E] transition-colors"
+                    >
+                      Pagar con Payphone
+                    </button>
+                  </div>
+                )}
 
                 {selectedPaymentMethod === 'paypal' && isPayPalConfigured() && (
                   <div className="rounded-2xl border border-[#C8D8CB] bg-[#F4F7F5] p-4">
