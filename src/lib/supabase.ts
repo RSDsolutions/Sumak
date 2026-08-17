@@ -29,7 +29,14 @@ export const supabase = createClient(url, anonKey);
  * Lanza si la respuesta no es 2xx — el caller debe try/catch.
  */
 export async function callEdgeFunction<TResp = unknown>(
-  name: 'approve-afiliacion' | 'sign-voucher-url' | 'admin-staff-update',
+  name:
+    | 'approve-afiliacion'
+    | 'sign-voucher-url'
+    | 'admin-staff-update'
+    | 'payphone-create-payment'
+    | 'payphone-confirm-payment'
+    | 'paypal-create-order'
+    | 'paypal-capture-order',
   body: Record<string, unknown>,
 ): Promise<TResp> {
   const { data: { session } } = await supabase.auth.getSession();

@@ -6,7 +6,26 @@ const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const PAYPHONE_CLIENT_ID = Deno.env.get("PAYPHONE_CLIENT_ID") ?? "";
 const PAYPHONE_SECRET_KEY = Deno.env.get("PAYPHONE_SECRET_KEY") ?? "";
-const PAYPHONE_BASE_URL = Deno.env.get("PAYPHONE_BASE_URL") ?? "https://api.payphone.com.ec";
+const PAYPHONE_TOKEN = Deno.env.get("PAYPHONE_TOKEN") ?? "";
+const PAYPHONE_BASE_URL = Deno.env.get("PAYPHONE_BASE_URL") ?? "https://pay.payphonetodoesposible.com";
+
+function buildPayphoneHeaders() {
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+  };
+
+  if (PAYPHONE_TOKEN.trim()) {
+    headers.Authorization = `Bearer ${PAYPHONE_TOKEN.trim()}`;
+    return headers;
+  }
+
+  if (PAYPHONE_CLIENT_ID.trim() && PAYPHONE_SECRET_KEY.trim()) {
+    headers.Authorization = `Basic ${btoa(`${PAYPHONE_CLIENT_ID.trim()}:${PAYPHONE_SECRET_KEY.trim()}`)}`;
+  }
+
+  return headers;
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -71,10 +90,10 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: "Falta paymentId o transactionId" }, 400);
   }
 
-  if (!PAYPHONE_CLIENT_ID || !PAYPHONE_SECRET_KEY) {
+  if (!PAYPHONE_TOKEN && (!PAYPHONE_CLIENT_ID || !PAYPHONE_SECRET_KEY)) {
     return jsonResponse(
       {
-        error: "Payphone no configurado. Define PAYPHONE_CLIENT_ID y PAYPHONE_SECRET_KEY en Supabase Secrets.",
+        error: "Payphone no configurado. Define PAYPHONE_TOKEN o PAYPHONE_CLIENT_ID + PAYPHONE_SECRET_KEY en Supabase Secrets.",
       },
       500,
     );
@@ -98,17 +117,11 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: "El pago no pertenece a este usuario" }, 403);
   }
 
-  const verificationUrl = transactionId
-    ? `${PAYPHONE_BASE_URL}/api/v1/payments/${encodeURIComponent(transactionId)}/verify`
-    : `${PAYPHONE_BASE_URL}/api/v1/payments/verify`;
+  const verificationUrl = `${PAYPHONE_BASE_URL.replace(/\/$/, "")}/api/Links/verify`;
 
   const verificationResponse = await fetch(verificationUrl, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Basic ${btoa(`${PAYPHONE_CLIENT_ID}:${PAYPHONE_SECRET_KEY}`)}`,
-      Accept: "application/json",
-    },
+    headers: buildPayphoneHeaders(),
     body: JSON.stringify({
       paymentId: paymentId || paymentRow.id,
       transactionId,

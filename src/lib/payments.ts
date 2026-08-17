@@ -50,7 +50,7 @@ export function getPayPhoneCheckoutUrl() {
 }
 
 export function isPayPhoneConfigured() {
-  return Boolean(getPayPhoneCheckoutUrl());
+  return Boolean(getPayPhoneCheckoutUrl() || (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY));
 }
 
 export function getPayPalClientId() {

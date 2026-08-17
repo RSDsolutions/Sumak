@@ -21,6 +21,7 @@ import {
   isPayPhoneConfigured,
   paymentMethodOptions,
 } from '../../lib/payments';
+import { callEdgeFunction } from '../../lib/supabase';
 
 type Step = 'cart' | 'pay' | 'voucher' | 'done';
 
@@ -263,7 +264,7 @@ export default function NuevoPedido() {
     }
   }
 
-  function handleAcceptPayment() {
+  async function handleAcceptPayment() {
     if (selectedPaymentMethod === 'transferencia') {
       if (!selectedBanco) {
         setError('Selecciona el banco al que realizaste la transferencia.');
@@ -289,18 +290,37 @@ export default function NuevoPedido() {
 
     if (selectedPaymentMethod === 'payphone') {
       if (!isPayPhoneConfigured()) {
-        setError('Payphone no está configurado. Añade VITE_PAYPHONE_CHECKOUT_URL para habilitar este método.');
+        setError('Payphone no está configurado. Revisa la configuración del backend antes de continuar.');
         return;
       }
 
-      const checkoutUrl = getPayPhoneCheckoutUrl();
-      if (!checkoutUrl) {
-        setError('Payphone no está disponible en este momento. Inténtalo más tarde.');
-        return;
-      }
+      try {
+        setError('');
+        setSubmitting(true);
 
-      openExternalCheckout(checkoutUrl);
-      setError('Se abrió Payphone en otra pestaña. Completa el pago y luego vuelve aquí para confirmar tu pedido.');
+        const response = await callEdgeFunction<{ redirectUrl?: string; error?: string; paymentId?: string }>(
+          'payphone-create-payment',
+          {
+            orderId: `pedido-${Date.now()}-${user?.id?.slice(0, 8) ?? 'anon'}`,
+            amount: Number(total.toFixed(2)),
+            currency: 'USD',
+            description: `Compra Sumak - ${items.map((item) => item.nombre).join(', ')}`.slice(0, 180),
+          }
+        );
+
+        const checkoutUrl = response?.redirectUrl || getPayPhoneCheckoutUrl();
+        if (!checkoutUrl) {
+          throw new Error(response?.error ?? 'Payphone no devolvió una URL válida.');
+        }
+
+        openExternalCheckout(checkoutUrl);
+        setError('Se abrió Payphone en otra pestaña. Completa el pago y luego vuelve aquí para confirmar tu pedido.');
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'No pudimos iniciar el pago con Payphone.';
+        setError(message);
+      } finally {
+        setSubmitting(false);
+      }
       return;
     }
 
@@ -764,18 +784,11 @@ export default function NuevoPedido() {
                   <div className="rounded-2xl border border-[#C8D8CB] bg-[#F4F7F5] p-4">
                     <button
                       type="button"
-                      onClick={() => {
-                        const checkoutUrl = getPayPhoneCheckoutUrl();
-                        if (!checkoutUrl) {
-                          setError('Payphone no está configurado para pagos directos. Añade VITE_PAYPHONE_CHECKOUT_URL o el valor del checkout en la configuración del proyecto.');
-                          return;
-                        }
-                        openExternalCheckout(checkoutUrl);
-                        setError('Se abrió Payphone en otra pestaña. Completa el pago y vuelve a esta pantalla para confirmar el pedido.');
-                      }}
-                      className="w-full rounded-xl bg-[#1A4E26] text-white font-bold py-3 hover:bg-[#163F1E] transition-colors"
+                      onClick={() => void handleAcceptPayment()}
+                      disabled={submitting}
+                      className="w-full rounded-xl bg-[#1A4E26] text-white font-bold py-3 hover:bg-[#163F1E] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      Pagar con Payphone
+                      {submitting ? 'Generando enlace de pago...' : 'Pagar con Payphone'}
                     </button>
                   </div>
                 )}

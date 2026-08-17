@@ -6,7 +6,27 @@ const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const PAYPHONE_CLIENT_ID = Deno.env.get("PAYPHONE_CLIENT_ID") ?? "";
 const PAYPHONE_SECRET_KEY = Deno.env.get("PAYPHONE_SECRET_KEY") ?? "";
-const PAYPHONE_BASE_URL = Deno.env.get("PAYPHONE_BASE_URL") ?? "https://api.payphone.com.ec";
+const PAYPHONE_TOKEN = Deno.env.get("PAYPHONE_TOKEN") ?? "";
+const PAYPHONE_STORE_ID = Deno.env.get("PAYPHONE_STORE_ID") ?? "";
+const PAYPHONE_BASE_URL = Deno.env.get("PAYPHONE_BASE_URL") ?? "https://pay.payphonetodoesposible.com";
+
+function buildPayphoneHeaders() {
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+  };
+
+  if (PAYPHONE_TOKEN.trim()) {
+    headers.Authorization = `Bearer ${PAYPHONE_TOKEN.trim()}`;
+    return headers;
+  }
+
+  if (PAYPHONE_CLIENT_ID.trim() && PAYPHONE_SECRET_KEY.trim()) {
+    headers.Authorization = `Basic ${btoa(`${PAYPHONE_CLIENT_ID.trim()}:${PAYPHONE_SECRET_KEY.trim()}`)}`;
+  }
+
+  return headers;
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -76,16 +96,25 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: "Faltan orderId o amount valido" }, 400);
   }
 
-  if (!PAYPHONE_CLIENT_ID || !PAYPHONE_SECRET_KEY) {
+  if (!PAYPHONE_TOKEN && (!PAYPHONE_CLIENT_ID || !PAYPHONE_SECRET_KEY)) {
     return jsonResponse(
       {
-        error: "Payphone no configurado. Define PAYPHONE_CLIENT_ID y PAYPHONE_SECRET_KEY en Supabase Secrets.",
+        error: "Payphone no configurado. Define PAYPHONE_TOKEN o PAYPHONE_CLIENT_ID + PAYPHONE_SECRET_KEY en Supabase Secrets.",
       },
       500,
     );
   }
 
-  const amountCents = Number(amount.toFixed(2));
+  if (!PAYPHONE_STORE_ID) {
+    return jsonResponse(
+      {
+        error: "Payphone no configurado. Define PAYPHONE_STORE_ID en Supabase Secrets para crear links de pago.",
+      },
+      500,
+    );
+  }
+
+  const amountCents = Math.round(Number((Number(amount) * 100).toFixed(0)));
   const paymentRow = {
     user_id: userData.user.id,
     pedido_id: null,
@@ -113,32 +142,42 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: `No se pudo crear el registro de pago: ${insertError?.message ?? "desconocido"}` }, 500);
   }
 
+  const appUrl = (Deno.env.get("APP_URL") ?? "http://localhost:3000").replace(/\/$/, "");
+  const returnUrl = `${appUrl}/checkout/return?provider=payphone&orderId=${encodeURIComponent(orderId)}`;
+  const cancelUrl = `${appUrl}/checkout/cancel?provider=payphone&orderId=${encodeURIComponent(orderId)}`;
+
   const providerRequest = {
-    orderId,
     amount: amountCents,
     currency,
-    description,
-    customer: {
-      userId: userData.user.id,
-      email: userData.user.email ?? "",
-    },
-    metadata: {
+    reference: description || `Pedido ${orderId}`,
+    clientTransactionId: orderId,
+    storeId: PAYPHONE_STORE_ID || undefined,
+    additionalData: JSON.stringify({
       sumakOrderId: orderId,
       sumakUserId: userData.user.id,
-    },
+      returnUrl,
+      cancelUrl,
+    }),
+    oneTime: true,
+    expireIn: 0,
+    isAmountEditable: false,
   };
 
-  const providerResponse = await fetch(`${PAYPHONE_BASE_URL}/api/v1/payments`, {
+  const providerResponse = await fetch(`${PAYPHONE_BASE_URL.replace(/\/$/, "")}/api/Links`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Basic ${btoa(`${PAYPHONE_CLIENT_ID}:${PAYPHONE_SECRET_KEY}`)}`,
-      Accept: "application/json",
-    },
+    headers: buildPayphoneHeaders(),
     body: JSON.stringify(providerRequest),
   });
 
-  const providerJson = await providerResponse.json().catch(() => ({}));
+  const providerText = await providerResponse.text();
+  let providerJson: Record<string, unknown> = {};
+  if (providerText) {
+    try {
+      providerJson = JSON.parse(providerText) as Record<string, unknown>;
+    } catch {
+      providerJson = { rawText: providerText, url: providerText };
+    }
+  }
   if (!providerResponse.ok) {
     await supabaseAdmin
       .from("pagos")
@@ -160,11 +199,18 @@ Deno.serve(async (req: Request) => {
   }
 
   const providerTransactionId = String(
-    providerJson?.transactionId ?? providerJson?.id ?? providerJson?.paymentId ?? "",
+    providerJson?.transactionId ?? providerJson?.id ?? providerJson?.paymentId ?? providerJson?.clientTransactionId ?? "",
   ).trim();
 
   const redirectUrl = String(
-    providerJson?.redirectUrl ?? providerJson?.checkoutUrl ?? providerJson?.paymentUrl ?? "",
+    providerJson?.redirectUrl ??
+      providerJson?.checkoutUrl ??
+      providerJson?.paymentUrl ??
+      providerJson?.url ??
+      providerJson?.link ??
+      providerJson?.data ??
+      providerJson?.rawText ??
+      "",
   ).trim();
 
   await supabaseAdmin

@@ -122,23 +122,6 @@ export default function ProductDetail() {
         return;
       }
 
-      const payphoneUrl = getPayPhoneCheckoutUrl();
-      if (payphoneUrl) {
-        const popup = window.open(payphoneUrl, '_blank', 'noopener,noreferrer');
-        if (popup) {
-          popup.opener = null;
-          return;
-        }
-        const anchor = document.createElement('a');
-        anchor.href = payphoneUrl;
-        anchor.target = '_blank';
-        anchor.rel = 'noopener noreferrer';
-        document.body.appendChild(anchor);
-        anchor.click();
-        anchor.remove();
-        return;
-      }
-
       navigate(user ? '/dashboard/pedido/nuevo?payment=payphone' : '/registro?checkout=payphone');
       return;
     }
