@@ -243,18 +243,33 @@ export default function NuevoPedido() {
       return;
     }
 
-    if (selectedPaymentMethod === 'paypal' && !isPayPalConfigured()) {
-      setError('PayPal no está configurado. Añade VITE_PAYPAL_CLIENT_ID para habilitar este método.');
+    if (selectedPaymentMethod === 'paypal') {
+      if (!isPayPalConfigured()) {
+        setError('PayPal no está configurado. Añade VITE_PAYPAL_CLIENT_ID para habilitar este método.');
+        return;
+      }
+      setError('Completa el pago con PayPal desde el botón que aparece abajo y después vuelve a confirmar el pedido.');
       return;
     }
 
-    if (selectedPaymentMethod === 'payphone' && !isPayPhoneConfigured()) {
-      setError('Payphone no está configurado. Añade VITE_PAYPHONE_CHECKOUT_URL para habilitar este método.');
+    if (selectedPaymentMethod === 'payphone') {
+      if (!isPayPhoneConfigured()) {
+        setError('Payphone no está configurado. Añade VITE_PAYPHONE_CHECKOUT_URL para habilitar este método.');
+        return;
+      }
+
+      const checkoutUrl = getPayPhoneCheckoutUrl();
+      if (!checkoutUrl) {
+        setError('Payphone no está disponible en este momento. Inténtalo más tarde.');
+        return;
+      }
+
+      window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
+      setError('Se abrió Payphone en otra pestaña. Completa el pago y luego vuelve aquí para confirmar tu pedido.');
       return;
     }
 
     setError('');
-    setStep('done');
   }
 
   async function handleSubmitFinal() {
@@ -721,8 +736,7 @@ export default function NuevoPedido() {
                           return;
                         }
                         window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
-                        setError('');
-                        setStep('done');
+                        setError('Se abrió Payphone en otra pestaña. Completa el pago y vuelve a esta pantalla para confirmar el pedido.');
                       }}
                       className="w-full rounded-xl bg-[#1A4E26] text-white font-bold py-3 hover:bg-[#163F1E] transition-colors"
                     >
