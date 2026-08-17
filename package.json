@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
+    "@paypal/paypal-js": "^10.1.0",
+    "@stripe/stripe-js": "^9.13.0",
     "@supabase/supabase-js": "^2.106.2",
     "@tailwindcss/vite": "^4.1.14",
     "@types/qrcode": "^1.5.6",
