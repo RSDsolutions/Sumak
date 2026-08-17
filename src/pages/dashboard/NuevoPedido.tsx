@@ -13,6 +13,14 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { useCart } from '../../lib/cart';
 import { logger } from '../../lib/logger';
+import {
+  type PaymentMethod,
+  getPayPalClientId,
+  getStripeCheckoutUrl,
+  isPayPalConfigured,
+  isStripeConfigured,
+  paymentMethodOptions,
+} from '../../lib/payments';
 
 type Step = 'cart' | 'pay' | 'voucher' | 'done';
 
@@ -39,9 +47,11 @@ export default function NuevoPedido() {
   const [totalMes, setTotalMes] = useState(0);
 
   // Pay step state
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('transferencia');
   const [selectedBanco, setSelectedBanco] = useState<string>('');
   const [voucherNumero, setVoucherNumero] = useState('');
   const [copiedField, setCopiedField] = useState<string>('');
+  const paypalButtonContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Voucher step state
   const [voucherFile, setVoucherFile] = useState<File | null>(null);
@@ -121,8 +131,80 @@ export default function NuevoPedido() {
     setSecondsLeft(PAY_WINDOW_SECONDS);
     // BIZ-005: nueva sesión de checkout → nueva idempotency_key
     idempotencyKeyRef.current = crypto.randomUUID();
+    setSelectedPaymentMethod('transferencia');
     setStep('pay');
   }
+
+  useEffect(() => {
+    if (step !== 'pay' || selectedPaymentMethod !== 'paypal' || !isPayPalConfigured() || !paypalButtonContainerRef.current) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadPayPalButtons = async () => {
+      try {
+        const { loadScript } = await import('@paypal/paypal-js');
+        const paypal = await loadScript({
+          clientId: getPayPalClientId(),
+          currency: 'USD',
+          intent: 'capture',
+        });
+
+        if (!paypal?.Buttons || cancelled || !paypalButtonContainerRef.current) {
+          return;
+        }
+
+        const container = paypalButtonContainerRef.current;
+        container.innerHTML = '';
+
+        const buttons = paypal.Buttons({
+          style: {
+            layout: 'vertical',
+            color: 'gold',
+            shape: 'pill',
+            label: 'pay',
+            tagline: false,
+          },
+          createOrder: (_data, actions) => actions.order.create({
+            purchase_units: [{
+              amount: {
+                currency_code: 'USD',
+                value: total.toFixed(2),
+              },
+            }],
+          }),
+          onApprove: async (data, actions) => {
+            if (!actions || !actions.order) {
+              setError('No pudimos confirmar la captura de PayPal. Inténtalo de nuevo.');
+              return;
+            }
+
+            const details = await actions.order.capture();
+            logger.info('PayPal approved', { data, details });
+            setError('');
+            setStep('voucher');
+          },
+          onError: () => {
+            setError('No pudimos iniciar el pago con PayPal. Verifica la configuración del cliente y vuelve a intentarlo.');
+          },
+        });
+
+        buttons.render(container);
+      } catch (err) {
+        logger.error('PayPal button init failed', err);
+        if (!cancelled) {
+          setError('PayPal no está disponible en este momento. Inténtalo más tarde o usa otra forma de pago.');
+        }
+      }
+    };
+
+    void loadPayPalButtons();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [step, selectedPaymentMethod, total]);
 
   function onVoucherFile(file: File) {
     if (file.size > 5 * 1024 * 1024) {
@@ -147,20 +229,38 @@ export default function NuevoPedido() {
   }
 
   function handleAcceptPayment() {
-    if (!selectedBanco) {
-      setError('Selecciona el banco al que realizaste la transferencia.');
+    if (selectedPaymentMethod === 'transferencia') {
+      if (!selectedBanco) {
+        setError('Selecciona el banco al que realizaste la transferencia.');
+        return;
+      }
+      if (voucherNumero.trim().length < 4) {
+        setError('Ingresa el número de comprobante de la transferencia (mínimo 4 caracteres).');
+        return;
+      }
+    }
+
+    if (selectedPaymentMethod === 'paypal' && !isPayPalConfigured()) {
+      setError('PayPal no está configurado. Añade VITE_PAYPAL_CLIENT_ID para habilitar este método.');
       return;
     }
-    if (voucherNumero.trim().length < 4) {
-      setError('Ingresa el número de comprobante de la transferencia (mínimo 4 caracteres).');
+
+    if (selectedPaymentMethod === 'stripe' && !isStripeConfigured()) {
+      setError('Stripe no está configurado. Añade VITE_STRIPE_PUBLISHABLE_KEY o VITE_STRIPE_CHECKOUT_URL para habilitar este método.');
       return;
     }
+
     setError('');
-    setStep('voucher');
+    setStep(selectedPaymentMethod === 'transferencia' ? 'voucher' : 'done');
   }
 
   async function handleSubmitFinal() {
-    if (items.length === 0 || !user || !voucherFile) {
+    if (items.length === 0 || !user) {
+      setError('No hay elementos en el carrito para finalizar.');
+      return;
+    }
+
+    if (selectedPaymentMethod === 'transferencia' && !voucherFile) {
       setError('Debes subir la foto del voucher de pago para finalizar.');
       return;
     }
@@ -169,23 +269,26 @@ export default function NuevoPedido() {
 
     try {
       const distribId = user.id;
+      let voucherPath: string | null = null;
 
-      // ── 1. Subir voucher a storage (folder = user uid por RLS) ──
-      const ext = voucherFile.name.split('.').pop()?.toLowerCase() ?? 'jpg';
-      const voucherPath = `${distribId}/${Date.now()}-voucher.${ext}`;
-      const { error: uploadError } = await supabase.storage
-        .from('pedidos-vouchers')
-        .upload(voucherPath, voucherFile, { upsert: false });
+      if (selectedPaymentMethod === 'transferencia' && voucherFile) {
+        // ── 1. Subir voucher a storage (folder = user uid por RLS) ──
+        const ext = voucherFile.name.split('.').pop()?.toLowerCase() ?? 'jpg';
+        voucherPath = `${distribId}/${Date.now()}-voucher.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from('pedidos-vouchers')
+          .upload(voucherPath, voucherFile, { upsert: false });
 
-      if (uploadError) {
-        // UX-004: mensaje amable; detalle técnico a consola.
-        logger.error('Voucher upload error', uploadError);
-        const detail = uploadError.message ? ` — ${uploadError.message}` : '';
-        setError(
-          'No pudimos guardar tu comprobante. Por favor, intenta de nuevo o contacta a soporte si el problema persiste.' + detail
-        );
-        setSubmitting(false);
-        return;
+        if (uploadError) {
+          // UX-004: mensaje amable; detalle técnico a consola.
+          logger.error('Voucher upload error', uploadError);
+          const detail = uploadError.message ? ` — ${uploadError.message}` : '';
+          setError(
+            'No pudimos guardar tu comprobante. Por favor, intenta de nuevo o contacta a soporte si el problema persiste.' + detail
+          );
+          setSubmitting(false);
+          return;
+        }
       }
 
       // ── 2. Llamar a la RPC atómica submit_pedido ──
@@ -218,9 +321,9 @@ export default function NuevoPedido() {
       const { data: rpcResult, error: rpcError } = await supabase.rpc('submit_pedido', {
         p_idempotency_key: idempotencyKeyRef.current,
         p_items: itemsPayload,
-        p_voucher_url: voucherPath,
-        p_voucher_numero: voucherNumero.trim(),
-        p_banco_destino: selectedBanco,
+        p_voucher_url: selectedPaymentMethod === 'transferencia' ? voucherPath : null,
+        p_voucher_numero: selectedPaymentMethod === 'transferencia' ? voucherNumero.trim() : null,
+        p_banco_destino: selectedPaymentMethod === 'transferencia' ? selectedBanco : null,
         p_notas: notes || null,
       });
 
@@ -386,8 +489,12 @@ export default function NuevoPedido() {
               <div className="p-5">
                 <div className="bg-[#F4F7F5] border border-[#C8D8CB] rounded-xl p-4 mb-4 text-xs space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[#9CA3AF] uppercase tracking-widest font-bold text-[10px]">Banco destino</span>
-                    <span className="text-[#111111] font-semibold">{selectedBanco}</span>
+                    <span className="text-[#9CA3AF] uppercase tracking-widest font-bold text-[10px]">
+                      {selectedPaymentMethod === 'transferencia' ? 'Banco destino' : 'Método de pago'}
+                    </span>
+                    <span className="text-[#111111] font-semibold">
+                      {selectedPaymentMethod === 'transferencia' ? selectedBanco : selectedPaymentMethod === 'paypal' ? 'PayPal' : 'Stripe'}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-[#9CA3AF] uppercase tracking-widest font-bold text-[10px]">N° comprobante</span>
@@ -504,7 +611,7 @@ export default function NuevoPedido() {
 
                 <button
                   onClick={handleSubmitFinal}
-                  disabled={submitting || !voucherFile}
+                  disabled={submitting || (selectedPaymentMethod === 'transferencia' && !voucherFile)}
                   className="w-full py-4 rounded-xl bg-[#1A4E26] text-white font-bold text-sm hover:bg-[#163F1E] disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_8px_24px_rgba(26,78,38,0.25)] transition-all duration-200 flex items-center justify-center gap-2"
                 >
                   {submitting ? (
@@ -529,7 +636,7 @@ export default function NuevoPedido() {
     );
   }
 
-  // ─── PAY STEP (bancos + N° comprobante + countdown) ──
+  // ─── PAY STEP (bancos + pasarelas + N° comprobante + countdown) ──
   if (step === 'pay') {
     return (
       <div>
@@ -540,7 +647,9 @@ export default function NuevoPedido() {
               Datos de Pago
             </h1>
             <p className="text-[#6B7280] text-sm mt-1">
-              Transfiere el total a una de nuestras cuentas y registra el número del comprobante.
+              {selectedPaymentMethod === 'transferencia'
+                ? 'Transfiere el total a una de nuestras cuentas y registra el número del comprobante.'
+                : 'Completa el pago con tu pasarela elegida y luego sube la prueba del pago para confirmar el pedido.'}
             </p>
           </div>
           <button
@@ -554,102 +663,168 @@ export default function NuevoPedido() {
         {countdownBanner}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left: bancos + voucher numero */}
           <div className="lg:col-span-2 space-y-4">
             <div className="bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden">
               <div className="px-5 py-3 border-b border-[#C8D8CB] bg-[#F4F7F5] flex items-center gap-2">
                 <CreditCard size={15} className="text-[#1A4E26]" />
-                <h2 className="font-heading font-bold text-[#111111] text-sm">Selecciona la cuenta de destino *</h2>
+                <h2 className="font-heading font-bold text-[#111111] text-sm">Selecciona un método de pago *</h2>
               </div>
               <div className="p-5 space-y-3">
-                {bankAccounts.map((b) => {
-                  const selected = selectedBanco === b.banco;
-                  const accent = b.brandColor ?? '#1A4E26';
-                  const docLabel = b.documento ?? 'Identificación';
+                {paymentMethodOptions.map((method) => {
+                  const enabled =
+                    method.value === 'transferencia' ||
+                    (method.value === 'paypal' && isPayPalConfigured()) ||
+                    (method.value === 'stripe' && isStripeConfigured());
+                  const selected = selectedPaymentMethod === method.value;
+
                   return (
-                    <div
-                      key={b.banco}
-                      className={`relative rounded-2xl border-2 transition-all overflow-hidden ${
+                    <button
+                      key={method.value}
+                      type="button"
+                      onClick={() => {
+                        if (!enabled) return;
+                        setSelectedPaymentMethod(method.value);
+                        setError('');
+                      }}
+                      className={`w-full text-left rounded-2xl border-2 p-4 transition-all ${
                         selected ? 'border-[#1A4E26] bg-[#EBF4ED] shadow-[0_8px_24px_rgba(26,78,38,0.15)]' : 'border-[#C8D8CB] bg-white hover:border-[#A8C2AD]'
-                      }`}
+                      } ${!enabled ? 'opacity-60 cursor-not-allowed' : ''}`}
                     >
-                      {/* Brand accent stripe */}
-                      <div className="h-1 w-full" style={{ backgroundColor: accent }} />
-                      <button
-                        type="button"
-                        onClick={() => setSelectedBanco(b.banco)}
-                        className="w-full flex items-center justify-between gap-3 p-4 text-left"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div
-                            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                            style={{
-                              backgroundColor: selected ? '#1A4E26' : `${accent}20`,
-                              color: selected ? '#FFFFFF' : accent,
-                            }}
-                          >
-                            <Landmark size={18} />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="font-heading font-bold text-[#111111] text-base leading-tight">{b.banco}</p>
-                            <p className="text-[#6B7280] text-xs mt-0.5">{b.tipo} · {b.titular}</p>
-                          </div>
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-heading font-bold text-[#111111] text-base">{method.label}</p>
+                          <p className="text-[#6B7280] text-xs mt-1">{enabled ? method.description : 'Configura la variable del proveedor para activarlo.'}</p>
                         </div>
                         <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${selected ? 'bg-[#1A4E26] border-[#1A4E26]' : 'border-[#C8D8CB]'}`}>
                           {selected && <Check size={14} className="text-white" />}
                         </div>
-                      </button>
-
-                      {selected && (
-                        <div className="px-4 pb-4 pt-1 space-y-2">
-                          {/* Big account number row */}
-                          <div className="flex items-center justify-between gap-3 bg-white border-2 border-[#1A4E26]/30 rounded-xl px-4 py-3">
-                            <div className="min-w-0">
-                              <p className="text-[10px] uppercase tracking-widest text-[#9CA3AF] font-bold">Número de cuenta</p>
-                              <p className="text-[#1A4E26] font-mono font-bold text-xl leading-none mt-1 break-all">{b.numero}</p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => copyToClipboard(b.numero, `${b.banco}-num`)}
-                              className="shrink-0 inline-flex items-center gap-1 bg-[#1A4E26] hover:bg-[#163F1E] text-white rounded-lg px-3 py-2 text-xs font-bold transition-colors"
-                            >
-                              {copiedField === `${b.banco}-num` ? (
-                                <><Check size={13} /> Copiado</>
-                              ) : (
-                                <><Copy size={13} /> Copiar</>
-                              )}
-                            </button>
-                          </div>
-
-                          {/* Other fields */}
-                          {[
-                            { label: 'Beneficiario', value: b.titular, key: `${b.banco}-tit` },
-                            { label: docLabel, value: b.identificacion, key: `${b.banco}-id`, mono: true },
-                            ...(b.email ? [{ label: 'Email', value: b.email, key: `${b.banco}-em`, mono: true }] : []),
-                          ].map((row) => (
-                            <div key={row.key} className="flex items-center justify-between gap-3 bg-white border border-[#C8D8CB] rounded-xl px-3 py-2">
-                              <div className="min-w-0">
-                                <p className="text-[10px] uppercase tracking-widest text-[#9CA3AF] font-bold">{row.label}</p>
-                                <p className={`text-[#111111] font-semibold truncate text-sm ${row.mono ? 'font-mono' : ''}`}>{row.value}</p>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => copyToClipboard(row.value, row.key)}
-                                className="shrink-0 inline-flex items-center gap-1 text-[#1A4E26] hover:bg-[#EBF4ED] rounded-lg px-2 py-1.5 text-[11px] font-semibold transition-colors"
-                              >
-                                {copiedField === row.key ? (
-                                  <><Check size={12} /> Copiado</>
-                                ) : (
-                                  <><Copy size={12} /> Copiar</>
-                                )}
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                      </div>
+                    </button>
                   );
                 })}
+
+                {selectedPaymentMethod === 'paypal' && isPayPalConfigured() && (
+                  <div className="rounded-2xl border border-[#C8D8CB] bg-[#F4F7F5] p-4">
+                    <div ref={paypalButtonContainerRef} className="min-h-[56px]" />
+                  </div>
+                )}
+
+                {selectedPaymentMethod === 'stripe' && isStripeConfigured() && (
+                  <div className="rounded-2xl border border-[#C8D8CB] bg-[#F4F7F5] p-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const checkoutUrl = getStripeCheckoutUrl();
+                        if (!checkoutUrl) {
+                          setError('Stripe no está configurado para pagos directos. Añade VITE_STRIPE_CHECKOUT_URL o VITE_STRIPE_PAYMENT_LINK.');
+                          return;
+                        }
+                        window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
+                        setError('');
+                        setStep('voucher');
+                      }}
+                      className="w-full rounded-xl bg-[#635bff] text-white font-bold py-3 hover:bg-[#4f46e5] transition-colors"
+                    >
+                      Pagar con Stripe
+                    </button>
+                  </div>
+                )}
+
+                {selectedPaymentMethod === 'transferencia' && (
+                  <div className="space-y-3">
+                    <div className="px-5 py-3 border-b border-[#C8D8CB] bg-[#F4F7F5] flex items-center gap-2">
+                      <CreditCard size={15} className="text-[#1A4E26]" />
+                      <h2 className="font-heading font-bold text-[#111111] text-sm">Selecciona la cuenta de destino *</h2>
+                    </div>
+                    <div className="space-y-3">
+                      {bankAccounts.map((b) => {
+                        const selected = selectedBanco === b.banco;
+                        const accent = b.brandColor ?? '#1A4E26';
+                        const docLabel = b.documento ?? 'Identificación';
+                        return (
+                          <div
+                            key={b.banco}
+                            className={`relative rounded-2xl border-2 transition-all overflow-hidden ${
+                              selected ? 'border-[#1A4E26] bg-[#EBF4ED] shadow-[0_8px_24px_rgba(26,78,38,0.15)]' : 'border-[#C8D8CB] bg-white hover:border-[#A8C2AD]'
+                            }`}
+                          >
+                            <div className="h-1 w-full" style={{ backgroundColor: accent }} />
+                            <button
+                              type="button"
+                              onClick={() => setSelectedBanco(b.banco)}
+                              className="w-full flex items-center justify-between gap-3 p-4 text-left"
+                            >
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div
+                                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                                  style={{
+                                    backgroundColor: selected ? '#1A4E26' : `${accent}20`,
+                                    color: selected ? '#FFFFFF' : accent,
+                                  }}
+                                >
+                                  <Landmark size={18} />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="font-heading font-bold text-[#111111] text-base leading-tight">{b.banco}</p>
+                                  <p className="text-[#6B7280] text-xs mt-0.5">{b.tipo} · {b.titular}</p>
+                                </div>
+                              </div>
+                              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${selected ? 'bg-[#1A4E26] border-[#1A4E26]' : 'border-[#C8D8CB]'}`}>
+                                {selected && <Check size={14} className="text-white" />}
+                              </div>
+                            </button>
+
+                            {selected && (
+                              <div className="px-4 pb-4 pt-1 space-y-2">
+                                <div className="flex items-center justify-between gap-3 bg-white border-2 border-[#1A4E26]/30 rounded-xl px-4 py-3">
+                                  <div className="min-w-0">
+                                    <p className="text-[10px] uppercase tracking-widest text-[#9CA3AF] font-bold">Número de cuenta</p>
+                                    <p className="text-[#1A4E26] font-mono font-bold text-xl leading-none mt-1 break-all">{b.numero}</p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => copyToClipboard(b.numero, `${b.banco}-num`)}
+                                    className="shrink-0 inline-flex items-center gap-1 bg-[#1A4E26] hover:bg-[#163F1E] text-white rounded-lg px-3 py-2 text-xs font-bold transition-colors"
+                                  >
+                                    {copiedField === `${b.banco}-num` ? (
+                                      <><Check size={13} /> Copiado</>
+                                    ) : (
+                                      <><Copy size={13} /> Copiar</>
+                                    )}
+                                  </button>
+                                </div>
+
+                                {[
+                                  { label: 'Beneficiario', value: b.titular, key: `${b.banco}-tit` },
+                                  { label: docLabel, value: b.identificacion, key: `${b.banco}-id`, mono: true },
+                                  ...(b.email ? [{ label: 'Email', value: b.email, key: `${b.banco}-em`, mono: true }] : []),
+                                ].map((row) => (
+                                  <div key={row.key} className="flex items-center justify-between gap-3 bg-white border border-[#C8D8CB] rounded-xl px-3 py-2">
+                                    <div className="min-w-0">
+                                      <p className="text-[10px] uppercase tracking-widest text-[#9CA3AF] font-bold">{row.label}</p>
+                                      <p className={`text-[#111111] font-semibold truncate text-sm ${row.mono ? 'font-mono' : ''}`}>{row.value}</p>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => copyToClipboard(row.value, row.key)}
+                                      className="shrink-0 inline-flex items-center gap-1 text-[#1A4E26] hover:bg-[#EBF4ED] rounded-lg px-2 py-1.5 text-[11px] font-semibold transition-colors"
+                                    >
+                                      {copiedField === row.key ? (
+                                        <><Check size={12} /> Copiado</>
+                                      ) : (
+                                        <><Copy size={12} /> Copiar</>
+                                      )}
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -660,19 +835,23 @@ export default function NuevoPedido() {
               </div>
               <div className="p-5">
                 <p className="text-[#6B7280] text-sm mb-3">
-                  Una vez realizada la transferencia, escribe aquí el número o referencia que figura en tu voucher.
+                  {selectedPaymentMethod === 'transferencia'
+                    ? 'Una vez realizada la transferencia, escribe aquí el número o referencia que figura en tu voucher.'
+                    : 'Escribe aquí la referencia, ID de pedido o comprobante que te dará la pasarela de pago.'}
                 </p>
                 <input
                   type="text"
                   value={voucherNumero}
                   onChange={(e) => setVoucherNumero(e.target.value)}
-                  placeholder="Ej: 0123456789"
+                  placeholder={selectedPaymentMethod === 'transferencia' ? 'Ej: 0123456789' : 'Ej: PAY-123456'}
                   className="w-full bg-[#F4F7F5] border border-[#C8D8CB] rounded-xl px-4 py-3 text-[#111111] font-mono text-base placeholder-[#9CA3AF] focus:outline-none focus:border-[#1A4E26] transition-colors"
                   autoComplete="off"
                 />
                 <p className="text-[11px] text-[#9CA3AF] mt-2 flex items-start gap-1.5">
                   <AlertCircle size={12} className="mt-0.5 shrink-0" />
-                  Este número debe coincidir con la foto del voucher que subirás en el siguiente paso.
+                  {selectedPaymentMethod === 'transferencia'
+                    ? 'Este número debe coincidir con la foto del voucher que subirás en el siguiente paso.'
+                    : 'Guarda esta referencia para identificar tu pago y súbela junto con el comprobante en el siguiente paso.'}
                 </p>
               </div>
             </div>
@@ -688,7 +867,6 @@ export default function NuevoPedido() {
             </div>
           </div>
 
-          {/* Right: summary + accept */}
           <div className="lg:col-span-1">
             <div className="sticky top-6 bg-white border border-[#C8D8CB] rounded-2xl overflow-hidden">
               <div className="px-5 py-4 border-b border-[#C8D8CB] bg-[#F4F7F5]">
@@ -709,7 +887,9 @@ export default function NuevoPedido() {
                 </div>
 
                 <div className="bg-[#EBF4ED] rounded-xl p-4 border border-[#1A4E26]/20">
-                  <p className="text-[10px] uppercase tracking-widest text-[#1A4E26] font-bold mb-1">Monto a transferir</p>
+                  <p className="text-[10px] uppercase tracking-widest text-[#1A4E26] font-bold mb-1">
+                    {selectedPaymentMethod === 'transferencia' ? 'Monto a transferir' : 'Monto total'}
+                  </p>
                   <p className="font-heading font-bold text-3xl text-[#1A4E26]">${total.toFixed(2)}</p>
                 </div>
 

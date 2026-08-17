@@ -6,11 +6,13 @@ import {
   TrendingUp, Users, Wallet, ShieldCheck, Rocket, Heart, Award, Leaf,
   Landmark, Copy, Check, Info, MessageCircle, AlertTriangle, AtSign,
 } from 'lucide-react';
+import PaymentMethodSelector from '../components/PaymentMethodSelector';
 import { affiliatePackages, bankAccounts, contactInfo } from '../data';
 import { supabase } from '../lib/supabase';
 import { useSEO } from '../lib/seo';
 import { explicarCedulaInvalida, validarCedulaEcuatoriana } from '../lib/validators';
 import { logger } from '../lib/logger';
+import { type PaymentMethod } from '../lib/payments';
 import type { PaqueteKey } from '../lib/types';
 
 type Step = 1 | 2 | 3 | 'done';
@@ -232,6 +234,7 @@ export default function Registro() {
     cedulaFrente: null, cedulaReverso: null, planilla: null, voucher: null,
   });
   const [selectedPkg, setSelectedPkg] = useState<string>('');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('transferencia');
   const [submitting, setSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
   const [submitError, setSubmitError] = useState('');
@@ -275,6 +278,12 @@ export default function Registro() {
 
   async function handleSubmit() {
     if (!selectedPkg) return;
+
+    if (selectedPaymentMethod === 'transferencia' && !files.voucher) {
+      setSubmitError('Debes subir el voucher de pago para completar la transferencia bancaria.');
+      return;
+    }
+
     setSubmitting(true);
     setSubmitError('');
 
@@ -735,24 +744,51 @@ export default function Registro() {
                       <h2 className="font-heading font-bold text-xl text-[#111111]">Documentos Requeridos</h2>
                     </div>
 
-                    {/* Cuentas bancarias para el deposito/transferencia */}
                     <div className="mb-6">
                       <div className="flex items-center gap-2 mb-3">
-                        <Landmark size={18} className="text-[#1A4E26]" />
+                        <Wallet size={18} className="text-[#1A4E26]" />
                         <h3 className="font-heading font-bold text-base text-[#111111]">
-                          Realiza tu depósito o transferencia
+                          Selecciona tu método de pago
                         </h3>
                       </div>
-                      <div className="flex items-start gap-2.5 bg-[#FFF8E1] border border-[#FFDD00]/40 rounded-xl px-4 py-3 mb-4">
-                        <Info size={16} className="text-[#B8860B] shrink-0 mt-0.5" />
-                        <p className="text-[#6B4F00] text-xs leading-relaxed">
-                          Deposita o transfiere el valor del paquete que vas a seleccionar a una de
-                          estas cuentas. Luego sube el <strong>voucher de pago</strong> abajo junto
-                          con tus documentos.
-                        </p>
-                      </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <PaymentMethodSelector
+                        value={selectedPaymentMethod}
+                        onChange={setSelectedPaymentMethod}
+                        className="mb-5"
+                      />
+
+                      {selectedPaymentMethod === 'transferencia' ? (
+                        <div className="flex items-start gap-2.5 bg-[#FFF8E1] border border-[#FFDD00]/40 rounded-xl px-4 py-3 mb-4">
+                          <Info size={16} className="text-[#B8860B] shrink-0 mt-0.5" />
+                          <p className="text-[#6B4F00] text-xs leading-relaxed">
+                            Deposita o transfiere el valor del paquete que vas a seleccionar a una de
+                            estas cuentas. Luego sube el <strong>voucher de pago</strong> abajo junto
+                            con tus documentos.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="flex items-start gap-2.5 bg-[#EBF4ED] border border-[#1A4E26]/15 rounded-xl px-4 py-3 mb-4">
+                          <CheckCircle2 size={16} className="text-[#1A4E26] shrink-0 mt-0.5" />
+                          <p className="text-[#1A4E26] text-xs leading-relaxed">
+                            Para {selectedPaymentMethod === 'paypal' ? 'PayPal' : 'Stripe'}, tu pago se realizará
+                            online y no necesitarás subir un voucher al final del proceso.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Cuentas bancarias para el deposito/transferencia */}
+                    {selectedPaymentMethod === 'transferencia' && (
+                      <div className="mb-6">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Landmark size={18} className="text-[#1A4E26]" />
+                          <h3 className="font-heading font-bold text-base text-[#111111]">
+                            Realiza tu depósito o transferencia
+                          </h3>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         {bankAccounts.map((b) => {
                           const accent = b.brandColor ?? '#1A4E26';
                           const docLabel = b.documento ?? 'Identificación';
@@ -855,6 +891,7 @@ export default function Registro() {
                         })}
                       </div>
                     </div>
+                    )}
 
                     {/* Separador */}
                     <div className="flex items-center gap-3 mb-5">
@@ -881,11 +918,13 @@ export default function Registro() {
                         file={files.planilla}
                         onFile={(f) => setFiles((prev) => ({ ...prev, planilla: f }))}
                       />
-                      <UploadArea
-                        label="Voucher de pago"
-                        file={files.voucher}
-                        onFile={(f) => setFiles((prev) => ({ ...prev, voucher: f }))}
-                      />
+                      {selectedPaymentMethod === 'transferencia' && (
+                        <UploadArea
+                          label="Voucher de pago"
+                          file={files.voucher}
+                          onFile={(f) => setFiles((prev) => ({ ...prev, voucher: f }))}
+                        />
+                      )}
                     </div>
 
                     <div className="flex gap-3 mt-6">

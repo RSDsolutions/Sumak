@@ -1,17 +1,23 @@
 import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   CheckCircle2, ShoppingBag, Leaf, ArrowLeft, ArrowRight, Star,
   Truck, Award, ShieldCheck, Heart, Share2, Minus, Plus,
   Sparkles, AlertCircle, Phone, BookOpen, X, Maximize2, Download, ShoppingCart, Check,
 } from 'lucide-react';
+import PaymentMethodSelector, { type PaymentSelection } from '../components/PaymentMethodSelector';
 import { contactInfo, parseIngredient } from '../data';
 import { useSEO } from '../lib/seo';
 import { useProducts } from '../lib/productos';
 import { useAuth } from '../lib/auth';
 import { useCart } from '../lib/cart';
 import { useToast } from '../lib/toast';
+import {
+  isPayPalConfigured,
+  isStripeConfigured,
+  getStripeCheckoutUrl,
+} from '../lib/payments';
 
 type TabKey = 'beneficios' | 'ingredientes' | 'modo-uso' | 'precauciones';
 
@@ -21,11 +27,14 @@ export default function ProductDetail() {
   const product = products.find((p) => p.slug === slug);
   const { user } = useAuth();
   const { addItem } = useCart();
+  const navigate = useNavigate();
   const toast = useToast();
 
   const [qty, setQty] = useState(1);
   const [activeTab, setActiveTab] = useState<TabKey>('ingredientes');
   const [revistaOpen, setRevistaOpen] = useState(false);
+  const [showPaymentSelector, setShowPaymentSelector] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentSelection>('transferencia');
 
   // SEO-001/003: metadatos por producto + JSON-LD Schema.org Product.
   // El hook se llama incondicionalmente (regla de hooks); el contenido
@@ -99,6 +108,42 @@ export default function ProductDetail() {
 
   const whatsappMsg = `Hola, quiero adquirir: ${product.nombre} (PVP: $${product.pvpFinal.toFixed(2)})${qty > 1 ? ` × ${qty} = $${totalPrice.toFixed(2)}` : ''}`;
   const whatsappUrl = `https://wa.me/${contactInfo.whatsapp}?text=${encodeURIComponent(whatsappMsg)}`;
+
+  const handleContinueWithPayment = () => {
+    if (selectedPaymentMethod === 'whatsapp') {
+      window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    if (selectedPaymentMethod === 'transferencia') {
+      navigate('/registro?checkout=transferencia');
+      return;
+    }
+
+    if (selectedPaymentMethod === 'paypal') {
+      if (!isPayPalConfigured()) {
+        toast.error('PayPal aún no está configurado. Prueba otra opción o contacta con soporte.');
+        return;
+      }
+      navigate(user ? '/dashboard/pedido/nuevo' : '/registro');
+      return;
+    }
+
+    if (selectedPaymentMethod === 'stripe') {
+      if (!isStripeConfigured()) {
+        toast.error('Stripe aún no está configurado para pagos online en este momento.');
+        return;
+      }
+
+      const stripeUrl = getStripeCheckoutUrl();
+      if (stripeUrl) {
+        window.open(stripeUrl, '_blank', 'noopener,noreferrer');
+        return;
+      }
+
+      navigate(user ? '/dashboard/pedido/nuevo' : '/registro');
+    }
+  };
 
   return (
     <div className="bg-[#FAFBFA] min-h-screen pt-24 pb-20">
@@ -386,20 +431,50 @@ export default function ProductDetail() {
                 </>
               ) : (
                 <>
-                  <a
-                    href={whatsappUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full py-4 rounded-2xl bg-[#1A4E26] text-white font-bold text-base flex items-center justify-center gap-2 hover:bg-[#163F1E] shadow-[0_8px_24px_rgba(26,78,38,0.3)] transition-all duration-200"
-                  >
-                    <ShoppingBag size={18} /> Comprar por WhatsApp
-                  </a>
-                  <Link
-                    to="/registro"
-                    className="w-full py-4 rounded-2xl border-2 border-[#D4AF37] text-[#1A4E26] font-bold text-base flex items-center justify-center gap-2 hover:bg-[#D4AF37] hover:text-[#0B2913] transition-all duration-200 bg-white"
-                  >
-                    <Heart size={18} /> Únete y compra a ${distributorPrice.toFixed(2)}
-                  </Link>
+                  {showPaymentSelector ? (
+                    <div className="space-y-3">
+                      <PaymentMethodSelector
+                        value={selectedPaymentMethod}
+                        onChange={setSelectedPaymentMethod}
+                        includeWhatsApp
+                        title="Elige cómo quieres pagar"
+                        className="rounded-2xl border border-[#C8D8CB] bg-white p-4"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={handleContinueWithPayment}
+                        className="w-full py-4 rounded-2xl bg-[#1A4E26] text-white font-bold text-base flex items-center justify-center gap-2 hover:bg-[#163F1E] shadow-[0_8px_24px_rgba(26,78,38,0.3)] transition-all duration-200"
+                      >
+                        <ShoppingBag size={18} />
+                        Continuar con {selectedPaymentMethod === 'whatsapp' ? 'WhatsApp' : selectedPaymentMethod === 'paypal' ? 'PayPal' : selectedPaymentMethod === 'stripe' ? 'Stripe' : 'Transferencia'}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowPaymentSelector(false)}
+                        className="w-full py-3 rounded-2xl border border-[#C8D8CB] text-[#6B7280] font-semibold text-sm hover:border-[#A8C2AD] hover:text-[#111111] transition-all duration-200 bg-white"
+                      >
+                        Volver
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setShowPaymentSelector(true)}
+                        className="w-full py-4 rounded-2xl bg-[#1A4E26] text-white font-bold text-base flex items-center justify-center gap-2 hover:bg-[#163F1E] shadow-[0_8px_24px_rgba(26,78,38,0.3)] transition-all duration-200"
+                      >
+                        <ShoppingBag size={18} /> Comprar
+                      </button>
+                      <Link
+                        to="/registro"
+                        className="w-full py-4 rounded-2xl border-2 border-[#D4AF37] text-[#1A4E26] font-bold text-base flex items-center justify-center gap-2 hover:bg-[#D4AF37] hover:text-[#0B2913] transition-all duration-200 bg-white"
+                      >
+                        <Heart size={18} /> Únete y compra a ${distributorPrice.toFixed(2)}
+                      </Link>
+                    </>
+                  )}
                 </>
               )}
             </div>
