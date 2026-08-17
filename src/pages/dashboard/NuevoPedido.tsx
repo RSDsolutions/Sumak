@@ -16,12 +16,13 @@ import { logger } from '../../lib/logger';
 import {
   type PaymentMethod,
   getPayPalClientId,
-  getPayPhoneCheckoutUrl,
+  getPayPhoneStoreId,
+  getPayPhoneToken,
   isPayPalConfigured,
   isPayPhoneConfigured,
   paymentMethodOptions,
 } from '../../lib/payments';
-import { callEdgeFunction } from '../../lib/supabase';
+import PayPhoneBox from '../../components/PayPhoneBox';
 
 type Step = 'cart' | 'pay' | 'voucher' | 'done';
 
@@ -75,6 +76,7 @@ export default function NuevoPedido() {
   // Si el usuario hace doble-click en "Enviar pedido", la segunda inserción
   // falla con 23505 (unique violation) y se trata como éxito sin duplicar.
   const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
+  const payPhoneTransactionIdRef = useRef<string>(`sumak-${crypto.randomUUID()}`);
 
   // COD-002: umbral de activación viene del catálogo central del plan.
   const MIN_ACTIVACION = planConfig.minActivacionMensual;
@@ -303,37 +305,11 @@ export default function NuevoPedido() {
       }
 
       if (!isPayPhoneConfigured()) {
-        setError('Payphone no está configurado. Revisa la configuración del backend antes de continuar.');
+        setError('Payphone no está configurado. Define VITE_PAYPHONE_TOKEN y VITE_PAYPHONE_STORE_ID para activar la cajita de pagos.');
         return;
       }
 
-      try {
-        setError('');
-        setSubmitting(true);
-
-        const response = await callEdgeFunction<{ redirectUrl?: string; error?: string; paymentId?: string }>(
-          'payphone-create-payment',
-          {
-            orderId: `pedido-${Date.now()}-${user.id.slice(0, 8)}`,
-            amount: Number(total.toFixed(2)),
-            currency: 'USD',
-            description: `Compra Sumak - ${items.map((item) => item.nombre).join(', ')}`.slice(0, 180),
-          }
-        );
-
-        const checkoutUrl = response?.redirectUrl || getPayPhoneCheckoutUrl();
-        if (!checkoutUrl) {
-          throw new Error(response?.error ?? 'Payphone no devolvió una URL válida.');
-        }
-
-        openExternalCheckout(checkoutUrl);
-        setError('Se abrió Payphone en otra pestaña. Completa el pago y luego vuelve aquí para confirmar tu pedido.');
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'No pudimos iniciar el pago con Payphone.';
-        setError(message);
-      } finally {
-        setSubmitting(false);
-      }
+      setError('');
       return;
     }
 
@@ -794,15 +770,18 @@ export default function NuevoPedido() {
                 })}
 
                 {selectedPaymentMethod === 'payphone' && isPayPhoneConfigured() && (
-                  <div className="rounded-2xl border border-[#C8D8CB] bg-[#F4F7F5] p-4">
-                    <button
-                      type="button"
-                      onClick={() => void handleAcceptPayment()}
-                      disabled={submitting}
-                      className="w-full rounded-xl bg-[#1A4E26] text-white font-bold py-3 hover:bg-[#163F1E] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                    >
-                      {submitting ? 'Generando enlace de pago...' : 'Pagar con Payphone'}
-                    </button>
+                  <div className="rounded-2xl border border-[#C8D8CB] bg-[#F4F7F5] p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-2 text-xs uppercase tracking-[0.16em] text-[#6B7280] font-bold">
+                      <span>Cajita de pagos</span>
+                      <span className="text-[#1A4E26]">Payphone</span>
+                    </div>
+                    <PayPhoneBox
+                      amount={Number(total.toFixed(2))}
+                      clientTransactionId={payPhoneTransactionIdRef.current}
+                      reference={`Pedido Sumak ${payPhoneTransactionIdRef.current}`}
+                      token={getPayPhoneToken()}
+                      storeId={getPayPhoneStoreId()}
+                    />
                   </div>
                 )}
 

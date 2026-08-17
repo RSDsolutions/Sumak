@@ -49,8 +49,18 @@ export function getPayPhoneCheckoutUrl() {
   return normalizeHttpUrl(import.meta.env.VITE_PAYPHONE_CHECKOUT_URL ?? '');
 }
 
+export function getPayPhoneToken() {
+  return (import.meta.env.VITE_PAYPHONE_TOKEN ?? '').trim().replace(/^['"]|['"]$/g, '');
+}
+
+export function getPayPhoneStoreId() {
+  return (import.meta.env.VITE_PAYPHONE_STORE_ID ?? '').trim().replace(/^['"]|['"]$/g, '');
+}
+
 export function isPayPhoneConfigured() {
-  return Boolean(getPayPhoneCheckoutUrl() || (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY));
+  const token = getPayPhoneToken();
+  const storeId = getPayPhoneStoreId();
+  return Boolean(token && storeId) || Boolean(getPayPhoneCheckoutUrl());
 }
 
 export function getPayPalClientId() {
