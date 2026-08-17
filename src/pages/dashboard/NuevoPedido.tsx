@@ -280,8 +280,14 @@ export default function NuevoPedido() {
     }
 
     if (selectedPaymentMethod === 'paypal') {
+      if (!user) {
+        setError('Debes iniciar sesión o completar tu registro antes de pagar con PayPal.');
+        navigate('/login');
+        return;
+      }
+
       if (!isPayPalConfigured()) {
-        setError('PayPal no está configurado. Añade VITE_PAYPAL_CLIENT_ID para habilitar este método.');
+        setError('PayPal no está configurado. Añade VITE_PAYPAL_CLIENT_ID con un Client ID válido para habilitar este método.');
         return;
       }
       setError('Completa el pago con PayPal desde el botón que aparece abajo y después vuelve a confirmar el pedido.');
@@ -289,6 +295,12 @@ export default function NuevoPedido() {
     }
 
     if (selectedPaymentMethod === 'payphone') {
+      if (!user) {
+        setError('Debes iniciar sesión o completar tu registro antes de pagar con Payphone.');
+        navigate('/login');
+        return;
+      }
+
       if (!isPayPhoneConfigured()) {
         setError('Payphone no está configurado. Revisa la configuración del backend antes de continuar.');
         return;
@@ -301,7 +313,7 @@ export default function NuevoPedido() {
         const response = await callEdgeFunction<{ redirectUrl?: string; error?: string; paymentId?: string }>(
           'payphone-create-payment',
           {
-            orderId: `pedido-${Date.now()}-${user?.id?.slice(0, 8) ?? 'anon'}`,
+            orderId: `pedido-${Date.now()}-${user.id.slice(0, 8)}`,
             amount: Number(total.toFixed(2)),
             currency: 'USD',
             description: `Compra Sumak - ${items.map((item) => item.nombre).join(', ')}`.slice(0, 180),

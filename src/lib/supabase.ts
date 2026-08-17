@@ -41,7 +41,7 @@ export async function callEdgeFunction<TResp = unknown>(
 ): Promise<TResp> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) {
-    throw new Error('Tu sesion ha expirado. Cierra sesion y vuelve a entrar.');
+    throw new Error('Debes iniciar sesión o completar tu registro antes de continuar con el pago.');
   }
   const res = await fetch(`${url}/functions/v1/${name}`, {
     method: 'POST',
