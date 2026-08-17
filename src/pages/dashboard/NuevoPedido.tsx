@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
   ShoppingCart, Plus, Minus, X, CheckCircle2, AlertCircle, TrendingUp,
@@ -37,6 +37,7 @@ function formatMMSS(s: number) {
 export default function NuevoPedido() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { items, setQty, removeItem, clear, subtotal, savings, puntos } = useCart();
   const [step, setStep] = useState<Step>('cart');
   const [submitting, setSubmitting] = useState(false);
@@ -50,6 +51,13 @@ export default function NuevoPedido() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('transferencia');
   const [selectedBanco, setSelectedBanco] = useState<string>('');
   const [voucherNumero, setVoucherNumero] = useState('');
+
+  useEffect(() => {
+    const paymentParam = searchParams.get('payment');
+    if (paymentParam === 'paypal' || paymentParam === 'payphone' || paymentParam === 'transferencia') {
+      setSelectedPaymentMethod(paymentParam);
+    }
+  }, [searchParams]);
   const [copiedField, setCopiedField] = useState<string>('');
   const paypalButtonContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -207,13 +215,30 @@ export default function NuevoPedido() {
   }, [step, selectedPaymentMethod, total]);
 
   function openExternalCheckout(url: string) {
-    const popup = window.open('', '_blank', 'noopener,noreferrer');
-    if (popup) {
-      popup.opener = null;
-      popup.location.href = url;
+    const safeUrl = url.trim();
+    if (!safeUrl) {
+      setError('La URL de pago no está disponible en este momento. Verifica la configuración del proveedor antes de continuar.');
       return;
     }
-    window.location.href = url;
+
+    const newTab = window.open(safeUrl, '_blank', 'noopener,noreferrer');
+    if (newTab) {
+      newTab.opener = null;
+      return;
+    }
+
+    const anchor = document.createElement('a');
+    anchor.href = safeUrl;
+    anchor.target = '_blank';
+    anchor.rel = 'noopener noreferrer';
+    anchor.style.display = 'none';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+
+    if (document.hasFocus()) {
+      window.location.href = safeUrl;
+    }
   }
 
   function onVoucherFile(file: File) {

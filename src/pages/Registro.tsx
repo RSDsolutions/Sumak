@@ -173,6 +173,7 @@ export default function Registro() {
 
   const [searchParams] = useSearchParams();
   const refParam = searchParams.get('ref')?.trim() ?? '';
+  const checkoutParam = searchParams.get('checkout');
   const [step, setStep] = useState<Step>(1);
   const [personal, setPersonal] = useState<PersonalData>({
     nombre: '', username: '', cedula: '', email: '', telefono: '', direccion: '', ciudad: '',
@@ -235,6 +236,14 @@ export default function Registro() {
   });
   const [selectedPkg, setSelectedPkg] = useState<string>('');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('transferencia');
+
+  useEffect(() => {
+    const checkoutMethod = checkoutParam;
+    if (checkoutMethod === 'paypal' || checkoutMethod === 'payphone' || checkoutMethod === 'transferencia') {
+      setSelectedPaymentMethod(checkoutMethod);
+    }
+  }, [checkoutParam]);
+
   const [submitting, setSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
   const [submitError, setSubmitError] = useState('');
@@ -281,6 +290,11 @@ export default function Registro() {
 
     if (selectedPaymentMethod === 'transferencia' && !files.voucher) {
       setSubmitError('Debes subir el voucher de pago para completar la transferencia bancaria.');
+      return;
+    }
+
+    if (selectedPaymentMethod !== 'transferencia' && !['paypal', 'payphone'].includes(selectedPaymentMethod)) {
+      setSubmitError('Selecciona un método de pago válido antes de continuar.');
       return;
     }
 

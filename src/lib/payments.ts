@@ -1,5 +1,28 @@
 export type PaymentMethod = 'transferencia' | 'payphone' | 'paypal';
 
+const INVALID_CHECKOUT_HINTS = ['404', 'Errors/404', 'not found'];
+
+function normalizeHttpUrl(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return '';
+    }
+
+    const lowered = parsed.href.toLowerCase();
+    if (INVALID_CHECKOUT_HINTS.some((hint) => lowered.includes(hint.toLowerCase()))) {
+      return '';
+    }
+
+    return parsed.href;
+  } catch {
+    return '';
+  }
+}
+
 export const paymentMethodOptions: Array<{
   value: PaymentMethod;
   label: string;
@@ -23,7 +46,7 @@ export const paymentMethodOptions: Array<{
 ];
 
 export function getPayPhoneCheckoutUrl() {
-  return (import.meta.env.VITE_PAYPHONE_CHECKOUT_URL ?? '').trim();
+  return normalizeHttpUrl(import.meta.env.VITE_PAYPHONE_CHECKOUT_URL ?? '');
 }
 
 export function isPayPhoneConfigured() {
@@ -31,11 +54,14 @@ export function isPayPhoneConfigured() {
 }
 
 export function getPayPalClientId() {
-  return (import.meta.env.VITE_PAYPAL_CLIENT_ID ?? '').trim();
+  return (import.meta.env.VITE_PAYPAL_CLIENT_ID ?? '').trim().replace(/^['"]|['"]$/g, '');
 }
 
 export function isPayPalConfigured() {
-  return Boolean(getPayPalClientId());
+  const clientId = getPayPalClientId();
+  if (!clientId) return false;
+  if (clientId.length < 12) return false;
+  return !/^(?:test|demo|placeholder|changeme|your_|example|tu_)/i.test(clientId);
 }
 
 export function getAvailablePaymentMethods() {

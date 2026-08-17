@@ -124,11 +124,22 @@ export default function ProductDetail() {
 
       const payphoneUrl = getPayPhoneCheckoutUrl();
       if (payphoneUrl) {
-        window.open(payphoneUrl, '_blank', 'noopener,noreferrer');
+        const popup = window.open(payphoneUrl, '_blank', 'noopener,noreferrer');
+        if (popup) {
+          popup.opener = null;
+          return;
+        }
+        const anchor = document.createElement('a');
+        anchor.href = payphoneUrl;
+        anchor.target = '_blank';
+        anchor.rel = 'noopener noreferrer';
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
         return;
       }
 
-      navigate(user ? '/dashboard/pedido/nuevo' : '/registro');
+      navigate(user ? '/dashboard/pedido/nuevo?payment=payphone' : '/registro?checkout=payphone');
       return;
     }
 
@@ -137,7 +148,7 @@ export default function ProductDetail() {
         toast.error('PayPal aún no está configurado. Prueba otra opción o contacta con soporte.');
         return;
       }
-      navigate(user ? '/dashboard/pedido/nuevo' : '/registro');
+      navigate(user ? '/dashboard/pedido/nuevo?payment=paypal' : '/registro?checkout=paypal');
       return;
     }
 
