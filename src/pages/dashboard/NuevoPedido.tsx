@@ -206,6 +206,16 @@ export default function NuevoPedido() {
     };
   }, [step, selectedPaymentMethod, total]);
 
+  function openExternalCheckout(url: string) {
+    const popup = window.open('', '_blank', 'noopener,noreferrer');
+    if (popup) {
+      popup.opener = null;
+      popup.location.href = url;
+      return;
+    }
+    window.location.href = url;
+  }
+
   function onVoucherFile(file: File) {
     if (file.size > 5 * 1024 * 1024) {
       setError('La imagen no debe superar los 5 MB.');
@@ -264,7 +274,7 @@ export default function NuevoPedido() {
         return;
       }
 
-      window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
+      openExternalCheckout(checkoutUrl);
       setError('Se abrió Payphone en otra pestaña. Completa el pago y luego vuelve aquí para confirmar tu pedido.');
       return;
     }
@@ -735,7 +745,7 @@ export default function NuevoPedido() {
                           setError('Payphone no está configurado para pagos directos. Añade VITE_PAYPHONE_CHECKOUT_URL o el valor del checkout en la configuración del proyecto.');
                           return;
                         }
-                        window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
+                        openExternalCheckout(checkoutUrl);
                         setError('Se abrió Payphone en otra pestaña. Completa el pago y vuelve a esta pantalla para confirmar el pedido.');
                       }}
                       className="w-full rounded-xl bg-[#1A4E26] text-white font-bold py-3 hover:bg-[#163F1E] transition-colors"
