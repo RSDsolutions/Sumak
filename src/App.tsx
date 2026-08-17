@@ -31,6 +31,7 @@ const Registro = lazy(() => import('./pages/Registro'));
 const Login = lazy(() => import('./pages/Login'));
 const Manual = lazy(() => import('./pages/Manual'));
 const Pack = lazy(() => import('./pages/Pack'));
+const PaymentReturn = lazy(() => import('./pages/PaymentReturn'));
 
 // Distribuidor dashboard pages
 const AdminLayout = lazy(() => import('./components/AdminLayout'));
@@ -222,6 +223,22 @@ export default function App() {
             }
           />
           <Route path="/login" element={<Login />} />
+          <Route
+            path="/checkout/return"
+            element={
+              <PublicLayout>
+                <PageTransition><PaymentReturn /></PageTransition>
+              </PublicLayout>
+            }
+          />
+          <Route
+            path="/checkout/cancel"
+            element={
+              <PublicLayout>
+                <PageTransition><PaymentReturn /></PageTransition>
+              </PublicLayout>
+            }
+          />
 
           {/* ── DISTRIBUIDOR ROUTES ───────────────────────── */}
           <Route
