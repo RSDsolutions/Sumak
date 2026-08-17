@@ -73,10 +73,8 @@ Deno.serve(async (req: Request) => {
 
   if (!PAYPAL_CLIENT_ID || !PAYPAL_CLIENT_SECRET) {
     return jsonResponse(req, {
-        error: "PayPal no configurado. Define PAYPAL_CLIENT_ID y PAYPAL_CLIENT_SECRET en Supabase Secrets.",
-      },
-      500,
-    );
+      error: "PayPal no configurado. Define PAYPAL_CLIENT_ID y PAYPAL_CLIENT_SECRET en Supabase Secrets.",
+    }, 500);
   }
 
   const tokenResponse = await fetch(`${PAYPAL_BASE_URL}/v1/oauth2/token`, {

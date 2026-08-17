@@ -176,6 +176,7 @@ export default function NuevoPedido() {
             tagline: false,
           },
           createOrder: (_data, actions) => actions.order.create({
+            intent: 'CAPTURE',
             purchase_units: [{
               amount: {
                 currency_code: 'USD',

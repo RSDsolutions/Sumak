@@ -104,18 +104,14 @@ Deno.serve(async (req: Request) => {
 
   if (!PAYPHONE_TOKEN && (!PAYPHONE_CLIENT_ID || !PAYPHONE_SECRET_KEY)) {
     return jsonResponse(req, {
-        error: "Payphone no configurado. Define PAYPHONE_TOKEN o PAYPHONE_CLIENT_ID + PAYPHONE_SECRET_KEY en Supabase Secrets.",
-      },
-      500,
-    );
+      error: "Payphone no configurado. Define PAYPHONE_TOKEN o PAYPHONE_CLIENT_ID + PAYPHONE_SECRET_KEY en Supabase Secrets.",
+    }, 500);
   }
 
   if (!PAYPHONE_STORE_ID) {
     return jsonResponse(req, {
-        error: "Payphone no configurado. Define PAYPHONE_STORE_ID en Supabase Secrets para crear links de pago.",
-      },
-      500,
-    );
+      error: "Payphone no configurado. Define PAYPHONE_STORE_ID en Supabase Secrets para crear links de pago.",
+    }, 500);
   }
 
   const amountCents = Math.round(Number((Number(amount) * 100).toFixed(0)));
@@ -146,7 +142,7 @@ Deno.serve(async (req: Request) => {
     return jsonResponse(req, { error: `No se pudo crear el registro de pago: ${insertError?.message ?? "desconocido"}` }, 500);
   }
 
-  const appUrl = (Deno.env.get("APP_URL") ?? "http://localhost:3000").replace(/\/$/, "");
+  const appUrl = (Deno.env.get("APP_URL") ?? "https://www.sumakecuador.lat").replace(/\/$/, "");
   const returnUrl = `${appUrl}/checkout/return?provider=payphone&orderId=${encodeURIComponent(orderId)}`;
   const cancelUrl = `${appUrl}/checkout/cancel?provider=payphone&orderId=${encodeURIComponent(orderId)}`;
 
@@ -155,7 +151,7 @@ Deno.serve(async (req: Request) => {
     currency,
     reference: description || `Pedido ${orderId}`,
     clientTransactionId: orderId,
-    storeId: PAYPHONE_STORE_ID || undefined,
+    storeId: PAYPHONE_STORE_ID,
     additionalData: JSON.stringify({
       sumakOrderId: orderId,
       sumakUserId: userData.user.id,
@@ -182,6 +178,7 @@ Deno.serve(async (req: Request) => {
       providerJson = { rawText: providerText, url: providerText };
     }
   }
+
   if (!providerResponse.ok) {
     await supabaseAdmin
       .from("pagos")
@@ -195,10 +192,8 @@ Deno.serve(async (req: Request) => {
       .eq("id", inserted.id);
 
     return jsonResponse(req, {
-        error: providerJson?.message ?? "Payphone rechazó la creación del pago",
-      },
-      providerResponse.status,
-    );
+      error: (providerJson as Record<string, unknown>)?.message ?? "Payphone rechaz? la creaci?n del pago",
+    }, providerResponse.status);
   }
 
   const providerTransactionId = String(
