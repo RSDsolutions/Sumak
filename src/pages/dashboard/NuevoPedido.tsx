@@ -183,7 +183,7 @@ export default function NuevoPedido() {
             const details = await actions.order.capture();
             logger.info('PayPal approved', { data, details });
             setError('');
-            setStep('voucher');
+            setStep('done');
           },
           onError: () => {
             setError('No pudimos iniciar el pago con PayPal. Verifica la configuración del cliente y vuelve a intentarlo.');
@@ -238,6 +238,9 @@ export default function NuevoPedido() {
         setError('Ingresa el número de comprobante de la transferencia (mínimo 4 caracteres).');
         return;
       }
+      setError('');
+      setStep('voucher');
+      return;
     }
 
     if (selectedPaymentMethod === 'paypal' && !isPayPalConfigured()) {
@@ -245,8 +248,13 @@ export default function NuevoPedido() {
       return;
     }
 
+    if (selectedPaymentMethod === 'payphone' && !isPayPhoneConfigured()) {
+      setError('Payphone no está configurado. Añade VITE_PAYPHONE_CHECKOUT_URL para habilitar este método.');
+      return;
+    }
+
     setError('');
-    setStep(selectedPaymentMethod === 'transferencia' ? 'voucher' : 'done');
+    setStep('done');
   }
 
   async function handleSubmitFinal() {
@@ -714,7 +722,7 @@ export default function NuevoPedido() {
                         }
                         window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
                         setError('');
-                        setStep('voucher');
+                        setStep('done');
                       }}
                       className="w-full rounded-xl bg-[#1A4E26] text-white font-bold py-3 hover:bg-[#163F1E] transition-colors"
                     >
@@ -902,11 +910,13 @@ export default function NuevoPedido() {
                   onClick={handleAcceptPayment}
                   className="w-full py-4 rounded-xl bg-[#1A4E26] text-white font-bold text-sm hover:bg-[#163F1E] shadow-[0_8px_24px_rgba(26,78,38,0.25)] transition-all duration-200 flex items-center justify-center gap-2"
                 >
-                  Aceptar y subir voucher <ArrowRight size={15} />
+                  {selectedPaymentMethod === 'transferencia' ? 'Aceptar y subir voucher' : 'Aceptar y continuar'} <ArrowRight size={15} />
                 </button>
 
                 <p className="text-[10px] text-[#9CA3AF] text-center leading-tight">
-                  Tras aceptar podrás subir la foto del voucher. El pedido se enviará al admin solo cuando subas el comprobante.
+                  {selectedPaymentMethod === 'transferencia'
+                    ? 'Tras aceptar podrás subir la foto del voucher. El pedido se enviará al admin solo cuando subas el comprobante.'
+                    : 'La pasarela elegida abrirá el pago externo. Cuando el pago quede confirmado, el pedido seguirá adelante sin pedir comprobante manual.'}
                 </p>
               </div>
             </div>
