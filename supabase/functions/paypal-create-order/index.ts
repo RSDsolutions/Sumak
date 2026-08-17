@@ -8,36 +8,42 @@ const PAYPAL_CLIENT_ID = Deno.env.get("PAYPAL_CLIENT_ID") ?? "";
 const PAYPAL_CLIENT_SECRET = Deno.env.get("PAYPAL_CLIENT_SECRET") ?? "";
 const PAYPAL_BASE_URL = Deno.env.get("PAYPAL_BASE_URL") ?? "https://api-m.paypal.com";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("Origin") ?? "*";
+  const allowOrigin = origin === "null" ? "*" : origin;
 
-function jsonResponse(body: unknown, status = 200): Response {
+  return {
+    "Access-Control-Allow-Origin": allowOrigin,
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Max-Age": "86400",
+  };
+}
+
+function jsonResponse(req: Request, body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
   });
 }
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: getCorsHeaders(req) });
   }
 
   if (req.method !== "POST") {
-    return jsonResponse({ error: "Method not allowed" }, 405);
+    return jsonResponse(req, { error: "Method not allowed" }, 405);
   }
 
   const authHeader = req.headers.get("Authorization") ?? "";
   if (!authHeader.startsWith("Bearer ")) {
-    return jsonResponse({ error: "Falta Authorization: Bearer <jwt>" }, 401);
+    return jsonResponse(req, { error: "Falta Authorization: Bearer <jwt>" }, 401);
   }
 
   const jwt = authHeader.slice("Bearer ".length).trim();
   if (!jwt) {
-    return jsonResponse({ error: "Token invalido" }, 401);
+    return jsonResponse(req, { error: "Token invalido" }, 401);
   }
 
   const supabaseAnon = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -46,14 +52,14 @@ Deno.serve(async (req: Request) => {
 
   const { data: userData, error: userError } = await supabaseAnon.auth.getUser(jwt);
   if (userError || !userData?.user) {
-    return jsonResponse({ error: "Token invalido o expirado" }, 401);
+    return jsonResponse(req, { error: "Token invalido o expirado" }, 401);
   }
 
   let payload: { orderId?: string; amount?: number | string; currency?: string; description?: string };
   try {
     payload = await req.json();
   } catch {
-    return jsonResponse({ error: "Body JSON invalido" }, 400);
+    return jsonResponse(req, { error: "Body JSON invalido" }, 400);
   }
 
   const orderId = String(payload.orderId ?? "").trim();
@@ -62,12 +68,11 @@ Deno.serve(async (req: Request) => {
   const description = String(payload.description ?? "Compra Sumak").trim();
 
   if (!orderId || !Number.isFinite(amount) || amount <= 0) {
-    return jsonResponse({ error: "Faltan orderId o amount valido" }, 400);
+    return jsonResponse(req, { error: "Faltan orderId o amount valido" }, 400);
   }
 
   if (!PAYPAL_CLIENT_ID || !PAYPAL_CLIENT_SECRET) {
-    return jsonResponse(
-      {
+    return jsonResponse(req, {
         error: "PayPal no configurado. Define PAYPAL_CLIENT_ID y PAYPAL_CLIENT_SECRET en Supabase Secrets.",
       },
       500,
@@ -85,12 +90,12 @@ Deno.serve(async (req: Request) => {
 
   const tokenJson = await tokenResponse.json().catch(() => ({}));
   if (!tokenResponse.ok) {
-    return jsonResponse({ error: tokenJson?.error_description ?? "No se pudo autenticar con PayPal" }, tokenResponse.status);
+    return jsonResponse(req, { error: tokenJson?.error_description ?? "No se pudo autenticar con PayPal" }, tokenResponse.status);
   }
 
   const accessToken = String(tokenJson?.access_token ?? "").trim();
   if (!accessToken) {
-    return jsonResponse({ error: "PayPal no devolvio access_token" }, 502);
+    return jsonResponse(req, { error: "PayPal no devolvio access_token" }, 502);
   }
 
   const orderResponse = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders`, {
@@ -120,7 +125,7 @@ Deno.serve(async (req: Request) => {
 
   const orderJson = await orderResponse.json().catch(() => ({}));
   if (!orderResponse.ok) {
-    return jsonResponse({ error: orderJson?.message ?? "No se pudo crear la orden de PayPal" }, orderResponse.status);
+    return jsonResponse(req, { error: orderJson?.message ?? "No se pudo crear la orden de PayPal" }, orderResponse.status);
   }
 
   const approvalUrl = (orderJson?.links ?? []).find((link: Record<string, string>) => link.rel === "approve")?.href ?? null;
@@ -148,7 +153,7 @@ Deno.serve(async (req: Request) => {
 
   await supabaseAdmin.from("pagos").insert(paymentRow);
 
-  return jsonResponse({
+  return jsonResponse(req, {
     orderId: orderJson?.id ?? null,
     approvalUrl,
     status: "processing",

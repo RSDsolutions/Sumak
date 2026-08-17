@@ -28,36 +28,42 @@ function buildPayphoneHeaders() {
   return headers;
 }
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("Origin") ?? "*";
+  const allowOrigin = origin === "null" ? "*" : origin;
 
-function jsonResponse(body: unknown, status = 200): Response {
+  return {
+    "Access-Control-Allow-Origin": allowOrigin,
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Max-Age": "86400",
+  };
+}
+
+function jsonResponse(req: Request, body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
   });
 }
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: getCorsHeaders(req) });
   }
 
   if (req.method !== "POST") {
-    return jsonResponse({ error: "Method not allowed" }, 405);
+    return jsonResponse(req, { error: "Method not allowed" }, 405);
   }
 
   const authHeader = req.headers.get("Authorization") ?? "";
   if (!authHeader.startsWith("Bearer ")) {
-    return jsonResponse({ error: "Falta Authorization: Bearer <jwt>" }, 401);
+    return jsonResponse(req, { error: "Falta Authorization: Bearer <jwt>" }, 401);
   }
 
   const jwt = authHeader.slice("Bearer ".length).trim();
   if (!jwt) {
-    return jsonResponse({ error: "Token invalido" }, 401);
+    return jsonResponse(req, { error: "Token invalido" }, 401);
   }
 
   const supabaseAnon = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -66,7 +72,7 @@ Deno.serve(async (req: Request) => {
 
   const { data: userData, error: userError } = await supabaseAnon.auth.getUser(jwt);
   if (userError || !userData?.user) {
-    return jsonResponse({ error: "Token invalido o expirado" }, 401);
+    return jsonResponse(req, { error: "Token invalido o expirado" }, 401);
   }
 
   const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
@@ -84,7 +90,7 @@ Deno.serve(async (req: Request) => {
   try {
     payload = await req.json();
   } catch {
-    return jsonResponse({ error: "Body JSON invalido" }, 400);
+    return jsonResponse(req, { error: "Body JSON invalido" }, 400);
   }
 
   const orderId = String(payload.orderId ?? "").trim();
@@ -93,12 +99,11 @@ Deno.serve(async (req: Request) => {
   const description = String(payload.description ?? "Compra Sumak").trim();
 
   if (!orderId || !Number.isFinite(amount) || amount <= 0) {
-    return jsonResponse({ error: "Faltan orderId o amount valido" }, 400);
+    return jsonResponse(req, { error: "Faltan orderId o amount valido" }, 400);
   }
 
   if (!PAYPHONE_TOKEN && (!PAYPHONE_CLIENT_ID || !PAYPHONE_SECRET_KEY)) {
-    return jsonResponse(
-      {
+    return jsonResponse(req, {
         error: "Payphone no configurado. Define PAYPHONE_TOKEN o PAYPHONE_CLIENT_ID + PAYPHONE_SECRET_KEY en Supabase Secrets.",
       },
       500,
@@ -106,8 +111,7 @@ Deno.serve(async (req: Request) => {
   }
 
   if (!PAYPHONE_STORE_ID) {
-    return jsonResponse(
-      {
+    return jsonResponse(req, {
         error: "Payphone no configurado. Define PAYPHONE_STORE_ID en Supabase Secrets para crear links de pago.",
       },
       500,
@@ -139,7 +143,7 @@ Deno.serve(async (req: Request) => {
     .single();
 
   if (insertError || !inserted) {
-    return jsonResponse({ error: `No se pudo crear el registro de pago: ${insertError?.message ?? "desconocido"}` }, 500);
+    return jsonResponse(req, { error: `No se pudo crear el registro de pago: ${insertError?.message ?? "desconocido"}` }, 500);
   }
 
   const appUrl = (Deno.env.get("APP_URL") ?? "http://localhost:3000").replace(/\/$/, "");
@@ -190,8 +194,7 @@ Deno.serve(async (req: Request) => {
       })
       .eq("id", inserted.id);
 
-    return jsonResponse(
-      {
+    return jsonResponse(req, {
         error: providerJson?.message ?? "Payphone rechazó la creación del pago",
       },
       providerResponse.status,
@@ -225,7 +228,7 @@ Deno.serve(async (req: Request) => {
     })
     .eq("id", inserted.id);
 
-  return jsonResponse({
+  return jsonResponse(req, {
     paymentId: inserted.id,
     transactionId: providerTransactionId || null,
     redirectUrl: redirectUrl || null,
