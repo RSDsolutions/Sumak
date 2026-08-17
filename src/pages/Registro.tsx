@@ -174,7 +174,12 @@ export default function Registro() {
   const [searchParams] = useSearchParams();
   const refParam = searchParams.get('ref')?.trim() ?? '';
   const checkoutParam = searchParams.get('checkout');
+  const initialCheckoutMethod = (() => {
+    const method = checkoutParam?.toLowerCase();
+    return method === 'paypal' || method === 'payphone' || method === 'transferencia' ? method : 'transferencia';
+  })();
   const [step, setStep] = useState<Step>(1);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>(initialCheckoutMethod);
   const [personal, setPersonal] = useState<PersonalData>({
     nombre: '', username: '', cedula: '', email: '', telefono: '', direccion: '', ciudad: '',
     patrocinador: refParam ? refParam.toUpperCase() : '',
@@ -235,10 +240,9 @@ export default function Registro() {
     cedulaFrente: null, cedulaReverso: null, planilla: null, voucher: null,
   });
   const [selectedPkg, setSelectedPkg] = useState<string>('');
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('transferencia');
 
   useEffect(() => {
-    const checkoutMethod = checkoutParam;
+    const checkoutMethod = checkoutParam?.toLowerCase();
     if (checkoutMethod === 'paypal' || checkoutMethod === 'payphone' || checkoutMethod === 'transferencia') {
       setSelectedPaymentMethod(checkoutMethod);
     }
@@ -545,6 +549,16 @@ export default function Registro() {
                   <p className="text-[#6B7280] text-sm">
                     Completa estos 3 pasos y empieza tu camino con SUMAK.
                   </p>
+                  {checkoutParam && (
+                    <div className="mt-4 rounded-xl border border-[#D1FAE5] bg-[#ECFDF5] px-4 py-3 text-left">
+                      <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#166534]">
+                        Compra con {selectedPaymentMethod === 'payphone' ? 'PayPhone' : selectedPaymentMethod === 'paypal' ? 'PayPal' : 'transferencia'}
+                      </p>
+                      <p className="mt-1 text-sm text-[#14532D]">
+                        Te estás registrando para finalizar tu compra con {selectedPaymentMethod === 'payphone' ? 'PayPhone' : selectedPaymentMethod === 'paypal' ? 'PayPal' : 'transferencia'}.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
