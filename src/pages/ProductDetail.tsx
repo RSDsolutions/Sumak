@@ -13,13 +13,7 @@ import { useProducts } from '../lib/productos';
 import { useAuth } from '../lib/auth';
 import { useCart } from '../lib/cart';
 import { useToast } from '../lib/toast';
-import {
-  getPayPhoneCheckoutUrl,
-  isPayPalConfigured,
-  isPayPhoneConfigured,
-  isStripeConfigured,
-  getStripeCheckoutUrl,
-} from '../lib/payments';
+import { getPayPhoneCheckoutUrl, isPayPalConfigured, isPayPhoneConfigured } from '../lib/payments';
 
 type TabKey = 'beneficios' | 'ingredientes' | 'modo-uso' | 'precauciones';
 
@@ -147,20 +141,6 @@ export default function ProductDetail() {
       return;
     }
 
-    if (selectedPaymentMethod === 'stripe') {
-      if (!isStripeConfigured()) {
-        toast.error('Stripe aún no está configurado para pagos online en este momento.');
-        return;
-      }
-
-      const stripeUrl = getStripeCheckoutUrl();
-      if (stripeUrl) {
-        window.open(stripeUrl, '_blank', 'noopener,noreferrer');
-        return;
-      }
-
-      navigate(user ? '/dashboard/pedido/nuevo' : '/registro');
-    }
   };
 
   return (
@@ -465,7 +445,7 @@ export default function ProductDetail() {
                         className="w-full py-4 rounded-2xl bg-[#1A4E26] text-white font-bold text-base flex items-center justify-center gap-2 hover:bg-[#163F1E] shadow-[0_8px_24px_rgba(26,78,38,0.3)] transition-all duration-200"
                       >
                         <ShoppingBag size={18} />
-                        Continuar con {selectedPaymentMethod === 'whatsapp' ? 'WhatsApp' : selectedPaymentMethod === 'paypal' ? 'PayPal' : selectedPaymentMethod === 'stripe' ? 'Stripe' : 'Transferencia'}
+                        Continuar con {selectedPaymentMethod === 'whatsapp' ? 'WhatsApp' : selectedPaymentMethod === 'paypal' ? 'PayPal' : 'Transferencia'}
                       </button>
 
                       <button

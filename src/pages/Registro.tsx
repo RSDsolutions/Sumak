@@ -771,7 +771,7 @@ export default function Registro() {
                         <div className="flex items-start gap-2.5 bg-[#EBF4ED] border border-[#1A4E26]/15 rounded-xl px-4 py-3 mb-4">
                           <CheckCircle2 size={16} className="text-[#1A4E26] shrink-0 mt-0.5" />
                           <p className="text-[#1A4E26] text-xs leading-relaxed">
-                            Para {selectedPaymentMethod === 'payphone' ? 'Payphone' : selectedPaymentMethod === 'paypal' ? 'PayPal' : 'Stripe'}, tu pago se realizará
+                            Para {selectedPaymentMethod === 'payphone' ? 'Payphone' : 'PayPal'}, tu pago se realizará
                             online y no necesitarás subir un voucher al final del proceso.
                           </p>
                         </div>

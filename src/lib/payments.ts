@@ -1,4 +1,4 @@
-export type PaymentMethod = 'transferencia' | 'payphone' | 'paypal' | 'stripe';
+export type PaymentMethod = 'transferencia' | 'payphone' | 'paypal';
 
 export const paymentMethodOptions: Array<{
   value: PaymentMethod;
@@ -13,17 +13,12 @@ export const paymentMethodOptions: Array<{
   {
     value: 'payphone',
     label: 'Payphone',
-    description: 'Paga de forma segura con tarjeta o saldo disponible en Payphone.',
+    description: 'Paga con tarjeta, saldo o link seguro de Payphone.',
   },
   {
     value: 'paypal',
     label: 'PayPal',
     description: 'Pago seguro con PayPal para compras rápidas y verificables.',
-  },
-  {
-    value: 'stripe',
-    label: 'Stripe',
-    description: 'Pago con tarjeta u otros métodos habilitados en Stripe.',
   },
 ];
 
@@ -43,17 +38,11 @@ export function isPayPalConfigured() {
   return Boolean(getPayPalClientId());
 }
 
-export function getStripePublishableKey() {
-  return (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ?? '').trim();
-}
-
-export function getStripeCheckoutUrl() {
-  return (
-    (import.meta.env.VITE_STRIPE_CHECKOUT_URL ?? import.meta.env.VITE_STRIPE_PAYMENT_LINK ?? '')
-      .trim()
-  );
-}
-
-export function isStripeConfigured() {
-  return Boolean(getStripePublishableKey() || getStripeCheckoutUrl());
+export function getAvailablePaymentMethods() {
+  return paymentMethodOptions.filter((method) => {
+    if (method.value === 'transferencia') return true;
+    if (method.value === 'payphone') return isPayPhoneConfigured();
+    if (method.value === 'paypal') return isPayPalConfigured();
+    return false;
+  });
 }

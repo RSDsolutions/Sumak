@@ -17,10 +17,8 @@ import {
   type PaymentMethod,
   getPayPalClientId,
   getPayPhoneCheckoutUrl,
-  getStripeCheckoutUrl,
   isPayPalConfigured,
   isPayPhoneConfigured,
-  isStripeConfigured,
   paymentMethodOptions,
 } from '../../lib/payments';
 
@@ -244,11 +242,6 @@ export default function NuevoPedido() {
 
     if (selectedPaymentMethod === 'paypal' && !isPayPalConfigured()) {
       setError('PayPal no está configurado. Añade VITE_PAYPAL_CLIENT_ID para habilitar este método.');
-      return;
-    }
-
-    if (selectedPaymentMethod === 'stripe' && !isStripeConfigured()) {
-      setError('Stripe no está configurado. Añade VITE_STRIPE_PUBLISHABLE_KEY o VITE_STRIPE_CHECKOUT_URL para habilitar este método.');
       return;
     }
 
@@ -495,7 +488,11 @@ export default function NuevoPedido() {
                       {selectedPaymentMethod === 'transferencia' ? 'Banco destino' : 'Método de pago'}
                     </span>
                     <span className="text-[#111111] font-semibold">
-                      {selectedPaymentMethod === 'transferencia' ? selectedBanco : selectedPaymentMethod === 'paypal' ? 'PayPal' : 'Stripe'}
+                      {selectedPaymentMethod === 'transferencia'
+                        ? selectedBanco
+                        : selectedPaymentMethod === 'paypal'
+                          ? 'PayPal'
+                          : 'Payphone'}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
@@ -676,8 +673,7 @@ export default function NuevoPedido() {
                   const enabled =
                     method.value === 'transferencia' ||
                     (method.value === 'payphone' && isPayPhoneConfigured()) ||
-                    (method.value === 'paypal' && isPayPalConfigured()) ||
-                    (method.value === 'stripe' && isStripeConfigured());
+                    (method.value === 'paypal' && isPayPalConfigured());
                   const selected = selectedPaymentMethod === method.value;
 
                   return (
@@ -730,27 +726,6 @@ export default function NuevoPedido() {
                 {selectedPaymentMethod === 'paypal' && isPayPalConfigured() && (
                   <div className="rounded-2xl border border-[#C8D8CB] bg-[#F4F7F5] p-4">
                     <div ref={paypalButtonContainerRef} className="min-h-[56px]" />
-                  </div>
-                )}
-
-                {selectedPaymentMethod === 'stripe' && isStripeConfigured() && (
-                  <div className="rounded-2xl border border-[#C8D8CB] bg-[#F4F7F5] p-4">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const checkoutUrl = getStripeCheckoutUrl();
-                        if (!checkoutUrl) {
-                          setError('Stripe no está configurado para pagos directos. Añade VITE_STRIPE_CHECKOUT_URL o VITE_STRIPE_PAYMENT_LINK.');
-                          return;
-                        }
-                        window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
-                        setError('');
-                        setStep('voucher');
-                      }}
-                      className="w-full rounded-xl bg-[#635bff] text-white font-bold py-3 hover:bg-[#4f46e5] transition-colors"
-                    >
-                      Pagar con Stripe
-                    </button>
                   </div>
                 )}
 
