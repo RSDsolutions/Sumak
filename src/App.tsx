@@ -121,7 +121,44 @@ function RouteFallback() {
   );
 }
 
+function isMaintenanceModeEnabled(value: string | boolean | undefined) {
+  return value === true || value === 'true' || value === '1';
+}
+
+function MaintenanceScreen() {
+  return (
+    <div className="min-h-screen bg-[#09150F] text-white flex items-center justify-center px-6 py-12">
+      <div className="w-full max-w-xl rounded-[28px] border border-white/10 bg-white/5 p-8 text-center shadow-2xl shadow-[#0a2017]/40 backdrop-blur-md">
+        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-[#7EE7B0]/40 bg-[#1A4E26]/70 text-lg font-black tracking-[0.25em] text-[#EAFBF1]">
+          SUMAK
+        </div>
+
+        <p className="mb-4 text-xs font-semibold uppercase tracking-[0.35em] text-[#7EE7B0]">
+          Mantenimiento
+        </p>
+        <h1 className="text-3xl font-black tracking-tight text-white md:text-4xl">
+          Estamos realizando ajustes
+        </h1>
+        <p className="mt-5 text-base text-[#D7E9DF] md:text-lg">
+          La plataforma principal está temporalmente deshabilitada mientras terminamos tareas
+          importantes. Pronto volveremos a estar disponibles.
+        </p>
+
+        <div className="mt-8 rounded-2xl border border-[#7EE7B0]/20 bg-[#10261b] px-5 py-4 text-sm text-[#EAFBF1]">
+          Gracias por tu paciencia. La preview sigue disponible para seguir trabajando en los cambios.
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
+  const isMaintenanceMode = isMaintenanceModeEnabled(import.meta.env.VITE_MAINTENANCE_MODE);
+
+  if (isMaintenanceMode) {
+    return <MaintenanceScreen />;
+  }
+
   return (
     <BrowserRouter>
       <AuthProvider>
