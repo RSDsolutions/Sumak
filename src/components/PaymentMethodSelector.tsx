@@ -13,8 +13,8 @@ interface PaymentMethodSelectorProps {
 
 const optionIcons = {
   transferencia: Landmark,
+  payphone: Wallet,
   paypal: CreditCard,
-  stripe: Wallet,
   whatsapp: MessageCircle,
 } as const;
 

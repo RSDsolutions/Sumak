@@ -173,6 +173,7 @@ export default function Registro() {
 
   const [searchParams] = useSearchParams();
   const refParam = searchParams.get('ref')?.trim() ?? '';
+  const checkoutParam = searchParams.get('checkout');
   const [step, setStep] = useState<Step>(1);
   const [personal, setPersonal] = useState<PersonalData>({
     nombre: '', username: '', cedula: '', email: '', telefono: '', direccion: '', ciudad: '',
@@ -235,6 +236,14 @@ export default function Registro() {
   });
   const [selectedPkg, setSelectedPkg] = useState<string>('');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('transferencia');
+
+  useEffect(() => {
+    const checkoutMethod = checkoutParam;
+    if (checkoutMethod === 'paypal' || checkoutMethod === 'payphone' || checkoutMethod === 'transferencia') {
+      setSelectedPaymentMethod(checkoutMethod);
+    }
+  }, [checkoutParam]);
+
   const [submitting, setSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
   const [submitError, setSubmitError] = useState('');
@@ -281,6 +290,11 @@ export default function Registro() {
 
     if (selectedPaymentMethod === 'transferencia' && !files.voucher) {
       setSubmitError('Debes subir el voucher de pago para completar la transferencia bancaria.');
+      return;
+    }
+
+    if (selectedPaymentMethod !== 'transferencia' && !['paypal', 'payphone'].includes(selectedPaymentMethod)) {
+      setSubmitError('Selecciona un método de pago válido antes de continuar.');
       return;
     }
 
@@ -771,7 +785,7 @@ export default function Registro() {
                         <div className="flex items-start gap-2.5 bg-[#EBF4ED] border border-[#1A4E26]/15 rounded-xl px-4 py-3 mb-4">
                           <CheckCircle2 size={16} className="text-[#1A4E26] shrink-0 mt-0.5" />
                           <p className="text-[#1A4E26] text-xs leading-relaxed">
-                            Para {selectedPaymentMethod === 'paypal' ? 'PayPal' : 'Stripe'}, tu pago se realizará
+                            Para {selectedPaymentMethod === 'payphone' ? 'Payphone' : 'PayPal'}, tu pago se realizará
                             online y no necesitarás subir un voucher al final del proceso.
                           </p>
                         </div>

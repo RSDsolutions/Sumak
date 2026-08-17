@@ -29,12 +29,19 @@ export const supabase = createClient(url, anonKey);
  * Lanza si la respuesta no es 2xx — el caller debe try/catch.
  */
 export async function callEdgeFunction<TResp = unknown>(
-  name: 'approve-afiliacion' | 'sign-voucher-url' | 'admin-staff-update',
+  name:
+    | 'approve-afiliacion'
+    | 'sign-voucher-url'
+    | 'admin-staff-update'
+    | 'payphone-create-payment'
+    | 'payphone-confirm-payment'
+    | 'paypal-create-order'
+    | 'paypal-capture-order',
   body: Record<string, unknown>,
 ): Promise<TResp> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) {
-    throw new Error('Tu sesion ha expirado. Cierra sesion y vuelve a entrar.');
+    throw new Error('Debes iniciar sesión o completar tu registro antes de continuar con el pago.');
   }
   const res = await fetch(`${url}/functions/v1/${name}`, {
     method: 'POST',

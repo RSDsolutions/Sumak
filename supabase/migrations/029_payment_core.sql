@@ -1,4 +1,4 @@
--- Centralized payment ledger for bank transfer, PayPal, Stripe and future provider integrations.
+-- Centralized payment ledger for bank transfer, PayPal, Payphone and future provider integrations.
 -- This table is the source-of-truth for transaction_id, provider, status and amounts.
 -- The frontend must never write to this table directly; server-side processes (Edge Functions / admin jobs)
 -- are responsible for creating and verifying records.
@@ -8,8 +8,8 @@ create table if not exists public.pagos (
   user_id uuid not null references public.profiles(id) on delete cascade,
   pedido_id uuid references public.pedidos(id) on delete set null,
   afiliacion_id uuid references public.afiliaciones(id) on delete set null,
-  provider text not null check (provider in ('payphone', 'paypal', 'stripe', 'bank_transfer')),
-  payment_method text not null check (payment_method in ('payphone', 'paypal', 'stripe', 'bank_transfer')),
+  provider text not null check (provider in ('payphone', 'paypal', 'bank_transfer')),
+  payment_method text not null check (payment_method in ('payphone', 'paypal', 'bank_transfer')),
   transaction_id text,
   amount numeric(10,2) not null check (amount >= 0),
   currency text not null default 'USD',
@@ -71,7 +71,7 @@ for each row
 execute function public.set_pagos_updated_at();
 
 comment on table public.pagos is 'Central payment ledger for all Sumak payment methods. The client should never mark orders paid; server-side verification is required.';
-comment on column public.pagos.provider is 'Provider used by the payment gateway (paypal, stripe, bank_transfer, payphone).';
+comment on column public.pagos.provider is 'Provider used by the payment gateway (paypal, bank_transfer, payphone).';
 comment on column public.pagos.payment_method is 'Frontend-facing payment method shown to users (same values as provider for current integrations).';
 comment on column public.pagos.transaction_id is 'External idempotency key or gateway transaction reference used to prevent duplicate payments.';
 comment on column public.pagos.metadata is 'Additional provider metadata such as order id, redirect url, capture result, etc.';

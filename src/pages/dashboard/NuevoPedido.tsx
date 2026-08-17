@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
   ShoppingCart, Plus, Minus, X, CheckCircle2, AlertCircle, TrendingUp,
@@ -16,11 +16,12 @@ import { logger } from '../../lib/logger';
 import {
   type PaymentMethod,
   getPayPalClientId,
-  getStripeCheckoutUrl,
+  getPayPhoneCheckoutUrl,
   isPayPalConfigured,
-  isStripeConfigured,
+  isPayPhoneConfigured,
   paymentMethodOptions,
 } from '../../lib/payments';
+import { callEdgeFunction } from '../../lib/supabase';
 
 type Step = 'cart' | 'pay' | 'voucher' | 'done';
 
@@ -37,6 +38,7 @@ function formatMMSS(s: number) {
 export default function NuevoPedido() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { items, setQty, removeItem, clear, subtotal, savings, puntos } = useCart();
   const [step, setStep] = useState<Step>('cart');
   const [submitting, setSubmitting] = useState(false);
@@ -50,6 +52,13 @@ export default function NuevoPedido() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('transferencia');
   const [selectedBanco, setSelectedBanco] = useState<string>('');
   const [voucherNumero, setVoucherNumero] = useState('');
+
+  useEffect(() => {
+    const paymentParam = searchParams.get('payment');
+    if (paymentParam === 'paypal' || paymentParam === 'payphone' || paymentParam === 'transferencia') {
+      setSelectedPaymentMethod(paymentParam);
+    }
+  }, [searchParams]);
   const [copiedField, setCopiedField] = useState<string>('');
   const paypalButtonContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -183,7 +192,7 @@ export default function NuevoPedido() {
             const details = await actions.order.capture();
             logger.info('PayPal approved', { data, details });
             setError('');
-            setStep('voucher');
+            setStep('done');
           },
           onError: () => {
             setError('No pudimos iniciar el pago con PayPal. Verifica la configuración del cliente y vuelve a intentarlo.');
@@ -205,6 +214,33 @@ export default function NuevoPedido() {
       cancelled = true;
     };
   }, [step, selectedPaymentMethod, total]);
+
+  function openExternalCheckout(url: string) {
+    const safeUrl = url.trim();
+    if (!safeUrl) {
+      setError('La URL de pago no está disponible en este momento. Verifica la configuración del proveedor antes de continuar.');
+      return;
+    }
+
+    const newTab = window.open(safeUrl, '_blank', 'noopener,noreferrer');
+    if (newTab) {
+      newTab.opener = null;
+      return;
+    }
+
+    const anchor = document.createElement('a');
+    anchor.href = safeUrl;
+    anchor.target = '_blank';
+    anchor.rel = 'noopener noreferrer';
+    anchor.style.display = 'none';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+
+    if (document.hasFocus()) {
+      window.location.href = safeUrl;
+    }
+  }
 
   function onVoucherFile(file: File) {
     if (file.size > 5 * 1024 * 1024) {
@@ -228,7 +264,7 @@ export default function NuevoPedido() {
     }
   }
 
-  function handleAcceptPayment() {
+  async function handleAcceptPayment() {
     if (selectedPaymentMethod === 'transferencia') {
       if (!selectedBanco) {
         setError('Selecciona el banco al que realizaste la transferencia.');
@@ -238,20 +274,69 @@ export default function NuevoPedido() {
         setError('Ingresa el número de comprobante de la transferencia (mínimo 4 caracteres).');
         return;
       }
-    }
-
-    if (selectedPaymentMethod === 'paypal' && !isPayPalConfigured()) {
-      setError('PayPal no está configurado. Añade VITE_PAYPAL_CLIENT_ID para habilitar este método.');
+      setError('');
+      setStep('voucher');
       return;
     }
 
-    if (selectedPaymentMethod === 'stripe' && !isStripeConfigured()) {
-      setError('Stripe no está configurado. Añade VITE_STRIPE_PUBLISHABLE_KEY o VITE_STRIPE_CHECKOUT_URL para habilitar este método.');
+    if (selectedPaymentMethod === 'paypal') {
+      if (!user) {
+        setError('Debes iniciar sesión o completar tu registro antes de pagar con PayPal.');
+        navigate('/login');
+        return;
+      }
+
+      if (!isPayPalConfigured()) {
+        setError('PayPal no está configurado. Añade VITE_PAYPAL_CLIENT_ID con un Client ID válido para habilitar este método.');
+        return;
+      }
+      setError('Completa el pago con PayPal desde el botón que aparece abajo y después vuelve a confirmar el pedido.');
+      return;
+    }
+
+    if (selectedPaymentMethod === 'payphone') {
+      if (!user) {
+        setError('Debes iniciar sesión o completar tu registro antes de pagar con Payphone.');
+        navigate('/login');
+        return;
+      }
+
+      if (!isPayPhoneConfigured()) {
+        setError('Payphone no está configurado. Revisa la configuración del backend antes de continuar.');
+        return;
+      }
+
+      try {
+        setError('');
+        setSubmitting(true);
+
+        const response = await callEdgeFunction<{ redirectUrl?: string; error?: string; paymentId?: string }>(
+          'payphone-create-payment',
+          {
+            orderId: `pedido-${Date.now()}-${user.id.slice(0, 8)}`,
+            amount: Number(total.toFixed(2)),
+            currency: 'USD',
+            description: `Compra Sumak - ${items.map((item) => item.nombre).join(', ')}`.slice(0, 180),
+          }
+        );
+
+        const checkoutUrl = response?.redirectUrl || getPayPhoneCheckoutUrl();
+        if (!checkoutUrl) {
+          throw new Error(response?.error ?? 'Payphone no devolvió una URL válida.');
+        }
+
+        openExternalCheckout(checkoutUrl);
+        setError('Se abrió Payphone en otra pestaña. Completa el pago y luego vuelve aquí para confirmar tu pedido.');
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'No pudimos iniciar el pago con Payphone.';
+        setError(message);
+      } finally {
+        setSubmitting(false);
+      }
       return;
     }
 
     setError('');
-    setStep(selectedPaymentMethod === 'transferencia' ? 'voucher' : 'done');
   }
 
   async function handleSubmitFinal() {
@@ -493,7 +578,11 @@ export default function NuevoPedido() {
                       {selectedPaymentMethod === 'transferencia' ? 'Banco destino' : 'Método de pago'}
                     </span>
                     <span className="text-[#111111] font-semibold">
-                      {selectedPaymentMethod === 'transferencia' ? selectedBanco : selectedPaymentMethod === 'paypal' ? 'PayPal' : 'Stripe'}
+                      {selectedPaymentMethod === 'transferencia'
+                        ? selectedBanco
+                        : selectedPaymentMethod === 'paypal'
+                          ? 'PayPal'
+                          : 'Payphone'}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
@@ -673,8 +762,8 @@ export default function NuevoPedido() {
                 {paymentMethodOptions.map((method) => {
                   const enabled =
                     method.value === 'transferencia' ||
-                    (method.value === 'paypal' && isPayPalConfigured()) ||
-                    (method.value === 'stripe' && isStripeConfigured());
+                    (method.value === 'payphone' && isPayPhoneConfigured()) ||
+                    (method.value === 'paypal' && isPayPalConfigured());
                   const selected = selectedPaymentMethod === method.value;
 
                   return (
@@ -703,30 +792,22 @@ export default function NuevoPedido() {
                   );
                 })}
 
-                {selectedPaymentMethod === 'paypal' && isPayPalConfigured() && (
-                  <div className="rounded-2xl border border-[#C8D8CB] bg-[#F4F7F5] p-4">
-                    <div ref={paypalButtonContainerRef} className="min-h-[56px]" />
-                  </div>
-                )}
-
-                {selectedPaymentMethod === 'stripe' && isStripeConfigured() && (
+                {selectedPaymentMethod === 'payphone' && isPayPhoneConfigured() && (
                   <div className="rounded-2xl border border-[#C8D8CB] bg-[#F4F7F5] p-4">
                     <button
                       type="button"
-                      onClick={() => {
-                        const checkoutUrl = getStripeCheckoutUrl();
-                        if (!checkoutUrl) {
-                          setError('Stripe no está configurado para pagos directos. Añade VITE_STRIPE_CHECKOUT_URL o VITE_STRIPE_PAYMENT_LINK.');
-                          return;
-                        }
-                        window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
-                        setError('');
-                        setStep('voucher');
-                      }}
-                      className="w-full rounded-xl bg-[#635bff] text-white font-bold py-3 hover:bg-[#4f46e5] transition-colors"
+                      onClick={() => void handleAcceptPayment()}
+                      disabled={submitting}
+                      className="w-full rounded-xl bg-[#1A4E26] text-white font-bold py-3 hover:bg-[#163F1E] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      Pagar con Stripe
+                      {submitting ? 'Generando enlace de pago...' : 'Pagar con Payphone'}
                     </button>
+                  </div>
+                )}
+
+                {selectedPaymentMethod === 'paypal' && isPayPalConfigured() && (
+                  <div className="rounded-2xl border border-[#C8D8CB] bg-[#F4F7F5] p-4">
+                    <div ref={paypalButtonContainerRef} className="min-h-[56px]" />
                   </div>
                 )}
 
@@ -903,11 +984,13 @@ export default function NuevoPedido() {
                   onClick={handleAcceptPayment}
                   className="w-full py-4 rounded-xl bg-[#1A4E26] text-white font-bold text-sm hover:bg-[#163F1E] shadow-[0_8px_24px_rgba(26,78,38,0.25)] transition-all duration-200 flex items-center justify-center gap-2"
                 >
-                  Aceptar y subir voucher <ArrowRight size={15} />
+                  {selectedPaymentMethod === 'transferencia' ? 'Aceptar y subir voucher' : 'Aceptar y continuar'} <ArrowRight size={15} />
                 </button>
 
                 <p className="text-[10px] text-[#9CA3AF] text-center leading-tight">
-                  Tras aceptar podrás subir la foto del voucher. El pedido se enviará al admin solo cuando subas el comprobante.
+                  {selectedPaymentMethod === 'transferencia'
+                    ? 'Tras aceptar podrás subir la foto del voucher. El pedido se enviará al admin solo cuando subas el comprobante.'
+                    : 'La pasarela elegida abrirá el pago externo. Cuando el pago quede confirmado, el pedido seguirá adelante sin pedir comprobante manual.'}
                 </p>
               </div>
             </div>
