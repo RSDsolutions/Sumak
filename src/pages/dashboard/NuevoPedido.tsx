@@ -28,6 +28,60 @@ type Step = 'cart' | 'pay' | 'voucher' | 'done';
 
 // COD-002: ventana de pago viene del catálogo central del plan.
 const PAY_WINDOW_SECONDS = planConfig.payWindowMinutes * 60;
+const PENDING_EXTERNAL_CHECKOUT_KEY = 'sumak_pending_external_checkout_v1';
+
+type PendingExternalCheckout = {
+  provider: 'payphone' | 'paypal';
+  idempotencyKey: string;
+  notes: string | null;
+  createdAt: number;
+  items: Array<{
+    codigo: string;
+    nombre: string;
+    pvp: number;
+    precio: number;
+    cantidad: number;
+    packSelections?: Array<{ codigo: string; nombre: string; cantidad: number }>;
+  }>;
+};
+
+function persistPendingExternalCheckout(
+  provider: 'payphone' | 'paypal',
+  itemsSnapshot: Array<{
+    codigo: string;
+    nombre: string;
+    pvp: number;
+    precio: number;
+    cantidad: number;
+    packSelections?: Array<{ codigo: string; nombre: string; cantidad: number }>;
+  }>,
+  notesSnapshot: string,
+  idempotencyKey: string,
+) {
+  const payload: PendingExternalCheckout = {
+    provider,
+    idempotencyKey,
+    notes: notesSnapshot.trim() || null,
+    createdAt: Date.now(),
+    items: itemsSnapshot.map((item) => ({
+      codigo: item.codigo,
+      nombre: item.nombre,
+      pvp: item.pvp,
+      precio: item.precio,
+      cantidad: item.cantidad,
+      packSelections: item.packSelections?.map((selection) => ({
+        codigo: selection.codigo,
+        nombre: selection.nombre,
+        cantidad: selection.cantidad,
+      })),
+    })),
+  };
+  localStorage.setItem(PENDING_EXTERNAL_CHECKOUT_KEY, JSON.stringify(payload));
+}
+
+function clearPendingExternalCheckout() {
+  localStorage.removeItem(PENDING_EXTERNAL_CHECKOUT_KEY);
+}
 
 function formatMMSS(s: number) {
   if (s < 0) s = 0;
@@ -119,6 +173,7 @@ export default function NuevoPedido() {
       setSecondsLeft(remaining);
       if (remaining <= 0) {
         setError('Se agotó el tiempo para completar el pago. Por favor, vuelve al carrito y vuelve a intentarlo.');
+        clearPendingExternalCheckout();
         setStep('cart');
         setSelectedBanco('');
         setVoucherNumero('');
@@ -293,6 +348,8 @@ export default function NuevoPedido() {
         setError('PayPal no está configurado. Añade VITE_PAYPAL_CLIENT_ID con un Client ID válido para habilitar este método.');
         return;
       }
+
+      persistPendingExternalCheckout('paypal', items, notes, idempotencyKeyRef.current);
       setError('Completa el pago con PayPal desde el botón que aparece abajo y después vuelve a confirmar el pedido.');
       return;
     }
@@ -309,6 +366,7 @@ export default function NuevoPedido() {
         return;
       }
 
+      persistPendingExternalCheckout('payphone', items, notes, idempotencyKeyRef.current);
       setError('');
       return;
     }
@@ -415,6 +473,7 @@ export default function NuevoPedido() {
       // Éxito → limpiar carrito y mostrar pantalla final.
       if (total >= MIN_ACTIVACION) setCompraCalificada(true);
       setEarnedPuntos(puntos);
+      clearPendingExternalCheckout();
       clear();
       expiresAtRef.current = null;
       setStep('done');
@@ -719,7 +778,7 @@ export default function NuevoPedido() {
             </p>
           </div>
           <button
-            onClick={() => { setStep('cart'); setError(''); expiresAtRef.current = null; }}
+            onClick={() => { clearPendingExternalCheckout(); setStep('cart'); setError(''); expiresAtRef.current = null; }}
             className="inline-flex items-center gap-1.5 text-[#6B7280] text-sm font-semibold hover:text-[#1A4E26] transition-colors"
           >
             <ArrowLeft size={14} /> Volver al carrito

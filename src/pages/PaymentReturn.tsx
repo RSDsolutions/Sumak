@@ -1,16 +1,120 @@
+import { useEffect, useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
+import { useAuth } from '../lib/auth';
+import { useCart } from '../lib/cart';
+import { supabase } from '../lib/supabase';
+
+const PENDING_EXTERNAL_CHECKOUT_KEY = 'sumak_pending_external_checkout_v1';
+
+type PendingExternalCheckout = {
+  provider: 'payphone' | 'paypal';
+  idempotencyKey: string;
+  notes: string | null;
+  createdAt: number;
+  items: Array<{
+    codigo: string;
+    nombre: string;
+    pvp: number;
+    precio: number;
+    cantidad: number;
+    packSelections?: Array<{ codigo: string; nombre: string; cantidad: number }>;
+  }>;
+};
 
 export default function PaymentReturn() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
+  const { user } = useAuth();
+  const { clear } = useCart();
   const provider = searchParams.get('provider') ?? 'payphone';
   const status = searchParams.get('status') ?? searchParams.get('payment_status') ?? (location.pathname.includes('/cancel') ? 'cancelled' : 'success');
   const orderId = searchParams.get('orderId') ?? searchParams.get('reference') ?? '';
+  const [isFinalizing, setIsFinalizing] = useState(false);
+  const [finalError, setFinalError] = useState('');
 
   const providerLabel = provider === 'paypal' ? 'PayPal' : provider === 'payphone' ? 'Payphone' : 'Pago';
   const isSuccess = ['success', 'approved', 'completed', 'paid'].includes(status.toLowerCase());
   const isCancelled = ['cancel', 'cancelled', 'rejected', 'failed', 'error'].includes(status.toLowerCase());
+
+  useEffect(() => {
+    if (!isSuccess || !user || !['payphone', 'paypal'].includes(provider)) return;
+
+    const stored = localStorage.getItem(PENDING_EXTERNAL_CHECKOUT_KEY);
+    if (!stored) return;
+
+    let pending: PendingExternalCheckout | null = null;
+    try {
+      pending = JSON.parse(stored) as PendingExternalCheckout;
+    } catch {
+      localStorage.removeItem(PENDING_EXTERNAL_CHECKOUT_KEY);
+      return;
+    }
+
+    if (!pending || pending.provider !== provider) return;
+
+    let cancelled = false;
+
+    async function finalizePendingCheckout() {
+      setIsFinalizing(true);
+      setFinalError('');
+
+      try {
+        const itemsPayload = pending!.items.map((item) => {
+          const isPack = item.codigo.startsWith('PKG-');
+          const nombreFinal = isPack && item.packSelections && item.packSelections.length > 0
+            ? `${item.nombre} (incluye: ${item.packSelections.map((s) => `${s.cantidad}x ${s.nombre}`).join(', ')})`
+            : item.nombre;
+
+          return {
+            codigo: item.codigo,
+            nombre: nombreFinal,
+            cantidad: item.cantidad,
+            precio: item.precio,
+            pvp: item.pvp,
+          };
+        });
+
+        const { data: rpcResult, error: rpcError } = await supabase.rpc('submit_pedido', {
+          p_idempotency_key: pending!.idempotencyKey,
+          p_items: itemsPayload,
+          p_voucher_url: null,
+          p_voucher_numero: null,
+          p_banco_destino: null,
+          p_notas: pending!.notes ?? null,
+        });
+
+        if (rpcError) {
+          throw rpcError;
+        }
+
+        const result = rpcResult as { ok?: boolean; pedido_id?: string; duplicated?: boolean } | null;
+        if (!result?.ok) {
+          throw new Error('La confirmación del pago llegó, pero el pedido no pudo registrarse.');
+        }
+
+        if (!cancelled) {
+          localStorage.removeItem(PENDING_EXTERNAL_CHECKOUT_KEY);
+          clear();
+        }
+      } catch (error) {
+        if (!cancelled) {
+          const msg = error instanceof Error ? error.message : 'No se pudo registrar el pedido automáticamente.';
+          setFinalError(msg);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsFinalizing(false);
+        }
+      }
+    }
+
+    void finalizePendingCheckout();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [clear, isSuccess, provider, user]);
 
   return (
     <div className="min-h-screen bg-[#F4F7F5] flex items-center justify-center px-4 py-16">
@@ -30,6 +134,18 @@ export default function PaymentReturn() {
               ? `El pago con ${providerLabel} fue cancelado o no se completó.`
               : `Tu pago con ${providerLabel} está en proceso. Puedes volver a intentarlo o continuar más tarde.`}
         </p>
+
+        {isFinalizing && (
+          <div className="mt-5 rounded-2xl border border-[#E5E7EB] bg-[#F9FBFA] px-4 py-3 text-sm text-[#111111]">
+            Estamos registrando tu pedido, por favor espera unos segundos...
+          </div>
+        )}
+
+        {finalError && (
+          <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {finalError}
+          </div>
+        )}
 
         {orderId && (
           <div className="mt-5 rounded-2xl border border-[#E5E7EB] bg-[#F9FBFA] px-4 py-3 text-sm text-[#111111]">

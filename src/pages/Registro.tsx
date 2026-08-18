@@ -6,7 +6,7 @@ import {
   TrendingUp, Users, Wallet, ShieldCheck, Rocket, Heart, Award, Leaf,
   Landmark, Copy, Check, Info, MessageCircle, AlertTriangle, AtSign,
 } from 'lucide-react';
-import PaymentMethodSelector from '../components/PaymentMethodSelector';
+import PaymentMethodSelector, { type PaymentSelection } from '../components/PaymentMethodSelector';
 import { affiliatePackages, bankAccounts, contactInfo } from '../data';
 import { supabase } from '../lib/supabase';
 import { useSEO } from '../lib/seo';
@@ -179,7 +179,7 @@ export default function Registro() {
     return method === 'paypal' || method === 'payphone' || method === 'transferencia' ? method : 'transferencia';
   })();
   const [step, setStep] = useState<Step>(1);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>(initialCheckoutMethod);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentSelection>(initialCheckoutMethod);
   const [personal, setPersonal] = useState<PersonalData>({
     nombre: '', username: '', cedula: '', email: '', telefono: '', direccion: '', ciudad: '',
     patrocinador: refParam ? refParam.toUpperCase() : '',
