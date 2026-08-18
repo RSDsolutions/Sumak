@@ -391,7 +391,7 @@ export default function NuevoPedido() {
         return;
       }
 
-      persistPendingExternalCheckout('payphone', items, notes, idempotencyKeyRef.current);
+      persistPendingExternalCheckout('payphone', items, notes, payPhoneTransactionIdRef.current);
       setError('');
       return;
     }

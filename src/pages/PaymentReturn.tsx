@@ -29,7 +29,7 @@ export default function PaymentReturn() {
   const { clear } = useCart();
   const provider = searchParams.get('provider') ?? 'payphone';
   const status = searchParams.get('status') ?? searchParams.get('payment_status') ?? (location.pathname.includes('/cancel') ? 'cancelled' : 'success');
-  const orderId = searchParams.get('orderId') ?? searchParams.get('reference') ?? '';
+  const orderId = searchParams.get('orderId') ?? searchParams.get('id') ?? searchParams.get('reference') ?? '';
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [finalError, setFinalError] = useState('');
   const [pedidoId, setPedidoId] = useState<string | null>(null);
@@ -154,7 +154,7 @@ export default function PaymentReturn() {
     return () => {
       cancelled = true;
     };
-  }, [clear, isSuccess, orderId, provider, providerLabel, user]);
+  }, [clear, isSuccess, orderId, provider, providerLabel, searchParams, user]);
 
   if (isCancelled) {
     return (
