@@ -1,5 +1,4 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "npm:@supabase/supabase-js@2";
 
 const PAYPHONE_CLIENT_ID = Deno.env.get("PAYPHONE_CLIENT_ID") ?? "";
 const PAYPHONE_SECRET_KEY = Deno.env.get("PAYPHONE_SECRET_KEY") ?? "";
@@ -49,12 +48,7 @@ Deno.serve(async (req: Request) => {
   }
 
   if (req.method !== "POST") {
-    return jsonResponse(req, { error: "Method not allowed" }, 405);
-  }
-
-  const authHeader = req.headers.get("Authorization") ?? "";
-  if (!authHeader.startsWith("Bearer ")) {
-    return jsonResponse(req, { error: "Falta Authorization: Bearer <jwt>" }, 401);
+    return jsonResponse(req, { error: "Method not allowed", approved: false }, 405);
   }
 
   let payload: {
@@ -65,20 +59,21 @@ Deno.serve(async (req: Request) => {
   try {
     payload = await req.json();
   } catch {
-    return jsonResponse(req, { error: "Body JSON invalido" }, 400);
+    return jsonResponse(req, { error: "Body JSON invalido", approved: false }, 400);
   }
 
   const id = Number(payload.id ?? 0);
   const clientTxId = String(payload.clientTxId ?? "").trim();
 
   if (!id || !clientTxId) {
-    return jsonResponse(req, { error: "Faltan parámetros id o clientTxId" }, 400);
+    return jsonResponse(req, { error: "Faltan parámetros id o clientTxId", approved: false }, 200);
   }
 
   if (!PAYPHONE_TOKEN && (!PAYPHONE_CLIENT_ID || !PAYPHONE_SECRET_KEY)) {
     return jsonResponse(req, {
-      error: "Payphone no configurado en Supabase Secrets.",
-    }, 500);
+      error: "Payphone no está configurado en Supabase Secrets.",
+      approved: false
+    }, 200);
   }
 
   const verificationUrl = `${PAYPHONE_BASE_URL.replace(/\/$/, "")}/api/button/V2/Confirm`;
@@ -95,27 +90,36 @@ Deno.serve(async (req: Request) => {
 
     const verificationJson = await verificationResponse.json().catch(() => ({}));
     
-    if (!verificationResponse.ok) {
-      return jsonResponse(req, {
-        error: verificationJson?.message ?? "La transacción fue declinada o no pudo ser verificada.",
-        approved: false
-      }, verificationResponse.status);
-    }
+    // Si la respuesta no es 2xx o si transactionStatus no es Approved
+    const isApproved = verificationResponse.ok && (
+      verificationJson?.transactionStatus === "Approved" ||
+      verificationJson?.status === "Approved" ||
+      verificationJson?.statusCode === 3
+    );
 
-    const confirmed = Boolean(verificationJson?.transactionStatus === "Approved");
+    const transactionStatus = String(
+      verificationJson?.transactionStatus ||
+      verificationJson?.status ||
+      (isApproved ? "Approved" : "Declined")
+    );
+
+    const message = isApproved
+      ? "Pago confirmado con Payphone"
+      : (verificationJson?.message || "La transacción fue declinada por el banco o Payphone.");
 
     return jsonResponse(req, {
       id,
       clientTxId,
-      approved: confirmed,
-      status: verificationJson?.transactionStatus,
-      message: confirmed ? "Pago aprobado" : "Pago rechazado o pendiente",
+      approved: isApproved,
+      status: transactionStatus,
+      message,
       details: verificationJson
-    });
+    }, 200);
   } catch (err) {
     return jsonResponse(req, {
-      error: "Error de red al conectar con Payphone",
-      approved: false
-    }, 500);
+      error: "Error de conexión con los servidores de Payphone",
+      approved: false,
+      status: "Error"
+    }, 200);
   }
 });
