@@ -36,14 +36,18 @@ export const paymentMethodOptions: Array<{
   {
     value: 'payphone',
     label: 'Payphone',
-    description: 'Paga con tarjeta, saldo o link seguro de Payphone.',
+    description: 'Temporalmente no disponible.',
   },
   {
     value: 'paypal',
     label: 'PayPal',
-    description: 'Pago seguro con PayPal para compras rápidas y verificables.',
+    description: 'Temporalmente no disponible.',
   },
 ];
+
+export function isDigitalPaymentsEnabled() {
+  return false;
+}
 
 export function getPayPhoneCheckoutUrl() {
   return normalizeHttpUrl(import.meta.env.VITE_PAYPHONE_CHECKOUT_URL ?? '');
@@ -58,9 +62,7 @@ export function getPayPhoneStoreId() {
 }
 
 export function isPayPhoneConfigured() {
-  const token = getPayPhoneToken();
-  const storeId = getPayPhoneStoreId();
-  return Boolean(token && storeId) || Boolean(getPayPhoneCheckoutUrl());
+  return false;
 }
 
 export function getPayPalClientId() {
@@ -68,10 +70,7 @@ export function getPayPalClientId() {
 }
 
 export function isPayPalConfigured() {
-  const clientId = getPayPalClientId();
-  if (!clientId) return false;
-  if (clientId.length < 12) return false;
-  return !/^(?:test|demo|placeholder|changeme|your_|example|tu_)/i.test(clientId);
+  return false;
 }
 
 export function getAvailablePaymentMethods() {
