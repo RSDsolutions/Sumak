@@ -64,6 +64,35 @@ export default function PaymentReturn() {
       setFinalError('');
 
       try {
+        // --- NUEVA VERIFICACIÓN DE PAYPHONE ---
+        // Payphone redirige de vuelta independientemente de si el pago fue aprobado, rechazado o cancelado
+        // sin un parámetro 'status' claro en la URL en el Payment Box. 
+        // Verificamos criptográficamente con el backend antes de registrar el pedido.
+        if (provider === 'payphone') {
+          const clientTxId = searchParams.get('clientTransactionId');
+          if (!orderId || !clientTxId) {
+            throw new Error('Faltan datos de la transacción para verificar el pago con Payphone.');
+          }
+
+          const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-payphone-checkout', {
+            body: { id: orderId, clientTxId },
+          });
+
+          if (verifyError || !verifyData) {
+            throw new Error('No se pudo establecer conexión con Payphone para verificar tu pago.');
+          }
+
+          if (!verifyData.approved) {
+            // El pago no fue aprobado (fondos insuficientes, declinado, etc)
+            const reason = verifyData.status === 'Canceled' ? 'Cancelaste el pago en Payphone.' 
+                         : verifyData.status === 'Declined' ? 'El pago fue declinado (verifica tus fondos o contacta a tu banco).'
+                         : 'El pago no fue aprobado por Payphone.';
+            
+            throw new Error(`${reason} Por favor, intenta nuevamente.`);
+          }
+        }
+        // ---------------------------------------
+
         const itemsSnapshot = pending!.items;
         const totalAmount = itemsSnapshot.reduce((s, i) => s + i.precio * i.cantidad, 0);
 
