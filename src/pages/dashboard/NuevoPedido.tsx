@@ -102,6 +102,10 @@ export default function NuevoPedido() {
   const [compraCalificada, setCompraCalificada] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState(true);
   const [totalMes, setTotalMes] = useState(0);
+  const [pedidoId, setPedidoId] = useState<string | null>(null);
+  const [pedidoTotal, setPedidoTotal] = useState(0);
+  // snapshot de ítems para mostrar en el resumen de 'done'
+  const [itemsSnapshot, setItemsSnapshot] = useState<typeof items>([]);
 
   // Pay step state
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('transferencia');
@@ -250,7 +254,28 @@ export default function NuevoPedido() {
             const details = await actions.order.capture();
             logger.info('PayPal approved', { data, details });
             setError('');
-            setStep('done');
+            setSubmitting(true);
+
+            try {
+              // BIZ-PAY: registrar el pedido en BD luego de capturar el pago PayPal
+              const ok = await submitPedidoRpc({
+                itemsToSubmit: items,
+                idempotencyKey: idempotencyKeyRef.current,
+                voucherPath: null,
+                voucherNumero: details.id ?? null,
+                bancoDestino: 'PayPal',
+                notas: notes || null,
+                totalAmount: total,
+                puntosAmount: puntos,
+              });
+              if (ok) setStep('done');
+            } catch (err) {
+              logger.error('PayPal pedido submission error', err);
+              const msg = err instanceof Error ? err.message : String(err);
+              setError(`Pago recibido, pero no pudimos registrar tu pedido: ${msg}. Contáctanos con tu ID de transacción PayPal: ${details.id ?? 'N/D'}.`);
+            } finally {
+              setSubmitting(false);
+            }
           },
           onError: () => {
             setError('No pudimos iniciar el pago con PayPal. Verifica la configuración del cliente y vuelve a intentarlo.');
@@ -374,6 +399,77 @@ export default function NuevoPedido() {
     setError('');
   }
 
+  // ── Lógica central de registro de pedido (reutilizable por todos los métodos) ──
+  // Recibe el snapshot de ítems y parámetros de pago ya resueltos.
+  // Retorna true si el pedido se registró exitosamente.
+  async function submitPedidoRpc(opts: {
+    itemsToSubmit: typeof items;
+    idempotencyKey: string;
+    voucherPath: string | null;
+    voucherNumero: string | null;
+    bancoDestino: string | null;
+    notas: string | null;
+    totalAmount: number;
+    puntosAmount: number;
+  }): Promise<boolean> {
+    const itemsPayload = opts.itemsToSubmit.map((item) => {
+      const isPack = item.codigo.startsWith('PKG-');
+      const nombreFinal = isPack && item.packSelections && item.packSelections.length > 0
+        ? `${item.nombre} (incluye: ${item.packSelections
+            .map((s) => `${s.cantidad}x ${s.nombre}`)
+            .join(', ')})`
+        : item.nombre;
+      return {
+        codigo: item.codigo,
+        nombre: nombreFinal,
+        cantidad: item.cantidad,
+        precio: item.precio,
+        pvp: item.pvp,
+      };
+    });
+
+    const { data: rpcResult, error: rpcError } = await supabase.rpc('submit_pedido', {
+      p_idempotency_key: opts.idempotencyKey,
+      p_items: itemsPayload,
+      p_voucher_url: opts.voucherPath,
+      p_voucher_numero: opts.voucherNumero,
+      p_banco_destino: opts.bancoDestino,
+      p_notas: opts.notas,
+    });
+
+    if (rpcError) {
+      logger.error('submit_pedido RPC error', rpcError);
+      const code = rpcError.code ?? '?';
+      const msg = rpcError.message ?? 'sin mensaje';
+      const hint = rpcError.hint ? ` Hint: ${rpcError.hint}.` : '';
+      setError(
+        `No pudimos registrar tu pedido. [${code}] ${msg}.${hint} Si persiste, contacta a soporte con este mensaje.`
+      );
+      return false;
+    }
+
+    // La RPC devuelve { ok, pedido_id, duplicated }. Si duplicated=true
+    // significa que ya había sido enviado con esta idempotency_key
+    // (doble-click) y reusamos el pedido existente — para el usuario es éxito.
+    const result = rpcResult as { ok?: boolean; pedido_id?: string; duplicated?: boolean } | null;
+    if (!result?.ok) {
+      logger.error('submit_pedido devolvió ok=false', result);
+      setError('La aplicación respondió de forma inesperada. Verifica en "Mis Pedidos" si tu pedido fue registrado antes de reintentar.');
+      return false;
+    }
+
+    // Guardar pedido_id y snapshot para mostrar en el step 'done'
+    setPedidoId(result.pedido_id ?? null);
+    setPedidoTotal(opts.totalAmount);
+    setItemsSnapshot(opts.itemsToSubmit);
+    if (opts.totalAmount >= MIN_ACTIVACION) setCompraCalificada(true);
+    setEarnedPuntos(opts.puntosAmount);
+    clearPendingExternalCheckout();
+    clear();
+    expiresAtRef.current = null;
+    return true;
+  }
+
   async function handleSubmitFinal() {
     if (items.length === 0 || !user) {
       setError('No hay elementos en el carrito para finalizar.');
@@ -422,61 +518,20 @@ export default function NuevoPedido() {
       //
       // Las pack selections se anexan al nombre del item para que el admin
       // las vea sin cambiar el schema de pedido_items.
-      const itemsPayload = items.map((item) => {
-        const isPack = item.codigo.startsWith('PKG-');
-        const nombreFinal = isPack && item.packSelections && item.packSelections.length > 0
-          ? `${item.nombre} (incluye: ${item.packSelections
-              .map((s) => `${s.cantidad}x ${s.nombre}`)
-              .join(', ')})`
-          : item.nombre;
-        return {
-          codigo: item.codigo,
-          nombre: nombreFinal,
-          cantidad: item.cantidad,
-          precio: item.precio,
-          pvp: item.pvp,
-        };
+      const ok = await submitPedidoRpc({
+        itemsToSubmit: items,
+        idempotencyKey: idempotencyKeyRef.current,
+        voucherPath: selectedPaymentMethod === 'transferencia' ? voucherPath : null,
+        voucherNumero: selectedPaymentMethod === 'transferencia' ? voucherNumero.trim() : null,
+        bancoDestino: selectedPaymentMethod === 'transferencia' ? selectedBanco : null,
+        notas: notes || null,
+        totalAmount: total,
+        puntosAmount: puntos,
       });
 
-      const { data: rpcResult, error: rpcError } = await supabase.rpc('submit_pedido', {
-        p_idempotency_key: idempotencyKeyRef.current,
-        p_items: itemsPayload,
-        p_voucher_url: selectedPaymentMethod === 'transferencia' ? voucherPath : null,
-        p_voucher_numero: selectedPaymentMethod === 'transferencia' ? voucherNumero.trim() : null,
-        p_banco_destino: selectedPaymentMethod === 'transferencia' ? selectedBanco : null,
-        p_notas: notes || null,
-      });
-
-      if (rpcError) {
-        logger.error('submit_pedido RPC error', rpcError);
-        const code = rpcError.code ?? '?';
-        const msg = rpcError.message ?? 'sin mensaje';
-        const hint = rpcError.hint ? ` Hint: ${rpcError.hint}.` : '';
-        setError(
-          `No pudimos registrar tu pedido. [${code}] ${msg}.${hint} Si persiste, contacta a soporte con este mensaje.`
-        );
-        setSubmitting(false);
-        return;
+      if (ok) {
+        setStep('done');
       }
-
-      // La RPC devuelve { ok, pedido_id, duplicated }. Si duplicated=true
-      // significa que ya había sido enviado con esta idempotency_key
-      // (doble-click) y reusamos el pedido existente — para el usuario es éxito.
-      const result = rpcResult as { ok?: boolean; pedido_id?: string; duplicated?: boolean } | null;
-      if (!result?.ok) {
-        logger.error('submit_pedido devolvió ok=false', result);
-        setError('La aplicación respondió de forma inesperada. Verifica en "Mis Pedidos" si tu pedido fue registrado antes de reintentar.');
-        setSubmitting(false);
-        return;
-      }
-
-      // Éxito → limpiar carrito y mostrar pantalla final.
-      if (total >= MIN_ACTIVACION) setCompraCalificada(true);
-      setEarnedPuntos(puntos);
-      clearPendingExternalCheckout();
-      clear();
-      expiresAtRef.current = null;
-      setStep('done');
     } catch (err) {
       // UX-004: el catch puede atrapar errores de red u otros.
       logger.error('Pedido submission unexpected error', err);
@@ -489,52 +544,103 @@ export default function NuevoPedido() {
 
   // ─── DONE ────────────────────────────────────────────
   if (step === 'done') {
+    const doneTotal = pedidoTotal > 0 ? pedidoTotal : total;
+    const doneItems = itemsSnapshot.length > 0 ? itemsSnapshot : [];
     return (
-      <div className="flex items-center justify-center min-h-[70vh]">
+      <div className="flex items-center justify-center min-h-[70vh] py-10">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4 }}
-          className="text-center max-w-md bg-white border border-[#C8D8CB] rounded-3xl p-8 shadow-[0_15px_60px_rgba(26,78,38,0.1)]"
+          className="w-full max-w-lg bg-white border border-[#C8D8CB] rounded-3xl shadow-[0_15px_60px_rgba(26,78,38,0.1)] overflow-hidden"
         >
-          <div className="w-20 h-20 bg-gradient-to-br from-[#1A4E26] to-[#2B6E3A] rounded-full flex items-center justify-center mx-auto mb-5 shadow-[0_8px_24px_rgba(26,78,38,0.3)]">
-            <CheckCircle2 size={40} className="text-white" />
+          {/* Header */}
+          <div className="bg-gradient-to-br from-[#1A4E26] to-[#2B6E3A] px-8 py-8 text-center">
+            <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 shadow-[0_8px_24px_rgba(0,0,0,0.2)]">
+              <CheckCircle2 size={40} className="text-white" />
+            </div>
+            <h2 className="font-heading font-bold text-3xl text-white mb-1">¡Pedido registrado!</h2>
+            <p className="text-white/80 text-sm">
+              Tu pago fue recibido y el pedido está siendo procesado por el admin.
+            </p>
           </div>
-          <h2 className="font-heading font-bold text-3xl text-[#111111] mb-2">¡Pedido enviado!</h2>
-          <p className="text-[#6B7280] mb-6">
-            Tu pedido está marcado como <strong className="text-[#1A4E26]">Procesado</strong>.
-            El admin revisará tu pago y coordinará el envío.
-          </p>
 
-          {earnedPuntos > 0 && (
-            <div className="inline-flex items-center gap-2 bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-xl px-5 py-3 mb-4 w-full justify-center">
-              <Sparkles size={16} className="text-[#D4AF37]" />
-              <span className="text-[#D4AF37] font-semibold text-sm">
-                Ganaste <span className="font-bold">{earnedPuntos} puntos</span>
-              </span>
+          <div className="p-6 space-y-4">
+            {/* ID de pedido */}
+            {pedidoId && (
+              <div className="flex items-center justify-between bg-[#F4F7F5] border border-[#C8D8CB] rounded-xl px-4 py-3">
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest text-[#9CA3AF] font-bold">N° de Pedido</p>
+                  <p className="text-[#111111] font-mono font-bold text-sm mt-0.5">{pedidoId.slice(0, 8).toUpperCase()}</p>
+                </div>
+                <Receipt size={20} className="text-[#1A4E26]" />
+              </div>
+            )}
+
+            {/* Resumen de ítems */}
+            {doneItems.length > 0 && (
+              <div className="bg-[#F4F7F5] border border-[#C8D8CB] rounded-xl overflow-hidden">
+                <div className="px-4 py-2.5 border-b border-[#C8D8CB] bg-white flex items-center gap-2">
+                  <Package size={14} className="text-[#1A4E26]" />
+                  <span className="text-xs font-bold text-[#111111] uppercase tracking-wider">Productos del pedido</span>
+                </div>
+                <div className="p-3 space-y-2 max-h-44 overflow-y-auto">
+                  {doneItems.map((item) => (
+                    <div key={item.codigo} className="flex justify-between items-center gap-2 text-xs">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[#111111] font-medium truncate">{item.nombre}</p>
+                        <p className="text-[#9CA3AF]">{item.cantidad} × ${item.precio.toFixed(2)}</p>
+                      </div>
+                      <p className="text-[#1A4E26] font-bold shrink-0">${(item.precio * item.cantidad).toFixed(2)}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="px-4 py-3 border-t border-[#C8D8CB] bg-white flex justify-between items-center">
+                  <span className="font-heading font-bold text-[#111111] text-sm">Total pagado</span>
+                  <span className="font-heading font-bold text-xl text-[#1A4E26]">${doneTotal.toFixed(2)}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Puntos ganados */}
+            {earnedPuntos > 0 && (
+              <div className="flex items-center gap-2 bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-xl px-4 py-3">
+                <Sparkles size={16} className="text-[#D4AF37] shrink-0" />
+                <span className="text-[#D4AF37] font-semibold text-sm">
+                  Ganaste <span className="font-bold">{earnedPuntos} puntos</span>
+                </span>
+              </div>
+            )}
+
+            {/* Calificación */}
+            {compraCalificada && (
+              <div className="flex items-center gap-2 bg-[#EBF4ED] border border-[#1A4E26]/20 rounded-xl px-4 py-3 text-sm text-[#1A4E26] font-semibold">
+                <TrendingUp size={16} className="shrink-0" />
+                Estás habilitado para comisiones este mes
+              </div>
+            )}
+
+            {/* Estado */}
+            <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-700">
+              <AlertCircle size={14} className="shrink-0 mt-0.5" />
+              <p>El admin verificará tu pago y coordinará el envío. Te notificaremos cuando esté listo.</p>
             </div>
-          )}
 
-          {compraCalificada && (
-            <div className="flex items-center gap-2 bg-[#EBF4ED] border border-[#1A4E26]/20 rounded-xl px-5 py-3 mb-6 text-sm text-[#1A4E26] font-semibold">
-              <TrendingUp size={16} />
-              Estás habilitado para comisiones este mes
+            {/* Acciones */}
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <Link
+                to="/dashboard/tienda"
+                className="py-3 rounded-xl border border-[#C8D8CB] text-[#6B7280] font-semibold text-sm hover:border-[#A8C2AD] hover:text-[#111111] transition-all text-center"
+              >
+                Seguir comprando
+              </Link>
+              <button
+                onClick={() => navigate('/dashboard/pedidos')}
+                className="py-3 rounded-xl bg-[#1A4E26] text-white font-bold text-sm hover:bg-[#163F1E] transition-all shadow-[0_4px_16px_rgba(26,78,38,0.2)]"
+              >
+                Ver mis pedidos
+              </button>
             </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-3">
-            <Link
-              to="/dashboard/tienda"
-              className="py-3 rounded-xl border border-[#C8D8CB] text-[#6B7280] font-semibold text-sm hover:border-[#A8C2AD] hover:text-[#111111] transition-all"
-            >
-              Seguir comprando
-            </Link>
-            <button
-              onClick={() => navigate('/dashboard/pedidos')}
-              className="py-3 rounded-xl bg-[#1A4E26] text-white font-bold text-sm hover:bg-[#163F1E] transition-all shadow-[0_4px_16px_rgba(26,78,38,0.2)]"
-            >
-              Ver mis pedidos
-            </button>
           </div>
         </motion.div>
       </div>
