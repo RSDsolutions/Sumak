@@ -1,5 +1,5 @@
 import { CreditCard, Landmark, MessageCircle, Wallet } from 'lucide-react';
-import { paymentMethodOptions, type PaymentMethod } from '../lib/payments';
+import { getAvailablePaymentMethods, type PaymentMethod } from '../lib/payments';
 
 export type PaymentSelection = PaymentMethod | 'whatsapp';
 
@@ -27,7 +27,7 @@ export default function PaymentMethodSelector({
 }: PaymentMethodSelectorProps) {
   const options: Array<{ value: PaymentSelection; label: string; description: string }> = includeWhatsApp
     ? [
-        ...paymentMethodOptions.map((option) => ({
+        ...getAvailablePaymentMethods().map((option) => ({
           value: option.value,
           label: option.label,
           description: option.description,
@@ -38,7 +38,7 @@ export default function PaymentMethodSelector({
           description: 'Habla con atención comercial y coordina tu compra directamente.',
         },
       ]
-    : paymentMethodOptions.map((option) => ({
+    : getAvailablePaymentMethods().map((option) => ({
         value: option.value,
         label: option.label,
         description: option.description,

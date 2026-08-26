@@ -99,13 +99,17 @@ export default function MisRecetas() {
 
     try {
       setIsSubmitting(true);
-      const fileExt = receiptFile.name.split('.').pop();
-      const fileName = `recibo_${Date.now()}.${fileExt}`;
+      if (receiptFile.size > 5 * 1024 * 1024) {
+        throw new Error('El comprobante no puede superar los 5 MB.');
+      }
+
+      const fileExt = receiptFile.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const fileName = `${Date.now()}-voucher.${fileExt}`;
       const filePath = `${profile.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('academy-receipts')
-        .upload(filePath, receiptFile);
+        .upload(filePath, receiptFile, { upsert: false });
       if (uploadError) throw uploadError;
 
       const { data: purchaseData, error: purchaseError } = await supabase

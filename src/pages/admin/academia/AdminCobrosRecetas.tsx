@@ -4,6 +4,7 @@ import { Search, CheckCircle, XCircle, Eye, Download } from 'lucide-react';
 import { useToast } from '../../../lib/toast';
 
 interface PurchaseItem {
+  recipe_id: string;
   recipe: {
     title: string;
   };
@@ -51,15 +52,45 @@ export default function AdminCobrosRecetas() {
           total_amount,
           payment_method,
           payment_receipt_url,
-          created_at,
-          items:academy_recipe_purchase_items(
-            price_at_purchase,
-            recipe:academy_recipes(title)
-          )
+          created_at
         `)
         .order('created_at', { ascending: false });
 
       if (purchasesError) throw purchasesError;
+
+      const purchaseIds = (purchasesData ?? []).map((purchase) => purchase.id);
+      const itemsByPurchase = new Map<string, PurchaseItem[]>();
+
+      if (purchaseIds.length > 0) {
+        const { data: itemsData, error: itemsError } = await supabase
+          .from('academy_recipe_purchase_items')
+          .select('purchase_id, recipe_id, price_at_purchase')
+          .in('purchase_id', purchaseIds);
+
+        if (itemsError) throw itemsError;
+
+        const recipeIds = [...new Set((itemsData ?? []).map((item) => item.recipe_id).filter(Boolean))];
+        const recipesMap = new Map<string, { title: string }>();
+        if (recipeIds.length > 0) {
+          const { data: recipesData, error: recipesError } = await supabase
+            .from('academy_recipes')
+            .select('id, title')
+            .in('id', recipeIds);
+
+          if (recipesError) throw recipesError;
+          (recipesData ?? []).forEach((recipe) => recipesMap.set(recipe.id, { title: recipe.title }));
+        }
+
+        (itemsData ?? []).forEach((item) => {
+          const purchaseItems = itemsByPurchase.get(item.purchase_id) ?? [];
+          purchaseItems.push({
+            recipe_id: item.recipe_id,
+            price_at_purchase: item.price_at_purchase,
+            recipe: recipesMap.get(item.recipe_id) ?? { title: 'Receta no disponible' },
+          });
+          itemsByPurchase.set(item.purchase_id, purchaseItems);
+        });
+      }
 
       const userIds = [...new Set((purchasesData ?? []).map((purchase) => purchase.user_id).filter(Boolean))];
       const profilesMap = new Map<string, { email: string; nombre_completo: string }>();
@@ -82,6 +113,7 @@ export default function AdminCobrosRecetas() {
 
       const normalizedPurchases = (purchasesData ?? []).map((purchase) => ({
         ...purchase,
+        items: itemsByPurchase.get(purchase.id) ?? [],
         user: profilesMap.get(purchase.user_id) ?? {
           email: 'Sin email',
           nombre_completo: 'Sin Nombre',
