@@ -12,6 +12,7 @@ import {
   LogOut,
   Trophy,
   UserPlus,
+  GraduationCap,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useCart } from '../lib/cart';
@@ -40,6 +41,7 @@ const navItems: NavItem[] = [
   { label: 'Mi Escalera', to: '/dashboard/escalera', icon: <Trophy size={18} />, dataTour: 'nav-escalera' },
   { label: 'Comisiones', to: '/dashboard/comisiones', icon: <DollarSign size={18} />, dataTour: 'nav-comisiones' },
   { label: 'Bono Afiliación', to: '/dashboard/bono-afiliacion', icon: <UserPlus size={18} />, dataTour: 'nav-bono-afiliacion' },
+  { label: 'Academia SUMAK', to: '/academia', icon: <GraduationCap size={18} />, dataTour: 'nav-academia' },
   { label: 'Mi Perfil', to: '/dashboard/perfil', icon: <User size={18} /> },
 ];
 

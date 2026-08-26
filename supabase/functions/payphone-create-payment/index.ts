@@ -1,4 +1,4 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+﻿import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -192,7 +192,7 @@ Deno.serve(async (req: Request) => {
       .eq("id", inserted.id);
 
     return jsonResponse(req, {
-      error: (providerJson as Record<string, unknown>)?.message ?? "Payphone rechaz? la creaci?n del pago",
+      error: (providerJson as Record<string, unknown>)?.message ?? "Payphone rechazó la creación del pago",
     }, providerResponse.status);
   }
 

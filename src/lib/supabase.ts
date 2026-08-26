@@ -11,23 +11,8 @@ if (!url || !anonKey) {
   );
 }
 
-// Único cliente — usa el anon key + JWT del usuario logueado.
-// Las operaciones admin viajan por RPCs SECURITY DEFINER (con gate via
-// is_admin / is_operaciones_or_admin) o por Edge Functions cuando
-// necesitamos service_role (auth.admin.*, storage.createSignedUrl).
-//
-// Antes existia un export `supabaseAdmin` con la service_role key, lo
-// que la incluia en el bundle servido al browser. Eliminado en SEC-001
-// para evitar bypass total de RLS por cualquiera con devtools.
 export const supabase = createClient(url, anonKey);
 
-/**
- * Helper para invocar Edge Functions de Sumak.
- * Inyecta el JWT del usuario logueado en Authorization para que la
- * Edge Function pueda validar al caller y su rol.
- *
- * Lanza si la respuesta no es 2xx — el caller debe try/catch.
- */
 export async function callEdgeFunction<TResp = unknown>(
   name:
     | 'approve-afiliacion'
@@ -36,13 +21,20 @@ export async function callEdgeFunction<TResp = unknown>(
     | 'payphone-create-payment'
     | 'payphone-confirm-payment'
     | 'paypal-create-order'
-    | 'paypal-capture-order',
+    | 'paypal-capture-order'
+    | 'academy-grade-assessment'
+    | 'academy-check-eligibility'
+    | 'academy-issue-diploma'
+    | 'academy-verify-diploma'
+    | 'academy-sign-document-url'
+    | 'academy-revoke-diploma',
   body: Record<string, unknown>,
 ): Promise<TResp> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) {
     throw new Error('Debes iniciar sesión o completar tu registro antes de continuar con el pago.');
   }
+
   const res = await fetch(`${url}/functions/v1/${name}`, {
     method: 'POST',
     headers: {
@@ -52,10 +44,12 @@ export async function callEdgeFunction<TResp = unknown>(
     },
     body: JSON.stringify(body),
   });
+
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
     const msg = (json as { error?: string })?.error ?? `Error ${res.status} en ${name}`;
     throw new Error(msg);
   }
+
   return json as TResp;
 }

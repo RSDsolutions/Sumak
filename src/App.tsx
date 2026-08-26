@@ -61,6 +61,25 @@ const AdminRed = lazy(() => import('./pages/admin/AdminRed'));
 const AdminEscalera = lazy(() => import('./pages/admin/AdminEscalera'));
 const GestionarStaff = lazy(() => import('./pages/admin/GestionarStaff'));
 const AdminProductos = lazy(() => import('./pages/admin/AdminProductos'));
+const AdminCursos = lazy(() => import('./pages/admin/academia/AdminCursos'));
+const AdminDiplomas = lazy(() => import('./pages/admin/academia/AdminDiplomas'));
+const AdminRecetas = lazy(() => import('./pages/admin/academia/AdminRecetas'));
+const AdminCobrosRecetas = lazy(() => import('./pages/admin/academia/AdminCobrosRecetas'));
+
+// Academy pages
+const AcademyLayout = lazy(() => import('./components/AcademyLayout'));
+const AcademiaHome = lazy(() => import('./pages/academia/AcademiaHome'));
+const CatalogoCursos = lazy(() => import('./pages/academia/CatalogoCursos'));
+const CursoDetalle = lazy(() => import('./pages/academia/CursoDetalle'));
+const BibliotecaLives = lazy(() => import('./pages/academia/BibliotecaLives'));
+const VerificarDiploma = lazy(() => import('./pages/academia/VerificarDiploma'));
+const AcademiaDashboard = lazy(() => import('./pages/academia/dashboard/AcademiaDashboard'));
+const MisCursos = lazy(() => import('./pages/academia/dashboard/MisCursos'));
+const MisDiplomas = lazy(() => import('./pages/academia/dashboard/MisDiplomas'));
+const PerfilAcademico = lazy(() => import('./pages/academia/dashboard/PerfilAcademico'));
+const VisorLeccion = lazy(() => import('./pages/academia/VisorLeccion'));
+const Evaluacion = lazy(() => import('./pages/academia/Evaluacion'));
+const Recetas = lazy(() => import('./pages/academia/Recetas'));
 
 // Operaciones pages (rol delegado para pedidos / comisiones / solicitudes).
 // Reusa componentes de admin/* — sólo cambia el layout (OperacionesLayout)
@@ -429,6 +448,72 @@ export default function App() {
             }
           />
 
+          {/* ── ACADEMIA ROUTES ───────────────────────────── */}
+          {/* Public & authenticated access combined logic */}
+          <Route path="/academia" element={<PublicLayout><PageTransition><AcademiaHome /></PageTransition></PublicLayout>} />
+          <Route path="/academia/cursos" element={<PublicLayout><PageTransition><CatalogoCursos /></PageTransition></PublicLayout>} />
+          <Route path="/academia/cursos/:slug" element={<PublicLayout><PageTransition><CursoDetalle /></PageTransition></PublicLayout>} />
+          <Route path="/academia/recetas" element={<PublicLayout><PageTransition><Recetas /></PageTransition></PublicLayout>} />
+          <Route path="/academia/biblioteca" element={<PublicLayout><PageTransition><BibliotecaLives /></PageTransition></PublicLayout>} />
+          <Route path="/academia/verificar" element={<PublicLayout><PageTransition><VerificarDiploma /></PageTransition></PublicLayout>} />
+          
+          <Route
+            path="/academia/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={['distribuidor', 'admin', 'operaciones']}>
+                <AcademyLayout>
+                  <AcademiaDashboard />
+                </AcademyLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/academia/dashboard/cursos"
+            element={
+              <ProtectedRoute allowedRoles={['distribuidor', 'admin', 'operaciones']}>
+                <AcademyLayout>
+                  <MisCursos />
+                </AcademyLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/academia/dashboard/diplomas"
+            element={
+              <ProtectedRoute allowedRoles={['distribuidor', 'admin', 'operaciones']}>
+                <AcademyLayout>
+                  <MisDiplomas />
+                </AcademyLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/academia/dashboard/perfil"
+            element={
+              <ProtectedRoute allowedRoles={['distribuidor', 'admin', 'operaciones']}>
+                <AcademyLayout>
+                  <PerfilAcademico />
+                </AcademyLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/academia/aprender/:slug"
+            element={
+              <ProtectedRoute allowedRoles={['distribuidor', 'admin', 'operaciones']}>
+                <VisorLeccion />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/academia/evaluacion/:assessmentId"
+            element={
+              <ProtectedRoute allowedRoles={['distribuidor', 'admin', 'operaciones']}>
+                <Evaluacion />
+              </ProtectedRoute>
+            }
+          />
+
           {/* ── ADMIN ROUTES ──────────────────────────────── */}
           <Route
             path="/admin"
@@ -571,6 +656,46 @@ export default function App() {
             }
           />
           <Route
+            path="/admin/academia/cursos"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminLayout>
+                  <AdminCursos />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/academia/diplomas"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminLayout>
+                  <AdminDiplomas />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/academia/recetas"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminLayout>
+                  <AdminRecetas />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/academia/cobros"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminLayout>
+                  <AdminCobrosRecetas />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/admin/perfil"
             element={
               <ProtectedRoute allowedRoles={['admin']}>
@@ -674,6 +799,26 @@ export default function App() {
               <ProtectedRoute allowedRoles={['admin', 'operaciones']}>
                 <OperacionesLayout>
                   <AdminProductos />
+                </OperacionesLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/operaciones/academia/recetas"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'operaciones']}>
+                <OperacionesLayout>
+                  <AdminRecetas />
+                </OperacionesLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/operaciones/academia/cobros"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'operaciones']}>
+                <OperacionesLayout>
+                  <AdminCobrosRecetas />
                 </OperacionesLayout>
               </ProtectedRoute>
             }

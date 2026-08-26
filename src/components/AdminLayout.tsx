@@ -16,6 +16,8 @@ import {
   Menu,
   X,
   LogOut,
+  BookOpen,
+  Award,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useSEO } from '../lib/seo';
@@ -41,6 +43,10 @@ const navItems: NavItem[] = [
   { label: 'Red Binaria', to: '/admin/red', icon: <Network size={18} /> },
   { label: 'Escalera del Éxito', to: '/admin/escalera', icon: <Trophy size={18} /> },
   { label: 'Gestionar Personal', to: '/admin/personal', icon: <UserCog size={18} /> },
+  { label: 'Academia: Cursos', to: '/admin/academia/cursos', icon: <BookOpen size={18} /> },
+  { label: 'Academia: Recetas', to: '/admin/academia/recetas', icon: <BookOpen size={18} /> },
+  { label: 'Academia: Cobros Recetas', to: '/admin/academia/cobros', icon: <DollarSign size={18} /> },
+  { label: 'Academia: Diplomas', to: '/admin/academia/diplomas', icon: <Award size={18} /> },
   { label: 'Mi Perfil', to: '/admin/perfil', icon: <User size={18} /> },
 ];
 

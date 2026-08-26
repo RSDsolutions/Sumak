@@ -1,4 +1,4 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+﻿import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -165,6 +165,6 @@ Deno.serve(async (req: Request) => {
     paymentId: paymentRow.id,
     status: updated.status,
     approved: confirmed,
-    message: confirmed ? "Pago confirmado por Payphone" : "Pago pendiente de confirmaci?n",
+    message: confirmed ? "Pago confirmado por Payphone" : "Pago pendiente de confirmación",
   });
 });

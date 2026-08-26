@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Menu, X, ArrowRight, LayoutDashboard, ShoppingCart } from 'lucide-react';
+import { Menu, X, ArrowRight, LayoutDashboard, ShoppingCart, GraduationCap } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useCart } from '../lib/cart';
 import Avatar from './Avatar';
@@ -106,6 +106,19 @@ export default function Navbar() {
               );
             })}
           </nav>
+
+          {/* Academia CTA Button - Desktop */}
+          <Link
+            to="/academia"
+            className={`hidden xl:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-sm font-bold transition-all duration-200 border ${
+              location.pathname.startsWith('/academia')
+                ? 'bg-[#1A4E26] text-[#D4AF37] border-[#1A4E26]'
+                : 'text-[#1A4E26] border-[#1A4E26]/30 bg-[#EBF4ED] hover:bg-[#1A4E26] hover:text-[#D4AF37]'
+            }`}
+          >
+            <GraduationCap size={16} />
+            Academia
+          </Link>
 
           {/* Desktop CTA buttons or Authenticated Widget */}
           <div className="hidden xl:flex items-center gap-3 shrink-0">
@@ -251,6 +264,25 @@ export default function Navbar() {
                 );
               })}
             </motion.nav>
+
+            {/* Academia link in mobile menu */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="mx-6 mt-4"
+            >
+              <Link
+                to="/academia"
+                className="flex items-center justify-between w-full py-4 px-5 rounded-2xl bg-[#1A4E26] text-white font-bold text-base"
+              >
+                <div className="flex items-center gap-3">
+                  <GraduationCap size={20} className="text-[#D4AF37]" />
+                  <span>Academia Sumak</span>
+                </div>
+                <ArrowRight size={18} className="text-[#D4AF37]" />
+              </Link>
+            </motion.div>
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
