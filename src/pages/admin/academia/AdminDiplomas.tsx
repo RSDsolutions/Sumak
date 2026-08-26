@@ -104,8 +104,9 @@ export default function AdminDiplomas() {
         issuance_id: issuanceId,
       });
       if (res.signedUrl) window.open(res.signedUrl, '_blank');
-    } catch {
-      toast.error('Error al descargar el diploma');
+    } catch (err: any) {
+      console.error('Error downloading diploma:', err);
+      toast.error(err?.message || 'Error al descargar el diploma');
     } finally {
       setProcessingId(null);
     }
