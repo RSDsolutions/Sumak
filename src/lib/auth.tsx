@@ -25,9 +25,9 @@ interface AuthContextValue {
   /** Reinicia el tour para volver a verlo. */
   resetOnboarding: () => Promise<void>;
   /** Ruta home según el rol — usar en redirects de Login y ProtectedRoute. */
-  homeForRole: () => '/admin' | '/operaciones' | '/dashboard' | '/login';
+  homeForRole: () => '/admin' | '/operaciones' | '/dashboard' | '/academia/dashboard' | '/login';
   /** Igual que homeForRole pero recibe un profile específico (útil tras signIn). */
-  homeForProfile: (p: Profile | null) => '/admin' | '/operaciones' | '/dashboard' | '/login';
+  homeForProfile: (p: Profile | null) => '/admin' | '/operaciones' | '/dashboard' | '/academia/dashboard' | '/login';
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -153,11 +153,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isDistribuidor = profile?.rol === 'distribuidor';
   const isOperaciones = profile?.rol === 'operaciones';
 
-  function homeForProfile(p: Profile | null): '/admin' | '/operaciones' | '/dashboard' | '/login' {
+  function homeForProfile(p: Profile | null): '/admin' | '/operaciones' | '/dashboard' | '/academia/dashboard' | '/login' {
     if (!p) return '/login';
     if (p.rol === 'admin') return '/admin';
     if (p.rol === 'operaciones') return '/operaciones';
-    return '/dashboard';
+    if (p.rol === 'distribuidor') {
+      if (!p.paquete && !p.patrocinador_id) {
+        return '/academia/dashboard';
+      }
+      return '/dashboard';
+    }
+    return '/login';
   }
 
   function homeForRole() {

@@ -26,13 +26,26 @@ export default function ProtectedRoute({ allowedRoles, children }: ProtectedRout
 
   if (loading) return <Spinner />;
 
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) {
+    if (window.location.pathname.startsWith('/academia')) {
+      return <Navigate to="/academia/login" replace />;
+    }
+    return <Navigate to="/login" replace />;
+  }
 
   if (!profile) return <Spinner />;
 
   if (!allowedRoles.includes(profile.rol)) {
     // Redirige al home propio del rol en lugar de caer siempre en /dashboard.
     return <Navigate to={homeForRole()} replace />;
+  }
+
+  // Si es un usuario exclusivo de la academia (sin paquete ni patrocinador)
+  // y trata de acceder a rutas de la plataforma principal (que no sean /academia)
+  if (profile.rol === 'distribuidor' && !profile.paquete && !profile.patrocinador_id) {
+    if (!window.location.pathname.startsWith('/academia') && !window.location.pathname.startsWith('/perfil')) {
+      return <Navigate to="/academia/dashboard" replace />;
+    }
   }
 
   return <>{children}</>;
