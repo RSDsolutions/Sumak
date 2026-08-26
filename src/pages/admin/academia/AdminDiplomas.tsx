@@ -19,6 +19,17 @@ interface DiplomaType {
   created_at: string;
 }
 
+const defaultTemplate = {
+  version: 1,
+  page_size: 'A4',
+  orientation: 'landscape',
+  title_text: '{{diploma_type_name}}',
+  subtitle_text: 'ACADEMIA SUMAK',
+  body_text: 'Se otorga el presente diploma a {{participant_name}} por haber completado satisfactoriamente el programa {{course_name}}.',
+  footer_text: 'SUMAK VIDA ECUADOR',
+  is_active: true,
+};
+
 interface Course {
   id: string;
   title: string;
@@ -130,8 +141,31 @@ export default function AdminDiplomas() {
       .from('academy_diploma_types')
       .select('*')
       .order('name');
-    if (error) toast.error('Error al cargar plantillas');
-    else setTypes(data as DiplomaType[]);
+    if (error) {
+      toast.error('Error al cargar plantillas');
+    } else {
+      const diplomaTypes = data as DiplomaType[];
+      setTypes(diplomaTypes);
+
+      // The type form and the PDF template are separate records. Repair older
+      // types created before template generation was wired into the admin UI.
+      await Promise.all(diplomaTypes.map(async (type) => {
+        const { data: template } = await supabase
+          .from('academy_diploma_templates')
+          .select('id')
+          .eq('diploma_type_id', type.id)
+          .eq('is_active', true)
+          .limit(1)
+          .maybeSingle();
+
+        if (!template) {
+          await supabase.from('academy_diploma_templates').insert({
+            diploma_type_id: type.id,
+            ...defaultTemplate,
+          });
+        }
+      }));
+    }
     setLoadingTypes(false);
   }
 
@@ -155,15 +189,25 @@ export default function AdminDiplomas() {
         if (error) throw error;
         toast.success('Plantilla actualizada');
       } else {
-        const { error } = await supabase
+        const { data: createdType, error } = await supabase
           .from('academy_diploma_types')
           .insert({
             name: editingType.name,
             internal_code: editingType.internal_code,
             description: editingType.description,
             is_active: editingType.is_active ?? true,
-          });
+          })
+          .select('id')
+          .single();
         if (error) throw error;
+
+        const { error: templateError } = await supabase
+          .from('academy_diploma_templates')
+          .insert({
+            diploma_type_id: createdType.id,
+            ...defaultTemplate,
+          });
+        if (templateError) throw templateError;
         toast.success('Plantilla creada');
       }
       setEditingType(null);
@@ -381,12 +425,12 @@ export default function AdminDiplomas() {
       {tab === 'templates' && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <p className="text-sm text-gray-500">Tipos de diploma disponibles para emitir.</p>
+            <p className="text-sm text-gray-500">Tipos y diseños PDF generados por el sistema.</p>
             <button
               onClick={() => setEditingType({ ...defaultType })}
               className="flex items-center gap-2 bg-[#1A4E26] text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-[#163F1E] transition"
             >
-              <Plus size={16} /> Nueva Plantilla
+              <Plus size={16} /> Nuevo tipo y diseño
             </button>
           </div>
 
