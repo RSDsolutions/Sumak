@@ -9,7 +9,8 @@ import {
   Menu,
   X,
   LogOut,
-  ChevronLeft
+  ChevronLeft,
+  Leaf
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useSEO } from '../lib/seo';
@@ -27,7 +28,8 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: 'Mi Academia', to: '/academia/dashboard', icon: <GraduationCap size={18} />, end: true },
   { label: 'Mis Cursos', to: '/academia/dashboard/cursos', icon: <BookOpen size={18} /> },
-  { label: 'Biblioteca', to: '/academia/biblioteca', icon: <Library size={18} /> },
+  { label: 'Biblioteca', to: '/academia/dashboard/biblioteca', icon: <Library size={18} /> },
+  { label: 'Mis Recetas', to: '/academia/dashboard/recetas', icon: <Leaf size={18} /> },
   { label: 'Mis Diplomas', to: '/academia/dashboard/diplomas', icon: <Award size={18} /> },
   { label: 'Perfil Académico', to: '/academia/dashboard/perfil', icon: <User size={18} /> },
 ];

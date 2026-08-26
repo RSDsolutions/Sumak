@@ -77,6 +77,7 @@ const AcademiaDashboard = lazy(() => import('./pages/academia/dashboard/Academia
 const MisCursos = lazy(() => import('./pages/academia/dashboard/MisCursos'));
 const MisDiplomas = lazy(() => import('./pages/academia/dashboard/MisDiplomas'));
 const PerfilAcademico = lazy(() => import('./pages/academia/dashboard/PerfilAcademico'));
+const MisRecetas = lazy(() => import('./pages/academia/dashboard/MisRecetas'));
 const VisorLeccion = lazy(() => import('./pages/academia/VisorLeccion'));
 const Evaluacion = lazy(() => import('./pages/academia/Evaluacion'));
 const Recetas = lazy(() => import('./pages/academia/Recetas'));
@@ -454,7 +455,6 @@ export default function App() {
           <Route path="/academia/cursos" element={<PublicLayout><PageTransition><CatalogoCursos /></PageTransition></PublicLayout>} />
           <Route path="/academia/cursos/:slug" element={<PublicLayout><PageTransition><CursoDetalle /></PageTransition></PublicLayout>} />
           <Route path="/academia/recetas" element={<PublicLayout><PageTransition><Recetas /></PageTransition></PublicLayout>} />
-          <Route path="/academia/biblioteca" element={<PublicLayout><PageTransition><BibliotecaLives /></PageTransition></PublicLayout>} />
           <Route path="/academia/verificar" element={<PublicLayout><PageTransition><VerificarDiploma /></PageTransition></PublicLayout>} />
           
           <Route
@@ -473,6 +473,26 @@ export default function App() {
               <ProtectedRoute allowedRoles={['distribuidor', 'admin', 'operaciones']}>
                 <AcademyLayout>
                   <MisCursos />
+                </AcademyLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/academia/dashboard/biblioteca"
+            element={
+              <ProtectedRoute allowedRoles={['distribuidor', 'admin', 'operaciones']}>
+                <AcademyLayout>
+                  <BibliotecaLives />
+                </AcademyLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/academia/dashboard/recetas"
+            element={
+              <ProtectedRoute allowedRoles={['distribuidor', 'admin', 'operaciones']}>
+                <AcademyLayout>
+                  <MisRecetas />
                 </AcademyLayout>
               </ProtectedRoute>
             }
