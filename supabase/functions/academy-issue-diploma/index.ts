@@ -54,7 +54,14 @@ Deno.serve(async (req: Request) => {
 
   const authHeader = req.headers.get("Authorization") ?? "";
   if (!authHeader.startsWith("Bearer ")) {
-    return jsonResponse({ error: "Missing Authorization header" }, 401);
+    let body: {
+      target_user_id?: string;
+      user_id?: string;
+      diploma_type_id?: string;
+      course_id?: string | null;
+      participant_name?: string;
+      program_name?: string;
+    };
   }
   const jwt = authHeader.slice("Bearer ".length).trim();
   if (!jwt) {
@@ -68,14 +75,21 @@ Deno.serve(async (req: Request) => {
   }
   const callerId = userRes.user.id;
 
-  let body: { target_user_id?: string; diploma_type_id?: string; course_id?: string };
+  let body: {
+    target_user_id?: string;
+    user_id?: string;
+    diploma_type_id?: string;
+    course_id?: string | null;
+    participant_name?: string;
+    program_name?: string;
+  };
   try {
     body = await req.json();
   } catch {
     return jsonResponse({ error: "Invalid JSON body" }, 400);
   }
   
-  const target_user_id = body.target_user_id || callerId;
+  const target_user_id = body.target_user_id || body.user_id || callerId;
   const { diploma_type_id, course_id } = body;
   
   if (!diploma_type_id) {
@@ -118,9 +132,9 @@ Deno.serve(async (req: Request) => {
 
   if (eligData.eligible === false) {
     if (eligData.existing_diploma_id) {
-      return jsonResponse({ 
+      return jsonResponse({
         error: "Diploma already exists.",
-        existing_diploma_id: eligData.existing_diploma_id 
+        existing_diploma_id: eligData.existing_diploma_id
       }, 409);
     }
     return jsonResponse({ error: "User is not eligible.", reasons: eligData.reasons }, 403);
@@ -133,9 +147,12 @@ Deno.serve(async (req: Request) => {
     .eq("id", target_user_id)
     .maybeSingle();
 
-  const participantName = userProfile?.nombre_completo || userProfile?.username || userProfile?.codigo_distribuidor || "Estudiante";
-
-  let programName = "Programa de Academia";
+  const participantName = body.participant_name?.trim()
+    || userProfile?.nombre_completo
+    || userProfile?.username
+    || userProfile?.codigo_distribuidor
+    || "Estudiante";
+  let programName = body.program_name?.trim() || "Programa de Academia";
   if (course_id) {
     const { data: course } = await supabaseAdmin
       .from("academy_courses")
@@ -145,18 +162,38 @@ Deno.serve(async (req: Request) => {
     if (course) programName = course.title;
   }
 
-  const { data: dtInfo } = await supabaseAdmin
+  const { data: dtInfo, error: dtInfoErr } = await supabaseAdmin
     .from("academy_diploma_types")
     .select("name, template_version")
     .eq("id", diploma_type_id)
     .maybeSingle();
 
-  const { data: template } = await supabaseAdmin
+  if (dtInfoErr || !dtInfo) {
+    return jsonResponse({ error: "Diploma type not found" }, 404);
+  }
+
+  const { data: versionedTemplate } = await supabaseAdmin
     .from("academy_diploma_templates")
     .select("*")
     .eq("diploma_type_id", diploma_type_id)
     .eq("version", dtInfo?.template_version || 1)
+    .eq("is_active", true)
     .maybeSingle();
+
+  // A type can point to an old version after templates were edited. Use the
+  // newest active version rather than blocking manual issuance.
+  let template = versionedTemplate;
+  if (!template) {
+    const { data: latestTemplate } = await supabaseAdmin
+      .from("academy_diploma_templates")
+      .select("*")
+      .eq("diploma_type_id", diploma_type_id)
+      .eq("is_active", true)
+      .order("version", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    template = latestTemplate;
+  }
 
   if (!template) {
     return jsonResponse({ error: "Active template not found for this diploma type" }, 500);
