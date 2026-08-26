@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../lib/auth';
-import { Download, FileText, Leaf, ShoppingCart, Upload, Info, CheckCircle, Lock } from 'lucide-react';
+import { Download, FileText, Leaf, ShoppingCart, CheckCircle, Lock } from 'lucide-react';
 import { useToast } from '../../../lib/toast';
+import AcademyTransferCheckout from '../../../components/AcademyTransferCheckout';
+import type { BankAccount } from '../../../data';
 
 interface Recipe {
   id: string;
@@ -24,7 +26,6 @@ export default function MisRecetas() {
   // Carrito de compras
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -85,13 +86,8 @@ export default function MisRecetas() {
   const selectedRecipes = recipes.filter(r => selectedIds.has(r.id));
   const totalAmount = selectedRecipes.reduce((sum, r) => sum + r.price, 0);
 
-  async function handleCheckout(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleCheckout(receiptFile: File, bank: BankAccount, voucherNumber: string) {
     if (selectedIds.size === 0) return;
-    if (!receiptFile) {
-      toast.error('Debe adjuntar el comprobante de pago');
-      return;
-    }
     if (!profile?.id) {
       toast.error('Sesión no encontrada');
       return;
@@ -99,6 +95,8 @@ export default function MisRecetas() {
 
     try {
       setIsSubmitting(true);
+      void bank;
+      void voucherNumber;
       if (receiptFile.size > 5 * 1024 * 1024) {
         throw new Error('El comprobante no puede superar los 5 MB.');
       }
@@ -119,6 +117,8 @@ export default function MisRecetas() {
           total_amount: totalAmount,
           payment_method: 'transferencia',
           payment_receipt_url: filePath,
+          banco_destino: bank.banco,
+          voucher_numero: voucherNumber,
           status: 'pending'
         }])
         .select('id')
@@ -139,7 +139,6 @@ export default function MisRecetas() {
       toast.success('¡Solicitud enviada! Verificaremos tu pago pronto 🌿');
       setIsCheckoutOpen(false);
       setSelectedIds(new Set());
-      setReceiptFile(null);
       fetchData(); // Recargar datos
     } catch (error: any) {
       console.error('Error in checkout:', error);
@@ -309,86 +308,13 @@ export default function MisRecetas() {
 
       {/* ── MODAL DE CHECKOUT ── */}
       {isCheckoutOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md my-8 flex flex-col">
-            <div className="bg-gradient-to-r from-[#1A4E26] to-[#2E7D32] px-6 py-5 rounded-t-2xl">
-              <h2 className="text-xl font-black text-white">Confirmar Pago</h2>
-              <p className="text-white/70 text-sm mt-1">Sube tu comprobante para desbloquear</p>
-            </div>
-
-            <div className="p-6 space-y-5">
-              <div className="bg-[#F4F7F5] border border-[#C8D8CB] p-4 rounded-xl space-y-3">
-                <h3 className="font-bold text-gray-900 text-sm flex items-center gap-2">
-                  <Leaf size={16} className="text-[#1A4E26]" />
-                  Resumen de Recetas
-                </h3>
-                <ul className="space-y-2">
-                  {selectedRecipes.map(r => (
-                    <li key={r.id} className="flex justify-between text-sm">
-                      <span className="text-gray-600 truncate mr-4">{r.title}</span>
-                      <span className="font-bold text-gray-900">${r.price.toFixed(2)}</span>
-                    </li>
-                  ))}
-                </ul>
-                <div className="pt-3 border-t border-[#C8D8CB] flex justify-between font-black text-lg">
-                  <span className="text-gray-900">Total</span>
-                  <span className="text-[#1A4E26]">${totalAmount.toFixed(2)}</span>
-                </div>
-              </div>
-
-              <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex gap-3">
-                <Info size={20} className="text-blue-500 shrink-0 mt-0.5" />
-                <div className="text-sm text-blue-800">
-                  <p className="font-bold mb-1">Instrucciones</p>
-                  <p>Realiza una transferencia a la cuenta de <strong>SUMAK VIDA ECUADOR</strong> y sube el comprobante aquí.</p>
-                  <p className="mt-2 text-xs text-blue-600">📞 0989413008 / 0986046654</p>
-                </div>
-              </div>
-
-              <form onSubmit={handleCheckout} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    Subir Comprobante <span className="text-red-500">*</span>
-                  </label>
-                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-colors hover:border-[#1A4E26] hover:bg-[#F4F7F5] border-gray-300 bg-gray-50">
-                    <div className="flex flex-col items-center justify-center">
-                      <Upload size={24} className="text-gray-400 mb-2" />
-                      {receiptFile ? (
-                        <p className="text-sm font-semibold text-[#1A4E26]">{receiptFile.name}</p>
-                      ) : (
-                        <p className="text-sm text-gray-500">Foto o PDF del comprobante</p>
-                      )}
-                    </div>
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept="image/*,.pdf"
-                      onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
-                      required
-                    />
-                  </label>
-                </div>
-
-                <div className="flex gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsCheckoutOpen(false)}
-                    className="flex-1 py-3 text-gray-700 font-bold bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting || !receiptFile}
-                    className="flex-1 py-3 bg-[#1A4E26] text-white font-black rounded-xl hover:bg-[#163F1E] transition-colors disabled:opacity-50"
-                  >
-                    {isSubmitting ? 'Enviando...' : 'Confirmar Pago'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
+        <AcademyTransferCheckout
+          recipes={selectedRecipes}
+          total={totalAmount}
+          submitting={isSubmitting}
+          onClose={() => setIsCheckoutOpen(false)}
+          onSubmit={(file, bank, voucherNumber) => handleCheckout(file, bank, voucherNumber)}
+        />
       )}
     </div>
   );

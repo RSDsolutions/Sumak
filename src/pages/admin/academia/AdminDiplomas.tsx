@@ -118,9 +118,9 @@ export default function AdminDiplomas() {
   }
 
   const filteredDiplomas = diplomas.filter(d =>
-    d.participant_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    d.verification_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    d.diploma_number.toLowerCase().includes(searchTerm.toLowerCase())
+    (d.participant_name ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (d.verification_code ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (d.diploma_number ?? '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // ── Plantillas ─────────────────────────────────────────────────────────────
@@ -236,8 +236,8 @@ export default function AdminDiplomas() {
   }
 
   const filteredStudents = students.filter(s =>
-    s.nombre_completo.toLowerCase().includes(studentSearch.toLowerCase()) ||
-    s.email.toLowerCase().includes(studentSearch.toLowerCase())
+    (s.nombre_completo ?? '').toLowerCase().includes(studentSearch.toLowerCase()) ||
+    (s.email ?? '').toLowerCase().includes(studentSearch.toLowerCase())
   );
 
   // ── UI ─────────────────────────────────────────────────────────────────────

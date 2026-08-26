@@ -16,6 +16,8 @@ interface Purchase {
   status: 'pending' | 'processing' | 'approved' | 'rejected';
   total_amount: number;
   payment_method: string;
+  banco_destino: string | null;
+  voucher_numero: string | null;
   payment_receipt_url: string | null;
   created_at: string;
   user_id: string;
@@ -51,6 +53,8 @@ export default function AdminCobrosRecetas() {
           status,
           total_amount,
           payment_method,
+          banco_destino,
+          voucher_numero,
           payment_receipt_url,
           created_at
         `)
@@ -238,6 +242,12 @@ export default function AdminCobrosRecetas() {
                     </td>
                     <td className="px-6 py-4 font-medium text-gray-900">
                       ${purchase.total_amount.toFixed(2)}
+                      {purchase.banco_destino && (
+                        <div className="text-xs text-gray-500 mt-1">{purchase.banco_destino}</div>
+                      )}
+                      {purchase.voucher_numero && (
+                        <div className="text-xs font-mono text-gray-500">N° {purchase.voucher_numero}</div>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       {purchase.payment_receipt_url ? (
