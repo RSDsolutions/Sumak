@@ -44,6 +44,33 @@ async function sha256(data: Uint8Array): Promise<string> {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+function drawCenteredText(page: any, text: string, y: number, size: number, font: any, color: any, pageWidth: number) {
+  const textWidth = font.widthOfTextAtSize(text, size);
+  page.drawText(text, { x: (pageWidth - textWidth) / 2, y, size, font, color });
+}
+
+function drawCenteredAt(page: any, text: string, centerX: number, y: number, size: number, font: any, color: any) {
+  const textWidth = font.widthOfTextAtSize(text, size);
+  page.drawText(text, { x: centerX - textWidth / 2, y, size, font, color });
+}
+
+function drawWrappedCenteredText(page: any, text: string, y: number, size: number, font: any, color: any, pageWidth: number, maxWidth: number, lineGap = 7) {
+  const words = text.split(/\s+/);
+  const lines: string[] = [];
+  let line = '';
+  for (const word of words) {
+    const candidate = line ? `${line} ${word}` : word;
+    if (font.widthOfTextAtSize(candidate, size) > maxWidth && line) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = candidate;
+    }
+  }
+  if (line) lines.push(line);
+  lines.forEach((lineText, index) => drawCenteredText(page, lineText, y - index * (size + lineGap), size, font, color, pageWidth));
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -225,7 +252,15 @@ Deno.serve(async (req: Request) => {
 
   const page = pdfDoc.addPage([width, height]);
   
-  // Try to load background image if URL provided (requires fetching the image)
+  const ink = rgb(0.08, 0.22, 0.13);
+  const gold = rgb(0.67, 0.51, 0.14);
+  const mutedGold = rgb(0.82, 0.73, 0.47);
+  const paper = rgb(0.98, 0.96, 0.88);
+  const textColor = rgb(0.15, 0.15, 0.13);
+
+  page.drawRectangle({ x: 0, y: 0, width, height, color: paper });
+
+  // Try to load a custom background image if one is configured.
   if (template.background_image_url) {
     try {
       const imgRes = await fetch(template.background_image_url);
@@ -244,22 +279,55 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  // Add text
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  
+  const margin = 24;
+
+  // Layered frame and corner ornaments give the generated certificate its
+  // printable ceremonial layout without requiring an uploaded PDF template.
+  page.drawRectangle({ x: margin, y: margin, width: width - margin * 2, height: height - margin * 2, borderColor: ink, borderWidth: 5 });
+  page.drawRectangle({ x: margin + 12, y: margin + 12, width: width - (margin + 12) * 2, height: height - (margin + 12) * 2, borderColor: gold, borderWidth: 1.5 });
+  page.drawRectangle({ x: margin + 22, y: margin + 22, width: width - (margin + 22) * 2, height: height - (margin + 22) * 2, borderColor: mutedGold, borderWidth: 0.7 });
+  for (const corner of [[margin + 18, height - margin - 18], [width - margin - 18, height - margin - 18], [margin + 18, margin + 18], [width - margin - 18, margin + 18]]) {
+    const [x, y] = corner;
+    page.drawCircle({ x, y, size: 8, borderColor: gold, borderWidth: 1.5 });
+    page.drawCircle({ x, y, size: 3, color: gold });
+    page.drawLine({ start: { x: x - 18, y }, end: { x: x + 18, y }, thickness: 1, color: gold });
+    page.drawLine({ start: { x, y: y - 18 }, end: { x, y: y + 18 }, thickness: 1, color: gold });
+  }
+
+  // Brand lockup.
+  drawCenteredText(page, 'SUMAK', height - 88, 42, boldFont, ink, width);
+  drawCenteredText(page, 'VIDA ECUADOR S.A.', height - 108, 10, boldFont, gold, width);
+  page.drawLine({ start: { x: width / 2 - 125, y: height - 126 }, end: { x: width / 2 + 125, y: height - 126 }, thickness: 1.2, color: gold });
+
   const title = (template.title_text || '{{diploma_type_name}}').replace('{{diploma_type_name}}', dtInfo?.name || '');
-  page.drawText(title, { x: 50, y: height - 100, size: 36, font: boldFont, color: rgb(0, 0, 0) });
-  
+  drawCenteredText(page, title.toUpperCase(), height - 172, 28, boldFont, ink, width);
+  drawCenteredText(page, template.subtitle_text || 'ACADEMIA SUMAK', height - 195, 11, font, gold, width);
+  page.drawLine({ start: { x: width / 2 - 75, y: height - 211 }, end: { x: width / 2 + 75, y: height - 211 }, thickness: 1, color: mutedGold });
+
+  drawCenteredText(page, 'Se certifica que:', height - 246, 13, font, textColor, width);
+  drawCenteredText(page, participantName, height - 292, 25, boldFont, ink, width);
+  page.drawLine({ start: { x: width / 2 - 190, y: height - 305 }, end: { x: width / 2 + 190, y: height - 305 }, thickness: 1, color: gold });
+
   const bodyText = (template.body_text || 'Por haber completado el curso {{course_name}}.')
     .replace('{{participant_name}}', participantName)
     .replace('{{course_name}}', programName);
-  page.drawText(participantName, { x: 50, y: height - 200, size: 28, font: boldFont, color: rgb(0.1, 0.3, 0.15) });
-  page.drawText(bodyText, { x: 50, y: height - 250, size: 18, font });
+  drawWrappedCenteredText(page, bodyText, height - 342, 13, font, textColor, width, width - 180, 6);
+
+  const dateText = new Date().toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: 'numeric' });
+  drawCenteredText(page, `Emitido el ${dateText}`, height - 430, 11, font, textColor, width);
+
+  const signatureY = 92;
+  page.drawLine({ start: { x: 120, y: signatureY }, end: { x: 310, y: signatureY }, thickness: 1, color: ink });
+  page.drawLine({ start: { x: width - 310, y: signatureY }, end: { x: width - 120, y: signatureY }, thickness: 1, color: ink });
+  drawCenteredAt(page, template.signatory_name || 'Dr. Luis Paredes', width / 2 - 215, signatureY - 18, 11, boldFont, textColor);
+  drawCenteredAt(page, 'Estudiante', width / 2 + 215, signatureY - 18, 11, font, textColor);
+  drawCenteredAt(page, template.signatory_title || 'Formador de formadores', width / 2 - 215, signatureY - 33, 9, font, textColor);
+  drawCenteredAt(page, 'Participante', width / 2 + 215, signatureY - 33, 9, font, textColor);
 
   // Verification info
-  page.drawText(`Diploma N°: ${diplomaNumber}`, { x: 50, y: 50, size: 10, font });
-  page.drawText(`Código de Verificación: ${verificationCode}`, { x: 50, y: 35, size: 10, font });
+  drawCenteredText(page, `Diploma N° ${diplomaNumber}  ·  Código ${verificationCode}`, 42, 8, font, gold, width);
 
   const pdfBytes = await pdfDoc.save();
 

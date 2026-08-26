@@ -328,7 +328,7 @@ export default function AdminDiplomas() {
               />
             </div>
             <div className="flex items-center gap-4 text-sm font-medium text-[#6B7280]">
-              <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#1A4E26]" /> Válidos: {diplomas.filter(d => d.status === 'valid').length}</span>
+              <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#1A4E26]" /> Válidos: {diplomas.filter(d => d.status === 'valid' || d.status === 'issued').length}</span>
               <span className="flex items-center gap-1"><XCircle size={14} className="text-red-500" /> Revocados: {diplomas.filter(d => d.status === 'revoked').length}</span>
             </div>
           </div>
@@ -380,9 +380,9 @@ export default function AdminDiplomas() {
                         </p>
                       </td>
                       <td className="px-6 py-4">
-                        {dip.status === 'valid' ? (
+                        {dip.status === 'valid' || dip.status === 'issued' ? (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-[#EBF4ED] text-[#1A4E26] border border-[#1A4E26]/20">
-                            <CheckCircle size={12} /> Válido
+                            <CheckCircle size={12} /> {dip.status === 'issued' ? 'Emitido' : 'Válido'}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-red-50 text-red-700 border border-red-200">
@@ -394,13 +394,13 @@ export default function AdminDiplomas() {
                         <div className="flex justify-end gap-2">
                           <button
                             onClick={() => handleDownload(dip.id)}
-                            disabled={processingId === dip.id || dip.status === 'revoked'}
+                            disabled={processingId === dip.id || ['revoked', 'superseded', 'invalidated'].includes(dip.status)}
                             className="p-2 text-[#6B7280] hover:text-[#1A4E26] hover:bg-[#EBF4ED] rounded-lg transition-colors disabled:opacity-50"
                             title="Descargar PDF"
                           >
                             <Download size={18} />
                           </button>
-                          {dip.status === 'valid' && (
+                          {(dip.status === 'valid' || dip.status === 'issued') && (
                             <button
                               onClick={() => handleRevoke(dip.id)}
                               disabled={processingId === dip.id}
