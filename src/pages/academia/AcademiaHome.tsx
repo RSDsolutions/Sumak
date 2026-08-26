@@ -117,7 +117,7 @@ export default function AcademiaHome() {
               </Link>
             ) : (
               <Link
-                to="/registro"
+                to="/academia/registro"
                 className="group relative px-8 py-4 bg-[#D4AF37] text-[#0B2913] font-black text-lg rounded-2xl hover:bg-[#F3D568] transition-all duration-300 hover:shadow-[0_0_40px_rgba(212,175,55,0.5)] flex items-center gap-3"
               >
                 <Zap size={22} />
@@ -132,6 +132,14 @@ export default function AcademiaHome() {
               <BookOpen size={22} />
               Ver Catálogo
             </Link>
+            {!profile && (
+              <Link
+                to="/academia/login"
+                className="px-6 py-4 text-white/50 font-semibold text-base hover:text-white transition-colors"
+              >
+                Ya tengo cuenta →
+              </Link>
+            )}
           </div>
 
           {/* Stats */}

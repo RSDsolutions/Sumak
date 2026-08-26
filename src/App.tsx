@@ -81,6 +81,8 @@ const MisRecetas = lazy(() => import('./pages/academia/dashboard/MisRecetas'));
 const VisorLeccion = lazy(() => import('./pages/academia/VisorLeccion'));
 const Evaluacion = lazy(() => import('./pages/academia/Evaluacion'));
 const Recetas = lazy(() => import('./pages/academia/Recetas'));
+const LoginAcademia = lazy(() => import('./pages/academia/LoginAcademia'));
+const RegistroAcademia = lazy(() => import('./pages/academia/RegistroAcademia'));
 
 // Operaciones pages (rol delegado para pedidos / comisiones / solicitudes).
 // Reusa componentes de admin/* — sólo cambia el layout (OperacionesLayout)
@@ -456,6 +458,9 @@ export default function App() {
           <Route path="/academia/cursos/:slug" element={<PublicLayout><PageTransition><CursoDetalle /></PageTransition></PublicLayout>} />
           <Route path="/academia/recetas" element={<PublicLayout><PageTransition><Recetas /></PageTransition></PublicLayout>} />
           <Route path="/academia/verificar" element={<PublicLayout><PageTransition><VerificarDiploma /></PageTransition></PublicLayout>} />
+          {/* Auth pages for academy — standalone, no PublicLayout nav */}
+          <Route path="/academia/login" element={<Suspense fallback={null}><LoginAcademia /></Suspense>} />
+          <Route path="/academia/registro" element={<Suspense fallback={null}><RegistroAcademia /></Suspense>} />
           
           <Route
             path="/academia/dashboard"
