@@ -106,7 +106,7 @@ export default function Recetas() {
         .insert([{
           user_id: profile.id,
           total_amount: totalAmount,
-          payment_method: 'bank_transfer',
+          payment_method: 'transferencia',
           payment_receipt_url: filePath,
           status: 'pending'
         }])

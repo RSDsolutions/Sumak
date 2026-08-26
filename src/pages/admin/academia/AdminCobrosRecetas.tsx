@@ -17,11 +17,10 @@ interface Purchase {
   payment_method: string;
   payment_receipt_url: string | null;
   created_at: string;
+  user_id: string;
   user: {
     email: string;
-    raw_user_meta_data: {
-      nombre_completo: string;
-    };
+    nombre_completo: string;
   };
   items: PurchaseItem[];
 }
@@ -42,11 +41,17 @@ export default function AdminCobrosRecetas() {
   async function fetchPurchases() {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+
+      const { data: purchasesData, error: purchasesError } = await supabase
         .from('academy_recipe_purchases')
         .select(`
-          *,
-          user:user_id (email, raw_user_meta_data),
+          id,
+          user_id,
+          status,
+          total_amount,
+          payment_method,
+          payment_receipt_url,
+          created_at,
           items:academy_recipe_purchase_items(
             price_at_purchase,
             recipe:academy_recipes(title)
@@ -54,8 +59,36 @@ export default function AdminCobrosRecetas() {
         `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setPurchases((data || []) as unknown as Purchase[]);
+      if (purchasesError) throw purchasesError;
+
+      const userIds = [...new Set((purchasesData ?? []).map((purchase) => purchase.user_id).filter(Boolean))];
+      const profilesMap = new Map<string, { email: string; nombre_completo: string }>();
+
+      if (userIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, email, nombre_completo')
+          .in('id', userIds);
+
+        if (profilesError) throw profilesError;
+
+        (profilesData ?? []).forEach((profile) => {
+          profilesMap.set(profile.id, {
+            email: profile.email ?? '',
+            nombre_completo: profile.nombre_completo ?? 'Sin Nombre',
+          });
+        });
+      }
+
+      const normalizedPurchases = (purchasesData ?? []).map((purchase) => ({
+        ...purchase,
+        user: profilesMap.get(purchase.user_id) ?? {
+          email: 'Sin email',
+          nombre_completo: 'Sin Nombre',
+        },
+      })) as Purchase[];
+
+      setPurchases(normalizedPurchases);
     } catch (error) {
       console.error('Error fetching purchases:', error);
       toast.error('Error al cargar los cobros');
@@ -97,8 +130,8 @@ export default function AdminCobrosRecetas() {
   }
 
   const filteredPurchases = purchases.filter(p => 
-    p.user?.email.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    p.user?.raw_user_meta_data?.nombre_completo?.toLowerCase().includes(searchTerm.toLowerCase())
+    p.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    p.user?.nombre_completo?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -161,8 +194,8 @@ export default function AdminCobrosRecetas() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="font-medium text-gray-900">{purchase.user?.raw_user_meta_data?.nombre_completo || 'Usuario sin nombre'}</p>
-                      <p className="text-xs text-gray-500">{purchase.user?.email}</p>
+                            <div className="font-bold text-gray-900">{purchase.user?.nombre_completo || 'Sin Nombre'}</div>
+                            <div className="text-sm text-gray-500">{purchase.user?.email}</div>
                     </td>
                     <td className="px-6 py-4">
                       <ul className="list-disc list-inside text-xs text-gray-600">
