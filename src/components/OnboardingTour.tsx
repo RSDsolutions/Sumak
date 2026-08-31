@@ -590,7 +590,12 @@ export default function OnboardingTour({ forceStart = false, onComplete }: Onboa
 
   useEffect(() => {
     if (!profile) return;
-    if (!forceStart && (!isDistribuidor || profile.has_completed_onboarding)) {
+
+    // El tour solo se muestra a usuarios nuevos cuyo has_completed_onboarding
+    // es explícitamente `false`. Si es `null` (usuarios anteriores a la feature)
+    // o `true` (ya completado/rechazado), no se muestra.
+    const shouldShow = forceStart || (isDistribuidor && profile.has_completed_onboarding === false);
+    if (!shouldShow) {
       return;
     }
 

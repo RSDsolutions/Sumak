@@ -44,10 +44,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq('id', uid)
       .single();
     if (!error && data) {
+      // Preservamos null (usuario anterior a la feature) distinto de false (usuario nuevo pendiente de tour).
+      // Boolean(null) === false, lo cual causaba que el tour apareciera para todos los usuarios antiguos.
       const localVal = localStorage.getItem(`sumak_onboarding_completed_${uid}`);
-      const isCompleted = localVal !== null
+      const isCompleted: boolean | null = localVal !== null
         ? localVal === 'true'
-        : Boolean(data.has_completed_onboarding);
+        : (data.has_completed_onboarding ?? null);
       const p = { ...(data as Profile), has_completed_onboarding: isCompleted };
       setProfile(p);
       return p;
