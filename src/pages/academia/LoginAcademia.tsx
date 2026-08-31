@@ -19,7 +19,7 @@ export default function LoginAcademia() {
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
 
-  const { signIn } = useAuth();
+  const { signIn, homeForProfile } = useAuth();
   const navigate = useNavigate();
 
   async function resolveEmail(value: string): Promise<string | null> {
@@ -41,11 +41,18 @@ export default function LoginAcademia() {
         setError('No encontramos una cuenta con esos datos. Verifica tu correo.');
         return;
       }
-      const { error: signInError } = await signIn(resolvedEmail, password);
+      const { error: signInError, profile } = await signIn(resolvedEmail, password);
       if (signInError) {
         setError('Correo o contraseña incorrectos. Intenta de nuevo.');
       } else {
-        navigate('/academia/dashboard', { replace: true });
+        // Si el usuario tiene plataforma (paquete o patrocinador), enviarlo al dashboard de plataforma
+        // y desde allí puede navegar a la academia. Si es usuario solo de academia, ir directo.
+        const isPlatformUser = profile && (profile.paquete || profile.patrocinador_id);
+        if (isPlatformUser) {
+          navigate(homeForProfile(profile), { replace: true });
+        } else {
+          navigate('/academia/dashboard', { replace: true });
+        }
       }
     } finally {
       setLoading(false);

@@ -109,7 +109,7 @@ export default function Navbar() {
 
           {/* Academia CTA Button - Desktop */}
           <Link
-            to="/academia"
+            to={user ? '/academia/dashboard' : '/academia/login'}
             className={`hidden xl:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-sm font-bold transition-all duration-200 border ${
               location.pathname.startsWith('/academia')
                 ? 'bg-[#1A4E26] text-[#D4AF37] border-[#1A4E26]'
@@ -273,7 +273,7 @@ export default function Navbar() {
               className="mx-6 mt-4"
             >
               <Link
-                to="/academia"
+                to={user ? '/academia/dashboard' : '/academia/login'}
                 className="flex items-center justify-between w-full py-4 px-5 rounded-2xl bg-[#1A4E26] text-white font-bold text-base"
               >
                 <div className="flex items-center gap-3">
@@ -289,19 +289,31 @@ export default function Navbar() {
               transition={{ delay: 0.4 }}
               className="mt-auto px-6 pb-10 pt-8 flex flex-col gap-3"
             >
-              <Link
-                to="/registro"
-                className="w-full py-4 text-center rounded-xl bg-[#1A4E26] text-white font-bold text-base shadow-[0_8px_24px_rgba(26,78,38,0.35)] flex items-center justify-center gap-2"
-              >
-                Únete Ahora
-                <ArrowRight size={18} />
-              </Link>
-              <Link
-                to="/login"
-                className="w-full py-4 text-center rounded-xl border border-[#C8D8CB] text-[#111111] font-semibold text-base"
-              >
-                Iniciar Sesión
-              </Link>
+              {user ? (
+                <Link
+                  to={dashboardPath}
+                  className="w-full py-4 text-center rounded-xl bg-[#1A4E26] text-white font-bold text-base shadow-[0_8px_24px_rgba(26,78,38,0.35)] flex items-center justify-center gap-2"
+                >
+                  <LayoutDashboard size={18} />
+                  Mi Panel
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    to="/registro"
+                    className="w-full py-4 text-center rounded-xl bg-[#1A4E26] text-white font-bold text-base shadow-[0_8px_24px_rgba(26,78,38,0.35)] flex items-center justify-center gap-2"
+                  >
+                    Únete Ahora
+                    <ArrowRight size={18} />
+                  </Link>
+                  <Link
+                    to="/login"
+                    className="w-full py-4 text-center rounded-xl border border-[#C8D8CB] text-[#111111] font-semibold text-base"
+                  >
+                    Iniciar Sesión
+                  </Link>
+                </>
+              )}
             </motion.div>
           </motion.div>
         )}
