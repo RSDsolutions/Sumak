@@ -41,7 +41,7 @@ export default function Navbar() {
     { name: 'Contacto', path: '/contacto' },
   ];
 
-  const isAcademyOnly = profile?.rol === 'distribuidor' && !profile?.paquete && !profile?.patrocinador_id;
+  const isAcademyOnly = profile?.rol === 'distribuidor' && (profile?.codigo_distribuidor?.startsWith('ACE-') ?? false);
   const dashboardPath = profile?.rol === 'admin'
     ? '/admin'
     : profile?.rol === 'operaciones'

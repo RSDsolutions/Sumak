@@ -45,13 +45,12 @@ export default function LoginAcademia() {
       if (signInError) {
         setError('Correo o contraseña incorrectos. Intenta de nuevo.');
       } else {
-        // Si el usuario tiene plataforma (paquete o patrocinador), enviarlo al dashboard de plataforma
-        // y desde allí puede navegar a la academia. Si es usuario solo de academia, ir directo.
-        const isPlatformUser = profile && (profile.paquete || profile.patrocinador_id);
-        if (isPlatformUser) {
-          navigate(homeForProfile(profile), { replace: true });
-        } else {
+        // Usuarios de academia gratuita tienen código ACE-. Los afiliados van a la plataforma.
+        const isAcademyFree = profile?.codigo_distribuidor?.startsWith('ACE-') ?? true;
+        if (isAcademyFree) {
           navigate('/academia/dashboard', { replace: true });
+        } else {
+          navigate(homeForProfile(profile), { replace: true });
         }
       }
     } finally {

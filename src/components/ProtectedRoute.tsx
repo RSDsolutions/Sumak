@@ -41,12 +41,11 @@ export default function ProtectedRoute({ allowedRoles, children }: ProtectedRout
   }
 
 
-  // Usuarios exclusivos de academia (sin paquete ni patrocinador)
-  // no pueden acceder a rutas de la plataforma principal (/dashboard, etc.)
+  // Usuarios exclusivos de academia: su código empieza con ACE- (asignado por create_academy_profile)
+  // Los afiliados/distribuidores de la plataforma tienen códigos distintos
   const isAcademyOnly =
     profile.rol === 'distribuidor' &&
-    !profile.paquete &&
-    !profile.patrocinador_id;
+    (profile.codigo_distribuidor?.startsWith('ACE-') ?? false);
 
   if (isAcademyOnly) {
     const path = window.location.pathname;

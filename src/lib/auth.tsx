@@ -158,8 +158,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (p.rol === 'admin') return '/admin';
     if (p.rol === 'operaciones') return '/operaciones';
     if (p.rol === 'distribuidor') {
-      // Usuarios registrados solo en academia (sin paquete ni patrocinador) → acceso exclusivo academia
-      if (!p.paquete && !p.patrocinador_id) {
+      // Los usuarios registrados desde la academia gratuita tienen código ACE-XXXXXXXX
+      // Los afiliados/distribuidores de la plataforma tienen otros códigos
+      const isAcademyFree = p.codigo_distribuidor?.startsWith('ACE-') ?? false;
+      if (isAcademyFree) {
         return '/academia/dashboard';
       }
       return '/dashboard';
