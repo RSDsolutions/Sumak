@@ -41,9 +41,14 @@ export default function Navbar() {
     { name: 'Contacto', path: '/contacto' },
   ];
 
+  const isAcademyOnly = profile?.rol === 'distribuidor' && !profile?.paquete && !profile?.patrocinador_id;
   const dashboardPath = profile?.rol === 'admin'
     ? '/admin'
-    : (profile?.rol === 'operaciones' ? '/operaciones' : '/dashboard');
+    : profile?.rol === 'operaciones'
+      ? '/operaciones'
+      : isAcademyOnly
+        ? '/academia/dashboard'
+        : '/dashboard';
 
   // Header siempre blanco — solo cambia la sombra al hacer scroll
   const headerClasses = `fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white border-b ${

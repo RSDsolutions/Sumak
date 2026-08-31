@@ -41,5 +41,21 @@ export default function ProtectedRoute({ allowedRoles, children }: ProtectedRout
   }
 
 
+  // Usuarios exclusivos de academia (sin paquete ni patrocinador)
+  // no pueden acceder a rutas de la plataforma principal (/dashboard, etc.)
+  const isAcademyOnly =
+    profile.rol === 'distribuidor' &&
+    !profile.paquete &&
+    !profile.patrocinador_id;
+
+  if (isAcademyOnly) {
+    const path = window.location.pathname;
+    const isAcademiaRoute = path.startsWith('/academia');
+    const isPerfilRoute = path.startsWith('/perfil');
+    if (!isAcademiaRoute && !isPerfilRoute) {
+      return <Navigate to="/academia/dashboard" replace />;
+    }
+  }
+
   return <>{children}</>;
 }
