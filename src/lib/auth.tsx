@@ -158,9 +158,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (p.rol === 'admin') return '/admin';
     if (p.rol === 'operaciones') return '/operaciones';
     if (p.rol === 'distribuidor') {
-      if (!p.paquete && !p.patrocinador_id) {
-        return '/academia/dashboard';
-      }
       return '/dashboard';
     }
     return '/login';
