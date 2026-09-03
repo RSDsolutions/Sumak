@@ -386,6 +386,30 @@ export const academyAPI = {
     return data ?? [];
   },
 
+  async getAdminPrograms() {
+    const { data, error } = await supabase.from('academy_programs').select('*, courses:academy_program_courses (id, course_id, sort_order, is_required, course:course_id (id, title))').order('sort_order', { ascending: true });
+    if (error) throw error;
+    return data ?? [];
+  },
+
+  async saveAdminProgram(programId: string | null, input: { title: string; slug: string; description: string; status: string; access_mode: string; completion_percentage_required: number; sort_order: number }) {
+    const query = programId ? supabase.from('academy_programs').update(input).eq('id', programId) : supabase.from('academy_programs').insert(input);
+    const { data, error } = await query.select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  async addCourseToProgram(input: { program_id: string; course_id: string; sort_order: number; is_required: boolean }) {
+    const { data, error } = await supabase.from('academy_program_courses').insert(input).select('*, course:course_id (id, title)').single();
+    if (error) throw error;
+    return data;
+  },
+
+  async removeCourseFromProgram(linkId: string) {
+    const { error } = await supabase.from('academy_program_courses').delete().eq('id', linkId);
+    if (error) throw error;
+  },
+
   async getAdminCourses() {
     const { data, error } = await supabase
       .from('academy_courses')
