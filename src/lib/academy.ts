@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import type { 
+  AcademyCategory,
   AcademyCourse, 
   AcademyModule, 
   AcademyLesson, 
@@ -352,6 +353,58 @@ export const academyAPI = {
       return fallbackCourses as AcademyCourse[];
     }
     return data as AcademyCourse[];
+  },
+
+  async getAdminCategories() {
+    const { data, error } = await supabase
+      .from('academy_categories')
+      .select('*')
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true });
+    if (error) throw error;
+    return data as AcademyCategory[];
+  },
+
+  async getAdminCourses() {
+    const { data, error } = await supabase
+      .from('academy_courses')
+      .select('*, category:category_id (name, slug), instructor:instructor_id (nombre_completo)')
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data as AcademyCourse[];
+  },
+
+  async createAdminCategory(input: Pick<AcademyCategory, 'name' | 'slug' | 'description' | 'sort_order'>) {
+    const { data, error } = await supabase
+      .from('academy_categories')
+      .insert({ ...input, is_active: true })
+      .select()
+      .single();
+    if (error) throw error;
+    return data as AcademyCategory;
+  },
+
+  async saveAdminCourse(courseId: string | null, input: {
+    title: string;
+    slug: string;
+    short_description: string;
+    description: string;
+    category_id: string | null;
+    level: string;
+    access_mode: string;
+    status: string;
+    estimated_duration_minutes: number | null;
+    passing_percentage: number;
+    generates_certificate: boolean;
+    price: number;
+  }) {
+    const query = courseId
+      ? supabase.from('academy_courses').update(input).eq('id', courseId)
+      : supabase.from('academy_courses').insert(input);
+    const { data, error } = await query.select().single();
+    if (error) throw error;
+    return data as AcademyCourse;
   },
 
   async getCourseBySlug(slug: string) {
