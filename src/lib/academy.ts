@@ -376,6 +376,16 @@ export const academyAPI = {
     return data ?? [];
   },
 
+  async getPrograms() {
+    const { data, error } = await supabase
+      .from('academy_programs')
+      .select('*, courses:academy_program_courses (sort_order, is_required, course:course_id (id, title, slug, estimated_duration_minutes))')
+      .eq('status', 'published')
+      .order('sort_order', { ascending: true });
+    if (error) throw error;
+    return data ?? [];
+  },
+
   async getAdminCourses() {
     const { data, error } = await supabase
       .from('academy_courses')
