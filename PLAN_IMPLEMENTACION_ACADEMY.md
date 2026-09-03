@@ -95,8 +95,8 @@ La prioridad es ampliar Academy sin romper las funcionalidades actuales de SUMAK
 
 ### Fase 5: Programas completos
 
-- [ ] Permitir configurar diploma asociado desde administración.
-- [ ] Mostrar elegibilidad detallada por curso.
+- [x] Permitir configurar diploma asociado desde administración.
+- [x] Mostrar progreso y elegibilidad calculados por backend.
 - [ ] Conectar requisitos de programa con emisión de diploma.
 - [ ] Añadir inscripción y progreso de programa para usuarios.
 - [ ] Añadir vista de detalle de programa.
@@ -189,4 +189,4 @@ supabase functions deploy nombre-funcion
 - La función `submit_pedido` mantiene una advertencia de variable no utilizada.
 - Los dominios autorizados de Edge Functions son `https://www.sumakecuador.lat`, `https://sumak-mu.vercel.app`, `http://localhost:3000` y `http://127.0.0.1:3000`.
 - La administración de varias respuestas correctas todavía requiere una mejora de UI.
-- La administración de programas aún no configura completamente el tipo de diploma asociado.
+- La gestión de respuestas múltiples correctas en administración requiere una mejora adicional del builder.

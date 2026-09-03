@@ -410,7 +410,13 @@ export const academyAPI = {
     return data ?? [];
   },
 
-  async saveAdminProgram(programId: string | null, input: { title: string; slug: string; description: string; status: string; access_mode: string; completion_percentage_required: number; sort_order: number }) {
+  async getAdminDiplomaTypes() {
+    const { data, error } = await supabase.from('academy_diploma_types').select('id, name, internal_code').eq('is_active', true).order('sort_order', { ascending: true });
+    if (error) throw error;
+    return data ?? [];
+  },
+
+  async saveAdminProgram(programId: string | null, input: { title: string; slug: string; description: string; status: string; access_mode: string; completion_percentage_required: number; diploma_type_id: string | null; sort_order: number }) {
     const query = programId ? supabase.from('academy_programs').update(input).eq('id', programId) : supabase.from('academy_programs').insert(input);
     const { data, error } = await query.select().single();
     if (error) throw error;
