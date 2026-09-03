@@ -407,6 +407,37 @@ export const academyAPI = {
     return data as AcademyCourse;
   },
 
+  async getAdminCourseContent(courseId: string) {
+    const { data, error } = await supabase
+      .from('academy_modules')
+      .select('*, lessons:academy_lessons (*)')
+      .eq('course_id', courseId)
+      .order('sort_order', { ascending: true });
+    if (error) throw error;
+    return (data ?? []).map((module) => ({
+      ...module,
+      lessons: (module.lessons ?? []).sort((a: AcademyLesson, b: AcademyLesson) => a.sort_order - b.sort_order),
+    })) as AcademyModule[];
+  },
+
+  async saveAdminModule(moduleId: string | null, input: { course_id: string; title: string; description: string; sort_order: number; is_published: boolean }) {
+    const query = moduleId
+      ? supabase.from('academy_modules').update(input).eq('id', moduleId)
+      : supabase.from('academy_modules').insert(input);
+    const { data, error } = await query.select().single();
+    if (error) throw error;
+    return data as AcademyModule;
+  },
+
+  async saveAdminLesson(lessonId: string | null, input: Partial<AcademyLesson> & { module_id: string; title: string; content_type: string; sort_order: number }) {
+    const query = lessonId
+      ? supabase.from('academy_lessons').update(input).eq('id', lessonId)
+      : supabase.from('academy_lessons').insert(input);
+    const { data, error } = await query.select().single();
+    if (error) throw error;
+    return data as AcademyLesson;
+  },
+
   async getCourseBySlug(slug: string) {
     const { data, error } = await supabase
       .from('academy_courses')

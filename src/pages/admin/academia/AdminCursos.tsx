@@ -3,7 +3,7 @@ import { BookOpen, ChevronDown, Loader2, Plus, Search } from 'lucide-react';
 import Modal from '../../../components/Modal';
 import { academyAPI } from '../../../lib/academy';
 import { useToast } from '../../../lib/toast';
-import type { AcademyCategory, AcademyCourse } from '../../../lib/academy-types';
+import type { AcademyCategory, AcademyCourse, AcademyLesson, AcademyModule, ContentType } from '../../../lib/academy-types';
 
 type CourseForm = {
   title: string;
@@ -60,6 +60,12 @@ export default function AdminCursos() {
   const [editingCourse, setEditingCourse] = useState<AcademyCourse | null>(null);
   const [form, setForm] = useState<CourseForm>(emptyForm);
   const [categoryForm, setCategoryForm] = useState({ name: '', slug: '', description: '' });
+  const [builderCourse, setBuilderCourse] = useState<AcademyCourse | null>(null);
+  const [modules, setModules] = useState<AcademyModule[]>([]);
+  const [builderLoading, setBuilderLoading] = useState(false);
+  const [moduleTitle, setModuleTitle] = useState('');
+  const [lessonDraft, setLessonDraft] = useState<{ moduleId: string; lesson: AcademyLesson | null }>({ moduleId: '', lesson: null });
+  const [lessonForm, setLessonForm] = useState<{ title: string; content_type: ContentType; text_content: string; video_external_id: string; estimated_minutes: string }>({ title: '', content_type: 'text', text_content: '', video_external_id: '', estimated_minutes: '' });
 
   async function load() {
     setLoading(true);
@@ -93,6 +99,45 @@ export default function AdminCursos() {
     setEditingCourse(course);
     setForm(courseToForm(course));
     setModal('course');
+  }
+
+  async function openBuilder(course: AcademyCourse) {
+    setBuilderCourse(course);
+    setBuilderLoading(true);
+    try {
+      setModules(await academyAPI.getAdminCourseContent(course.id));
+    } catch {
+      toast.error('No se pudo cargar el contenido del curso.');
+    } finally {
+      setBuilderLoading(false);
+    }
+  }
+
+  async function addModule() {
+    if (!builderCourse || !moduleTitle.trim()) return;
+    try {
+      const module = await academyAPI.saveAdminModule(null, { course_id: builderCourse.id, title: moduleTitle.trim(), description: '', sort_order: modules.length + 1, is_published: true });
+      setModules((current) => [...current, { ...module, lessons: [] }]);
+      setModuleTitle('');
+      toast.success('Módulo creado.');
+    } catch { toast.error('No se pudo crear el módulo.'); }
+  }
+
+  function openLesson(moduleId: string, lesson: AcademyLesson | null = null) {
+    setLessonDraft({ moduleId, lesson });
+    setLessonForm({ title: lesson?.title ?? '', content_type: lesson?.content_type ?? 'text', text_content: lesson?.text_content ?? '', video_external_id: lesson?.video_external_id ?? '', estimated_minutes: lesson?.estimated_minutes?.toString() ?? '' });
+  }
+
+  async function saveLesson(event: React.FormEvent) {
+    event.preventDefault();
+    const module = modules.find((item) => item.id === lessonDraft.moduleId);
+    if (!module || !lessonForm.title.trim()) return;
+    try {
+      const lesson = await academyAPI.saveAdminLesson(lessonDraft.lesson?.id ?? null, { module_id: module.id, title: lessonForm.title.trim(), content_type: lessonForm.content_type, text_content: lessonForm.text_content || null, video_external_id: lessonForm.video_external_id || null, video_provider: lessonForm.video_external_id ? 'youtube' : null, estimated_minutes: lessonForm.estimated_minutes ? Number(lessonForm.estimated_minutes) : null, sort_order: (module.lessons?.length ?? 0) + (lessonDraft.lesson ? 0 : 1), is_published: true, is_free_preview: false });
+      setModules((current) => current.map((item) => item.id === module.id ? { ...item, lessons: lessonDraft.lesson ? item.lessons?.map((itemLesson) => itemLesson.id === lesson.id ? lesson : itemLesson) : [...(item.lessons ?? []), lesson] } : item));
+      setLessonDraft({ moduleId: '', lesson: null });
+      toast.success('Lección guardada.');
+    } catch { toast.error('No se pudo guardar la lección.'); }
   }
 
   async function saveCourse(event: React.FormEvent) {
@@ -188,12 +233,12 @@ export default function AdminCursos() {
         ) : (
           <div className="divide-y divide-[#E5ECE6]">
             {filteredCourses.map((course) => (
-              <button type="button" key={course.id} onClick={() => openEditCourse(course)} className="w-full text-left p-4 sm:p-6 hover:bg-[#F8FBF8] transition-colors flex flex-col sm:flex-row sm:items-center gap-4">
+              <div key={course.id} className="p-4 sm:p-6 hover:bg-[#F8FBF8] transition-colors flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="h-11 w-11 rounded-xl bg-[#E8F2EA] text-[#1A4E26] flex items-center justify-center shrink-0"><BookOpen size={20} /></div>
                 <div className="min-w-0 flex-1"><h2 className="font-bold text-[#111111] truncate">{course.title}</h2><p className="text-xs text-[#6B7280] mt-1 truncate">/{course.slug} {course.category?.name ? `· ${course.category.name}` : ''}</p></div>
                 <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${course.status === 'published' ? 'bg-[#E8F2EA] text-[#1A4E26]' : course.status === 'archived' ? 'bg-slate-100 text-slate-500' : 'bg-[#FFF7DF] text-[#92680A]'}`}>{course.status === 'published' ? 'Publicado' : course.status === 'archived' ? 'Archivado' : 'Borrador'}</span>
-                <span className="text-xs text-[#6B7280] hidden sm:block">Editar</span>
-              </button>
+                <div className="flex gap-2"><button type="button" onClick={() => openBuilder(course)} className="px-3 py-1.5 rounded-lg bg-[#E8F2EA] text-[#1A4E26] text-xs font-bold">Contenido</button><button type="button" onClick={() => openEditCourse(course)} className="px-3 py-1.5 rounded-lg border border-[#C8D8CB] text-[#6B7280] text-xs font-bold">Editar</button></div>
+              </div>
             ))}
           </div>
         )}
@@ -231,6 +276,19 @@ export default function AdminCursos() {
           <label className="block text-sm font-semibold text-[#111111]">Descripción<textarea value={categoryForm.description} onChange={(event) => setCategoryForm((current) => ({ ...current, description: event.target.value }))} rows={3} className="mt-1 w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#1A4E26]" /></label>
           <div className="flex justify-end gap-3 pt-3 border-t border-[#E5ECE6]"><button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm font-bold text-[#6B7280]">Cancelar</button><button type="submit" disabled={saving} className="px-4 py-2 rounded-xl bg-[#1A4E26] text-white font-bold text-sm disabled:opacity-60">{saving ? 'Guardando...' : 'Crear categoría'}</button></div>
         </form>
+      </Modal>
+
+      <Modal open={Boolean(builderCourse)} onClose={() => setBuilderCourse(null)} title={builderCourse ? `Contenido · ${builderCourse.title}` : ''} subtitle="Ordena módulos y crea lecciones." size="lg">
+        <div className="p-6 space-y-5">
+          {builderLoading ? <div className="flex justify-center py-10"><Loader2 className="animate-spin text-[#1A4E26]" /></div> : <>
+            <div className="flex gap-2"><input value={moduleTitle} onChange={(event) => setModuleTitle(event.target.value)} placeholder="Nombre del nuevo módulo" className="flex-1 px-3 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#1A4E26]" /><button type="button" onClick={() => void addModule()} className="px-3 py-2 rounded-xl bg-[#1A4E26] text-white text-sm font-bold"><Plus size={16} /></button></div>
+            {modules.length === 0 ? <p className="text-sm text-[#6B7280] text-center py-6">Este curso todavía no tiene módulos.</p> : modules.map((module) => <section key={module.id} className="border border-[#C8D8CB] rounded-xl p-4"><div className="flex items-center justify-between gap-3"><h3 className="font-bold text-[#111111]">{module.sort_order}. {module.title}</h3><button type="button" onClick={() => openLesson(module.id)} className="text-xs font-bold text-[#1A4E26] flex items-center gap-1"><Plus size={14} /> Lección</button></div><div className="mt-3 space-y-2">{(module.lessons ?? []).map((lesson) => <button type="button" key={lesson.id} onClick={() => openLesson(module.id, lesson)} className="w-full text-left px-3 py-2 rounded-lg bg-[#F8FBF8] text-sm hover:bg-[#E8F2EA]">{lesson.sort_order}. {lesson.title} <span className="text-xs text-[#6B7280]">· {lesson.content_type}</span></button>)}</div></section>)}
+          </>}
+        </div>
+      </Modal>
+
+      <Modal open={Boolean(lessonDraft.moduleId)} onClose={() => setLessonDraft({ moduleId: '', lesson: null })} title={lessonDraft.lesson ? 'Editar lección' : 'Nueva lección'} subtitle="Contenido base de la lección.">
+        <form onSubmit={saveLesson} className="p-6 space-y-4"><Field label="Título" value={lessonForm.title} onChange={(value) => setLessonForm((current) => ({ ...current, title: value }))} required /><SelectField label="Tipo" value={lessonForm.content_type} onChange={(value) => setLessonForm((current) => ({ ...current, content_type: value as ContentType }))} options={[{ value: 'text', label: 'Texto' }, { value: 'video', label: 'Video YouTube' }, { value: 'pdf', label: 'PDF' }, { value: 'external_link', label: 'Enlace externo' }, { value: 'mixed', label: 'Mixto' }]} />{['text', 'mixed'].includes(lessonForm.content_type) && <label className="block text-sm font-semibold text-[#111111]">Contenido<textarea value={lessonForm.text_content} onChange={(event) => setLessonForm((current) => ({ ...current, text_content: event.target.value }))} rows={5} className="mt-1 w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#1A4E26]" /></label>}{lessonForm.content_type === 'video' && <Field label="ID de video YouTube" value={lessonForm.video_external_id} onChange={(value) => setLessonForm((current) => ({ ...current, video_external_id: value }))} required />}{lessonForm.content_type !== 'text' && <Field label="Duración (minutos)" value={lessonForm.estimated_minutes} onChange={(value) => setLessonForm((current) => ({ ...current, estimated_minutes: value }))} type="number" min="0" />}<div className="flex justify-end gap-3 pt-3 border-t border-[#E5ECE6]"><button type="button" onClick={() => setLessonDraft({ moduleId: '', lesson: null })} className="px-4 py-2 text-sm font-bold text-[#6B7280]">Cancelar</button><button type="submit" className="px-4 py-2 rounded-xl bg-[#1A4E26] text-white font-bold text-sm">Guardar lección</button></div></form>
       </Modal>
     </div>
   );
