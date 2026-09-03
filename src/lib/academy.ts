@@ -392,6 +392,18 @@ export const academyAPI = {
     return data;
   },
 
+  async createRecipePurchase(input: { recipeIds: string[]; paymentMethod: string; receiptPath: string; bankName: string; voucherNumber: string }) {
+    const { data, error } = await supabase.rpc('create_academy_recipe_purchase', {
+      p_recipe_ids: input.recipeIds,
+      p_payment_method: input.paymentMethod,
+      p_payment_receipt_url: input.receiptPath,
+      p_banco_destino: input.bankName,
+      p_voucher_numero: input.voucherNumber,
+    });
+    if (error) throw error;
+    return data as { purchase_id: string; total_amount: number; status: string };
+  },
+
   async getAdminPrograms() {
     const { data, error } = await supabase.from('academy_programs').select('*, courses:academy_program_courses (id, course_id, sort_order, is_required, course:course_id (id, title))').order('sort_order', { ascending: true });
     if (error) throw error;

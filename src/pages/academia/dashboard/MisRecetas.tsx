@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { academyAPI } from '../../../lib/academy';
 import { useAuth } from '../../../lib/auth';
 import { Download, FileText, Leaf, ShoppingCart, CheckCircle, Lock } from 'lucide-react';
 import { useToast } from '../../../lib/toast';
@@ -110,31 +111,13 @@ export default function MisRecetas() {
         .upload(filePath, receiptFile, { upsert: false });
       if (uploadError) throw uploadError;
 
-      const { data: purchaseData, error: purchaseError } = await supabase
-        .from('academy_recipe_purchases')
-        .insert([{
-          user_id: profile.id,
-          total_amount: totalAmount,
-          payment_method: 'transferencia',
-          payment_receipt_url: filePath,
-          banco_destino: bank.banco,
-          voucher_numero: voucherNumber,
-          status: 'pending'
-        }])
-        .select('id')
-        .single();
-      if (purchaseError) throw purchaseError;
-
-      const itemsToInsert = Array.from(selectedIds).map(recipeId => ({
-        purchase_id: purchaseData.id,
-        recipe_id: recipeId,
-        price_at_purchase: recipes.find(r => r.id === recipeId)?.price || 5.00
-      }));
-
-      const { error: itemsError } = await supabase
-        .from('academy_recipe_purchase_items')
-        .insert(itemsToInsert);
-      if (itemsError) throw itemsError;
+      await academyAPI.createRecipePurchase({
+        recipeIds: Array.from(selectedIds),
+        paymentMethod: 'transferencia',
+        receiptPath: filePath,
+        bankName: bank.banco,
+        voucherNumber,
+      });
 
       toast.success('¡Solicitud enviada! Verificaremos tu pago pronto 🌿');
       setIsCheckoutOpen(false);
