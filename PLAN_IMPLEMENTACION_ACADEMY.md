@@ -181,6 +181,7 @@ supabase functions deploy nombre-funcion
 - `a093fc9`: validación robusta de diplomas.
 - `9fdb529`: limpieza de helpers de acceso.
 - `6720eff`: compras de recetas con precios calculados en backend.
+- `e040313`: asociación de tipos de diploma a programas.
 - `8ee3b8f`: soporte del flujo estudiante para preguntas de opción múltiple.
 
 ## Riesgos abiertos
