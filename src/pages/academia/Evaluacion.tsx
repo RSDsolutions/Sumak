@@ -236,7 +236,7 @@ export default function Evaluacion() {
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 mt-8 space-y-8">
         {questions.map((q: any, index: number) => {
-          const isMultiple = q.question_type === 'multiple_choice_multiple';
+          const isMultiple = q.question_type === 'multiple_choice';
           const selectedOpts = answers[q.id] || [];
           
           return (
