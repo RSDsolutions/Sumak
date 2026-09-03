@@ -116,10 +116,10 @@ La prioridad es ampliar Academy sin romper las funcionalidades actuales de SUMAK
 
 ### Fase 7: Recetas y cobros
 
-- [ ] Crear compras mediante RPC o Edge Function transaccional.
-- [ ] Recalcular precios exclusivamente desde `academy_recipes`.
-- [ ] Validar recetas activas y items permitidos.
-- [ ] Proteger total, precio y estado contra manipulación del cliente.
+- [x] Crear compras mediante RPC transaccional.
+- [x] Recalcular precios exclusivamente desde `academy_recipes`.
+- [x] Validar recetas activas y items permitidos.
+- [x] Proteger total, precio y estado contra manipulación del cliente.
 - [ ] Auditar aprobación y rechazo de compras.
 - [ ] Validar ownership de comprobantes en Storage.
 - [ ] Limpiar comprobantes huérfanos.
@@ -177,6 +177,7 @@ supabase functions deploy nombre-funcion
 - `0de532d`: progreso y elegibilidad de programas.
 - `a093fc9`: validación robusta de diplomas.
 - `9fdb529`: limpieza de helpers de acceso.
+- `6720eff`: compras de recetas con precios calculados en backend.
 
 ## Riesgos abiertos
 
