@@ -365,6 +365,17 @@ export const academyAPI = {
     return data as AcademyCategory[];
   },
 
+  async getAvailableLives() {
+    const { data, error } = await supabase
+      .from('academy_live_sessions')
+      .select('*')
+      .eq('status', 'published')
+      .order('session_date', { ascending: false, nullsFirst: false })
+      .order('sort_order', { ascending: true });
+    if (error) throw error;
+    return data ?? [];
+  },
+
   async getAdminCourses() {
     const { data, error } = await supabase
       .from('academy_courses')
