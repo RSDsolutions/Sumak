@@ -138,6 +138,7 @@ La prioridad es ampliar Academy sin romper las funcionalidades actuales de SUMAK
 - [x] Confirmar que el bundle compilado no contiene la variable service role.
 - [ ] Auditar CORS de Edge Functions.
 - [x] Ejecutar lint, build, reset local, db lint y dry-run remoto.
+- [x] Confirmar migraciones locales y remotas sincronizadas.
 
 ## Comandos de trabajo
 
@@ -184,6 +185,6 @@ supabase functions deploy nombre-funcion
 
 - La configuración de seed quedó sin rutas porque el proyecto no usa un `supabase/seed.sql`.
 - La función `submit_pedido` mantiene una advertencia de variable no utilizada.
-- CORS de Edge Functions usa configuración amplia y debe cerrarse cuando se confirme el dominio de producción.
+- Las Edge Functions Academy todavía usan CORS amplio (`*`); restringir a `https://sumak.com.ec` y orígenes locales en una iteración coordinada.
 - La gestión de respuestas múltiples correctas todavía requiere una mejora de UI.
 - La administración de programas aún no configura completamente el tipo de diploma asociado.
