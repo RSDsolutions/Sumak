@@ -120,10 +120,10 @@ La prioridad es ampliar Academy sin romper las funcionalidades actuales de SUMAK
 - [x] Recalcular precios exclusivamente desde `academy_recipes`.
 - [x] Validar recetas activas y items permitidos.
 - [x] Proteger total, precio y estado contra manipulación del cliente.
-- [ ] Auditar aprobación y rechazo de compras.
-- [ ] Validar ownership de comprobantes en Storage.
-- [ ] Limpiar comprobantes huérfanos.
-- [ ] Unificar lógica duplicada de `Recetas` y `MisRecetas`.
+- [x] Auditar aprobación y rechazo de compras.
+- [x] Validar ownership de comprobantes en Storage.
+- [x] Limpiar comprobantes huérfanos cuando falla la creación de compra.
+- [x] Unificar lógica duplicada de `Recetas` y `MisRecetas`.
 
 ### Fase 8: QA y seguridad final
 
@@ -181,6 +181,7 @@ supabase functions deploy nombre-funcion
 - `a093fc9`: validación robusta de diplomas.
 - `9fdb529`: limpieza de helpers de acceso.
 - `6720eff`: compras de recetas con precios calculados en backend.
+- `a76aedb`: controles completos de compras, auditoría y comprobantes.
 - `e040313`: asociación de tipos de diploma a programas.
 - `8ee3b8f`: soporte del flujo estudiante para preguntas de opción múltiple.
 
