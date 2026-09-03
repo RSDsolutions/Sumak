@@ -115,6 +115,7 @@ export default function VisorLeccion() {
     try {
       const newP = await academyAPI.updateProgress(currentLesson.id, course.id, 'completed', 100);
       setProgress(prev => [...prev.filter(p => p.lesson_id !== currentLesson.id), newP as AcademyProgress]);
+      await academyAPI.issueCourseCertificate(course.id).catch(() => undefined);
       
       // Try to auto-advance
       let foundCurrent = false;

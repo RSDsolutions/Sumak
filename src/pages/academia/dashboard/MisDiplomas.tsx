@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Award, Download, CheckCircle, ExternalLink, ShieldCheck } from 'lucide-react';
+import { Award, Download, CheckCircle, ExternalLink, ShieldCheck, GraduationCap } from 'lucide-react';
 import { academyAPI } from '../../../lib/academy';
 import { callEdgeFunction } from '../../../lib/supabase';
 import type { AcademyDiplomaIssuance } from '../../../lib/academy-types';
@@ -7,14 +7,18 @@ import { Link } from 'react-router-dom';
 
 export default function MisDiplomas() {
   const [diplomas, setDiplomas] = useState<AcademyDiplomaIssuance[]>([]);
+  const [certificates, setCertificates] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const data = await academyAPI.getMyDiplomas();
-        setDiplomas(data as AcademyDiplomaIssuance[]);
+        const [diplomaData, certificateData] = await Promise.all([
+          academyAPI.getMyDiplomas(), academyAPI.getMyCertificates(),
+        ]);
+        setDiplomas(diplomaData as AcademyDiplomaIssuance[]);
+        setCertificates(certificateData as any[]);
       } catch (err) {
         console.error("Error loading diplomas:", err);
       } finally {
@@ -62,7 +66,7 @@ export default function MisDiplomas() {
         </p>
       </div>
 
-      {diplomas.length === 0 ? (
+      {diplomas.length === 0 && certificates.length === 0 ? (
         <div className="bg-white rounded-2xl border border-[#C8D8CB] border-dashed p-12 text-center">
           <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
             <Award className="text-slate-300" size={40} />
@@ -79,7 +83,7 @@ export default function MisDiplomas() {
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="space-y-8"><section><h2 className="text-xl font-bold text-[#111111] mb-4 flex items-center gap-2"><GraduationCap className="text-[#1A4E26]" size={22} /> Certificados de cursos</h2>{certificates.length === 0 ? <p className="text-sm text-[#6B7280]">Aún no tienes certificados de cursos completados.</p> : <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">{certificates.map((certificate) => <div key={certificate.id} className="bg-white rounded-2xl border border-[#C8D8CB] p-6"><div className="w-14 h-14 rounded-full bg-[#EBF4ED] flex items-center justify-center mb-4"><GraduationCap className="text-[#1A4E26]" size={28} /></div><h3 className="font-bold text-lg text-[#111111]">{certificate.course_name}</h3><p className="text-sm text-[#6B7280] mt-2">{certificate.participant_name}</p><p className="font-mono text-xs text-[#1A4E26] mt-4">{certificate.certificate_number}</p><p className="text-xs text-[#6B7280] mt-2">Emitido el {new Date(certificate.issued_at).toLocaleDateString('es-EC')}</p></div>)}</div>}</section>{diplomas.length > 0 && <section><h2 className="text-xl font-bold text-[#111111] mb-4 flex items-center gap-2"><Award className="text-[#D4AF37]" size={22} /> Diplomas de programa</h2><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {diplomas.map((dip) => (
             <div key={dip.id} className="bg-white rounded-2xl border border-[#C8D8CB] overflow-hidden hover:shadow-lg transition-shadow flex flex-col group">
               <div className="bg-[#1A4E26] p-6 text-center relative overflow-hidden">
@@ -145,7 +149,7 @@ export default function MisDiplomas() {
               </div>
             </div>
           ))}
-        </div>
+        </div></section>}</div>
       )}
     </div>
   );

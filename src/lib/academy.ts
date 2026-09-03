@@ -633,6 +633,20 @@ export const academyAPI = {
     if (error) throw error;
     return data as AcademyDiplomaIssuance[];
   },
+
+  async getMyCertificates() {
+    const { data, error } = await supabase.rpc('get_my_academy_certificates');
+    if (error) throw error;
+    return data ?? [];
+  },
+
+  async issueCourseCertificate(courseId: string) {
+    const { data, error } = await supabase.rpc('issue_academy_course_certificate', {
+      p_course_id: courseId,
+    });
+    if (error) throw error;
+    return data;
+  },
   
   async getAllDiplomas() {
     const { data, error } = await supabase
