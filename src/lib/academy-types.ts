@@ -86,6 +86,19 @@ export interface AcademyLesson {
   created_at: string;
 }
 
+export interface AcademyResource {
+  id: string;
+  lesson_id: string;
+  title: string;
+  description: string | null;
+  file_url: string;
+  file_name: string | null;
+  file_type: string | null;
+  file_size_bytes: number | null;
+  sort_order: number;
+  created_at: string;
+}
+
 export interface AcademyEnrollment {
   id: string;
   user_id: string;

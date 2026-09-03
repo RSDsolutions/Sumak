@@ -438,6 +438,31 @@ export const academyAPI = {
     return data as AcademyLesson;
   },
 
+  async getAdminLessonResources(lessonId: string) {
+    const { data, error } = await supabase
+      .from('academy_resources')
+      .select('*')
+      .eq('lesson_id', lessonId)
+      .order('sort_order', { ascending: true });
+    if (error) throw error;
+    return data ?? [];
+  },
+
+  async createAdminResource(input: { lesson_id: string; title: string; description: string; file_url: string; file_name: string; file_type: string; sort_order: number }) {
+    const { data, error } = await supabase
+      .from('academy_resources')
+      .insert(input)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async deleteAdminResource(resourceId: string) {
+    const { error } = await supabase.from('academy_resources').delete().eq('id', resourceId);
+    if (error) throw error;
+  },
+
   async getCourseBySlug(slug: string) {
     const { data, error } = await supabase
       .from('academy_courses')
