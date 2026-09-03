@@ -404,6 +404,26 @@ export const academyAPI = {
     return data as { purchase_id: string; total_amount: number; status: string };
   },
 
+  async uploadAndCreateRecipePurchase(input: { userId: string; recipeIds: string[]; receiptFile: File; bankName: string; voucherNumber: string }) {
+    if (input.receiptFile.size > 5 * 1024 * 1024) throw new Error('El comprobante no puede superar los 5 MB.');
+    const extension = input.receiptFile.name.split('.').pop()?.toLowerCase() || 'jpg';
+    const receiptPath = `${input.userId}/${Date.now()}-voucher.${extension}`;
+    const { error: uploadError } = await supabase.storage.from('academy-receipts').upload(receiptPath, input.receiptFile, { upsert: false });
+    if (uploadError) throw uploadError;
+    try {
+      return await academyAPI.createRecipePurchase({ recipeIds: input.recipeIds, paymentMethod: 'transferencia', receiptPath, bankName: input.bankName, voucherNumber: input.voucherNumber });
+    } catch (error) {
+      await supabase.storage.from('academy-receipts').remove([receiptPath]);
+      throw error;
+    }
+  },
+
+  async reviewRecipePurchase(purchaseId: string, status: 'approved' | 'rejected', rejectionReason?: string) {
+    const { data, error } = await supabase.rpc('review_academy_recipe_purchase', { p_purchase_id: purchaseId, p_status: status, p_rejection_reason: rejectionReason ?? null });
+    if (error) throw error;
+    return data;
+  },
+
   async getAdminPrograms() {
     const { data, error } = await supabase.from('academy_programs').select('*, courses:academy_program_courses (id, course_id, sort_order, is_required, course:course_id (id, title))').order('sort_order', { ascending: true });
     if (error) throw error;

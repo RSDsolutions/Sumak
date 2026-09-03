@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { academyAPI } from '../../../lib/academy';
 import { Search, CheckCircle, XCircle, Eye, Download } from 'lucide-react';
 import { useToast } from '../../../lib/toast';
 
@@ -137,12 +138,7 @@ export default function AdminCobrosRecetas() {
     if (!confirm(`¿Estás seguro de ${newStatus === 'approved' ? 'aprobar' : 'rechazar'} este pago?`)) return;
 
     try {
-      const { error } = await supabase
-        .from('academy_recipe_purchases')
-        .update({ status: newStatus })
-        .eq('id', id);
-
-      if (error) throw error;
+      await academyAPI.reviewRecipePurchase(id, newStatus, newStatus === 'rejected' ? 'Rechazado por administrador' : undefined);
       toast.success(`Pago ${newStatus === 'approved' ? 'aprobado' : 'rechazado'}`);
       fetchPurchases();
     } catch (error: any) {

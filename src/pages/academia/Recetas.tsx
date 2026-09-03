@@ -91,23 +91,10 @@ export default function Recetas() {
       setIsSubmitting(true);
       void bank;
       void voucherNumber;
-      if (receiptFile.size > 5 * 1024 * 1024) {
-        throw new Error('El comprobante no puede superar los 5 MB.');
-      }
-
-      const fileExt = receiptFile.name.split('.').pop()?.toLowerCase() || 'jpg';
-      const fileName = `${Date.now()}-voucher.${fileExt}`;
-      const filePath = `${profile.id}/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('academy-receipts')
-        .upload(filePath, receiptFile, { upsert: false });
-      if (uploadError) throw uploadError;
-
-      await academyAPI.createRecipePurchase({
+      await academyAPI.uploadAndCreateRecipePurchase({
+        userId: profile.id,
         recipeIds: Array.from(selectedIds),
-        paymentMethod: 'transferencia',
-        receiptPath: filePath,
+        receiptFile,
         bankName: bank.banco,
         voucherNumber,
       });
