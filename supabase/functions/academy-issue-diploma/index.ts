@@ -381,6 +381,17 @@ Deno.serve(async (req: Request) => {
   if (insertErr || !newDiploma) {
     console.error("Failed to save diploma record", insertErr);
     await supabaseAdmin.storage.from("academy-diplomas").remove([pdfStoragePath]);
+    if (insertErr?.code === "23505") {
+      const { data: existing } = await supabaseAdmin
+        .from("academy_diploma_issuances")
+        .select("id, diploma_number, verification_code, course_id")
+        .eq("user_id", target_user_id)
+        .eq("diploma_type_id", diploma_type_id)
+        .not("status", "in", "(revoked,superseded,invalidated)")
+        .limit(20);
+      const sameDiploma = existing?.find((item) => item.course_id === (course_id || null));
+      if (sameDiploma) return jsonResponse({ ok: true, already_issued: true, ...sameDiploma });
+    }
     return jsonResponse({ error: "Failed to save diploma record" }, 500);
   }
 

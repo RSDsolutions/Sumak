@@ -84,13 +84,13 @@ La prioridad es ampliar Academy sin romper las funcionalidades actuales de SUMAK
 
 ### Fase 4: Endurecimiento de diplomas
 
-- [ ] Hacer la emisión completamente idempotente ante carreras y reintentos.
-- [ ] Formalizar compensación de Storage y registro de auditoría.
-- [ ] Revisar y minimizar la información pública de verificación.
-- [ ] Confirmar que nunca se expongan correo, teléfono, cédula o UUID.
-- [ ] Mantener tokens criptográficamente seguros.
-- [ ] Mantener hash SHA-256, versión de plantilla y estado histórico.
-- [ ] Validar revocación, superseded e invalidated sin borrar historial.
+- [x] Hacer la emisión idempotente ante carreras y reintentos.
+- [x] Formalizar compensación de Storage y registro de auditoría.
+- [x] Revisar y minimizar la información pública de verificación.
+- [x] Confirmar que nunca se expongan correo, teléfono, cédula o UUID.
+- [x] Mantener tokens criptográficamente seguros.
+- [x] Mantener hash SHA-256, versión de plantilla y estado histórico.
+- [x] Validar revocación, superseded e invalidated sin borrar historial.
 - [x] Restringir CORS a `www.sumakecuador.lat`, `sumak-mu.vercel.app` y desarrollo local.
 
 ### Fase 5: Programas completos
@@ -182,6 +182,7 @@ supabase functions deploy nombre-funcion
 - `9fdb529`: limpieza de helpers de acceso.
 - `6720eff`: compras de recetas con precios calculados en backend.
 - `a76aedb`: controles completos de compras, auditoría y comprobantes.
+- `20260903233100`: verificación pública mínima e idempotencia de diplomas.
 - `e040313`: asociación de tipos de diploma a programas.
 - `8ee3b8f`: soporte del flujo estudiante para preguntas de opción múltiple.
 
