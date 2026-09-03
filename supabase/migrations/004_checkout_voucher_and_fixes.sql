@@ -75,6 +75,8 @@ returns boolean as $$
   );
 $$ language sql stable;
 
+drop view if exists public.activacion_mensual;
+
 create or replace view public.activacion_mensual as
 select
   p.id as distribuidor_id,

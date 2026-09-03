@@ -415,11 +415,9 @@ export const academyAPI = {
 
   // Enrollments
   async enrollInCourse(courseId: string) {
-    const { data, error } = await supabase
-      .from('academy_enrollments')
-      .insert({ course_id: courseId })
-      .select()
-      .single();
+    const { data, error } = await supabase.rpc('enroll_academy_course', {
+      p_course_id: courseId,
+    });
       
     if (error) throw error;
     return data as AcademyEnrollment;
@@ -463,45 +461,15 @@ export const academyAPI = {
   },
 
   async updateProgress(lessonId: string, courseId: string, status: 'in_progress' | 'completed', percentage: number, playbackSeconds = 0) {
-    // Upsert pattern
-    const { data: existing } = await supabase
-      .from('academy_progress')
-      .select('id')
-      .eq('lesson_id', lessonId)
-      .maybeSingle();
-
-    if (existing) {
-      const { data, error } = await supabase
-        .from('academy_progress')
-        .update({
-          status,
-          progress_percentage: percentage,
-          playback_seconds: playbackSeconds,
-          last_accessed_at: new Date().toISOString(),
-          ...(status === 'completed' ? { completed_at: new Date().toISOString() } : {})
-        })
-        .eq('id', existing.id)
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    } else {
-      const { data, error } = await supabase
-        .from('academy_progress')
-        .insert({
-          lesson_id: lessonId,
-          course_id: courseId,
-          status,
-          progress_percentage: percentage,
-          playback_seconds: playbackSeconds,
-          started_at: new Date().toISOString(),
-          ...(status === 'completed' ? { completed_at: new Date().toISOString() } : {})
-        })
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    }
+    const { data, error } = await supabase.rpc('update_academy_progress', {
+      p_lesson_id: lessonId,
+      p_course_id: courseId,
+      p_status: status,
+      p_percentage: percentage,
+      p_playback_seconds: playbackSeconds,
+    });
+    if (error) throw error;
+    return data as AcademyProgress;
   },
 
   // Diplomas
@@ -558,22 +526,31 @@ export const academyAPI = {
       .select(`
         *,
         questions:academy_questions (
-          id, question_type, question_text, points, sort_order,
-          options:academy_question_options (id, option_text, sort_order)
+          id, question_type, question_text, points, sort_order
         )
       `)
       .eq('id', assessmentId)
       .single();
       
     if (error) throw error;
+
+    const questionIds = (data?.questions ?? []).map((question: { id: string }) => question.id);
+    const { data: options, error: optionsError } = questionIds.length
+      ? await supabase
+        .from('academy_question_options_public')
+        .select('id, question_id, option_text, sort_order')
+        .in('question_id', questionIds)
+      : { data: [], error: null };
+
+    if (optionsError) throw optionsError;
     
     // Sort questions and options
     if (data && data.questions) {
       data.questions.sort((a: any, b: any) => a.sort_order - b.sort_order);
       data.questions.forEach((q: any) => {
-        if (q.options) {
-          q.options.sort((a: any, b: any) => a.sort_order - b.sort_order);
-        }
+        q.options = (options ?? [])
+          .filter((option: { question_id: string }) => option.question_id === q.id)
+          .sort((a: any, b: any) => a.sort_order - b.sort_order);
       });
     }
     
@@ -581,28 +558,19 @@ export const academyAPI = {
   },
   
   async startAttempt(assessmentId: string) {
-    const { data, error } = await supabase
-      .from('academy_attempts')
-      .insert({ assessment_id: assessmentId, status: 'in_progress' })
-      .select('id')
-      .single();
+    const { data, error } = await supabase.rpc('start_academy_attempt', {
+      p_assessment_id: assessmentId,
+    });
       
     if (error) throw error;
-    return data.id as string;
+    return data as string;
   },
   
   async saveAnswers(attemptId: string, answers: { question_id: string, selected_option_ids: string[] }[]) {
-    // Upsert answers
-    const payload = answers.map(a => ({
-      attempt_id: attemptId,
-      question_id: a.question_id,
-      selected_option_ids: a.selected_option_ids
-    }));
-    
-    // Clear old answers for this attempt first, simpler than upserting individually
-    await supabase.from('academy_answers').delete().eq('attempt_id', attemptId);
-    
-    const { error } = await supabase.from('academy_answers').insert(payload);
+    const { error } = await supabase.rpc('save_academy_answers', {
+      p_attempt_id: attemptId,
+      p_answers: answers,
+    });
     if (error) throw error;
   }
 };
