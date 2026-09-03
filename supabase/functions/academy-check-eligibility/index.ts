@@ -50,7 +50,7 @@ Deno.serve(async (req: Request) => {
   }
   const callerId = userRes.user.id;
 
-  let body: { target_user_id?: string; diploma_type_id?: string; course_id?: string };
+  let body: { target_user_id?: string; diploma_type_id?: string; course_id?: string; program_id?: string };
   try {
     body = await req.json();
   } catch {
@@ -58,15 +58,26 @@ Deno.serve(async (req: Request) => {
   }
   
   const target_user_id = body.target_user_id || callerId;
-  const { diploma_type_id, course_id } = body;
+  let { diploma_type_id, course_id } = body;
+  const { program_id } = body;
   
-  if (!diploma_type_id) {
-    return jsonResponse({ error: "Missing diploma_type_id" }, 400);
-  }
+  let coursesToCheck: string[] = course_id ? [course_id] : [];
 
   const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
+
+  if (program_id) {
+    const { data: program } = await supabaseAdmin.from("academy_programs").select("title, diploma_type_id").eq("id", program_id).eq("status", "published").maybeSingle();
+    if (!program) return jsonResponse({ error: "Program not found" }, 404);
+    const { data: programEnrollment } = await supabaseAdmin.from("academy_program_enrollments").select("status").eq("program_id", program_id).eq("user_id", target_user_id).in("status", ["active", "completed"]).maybeSingle();
+    if (!programEnrollment) return jsonResponse({ eligible: false, reasons: ["User is not enrolled in the required program"] });
+    if (program.diploma_type_id && diploma_type_id && program.diploma_type_id !== diploma_type_id) return jsonResponse({ error: "Diploma type does not match program" }, 400);
+    diploma_type_id = diploma_type_id || program.diploma_type_id || undefined;
+    const { data: programCourses } = await supabaseAdmin.from("academy_program_courses").select("course_id").eq("program_id", program_id).eq("is_required", true);
+    if (programCourses?.length) coursesToCheck = programCourses.map((item) => item.course_id);
+  }
+  if (!diploma_type_id) return jsonResponse({ error: "Missing diploma_type_id" }, 400);
 
   // Verify permissions if checking someone else
   if (target_user_id !== callerId) {
@@ -124,10 +135,6 @@ Deno.serve(async (req: Request) => {
   const reasons: string[] = [];
 
   // Check 1: Course completion (if course_id is provided or required_course_ids exist)
-  let coursesToCheck: string[] = [];
-  if (course_id) {
-    coursesToCheck.push(course_id);
-  }
   if (reqs.required_course_ids && Array.isArray(reqs.required_course_ids)) {
     coursesToCheck = [...new Set([...coursesToCheck, ...reqs.required_course_ids])];
   }

@@ -97,10 +97,10 @@ La prioridad es ampliar Academy sin romper las funcionalidades actuales de SUMAK
 
 - [x] Permitir configurar diploma asociado desde administración.
 - [x] Mostrar progreso y elegibilidad calculados por backend.
-- [ ] Conectar requisitos de programa con emisión de diploma.
-- [ ] Añadir inscripción y progreso de programa para usuarios.
-- [ ] Añadir vista de detalle de programa.
-- [ ] Validar cursos obligatorios y opcionales.
+- [x] Conectar requisitos de programa con emisión de diploma mediante `program_id`.
+- [x] Añadir inscripción y progreso de programa para usuarios.
+- [x] Añadir vista de detalle de programa.
+- [x] Validar cursos obligatorios y opcionales.
 
 ### Fase 6: Administración avanzada
 
@@ -185,6 +185,7 @@ supabase functions deploy nombre-funcion
 - `20260903233100`: verificación pública mínima e idempotencia de diplomas.
 - `e040313`: asociación de tipos de diploma a programas.
 - `8ee3b8f`: soporte del flujo estudiante para preguntas de opción múltiple.
+- `20260903233615`: matrículas, progreso detallado y flujo de diploma por programa.
 
 ## Riesgos abiertos
 

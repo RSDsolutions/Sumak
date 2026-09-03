@@ -386,8 +386,25 @@ export const academyAPI = {
     return data ?? [];
   },
 
+  async getProgramBySlug(slug: string) {
+    const { data, error } = await supabase
+      .from('academy_programs')
+      .select('*, courses:academy_program_courses (sort_order, is_required, course:course_id (id, title, slug, estimated_duration_minutes))')
+      .eq('slug', slug)
+      .eq('status', 'published')
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
   async getMyProgramProgress(programId: string) {
     const { data, error } = await supabase.rpc('get_my_program_progress', { p_program_id: programId });
+    if (error) throw error;
+    return data;
+  },
+
+  async enrollInProgram(programId: string) {
+    const { data, error } = await supabase.rpc('enroll_academy_program', { p_program_id: programId });
     if (error) throw error;
     return data;
   },

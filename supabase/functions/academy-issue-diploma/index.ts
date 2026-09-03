@@ -96,6 +96,7 @@ Deno.serve(async (req: Request) => {
       course_id?: string | null;
       participant_name?: string;
       program_name?: string;
+      program_id?: string;
     };
   }
   const jwt = authHeader.slice("Bearer ".length).trim();
@@ -117,6 +118,7 @@ Deno.serve(async (req: Request) => {
     course_id?: string | null;
     participant_name?: string;
     program_name?: string;
+    program_id?: string;
   };
   try {
     body = await req.json();
@@ -125,15 +127,28 @@ Deno.serve(async (req: Request) => {
   }
   
   const target_user_id = body.target_user_id || body.user_id || callerId;
-  const { diploma_type_id, course_id } = body;
+  let { diploma_type_id, course_id } = body;
+  const { program_id } = body;
   
-  if (!diploma_type_id) {
-    return jsonResponse({ error: "Missing diploma_type_id" }, 400);
-  }
-
   const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
+
+  if (program_id) {
+    const { data: program } = await supabaseAdmin
+      .from("academy_programs")
+      .select("title, diploma_type_id")
+      .eq("id", program_id)
+      .eq("status", "published")
+      .maybeSingle();
+    if (!program) return jsonResponse({ error: "Program not found" }, 404);
+    if (program.diploma_type_id && diploma_type_id && program.diploma_type_id !== diploma_type_id) {
+      return jsonResponse({ error: "Diploma type does not match program" }, 400);
+    }
+    diploma_type_id = diploma_type_id || program.diploma_type_id || undefined;
+    course_id = undefined;
+  }
+  if (!diploma_type_id) return jsonResponse({ error: "Missing diploma_type_id" }, 400);
 
   const { data: globalAdmin } = await supabaseAdmin
     .from("profiles")
@@ -155,7 +170,7 @@ Deno.serve(async (req: Request) => {
 
   // 1. Check Eligibility by calling our other Edge Function
   const { data: eligData, error: eligErr } = await supabaseAnon.functions.invoke('academy-check-eligibility', {
-    body: { target_user_id, diploma_type_id, course_id },
+    body: { target_user_id, diploma_type_id, course_id, program_id },
     headers: { Authorization: authHeader } // pass through auth
   });
 
@@ -186,6 +201,10 @@ Deno.serve(async (req: Request) => {
     || userProfile?.codigo_distribuidor
     || "Estudiante";
   let programName = body.program_name?.trim() || "Programa de Academia";
+  if (program_id) {
+    const { data: program } = await supabaseAdmin.from("academy_programs").select("title").eq("id", program_id).maybeSingle();
+    if (program) programName = program.title;
+  }
   if (course_id) {
     const { data: course } = await supabaseAdmin
       .from("academy_courses")

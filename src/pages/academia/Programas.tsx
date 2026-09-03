@@ -3,6 +3,7 @@ import { BookOpen, GraduationCap, Layers } from 'lucide-react';
 import { academyAPI } from '../../lib/academy';
 import { useAuth } from '../../lib/auth';
 import { useSEO } from '../../lib/seo';
+import { Link } from 'react-router-dom';
 
 interface ProgramCourse {
   sort_order: number;

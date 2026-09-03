@@ -74,6 +74,7 @@ const CatalogoCursos = lazy(() => import('./pages/academia/CatalogoCursos'));
 const CursoDetalle = lazy(() => import('./pages/academia/CursoDetalle'));
 const BibliotecaLives = lazy(() => import('./pages/academia/BibliotecaLives'));
 const Programas = lazy(() => import('./pages/academia/Programas'));
+const ProgramDetalle = lazy(() => import('./pages/academia/ProgramDetalle'));
 const VerificarDiploma = lazy(() => import('./pages/academia/VerificarDiploma'));
 const AcademiaDashboard = lazy(() => import('./pages/academia/dashboard/AcademiaDashboard'));
 const MisCursos = lazy(() => import('./pages/academia/dashboard/MisCursos'));
@@ -460,6 +461,7 @@ export default function App() {
           <Route path="/academia/cursos/:slug" element={<PublicLayout><PageTransition><CursoDetalle /></PageTransition></PublicLayout>} />
           <Route path="/academia/recetas" element={<PublicLayout><PageTransition><Recetas /></PageTransition></PublicLayout>} />
           <Route path="/academia/programas" element={<PublicLayout><PageTransition><Programas /></PageTransition></PublicLayout>} />
+          <Route path="/academia/programas/:slug" element={<PublicLayout><PageTransition><ProgramDetalle /></PageTransition></PublicLayout>} />
           <Route path="/academia/verificar" element={<PublicLayout><PageTransition><VerificarDiploma /></PageTransition></PublicLayout>} />
           {/* Auth pages for academy — standalone, no PublicLayout nav */}
           <Route path="/academia/login" element={<Suspense fallback={null}><LoginAcademia /></Suspense>} />
