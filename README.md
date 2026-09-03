@@ -42,10 +42,9 @@ Crea `.env.local` en la raíz:
 ```env
 VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGc...
-VITE_SUPABASE_SERVICE_ROLE_KEY=eyJhbGc...
 ```
 
-> ⚠️ **SEC-001 abierto**: la `SERVICE_ROLE_KEY` se está usando en el cliente y queda visible en el bundle de producción. Esto es un riesgo de seguridad pendiente — ver [TRACKING_AUDITORIA.md](TRACKING_AUDITORIA.md). Mientras tanto, **no expongas el repo público** sin antes rotar esta key y migrar a Edge Functions.
+> La `SERVICE_ROLE_KEY` nunca debe configurarse como variable `VITE_*`. Debe permanecer únicamente en Edge Functions o backend seguro.
 
 ### 4. Aplicar migraciones SQL
 

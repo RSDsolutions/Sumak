@@ -134,9 +134,10 @@ La prioridad es ampliar Academy sin romper las funcionalidades actuales de SUMAK
 - [ ] Probar login, registro y recuperación de contraseña existentes.
 - [ ] Probar perfiles, roles, pedidos, pagos y navegación existente.
 - [ ] Probar rutas Academy en desktop y móvil.
-- [ ] Auditar secretos y variables `VITE_*`.
+- [x] Retirar `VITE_SUPABASE_SERVICE_ROLE_KEY` del entorno local y documentación pública.
+- [x] Confirmar que el bundle compilado no contiene la variable service role.
 - [ ] Auditar CORS de Edge Functions.
-- [ ] Ejecutar lint, build, reset local, db lint y dry-run remoto.
+- [x] Ejecutar lint, build, reset local, db lint y dry-run remoto.
 
 ## Comandos de trabajo
 
@@ -181,7 +182,7 @@ supabase functions deploy nombre-funcion
 
 ## Riesgos abiertos
 
-- `supabase/seed.sql` está configurado en `supabase/config.toml`, pero el archivo no existe; los resets muestran un aviso.
+- La configuración de seed quedó sin rutas porque el proyecto no usa un `supabase/seed.sql`.
 - La función `submit_pedido` mantiene una advertencia de variable no utilizada.
 - CORS de Edge Functions usa configuración amplia y debe cerrarse cuando se confirme el dominio de producción.
 - La gestión de respuestas múltiples correctas todavía requiere una mejora de UI.
