@@ -68,6 +68,11 @@ export default function AdminCursos() {
   const [lessonForm, setLessonForm] = useState<{ title: string; content_type: ContentType; text_content: string; video_external_id: string; estimated_minutes: string }>({ title: '', content_type: 'text', text_content: '', video_external_id: '', estimated_minutes: '' });
   const [resources, setResources] = useState<AcademyResource[]>([]);
   const [resourceForm, setResourceForm] = useState({ title: '', file_url: '', file_name: '', file_type: 'pdf' });
+  const [assessments, setAssessments] = useState<any[]>([]);
+  const [assessmentForm, setAssessmentForm] = useState({ title: '', passing_score: '70', max_attempts: '', is_final_exam: false });
+  const [questionAssessment, setQuestionAssessment] = useState<any | null>(null);
+  const [questionForm, setQuestionForm] = useState({ question_text: '', question_type: 'single_choice', points: '1', options: ['', ''] });
+  const [correctOption, setCorrectOption] = useState(0);
 
   async function load() {
     setLoading(true);
@@ -108,11 +113,35 @@ export default function AdminCursos() {
     setBuilderLoading(true);
     try {
       setModules(await academyAPI.getAdminCourseContent(course.id));
+      setAssessments(await academyAPI.getAdminAssessments(course.id));
     } catch {
       toast.error('No se pudo cargar el contenido del curso.');
     } finally {
       setBuilderLoading(false);
     }
+  }
+
+  async function addAssessment() {
+    if (!builderCourse || !assessmentForm.title.trim()) return;
+    try {
+      const assessment = await academyAPI.saveAdminAssessment(null, { course_id: builderCourse.id, title: assessmentForm.title.trim(), description: '', passing_score: Number(assessmentForm.passing_score), max_attempts: assessmentForm.max_attempts ? Number(assessmentForm.max_attempts) : null, is_final_exam: assessmentForm.is_final_exam, is_published: false, sort_order: assessments.length + 1 });
+      setAssessments((current) => [...current, { ...assessment, questions: [] }]);
+      setAssessmentForm({ title: '', passing_score: '70', max_attempts: '', is_final_exam: false });
+      toast.success('Evaluación creada como borrador.');
+    } catch { toast.error('No se pudo crear la evaluación.'); }
+  }
+
+  async function addQuestion(event: React.FormEvent) {
+    event.preventDefault();
+    if (!questionAssessment || !questionForm.question_text.trim()) return;
+    try {
+      const question = await academyAPI.createAdminQuestion({ assessment_id: questionAssessment.id, question_text: questionForm.question_text.trim(), question_type: questionForm.question_type, points: Number(questionForm.points), sort_order: (questionAssessment.questions?.length ?? 0) + 1, options: questionForm.options.filter((option) => option.trim()).map((option, index) => ({ option_text: option.trim(), is_correct: index === correctOption, sort_order: index + 1 })) });
+      setAssessments((current) => current.map((assessment) => assessment.id === questionAssessment.id ? { ...assessment, questions: [...(assessment.questions ?? []), question] } : assessment));
+      setQuestionAssessment(null);
+      setQuestionForm({ question_text: '', question_type: 'single_choice', points: '1', options: ['', ''] });
+      setCorrectOption(0);
+      toast.success('Pregunta creada.');
+    } catch { toast.error('No se pudo crear la pregunta.'); }
   }
 
   async function addModule() {
@@ -310,12 +339,17 @@ export default function AdminCursos() {
           {builderLoading ? <div className="flex justify-center py-10"><Loader2 className="animate-spin text-[#1A4E26]" /></div> : <>
             <div className="flex gap-2"><input value={moduleTitle} onChange={(event) => setModuleTitle(event.target.value)} placeholder="Nombre del nuevo módulo" className="flex-1 px-3 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#1A4E26]" /><button type="button" onClick={() => void addModule()} className="px-3 py-2 rounded-xl bg-[#1A4E26] text-white text-sm font-bold"><Plus size={16} /></button></div>
             {modules.length === 0 ? <p className="text-sm text-[#6B7280] text-center py-6">Este curso todavía no tiene módulos.</p> : modules.map((module) => <section key={module.id} className="border border-[#C8D8CB] rounded-xl p-4"><div className="flex items-center justify-between gap-3"><h3 className="font-bold text-[#111111]">{module.sort_order}. {module.title}</h3><button type="button" onClick={() => void openLesson(module.id)} className="text-xs font-bold text-[#1A4E26] flex items-center gap-1"><Plus size={14} /> Lección</button></div><div className="mt-3 space-y-2">{(module.lessons ?? []).map((lesson) => <button type="button" key={lesson.id} onClick={() => void openLesson(module.id, lesson)} className="w-full text-left px-3 py-2 rounded-lg bg-[#F8FBF8] text-sm hover:bg-[#E8F2EA]">{lesson.sort_order}. {lesson.title} <span className="text-xs text-[#6B7280]">· {lesson.content_type}</span></button>)}</div></section>)}
+            <section className="border border-[#C8D8CB] rounded-xl p-4"><h3 className="font-bold text-[#111111] mb-3">Evaluaciones</h3><div className="flex flex-wrap gap-2 mb-3"><input value={assessmentForm.title} onChange={(event) => setAssessmentForm((current) => ({ ...current, title: event.target.value }))} placeholder="Nombre de evaluación" className="flex-1 min-w-[180px] px-3 py-2 border border-slate-200 rounded-xl" /><input value={assessmentForm.passing_score} onChange={(event) => setAssessmentForm((current) => ({ ...current, passing_score: event.target.value }))} type="number" min="0" max="100" placeholder="Aprobación" className="w-24 px-3 py-2 border border-slate-200 rounded-xl" /><button type="button" onClick={() => void addAssessment()} className="px-3 py-2 rounded-xl bg-[#1A4E26] text-white text-sm font-bold"><Plus size={16} /></button></div>{assessments.map((assessment) => <div key={assessment.id} className="flex items-center gap-3 py-2 border-t border-[#E5ECE6]"><span className="flex-1 text-sm font-semibold">{assessment.title} <span className="text-xs text-[#6B7280]">· {assessment.passing_score}% · {assessment.questions?.length ?? 0} preguntas</span></span><button type="button" onClick={() => setQuestionAssessment(assessment)} className="text-xs font-bold text-[#1A4E26]">Agregar pregunta</button></div>)}</section>
           </>}
         </div>
       </Modal>
 
       <Modal open={Boolean(lessonDraft.moduleId)} onClose={() => setLessonDraft({ moduleId: '', lesson: null })} title={lessonDraft.lesson ? 'Editar lección' : 'Nueva lección'} subtitle="Contenido base de la lección.">
         <form onSubmit={saveLesson} className="p-6 space-y-4"><Field label="Título" value={lessonForm.title} onChange={(value) => setLessonForm((current) => ({ ...current, title: value }))} required /><SelectField label="Tipo" value={lessonForm.content_type} onChange={(value) => setLessonForm((current) => ({ ...current, content_type: value as ContentType }))} options={[{ value: 'text', label: 'Texto' }, { value: 'video', label: 'Video YouTube' }, { value: 'pdf', label: 'PDF' }, { value: 'external_link', label: 'Enlace externo' }, { value: 'mixed', label: 'Mixto' }]} />{['text', 'mixed'].includes(lessonForm.content_type) && <label className="block text-sm font-semibold text-[#111111]">Contenido<textarea value={lessonForm.text_content} onChange={(event) => setLessonForm((current) => ({ ...current, text_content: event.target.value }))} rows={5} className="mt-1 w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#1A4E26]" /></label>}{lessonForm.content_type === 'video' && <Field label="ID de video YouTube" value={lessonForm.video_external_id} onChange={(value) => setLessonForm((current) => ({ ...current, video_external_id: value }))} required />}{lessonForm.content_type !== 'text' && <Field label="Duración (minutos)" value={lessonForm.estimated_minutes} onChange={(value) => setLessonForm((current) => ({ ...current, estimated_minutes: value }))} type="number" min="0" />}<div className="pt-4 border-t border-[#E5ECE6]"><h3 className="text-sm font-bold text-[#111111] mb-3">Recursos</h3>{lessonDraft.lesson ? <><div className="space-y-2 mb-3">{resources.map((resource) => <div key={resource.id} className="flex items-center gap-2 text-sm bg-[#F8FBF8] rounded-lg px-3 py-2"><span className="truncate flex-1">{resource.title} <span className="text-xs text-[#6B7280]">· {resource.file_type || 'archivo'}</span></span><button type="button" onClick={() => void removeResource(resource.id)} aria-label={`Eliminar ${resource.title}`} className="text-red-500 hover:text-red-700"><Trash2 size={15} /></button></div>)}</div><div className="grid sm:grid-cols-2 gap-2"><Field label="Nombre" value={resourceForm.title} onChange={(value) => setResourceForm((current) => ({ ...current, title: value }))} /><Field label="URL o ruta Storage" value={resourceForm.file_url} onChange={(value) => setResourceForm((current) => ({ ...current, file_url: value }))} /></div><div className="flex gap-2 mt-2"><Field label="Archivo (opcional)" value={resourceForm.file_name} onChange={(value) => setResourceForm((current) => ({ ...current, file_name: value }))} /><SelectField label="Tipo" value={resourceForm.file_type} onChange={(value) => setResourceForm((current) => ({ ...current, file_type: value }))} options={[{ value: 'pdf', label: 'PDF' }, { value: 'document', label: 'Documento' }, { value: 'presentation', label: 'Presentación' }, { value: 'image', label: 'Imagen' }, { value: 'external_link', label: 'Enlace' }]} /></div><button type="button" onClick={(event) => void addResource(event as unknown as React.FormEvent)} className="mt-2 text-xs font-bold text-[#1A4E26] flex items-center gap-1"><Plus size={14} /> Agregar recurso</button></> : <p className="text-xs text-[#6B7280]">Guarda primero la lección para asociar recursos.</p>}</div><div className="flex justify-end gap-3 pt-3 border-t border-[#E5ECE6]"><button type="button" onClick={() => setLessonDraft({ moduleId: '', lesson: null })} className="px-4 py-2 text-sm font-bold text-[#6B7280]">Cancelar</button><button type="submit" className="px-4 py-2 rounded-xl bg-[#1A4E26] text-white font-bold text-sm">Guardar lección</button></div></form>
+      </Modal>
+
+      <Modal open={Boolean(questionAssessment)} onClose={() => setQuestionAssessment(null)} title="Nueva pregunta" subtitle={questionAssessment?.title}>
+        <form onSubmit={addQuestion} className="p-6 space-y-4"><Field label="Pregunta" value={questionForm.question_text} onChange={(value) => setQuestionForm((current) => ({ ...current, question_text: value }))} required /><div className="grid grid-cols-2 gap-3"><SelectField label="Tipo" value={questionForm.question_type} onChange={(value) => setQuestionForm((current) => ({ ...current, question_type: value }))} options={[{ value: 'single_choice', label: 'Una respuesta' }, { value: 'multiple_choice', label: 'Varias respuestas' }, { value: 'true_false', label: 'Verdadero / falso' }]} /><Field label="Puntos" value={questionForm.points} onChange={(value) => setQuestionForm((current) => ({ ...current, points: value }))} type="number" min="0" /></div><div className="space-y-2"><p className="text-sm font-semibold">Opciones y respuesta correcta</p>{questionForm.options.map((option, index) => <div key={index} className="flex items-end gap-2"><label className="pb-2"><input type="radio" name="correct-option" checked={correctOption === index} onChange={() => setCorrectOption(index)} aria-label={`Marcar opción ${index + 1} como correcta`} className="accent-[#1A4E26]" /></label><div className="flex-1"><Field label={`Opción ${index + 1}`} value={option} onChange={(value) => setQuestionForm((current) => ({ ...current, options: current.options.map((item, itemIndex) => itemIndex === index ? value : item) }))} required={index < 2} /></div></div>)}</div><div className="flex justify-end gap-3 pt-3 border-t border-[#E5ECE6]"><button type="button" onClick={() => setQuestionAssessment(null)} className="px-4 py-2 text-sm font-bold text-[#6B7280]">Cancelar</button><button type="submit" className="px-4 py-2 rounded-xl bg-[#1A4E26] text-white font-bold text-sm">Guardar pregunta</button></div></form>
       </Modal>
     </div>
   );

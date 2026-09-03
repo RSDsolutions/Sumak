@@ -463,6 +463,30 @@ export const academyAPI = {
     if (error) throw error;
   },
 
+  async getAdminAssessments(courseId: string) {
+    const { data, error } = await supabase.from('academy_assessments').select('*, questions:academy_questions (id, question_text, question_type, points, sort_order, options:academy_question_options (id, option_text, is_correct, sort_order))').eq('course_id', courseId).order('sort_order', { ascending: true });
+    if (error) throw error;
+    return data ?? [];
+  },
+
+  async saveAdminAssessment(assessmentId: string | null, input: { course_id: string; title: string; description: string; passing_score: number; max_attempts: number | null; is_final_exam: boolean; is_published: boolean; sort_order: number }) {
+    const query = assessmentId ? supabase.from('academy_assessments').update(input).eq('id', assessmentId) : supabase.from('academy_assessments').insert(input);
+    const { data, error } = await query.select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  async createAdminQuestion(input: { assessment_id: string; question_text: string; question_type: string; points: number; sort_order: number; options: { option_text: string; is_correct: boolean; sort_order: number }[] }) {
+    const { options, ...questionInput } = input;
+    const { data: question, error } = await supabase.from('academy_questions').insert(questionInput).select().single();
+    if (error) throw error;
+    if (options.length) {
+      const { error: optionsError } = await supabase.from('academy_question_options').insert(options.map((option) => ({ ...option, question_id: question.id })));
+      if (optionsError) throw optionsError;
+    }
+    return question;
+  },
+
   async getCourseBySlug(slug: string) {
     const { data, error } = await supabase
       .from('academy_courses')
