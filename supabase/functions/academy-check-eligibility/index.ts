@@ -141,9 +141,9 @@ Deno.serve(async (req: Request) => {
         reasons.push(`Not enrolled in required course: ${cid}`);
         continue;
       }
-      if (enr.progress_percentage < minProgress) {
+      if (enr.status !== "completed" || enr.progress_percentage < minProgress) {
         eligible = false;
-        reasons.push(`Progress in course ${cid} is ${enr.progress_percentage}%. Required: ${minProgress}%`);
+        reasons.push(`Course ${cid} is not completed at the required progress: ${enr.progress_percentage}%. Required: ${minProgress}%`);
       }
     }
   }
@@ -183,7 +183,7 @@ Deno.serve(async (req: Request) => {
         if (!bestAttempt) {
           eligible = false;
           reasons.push(`No graded attempts for required assessment: ${aid}`);
-        } else if ((bestAttempt.percentage || 0) < minScore) {
+        } else if (!bestAttempt.passed || (bestAttempt.percentage || 0) < minScore) {
           eligible = false;
           reasons.push(`Best score for assessment ${aid} is ${bestAttempt.percentage}%. Required: ${minScore}%`);
         }
@@ -198,6 +198,7 @@ Deno.serve(async (req: Request) => {
       .from("academy_enrollments")
       .select("*", { count: "exact", head: true })
       .eq("user_id", target_user_id)
+      .eq("status", "completed")
       .gte("progress_percentage", minPct);
       
     if ((count || 0) < reqs.min_courses_completed) {

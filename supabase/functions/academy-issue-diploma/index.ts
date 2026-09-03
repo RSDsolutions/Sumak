@@ -127,24 +127,22 @@ Deno.serve(async (req: Request) => {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  // Verify permissions if checking someone else
-  if (target_user_id !== callerId) {
-    const { data: globalAdmin } = await supabaseAdmin
-      .from("profiles")
-      .select("rol")
-      .eq("id", callerId)
-      .eq("rol", "admin")
-      .maybeSingle();
-      
-    const { data: staffRoles } = await supabaseAdmin
-      .from("academy_roles")
-      .select("role")
-      .eq("user_id", callerId)
-      .in("role", ["academy_admin"]);
-      
-    if (!globalAdmin && (!staffRoles || staffRoles.length === 0)) {
-      return jsonResponse({ error: "Unauthorized to issue diploma for other users" }, 403);
-    }
+  const { data: globalAdmin } = await supabaseAdmin
+    .from("profiles")
+    .select("rol")
+    .eq("id", callerId)
+    .eq("rol", "admin")
+    .maybeSingle();
+
+  const { data: staffRoles } = await supabaseAdmin
+    .from("academy_roles")
+    .select("role")
+    .eq("user_id", callerId)
+    .eq("role", "academy_admin")
+    .is("revoked_at", null);
+
+  if (!globalAdmin && (!staffRoles || staffRoles.length === 0)) {
+    return jsonResponse({ error: "Only Academy administrators can issue diplomas" }, 403);
   }
 
   // 1. Check Eligibility by calling our other Edge Function
@@ -345,7 +343,8 @@ Deno.serve(async (req: Request) => {
     });
 
   if (uploadErr) {
-    return jsonResponse({ error: "Failed to upload diploma PDF", details: uploadErr }, 500);
+    console.error("Failed to upload diploma PDF", uploadErr);
+    return jsonResponse({ error: "Failed to upload diploma PDF" }, 500);
   }
 
   // 7. Insert to Database
@@ -372,7 +371,9 @@ Deno.serve(async (req: Request) => {
     .single();
 
   if (insertErr || !newDiploma) {
-    return jsonResponse({ error: "Failed to save diploma record", details: insertErr }, 500);
+    console.error("Failed to save diploma record", insertErr);
+    await supabaseAdmin.storage.from("academy-diplomas").remove([pdfStoragePath]);
+    return jsonResponse({ error: "Failed to save diploma record" }, 500);
   }
 
   // 8. Log audit event
