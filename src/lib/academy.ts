@@ -376,6 +376,19 @@ export const academyAPI = {
     return data ?? [];
   },
 
+  async getAdminLives() {
+    const { data, error } = await supabase.from('academy_live_sessions').select('*').order('session_date', { ascending: false, nullsFirst: false });
+    if (error) throw error;
+    return data ?? [];
+  },
+
+  async saveAdminLive(liveId: string | null, input: { title: string; description: string; session_date: string | null; video_provider: string | null; video_external_id: string | null; video_url: string | null; duration_seconds: number | null; status: string; access_mode: string }) {
+    const query = liveId ? supabase.from('academy_live_sessions').update(input).eq('id', liveId) : supabase.from('academy_live_sessions').insert(input);
+    const { data, error } = await query.select().single();
+    if (error) throw error;
+    return data;
+  },
+
   async getPrograms() {
     const { data, error } = await supabase
       .from('academy_programs')
@@ -535,6 +548,11 @@ export const academyAPI = {
     return data as AcademyModule;
   },
 
+  async deleteAdminModule(moduleId: string) {
+    const { error } = await supabase.from('academy_modules').delete().eq('id', moduleId);
+    if (error) throw error;
+  },
+
   async saveAdminLesson(lessonId: string | null, input: Partial<AcademyLesson> & { module_id: string; title: string; content_type: string; sort_order: number }) {
     const query = lessonId
       ? supabase.from('academy_lessons').update(input).eq('id', lessonId)
@@ -542,6 +560,11 @@ export const academyAPI = {
     const { data, error } = await query.select().single();
     if (error) throw error;
     return data as AcademyLesson;
+  },
+
+  async deleteAdminLesson(lessonId: string) {
+    const { error } = await supabase.from('academy_lessons').delete().eq('id', lessonId);
+    if (error) throw error;
   },
 
   async getAdminLessonResources(lessonId: string) {

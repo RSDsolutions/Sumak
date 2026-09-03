@@ -46,6 +46,7 @@ const navItems: NavItem[] = [
   { label: 'Gestionar Personal', to: '/admin/personal', icon: <UserCog size={18} /> },
   { label: 'Academia: Cursos', to: '/admin/academia/cursos', icon: <BookOpen size={18} /> },
   { label: 'Academia: Programas', to: '/admin/academia/programas', icon: <Layers size={18} /> },
+  { label: 'Academia: Lives', to: '/admin/academia/lives', icon: <BookOpen size={18} /> },
   { label: 'Academia: Recetas', to: '/admin/academia/recetas', icon: <BookOpen size={18} /> },
   { label: 'Academia: Cobros Recetas', to: '/admin/academia/cobros', icon: <DollarSign size={18} /> },
   { label: 'Academia: Diplomas', to: '/admin/academia/diplomas', icon: <Award size={18} /> },

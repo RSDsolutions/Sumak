@@ -111,8 +111,9 @@ La prioridad es ampliar Academy sin romper las funcionalidades actuales de SUMAK
 - [ ] Gestionar evaluaciones y preguntas existentes.
 - [ ] Permitir seleccionar varias respuestas correctas en preguntas múltiples.
 - [ ] Aplicar alcance de instructores sobre contenido asignado.
-- [ ] Gestionar sesiones en vivo desde administración.
-- [ ] Añadir auditoría de cambios administrativos.
+- [x] Gestionar sesiones en vivo desde administración.
+- [x] Añadir auditoría de cambios administrativos mediante triggers de Supabase.
+- [x] Registrar cambios de contenido con triggers de auditoría en Supabase.
 
 ### Fase 7: Recetas y cobros
 
@@ -185,7 +186,9 @@ supabase functions deploy nombre-funcion
 - `20260903233100`: verificación pública mínima e idempotencia de diplomas.
 - `e040313`: asociación de tipos de diploma a programas.
 - `8ee3b8f`: soporte del flujo estudiante para preguntas de opción múltiple.
+- `20260903234725`: auditoría automática de cambios administrativos Academy.
 - `20260903233615`: matrículas, progreso detallado y flujo de diploma por programa.
+- `20260903234725`: auditoría automática de cambios administrativos Academy.
 
 ## Riesgos abiertos
 
