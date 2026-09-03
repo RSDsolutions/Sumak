@@ -131,6 +131,7 @@ La prioridad es ampliar Academy sin romper las funcionalidades actuales de SUMAK
 - [ ] Probar IDOR sobre cursos, módulos, lecciones, recursos, progreso, intentos, respuestas y diplomas.
 - [ ] Confirmar que `is_correct` no sea consultable por estudiantes.
 - [ ] Intentar falsificar progreso, inscripción, score, precios y elegibilidad.
+- [x] Corregir el flujo estudiante para preguntas `multiple_choice`.
 - [ ] Probar login, registro y recuperación de contraseña existentes.
 - [ ] Probar perfiles, roles, pedidos, pagos y navegación existente.
 - [ ] Probar rutas Academy en desktop y móvil.
@@ -180,11 +181,12 @@ supabase functions deploy nombre-funcion
 - `a093fc9`: validación robusta de diplomas.
 - `9fdb529`: limpieza de helpers de acceso.
 - `6720eff`: compras de recetas con precios calculados en backend.
+- `8ee3b8f`: soporte del flujo estudiante para preguntas de opción múltiple.
 
 ## Riesgos abiertos
 
 - La configuración de seed quedó sin rutas porque el proyecto no usa un `supabase/seed.sql`.
 - La función `submit_pedido` mantiene una advertencia de variable no utilizada.
 - Los dominios autorizados de Edge Functions son `https://www.sumakecuador.lat`, `https://sumak-mu.vercel.app`, `http://localhost:3000` y `http://127.0.0.1:3000`.
-- La gestión de respuestas múltiples correctas todavía requiere una mejora de UI.
+- La administración de varias respuestas correctas todavía requiere una mejora de UI.
 - La administración de programas aún no configura completamente el tipo de diploma asociado.
