@@ -681,8 +681,7 @@ El generador automático actual funciona exactamente igual antes y después de l
 
 - Auditoría: completada.
 - Plan reducido a cinco procesos: completado.
-- Procesos 1 a 4: implementados y desplegados.
-- Proceso 5: integración final, listado, revocación y QA pendientes.
+- Procesos 1 a 5: implementados y desplegados.
 - Generador automático: protegido y sin modificaciones.
 - Dominio canónico: `https://www.sumakecuador.lat`.
 - Dominio alternativo: `https://sumak-mu.vercel.app`.
@@ -715,6 +714,17 @@ El generador automático actual funciona exactamente igual antes y después de l
 - Ruta pública `/verificar-diploma/:token` con estados válido, revocado y no encontrado.
 - Los endpoints públicos se desplegaron con JWT de Gateway desactivado; la validación del token ocurre dentro de la función.
 - Prueba pública de token inválido: `200` con `found: false` y `status: NOT_FOUND`.
+
+### Proceso 5 completado
+
+- Tab `Registrar PDF + QR` integrado en `AdminDiplomas`.
+- Selección de beneficiario, tipo, curso, fecha, número y programa/formación.
+- Acciones de resultado: copiar URL, abrir verificación y abrir PDF verificable.
+- Listado distingue registros `manual_qr` de diplomas automáticos.
+- Revocación existente conserva ambos archivos y el historial.
+- `academy-issue-diploma` permanece sin cambios.
+- Validación final: `npm run lint`, `npm run build`, `supabase db reset --local` y `supabase db lint`.
+- Prueba de token inválido pública: `found: false`, `status: NOT_FOUND`.
 
 ## 17. Regla para futuras sesiones
 

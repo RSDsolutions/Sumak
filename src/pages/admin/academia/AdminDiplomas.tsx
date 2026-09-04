@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import {
   Award, Search, Download, Ban, FileText, CheckCircle, XCircle,
-  Plus, Edit2, Trash2, X, Save, Eye, GraduationCap, User, ShieldCheck
+  Plus, Edit2, Trash2, X, Save, Eye, GraduationCap, User, ShieldCheck, Copy, ExternalLink
 } from 'lucide-react';
-import { supabase, callEdgeFunction, callEdgeFunctionMultipart } from '../../../lib/supabase';
+import { supabase, callEdgeFunction, callEdgeFunctionMultipart, callPublicEdgeFunction } from '../../../lib/supabase';
 import { academyAPI } from '../../../lib/academy';
 import { useToast } from '../../../lib/toast';
 import type { AcademyDiplomaIssuance } from '../../../lib/academy-types';
@@ -97,6 +97,22 @@ export default function AdminDiplomas() {
       await loadDiplomas();
     } catch (error) { toast.error(error instanceof Error ? error.message : 'No se pudo registrar el diploma.'); }
     finally { setRegistering(false); }
+  }
+
+  async function openRegisteredPdf() {
+    if (!registeredUrl) return;
+    const token = registeredUrl.split('/').pop();
+    if (!token) return;
+    try {
+      const result = await callPublicEdgeFunction<{ signed_url: string }>('academy-sign-registered-diploma-url', { token });
+      window.open(result.signed_url, '_blank', 'noopener,noreferrer');
+    } catch { toast.error('El PDF verificable todavía no está disponible.'); }
+  }
+
+  async function copyRegisteredUrl() {
+    if (!registeredUrl) return;
+    await navigator.clipboard.writeText(registeredUrl);
+    toast.success('URL copiada.');
   }
 
   useEffect(() => { loadDiplomas(); }, []);
@@ -390,6 +406,7 @@ export default function AdminDiplomas() {
                       <td className="px-6 py-4">
                         <p className="font-bold text-[#111111]">{dip.participant_name}</p>
                         <p className="text-xs text-[#6B7280]">#{dip.diploma_number}</p>
+                        {(dip as AcademyDiplomaIssuance & { registration_source?: string }).registration_source === 'manual_qr' && <span className="text-[10px] font-bold text-[#1A4E26]">REGISTRO QR</span>}
                       </td>
                       <td className="px-6 py-4">
                         <p className="font-medium text-[#111111] text-sm line-clamp-2">{dip.program_name}</p>
@@ -521,7 +538,7 @@ export default function AdminDiplomas() {
       {/* ── TAB: Emitir Diploma ── */}
       {tab === 'register' && (
         <div className="bg-white rounded-2xl border border-[#C8D8CB] shadow-sm p-6 sm:p-8 max-w-3xl">
-          <div className="mb-6"><h2 className="text-xl font-bold text-[#111111]">Registrar diploma existente</h2><p className="text-sm text-[#6B7280] mt-1">El PDF original se conserva intacto. La generación del QR y del PDF verificable ocurrirá en el siguiente proceso.</p></div>
+          <div className="mb-6"><h2 className="text-xl font-bold text-[#111111]">Registrar diploma existente</h2><p className="text-sm text-[#6B7280] mt-1">El PDF original se conserva intacto y se genera una copia verificable con QR.</p></div>
           <form onSubmit={registerExistingDiploma} className="space-y-5">
             <div className="grid sm:grid-cols-2 gap-4">
               <label className="block text-sm font-semibold text-[#111111]">Beneficiario<select required value={registerForm.user_id} onChange={(e) => setRegisterForm((current) => ({ ...current, user_id: e.target.value }))} className="mt-1 w-full px-3 py-2 border border-[#C8D8CB] rounded-xl bg-white"><option value="">Seleccionar usuario</option>{students.map((student) => <option key={student.id} value={student.id}>{student.nombre_completo} · {student.email}</option>)}</select></label>
@@ -531,7 +548,7 @@ export default function AdminDiplomas() {
             <div className="grid sm:grid-cols-2 gap-4"><label className="block text-sm font-semibold text-[#111111]">Nombre público<input required value={registerForm.participant_name} onChange={(e) => setRegisterForm((current) => ({ ...current, participant_name: e.target.value }))} className="mt-1 w-full px-3 py-2 border border-[#C8D8CB] rounded-xl" /></label><label className="block text-sm font-semibold text-[#111111]">Número de diploma (opcional)<input value={registerForm.diploma_number} onChange={(e) => setRegisterForm((current) => ({ ...current, diploma_number: e.target.value }))} className="mt-1 w-full px-3 py-2 border border-[#C8D8CB] rounded-xl" /></label></div>
             <label className="block text-sm font-semibold text-[#111111]">Programa o formación<input required value={registerForm.program_name} onChange={(e) => setRegisterForm((current) => ({ ...current, program_name: e.target.value }))} className="mt-1 w-full px-3 py-2 border border-[#C8D8CB] rounded-xl" /></label>
             <label className="block text-sm font-semibold text-[#111111]">PDF original<input required type="file" accept="application/pdf,.pdf" onChange={(e) => setRegisterFile(e.target.files?.[0] ?? null)} className="mt-1 block w-full text-sm text-[#6B7280] file:mr-3 file:rounded-lg file:border-0 file:bg-[#EBF4ED] file:px-3 file:py-2 file:font-bold file:text-[#1A4E26]" /><span className="text-xs text-[#6B7280]">Máximo 15 MB. El archivo original no será sobrescrito.</span></label>
-            {registeredUrl && <div className="rounded-xl bg-[#EBF4ED] border border-[#C8D8CB] p-4 text-sm"><p className="font-bold text-[#1A4E26]">Diploma registrado</p><p className="text-[#6B7280] mt-1 break-all">{registeredUrl}</p></div>}
+            {registeredUrl && <div className="rounded-xl bg-[#EBF4ED] border border-[#C8D8CB] p-4 text-sm"><p className="font-bold text-[#1A4E26]">Diploma registrado y PDF verificable generado</p><p className="text-[#6B7280] mt-1 break-all">{registeredUrl}</p><div className="flex flex-wrap gap-2 mt-3"><button type="button" onClick={() => void copyRegisteredUrl()} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-[#C8D8CB] text-[#1A4E26] font-bold text-xs"><Copy size={14} /> Copiar URL</button><button type="button" onClick={() => window.open(registeredUrl, '_blank', 'noopener,noreferrer')} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-[#C8D8CB] text-[#1A4E26] font-bold text-xs"><ExternalLink size={14} /> Verificar</button><button type="button" onClick={() => void openRegisteredPdf()} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1A4E26] text-white font-bold text-xs"><Eye size={14} /> Ver PDF verificable</button></div></div>}
             <div className="flex justify-end"><button type="submit" disabled={registering} className="px-5 py-2.5 rounded-xl bg-[#1A4E26] text-white font-bold disabled:opacity-60">{registering ? 'Registrando...' : 'Registrar diploma'}</button></div>
           </form>
         </div>
