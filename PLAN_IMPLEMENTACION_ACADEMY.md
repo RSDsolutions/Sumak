@@ -107,7 +107,7 @@ La prioridad es ampliar Academy sin romper las funcionalidades actuales de SUMAK
 - [x] Editar y reordenar módulos.
 - [x] Editar y reordenar lecciones.
 - [x] Gestionar publicación y previsualización.
-- [ ] Gestionar recursos mediante Storage con nombres internos.
+- [x] Gestionar recursos mediante Storage con nombres internos.
 - [x] Gestionar evaluaciones y preguntas existentes.
 - [x] Permitir seleccionar varias respuestas correctas en preguntas múltiples.
 - [x] Aplicar alcance de instructores sobre contenido asignado.
