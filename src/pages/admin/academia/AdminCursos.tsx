@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ArrowDown, ArrowUp, BookOpen, ChevronDown, Eye, EyeOff, Loader2, Plus, Search, Trash2, UploadCloud, GripVertical, FileText, PlayCircle, Link as LinkIcon, HelpCircle } from 'lucide-react';
 import Modal from '../../../components/Modal';
 import { academyAPI } from '../../../lib/academy';
@@ -404,7 +405,10 @@ export default function AdminCursos() {
                 <div className="h-11 w-11 rounded-xl bg-[#E8F2EA] text-[#1A4E26] flex items-center justify-center shrink-0"><BookOpen size={20} /></div>
                 <div className="min-w-0 flex-1"><h2 className="font-bold text-[#111111] truncate">{course.title}</h2><p className="text-xs text-[#6B7280] mt-1 truncate">/{course.slug} {course.category?.name ? `· ${course.category.name}` : ''}</p></div>
                 <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${course.status === 'published' ? 'bg-[#E8F2EA] text-[#1A4E26]' : course.status === 'archived' ? 'bg-slate-100 text-slate-500' : 'bg-[#FFF7DF] text-[#92680A]'}`}>{course.status === 'published' ? 'Publicado' : course.status === 'archived' ? 'Archivado' : 'Borrador'}</span>
-                <div className="flex gap-2"><button type="button" onClick={() => openBuilder(course)} className="px-3 py-1.5 rounded-lg bg-[#E8F2EA] text-[#1A4E26] text-xs font-bold">Contenido</button><button type="button" onClick={() => openEditCourse(course)} className="px-3 py-1.5 rounded-lg border border-[#C8D8CB] text-[#6B7280] text-xs font-bold">Editar</button></div>
+                <div className="flex gap-2">
+                  <Link to={`/admin/academia/cursos/${course.id}/builder`} className="flex items-center px-3 py-1.5 rounded-lg bg-[#E8F2EA] text-[#1A4E26] hover:bg-[#D4E8D8] text-xs font-bold transition-colors">Contenido</Link>
+                  <button type="button" onClick={() => openEditCourse(course)} className="px-3 py-1.5 rounded-lg border border-[#C8D8CB] text-[#6B7280] hover:bg-slate-50 text-xs font-bold transition-colors">Editar</button>
+                </div>
               </div>
             ))}
           </div>

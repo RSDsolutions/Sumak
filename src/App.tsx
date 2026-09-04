@@ -62,6 +62,9 @@ const AdminEscalera = lazy(() => import('./pages/admin/AdminEscalera'));
 const GestionarStaff = lazy(() => import('./pages/admin/GestionarStaff'));
 const AdminProductos = lazy(() => import('./pages/admin/AdminProductos'));
 const AdminCursos = lazy(() => import('./pages/admin/academia/AdminCursos'));
+const AdminCourseBuilder = lazy(() => import('./pages/admin/academia/AdminCourseBuilder'));
+const AdminLessonBuilder = lazy(() => import('./pages/admin/academia/AdminLessonBuilder'));
+const AdminAssessmentBuilder = lazy(() => import('./pages/admin/academia/AdminAssessmentBuilder'));
 const AdminAcademyEnrollments = lazy(() => import('./pages/admin/academia/AdminAcademyEnrollments'));
 const AdminProgramas = lazy(() => import('./pages/admin/academia/AdminProgramas'));
 const AdminLives = lazy(() => import('./pages/admin/academia/AdminLives'));
@@ -696,6 +699,36 @@ export default function App() {
               <ProtectedRoute allowedRoles={['admin']}>
                 <AdminLayout>
                   <AdminCursos />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/academia/cursos/:courseId/builder"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminLayout>
+                  <AdminCourseBuilder />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/academia/cursos/:courseId/lesson/:lessonId"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminLayout>
+                  <AdminLessonBuilder />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/academia/cursos/:courseId/assessment/:assessmentId"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminLayout>
+                  <AdminAssessmentBuilder />
                 </AdminLayout>
               </ProtectedRoute>
             }

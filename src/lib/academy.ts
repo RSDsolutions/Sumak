@@ -957,5 +957,69 @@ export const academyAPI = {
       p_answers: answers,
     });
     if (error) throw error;
-  }
+  },
+
+  /** Obtiene un curso por ID con joins de categoría e instructor */
+  async getAdminCourseById(courseId: string) {
+    const { data, error } = await supabase
+      .from('academy_courses')
+      .select('*, category:category_id (id, name, slug), instructor:instructor_id (id, nombre_completo)')
+      .eq('id', courseId)
+      .single();
+    if (error) throw error;
+    return data as AcademyCourse;
+  },
+
+  /** Sube portada del curso al bucket academy-resources y devuelve la URL pública */
+  async uploadAdminCourseCover(courseId: string, file: File): Promise<string> {
+    const ext = file.name.split('.').pop();
+    const path = `covers/${courseId}/cover_${Date.now()}.${ext}`;
+    const { data, error } = await supabase.storage.from('academy-resources').upload(path, file, { upsert: true });
+    if (error) throw error;
+    const { data: urlData } = supabase.storage.from('academy-resources').getPublicUrl(data.path);
+    return urlData.publicUrl;
+  },
+
+  /** Actualiza campos parciales de un curso (para autosave de tabs individuales) */
+  async patchAdminCourse(courseId: string, patch: Partial<AcademyCourse>) {
+    const { data, error } = await supabase
+      .from('academy_courses')
+      .update(patch)
+      .eq('id', courseId)
+      .select()
+      .single();
+    if (error) throw error;
+    return data as AcademyCourse;
+  },
+
+  /** Obtiene una evaluación completa con preguntas y opciones para edición admin */
+  async getAdminAssessment(assessmentId: string) {
+    const { data, error } = await supabase
+      .from('academy_assessments')
+      .select('*, questions:academy_questions (id, question_text, question_type, points, sort_order, options:academy_question_options (id, option_text, is_correct, sort_order))')
+      .eq('id', assessmentId)
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  /** Actualiza una pregunta existente con sus opciones (delete+insert opciones) */
+  async updateAdminQuestion(questionId: string, input: { question_text: string; question_type: string; points: number; options: { option_text: string; is_correct: boolean; sort_order: number }[] }) {
+    const { options, ...questionData } = input;
+    const { error: qErr } = await supabase.from('academy_questions').update(questionData).eq('id', questionId);
+    if (qErr) throw qErr;
+    // Reemplazar opciones
+    await supabase.from('academy_question_options').delete().eq('question_id', questionId);
+    if (options.length) {
+      const { error: optErr } = await supabase.from('academy_question_options').insert(options.map(o => ({ ...o, question_id: questionId })));
+      if (optErr) throw optErr;
+    }
+  },
+
+  /** Actualiza título/descripción de un módulo inline */
+  async patchAdminModule(moduleId: string, patch: { title?: string; description?: string; is_published?: boolean }) {
+    const { data, error } = await supabase.from('academy_modules').update(patch).eq('id', moduleId).select().single();
+    if (error) throw error;
+    return data as AcademyModule;
+  },
 };
