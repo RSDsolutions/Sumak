@@ -89,7 +89,8 @@ export default function AdminDiplomas() {
       const formData = new FormData();
       formData.append('file', registerFile);
       Object.entries(registerForm).forEach(([key, value]) => formData.append(key, value));
-      const result = await callEdgeFunctionMultipart<{ verification_url: string }>('academy-register-existing-diploma', formData);
+      const result = await callEdgeFunctionMultipart<{ issuance: { id: string }; verification_url: string }>('academy-register-existing-diploma', formData);
+      await callEdgeFunction('academy-generate-verified-diploma', { issuance_id: result.issuance.id });
       setRegisteredUrl(result.verification_url);
       toast.success('Diploma registrado correctamente.');
       setRegisterFile(null);

@@ -681,8 +681,8 @@ El generador automático actual funciona exactamente igual antes y después de l
 
 - Auditoría: completada.
 - Plan reducido a cinco procesos: completado.
-- Proceso 1: implementado y desplegado.
-- Procesos 2 a 5: pendientes.
+- Procesos 1 a 4: implementados y desplegados.
+- Proceso 5: integración final, listado, revocación y QA pendientes.
 - Generador automático: protegido y sin modificaciones.
 - Dominio canónico: `https://www.sumakecuador.lat`.
 - Dominio alternativo: `https://sumak-mu.vercel.app`.
@@ -704,6 +704,17 @@ El generador automático actual funciona exactamente igual antes y después de l
 - Compensación: eliminación del original si falla el registro.
 - Prueba negativa sin autorización: `401`.
 - El generador automático `academy-issue-diploma` no fue modificado.
+
+### Procesos 2 a 4 completados
+
+- Edge Function `academy-generate-verified-diploma`: descarga el original privado, genera el QR y guarda una copia PDF separada.
+- El QR contiene únicamente `https://www.sumakecuador.lat/verificar-diploma/{token}`.
+- La posición del QR acepta `x`, `y` y `size`, con límites dentro de cada página.
+- Edge Function `academy-verify-registered-diploma`: calcula SHA-256, busca por hash y devuelve datos públicos mínimos.
+- Edge Function `academy-sign-registered-diploma-url`: entrega únicamente el PDF verificable mediante signed URL de 5 minutos.
+- Ruta pública `/verificar-diploma/:token` con estados válido, revocado y no encontrado.
+- Los endpoints públicos se desplegaron con JWT de Gateway desactivado; la validación del token ocurre dentro de la función.
+- Prueba pública de token inválido: `200` con `found: false` y `status: NOT_FOUND`.
 
 ## 17. Regla para futuras sesiones
 

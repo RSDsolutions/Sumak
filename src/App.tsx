@@ -77,6 +77,7 @@ const BibliotecaLives = lazy(() => import('./pages/academia/BibliotecaLives'));
 const Programas = lazy(() => import('./pages/academia/Programas'));
 const ProgramDetalle = lazy(() => import('./pages/academia/ProgramDetalle'));
 const VerificarDiploma = lazy(() => import('./pages/academia/VerificarDiploma'));
+const VerificarDiplomaPublico = lazy(() => import('./pages/academia/VerificarDiplomaPublico'));
 const AcademiaDashboard = lazy(() => import('./pages/academia/dashboard/AcademiaDashboard'));
 const MisCursos = lazy(() => import('./pages/academia/dashboard/MisCursos'));
 const MisDiplomas = lazy(() => import('./pages/academia/dashboard/MisDiplomas'));
@@ -464,6 +465,7 @@ export default function App() {
           <Route path="/academia/programas" element={<PublicLayout><PageTransition><Programas /></PageTransition></PublicLayout>} />
           <Route path="/academia/programas/:slug" element={<PublicLayout><PageTransition><ProgramDetalle /></PageTransition></PublicLayout>} />
           <Route path="/academia/verificar" element={<PublicLayout><PageTransition><VerificarDiploma /></PageTransition></PublicLayout>} />
+          <Route path="/verificar-diploma/:token" element={<PublicLayout><PageTransition><VerificarDiplomaPublico /></PageTransition></PublicLayout>} />
           {/* Auth pages for academy — standalone, no PublicLayout nav */}
           <Route path="/academia/login" element={<Suspense fallback={null}><LoginAcademia /></Suspense>} />
           <Route path="/academia/registro" element={<Suspense fallback={null}><RegistroAcademia /></Suspense>} />

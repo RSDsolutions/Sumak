@@ -27,7 +27,8 @@ export async function callEdgeFunction<TResp = unknown>(
     | 'academy-issue-diploma'
     | 'academy-verify-diploma'
     | 'academy-sign-document-url'
-    | 'academy-revoke-diploma',
+    | 'academy-revoke-diploma'
+    | 'academy-generate-verified-diploma',
   body: Record<string, unknown>,
 ): Promise<TResp> {
   const { data: { session } } = await supabase.auth.getSession();
@@ -64,6 +65,20 @@ export async function callEdgeFunctionMultipart<TResp = unknown>(
     method: 'POST',
     headers: { Authorization: `Bearer ${session.access_token}`, apikey: anonKey! },
     body: formData,
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((json as { error?: string }).error ?? `Error ${res.status} en ${name}`);
+  return json as TResp;
+}
+
+export async function callPublicEdgeFunction<TResp = unknown>(
+  name: 'academy-verify-registered-diploma' | 'academy-sign-registered-diploma-url',
+  body: Record<string, unknown>,
+): Promise<TResp> {
+  const res = await fetch(`${url}/functions/v1/${name}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: anonKey! },
+    body: JSON.stringify(body),
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error((json as { error?: string }).error ?? `Error ${res.status} en ${name}`);
