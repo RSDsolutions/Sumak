@@ -31,27 +31,47 @@ interface NavItem {
   icon: React.ReactNode;
 }
 
-const navItems: NavItem[] = [
-  { label: 'Dashboard', to: '/admin', icon: <LayoutDashboard size={18} /> },
-  { label: 'Solicitudes', to: '/admin/solicitudes', icon: <FileCheck size={18} /> },
-  { label: 'Distribuidores', to: '/admin/distribuidores', icon: <Users size={18} /> },
-  { label: 'Comisiones', to: '/admin/comisiones', icon: <DollarSign size={18} /> },
-  { label: 'Bono Afiliación', to: '/admin/bono-afiliacion', icon: <UserPlus size={18} /> },
-  { label: 'Mis Comisiones', to: '/admin/mis-comisiones', icon: <Crown size={18} /> },
-  { label: 'Mi Bono Afiliación', to: '/admin/mi-bono-afiliacion', icon: <UserPlus size={18} /> },
-  { label: 'Productos', to: '/admin/productos', icon: <Package size={18} /> },
-  { label: 'Pedidos', to: '/admin/pedidos', icon: <ShoppingCart size={18} /> },
-  { label: 'Red Binaria', to: '/admin/red', icon: <Network size={18} /> },
-  { label: 'Escalera del Éxito', to: '/admin/escalera', icon: <Trophy size={18} /> },
-  { label: 'Gestionar Personal', to: '/admin/personal', icon: <UserCog size={18} /> },
-  { label: 'Academia: Cursos', to: '/admin/academia/cursos', icon: <BookOpen size={18} /> },
-  { label: 'Academia: Inscripciones', to: '/admin/academia/inscripciones', icon: <BookOpen size={18} /> },
-  { label: 'Academia: Programas', to: '/admin/academia/programas', icon: <Layers size={18} /> },
-  { label: 'Academia: Lives', to: '/admin/academia/lives', icon: <BookOpen size={18} /> },
-  { label: 'Academia: Recetas', to: '/admin/academia/recetas', icon: <BookOpen size={18} /> },
-  { label: 'Academia: Cobros Recetas', to: '/admin/academia/cobros', icon: <DollarSign size={18} /> },
-  { label: 'Academia: Diplomas', to: '/admin/academia/diplomas', icon: <Award size={18} /> },
-  { label: 'Mi Perfil', to: '/admin/perfil', icon: <User size={18} /> },
+interface NavGroup {
+  title: string;
+  items: NavItem[];
+}
+
+const navGroups: NavGroup[] = [
+  {
+    title: 'Plataforma',
+    items: [
+      { label: 'Dashboard', to: '/admin', icon: <LayoutDashboard size={18} /> },
+      { label: 'Solicitudes', to: '/admin/solicitudes', icon: <FileCheck size={18} /> },
+      { label: 'Distribuidores', to: '/admin/distribuidores', icon: <Users size={18} /> },
+      { label: 'Comisiones', to: '/admin/comisiones', icon: <DollarSign size={18} /> },
+      { label: 'Bono Afiliación', to: '/admin/bono-afiliacion', icon: <UserPlus size={18} /> },
+      { label: 'Mis Comisiones', to: '/admin/mis-comisiones', icon: <Crown size={18} /> },
+      { label: 'Mi Bono Afiliación', to: '/admin/mi-bono-afiliacion', icon: <UserPlus size={18} /> },
+      { label: 'Productos', to: '/admin/productos', icon: <Package size={18} /> },
+      { label: 'Pedidos', to: '/admin/pedidos', icon: <ShoppingCart size={18} /> },
+      { label: 'Red Binaria', to: '/admin/red', icon: <Network size={18} /> },
+      { label: 'Escalera del Éxito', to: '/admin/escalera', icon: <Trophy size={18} /> },
+      { label: 'Gestionar Personal', to: '/admin/personal', icon: <UserCog size={18} /> },
+    ],
+  },
+  {
+    title: 'Academia',
+    items: [
+      { label: 'Cursos', to: '/admin/academia/cursos', icon: <BookOpen size={18} /> },
+      { label: 'Inscripciones', to: '/admin/academia/inscripciones', icon: <Users size={18} /> },
+      { label: 'Programas', to: '/admin/academia/programas', icon: <Layers size={18} /> },
+      { label: 'Lives', to: '/admin/academia/lives', icon: <BookOpen size={18} /> },
+      { label: 'Recetas', to: '/admin/academia/recetas', icon: <BookOpen size={18} /> },
+      { label: 'Cobros Recetas', to: '/admin/academia/cobros', icon: <DollarSign size={18} /> },
+      { label: 'Diplomas', to: '/admin/academia/diplomas', icon: <Award size={18} /> },
+    ],
+  },
+  {
+    title: 'Cuenta',
+    items: [
+      { label: 'Mi Perfil', to: '/admin/perfil', icon: <User size={18} /> },
+    ],
+  },
 ];
 
 function SidebarContent({ onClose }: { onClose?: () => void }) {
@@ -85,24 +105,37 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 overflow-y-auto">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.to === '/admin'}
-            onClick={onClose}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-xl mb-1 text-sm font-medium transition-all duration-200 ${
-                isActive
-                  ? 'bg-white/20 text-white border border-white/30'
-                  : 'text-white/70 hover:text-white hover:bg-white/10'
-              }`
-            }
-          >
-            {item.icon}
-            {item.label}
-          </NavLink>
+      <nav className="flex-1 px-3 py-4 overflow-y-auto custom-scrollbar">
+        {navGroups.map((group, index) => (
+          <div key={group.title} className={index > 0 ? 'mt-6' : ''}>
+            <h3 className="px-4 text-[10px] font-black text-white/40 uppercase tracking-widest mb-2">
+              {group.title}
+            </h3>
+            {group.items.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === '/admin'}
+                onClick={onClose}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-4 py-2.5 rounded-xl mb-1 text-sm font-medium transition-all duration-200 group ${
+                    isActive
+                      ? 'bg-white/20 text-white shadow-sm'
+                      : 'text-white/60 hover:text-white hover:bg-white/10'
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <div className={`${isActive ? 'text-white' : 'text-white/50 group-hover:text-white/80'} transition-colors duration-200`}>
+                      {item.icon}
+                    </div>
+                    {item.label}
+                  </>
+                )}
+              </NavLink>
+            ))}
+          </div>
         ))}
       </nav>
 
