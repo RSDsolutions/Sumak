@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
-  ArrowLeft, ClipboardList, Eye, EyeOff, Loader2, Plus, Save, Trash2, Check, X as XIcon
+  ArrowLeft, ClipboardList, Eye, EyeOff, Loader2, Plus, Save, Trash2, Check, X as XIcon,
+  Clock, Shuffle, BookOpen, Info
 } from 'lucide-react';
 import { academyAPI } from '../../../lib/academy';
 import { useToast } from '../../../lib/toast';
@@ -9,12 +10,15 @@ import { useToast } from '../../../lib/toast';
 type AssessmentData = {
   id: string;
   course_id: string;
+  module_id: string | null;
   title: string;
   description: string | null;
   passing_score: number;
   max_attempts: number | null;
+  time_limit_minutes: number | null;
   is_final_exam: boolean;
   is_published: boolean;
+  randomize_questions: boolean;
   sort_order: number;
   questions: QuestionData[];
 };
@@ -32,6 +36,7 @@ type QuestionData = {
   question_type: 'single_choice' | 'multiple_choice' | 'true_false';
   points: number;
   sort_order: number;
+  explanation: string | null;
   options: OptionData[];
   _editing?: boolean;
 };
@@ -40,6 +45,7 @@ type NewQuestionForm = {
   question_text: string;
   question_type: 'single_choice' | 'multiple_choice' | 'true_false';
   points: string;
+  explanation: string;
   options: string[];
   correctOptions: number[];
 };
@@ -48,17 +54,19 @@ const emptyNewQuestion = (): NewQuestionForm => ({
   question_text: '',
   question_type: 'single_choice',
   points: '1',
+  explanation: '',
   options: ['', ''],
   correctOptions: [0],
 });
 
-function Field({ label, value, onChange, type = 'text', placeholder = '' }: {
+function Field({ label, value, onChange, type = 'text', placeholder = '', hint = '' }: {
   label: string; value: string; onChange: (v: string) => void;
-  type?: string; placeholder?: string;
+  type?: string; placeholder?: string; hint?: string;
 }) {
   return (
     <label className="block">
       <span className="text-sm font-semibold text-[#111] block mb-1">{label}</span>
+      {hint && <span className="text-xs text-slate-400 block mb-1">{hint}</span>}
       <input type={type} value={value} placeholder={placeholder} onChange={e => onChange(e.target.value)}
         className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#1A4E26] text-sm" />
     </label>
@@ -70,16 +78,21 @@ export default function AdminAssessmentBuilder() {
   const toast = useToast();
 
   const [assessment, setAssessment] = useState<AssessmentData | null>(null);
+  const [modules, setModules] = useState<{ id: string; title: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingQ, setSavingQ] = useState(false);
 
   // Assessment form
   const [aTitle, setATitle] = useState('');
+  const [aDescription, setADescription] = useState('');
   const [aPassingScore, setAPassingScore] = useState('70');
   const [aMaxAttempts, setAMaxAttempts] = useState('');
+  const [aTimeLimitMinutes, setATimeLimitMinutes] = useState('');
   const [aIsFinalExam, setAIsFinalExam] = useState(false);
   const [aIsPublished, setAIsPublished] = useState(false);
+  const [aRandomize, setARandomize] = useState(false);
+  const [aModuleId, setAModuleId] = useState('');
 
   // New question form
   const [showAddQ, setShowAddQ] = useState(false);
@@ -90,21 +103,29 @@ export default function AdminAssessmentBuilder() {
   const [editQForm, setEditQForm] = useState<NewQuestionForm | null>(null);
 
   const load = useCallback(async () => {
-    if (!assessmentId) return;
+    if (!assessmentId || !courseId) return;
     setLoading(true);
     try {
-      const data = await academyAPI.getAdminAssessment(assessmentId);
+      const [data, modulesData] = await Promise.all([
+        academyAPI.getAdminAssessment(assessmentId),
+        academyAPI.getAdminCourseContent(courseId),
+      ]);
       if (!data) throw new Error();
       const a = data as AssessmentData;
       setAssessment(a);
       setATitle(a.title);
+      setADescription(a.description ?? '');
       setAPassingScore(a.passing_score.toString());
       setAMaxAttempts(a.max_attempts?.toString() ?? '');
+      setATimeLimitMinutes(a.time_limit_minutes?.toString() ?? '');
       setAIsFinalExam(a.is_final_exam);
       setAIsPublished(a.is_published);
+      setARandomize(a.randomize_questions);
+      setAModuleId(a.module_id ?? '');
+      setModules(modulesData.map(m => ({ id: m.id, title: m.title })));
     } catch { toast.error('No se pudo cargar la evaluación.'); }
     finally { setLoading(false); }
-  }, [assessmentId]);
+  }, [assessmentId, courseId]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -115,13 +136,16 @@ export default function AdminAssessmentBuilder() {
     try {
       const updated = await academyAPI.saveAdminAssessment(assessmentId, {
         course_id: courseId,
+        module_id: aModuleId || null,
         title: aTitle.trim(),
-        description: assessment.description ?? '',
+        description: aDescription,
         passing_score: Number(aPassingScore),
         max_attempts: aMaxAttempts ? Number(aMaxAttempts) : null,
+        time_limit_minutes: aTimeLimitMinutes ? Number(aTimeLimitMinutes) : null,
         is_final_exam: aIsFinalExam,
         is_published: aIsPublished,
         sort_order: assessment.sort_order,
+        randomize_questions: aRandomize,
       });
       setAssessment(a => a ? { ...a, ...updated } : a);
       toast.success('Evaluación guardada.');
@@ -140,6 +164,7 @@ export default function AdminAssessmentBuilder() {
         question_type: newQ.question_type,
         points: Number(newQ.points),
         sort_order: assessment.questions.length + 1,
+        explanation: newQ.explanation.trim() || undefined,
         options: newQ.options.filter(o => o.trim()).map((o, i) => ({
           option_text: o.trim(),
           is_correct: newQ.correctOptions.includes(i),
@@ -147,7 +172,7 @@ export default function AdminAssessmentBuilder() {
         })),
       });
       setAssessment(a => a ? {
-        ...a, questions: [...a.questions, { ...q, options: q.options ?? [] } as QuestionData],
+        ...a, questions: [...a.questions, { ...q, options: q.options ?? [], explanation: q.explanation ?? null } as QuestionData],
       } : a);
       setNewQ(emptyNewQuestion());
       setShowAddQ(false);
@@ -174,6 +199,7 @@ export default function AdminAssessmentBuilder() {
         question_text: editQForm.question_text.trim(),
         question_type: editQForm.question_type,
         points: Number(editQForm.points),
+        explanation: editQForm.explanation.trim() || undefined,
         options: editQForm.options.filter(o => o.trim()).map((o, i) => ({
           option_text: o.trim(),
           is_correct: editQForm.correctOptions.includes(i),
@@ -194,6 +220,7 @@ export default function AdminAssessmentBuilder() {
       question_text: q.question_text,
       question_type: q.question_type,
       points: q.points.toString(),
+      explanation: q.explanation ?? '',
       options: q.options.map(o => o.option_text),
       correctOptions: q.options.filter(o => o.is_correct).map((_, i) => i),
     });
@@ -207,6 +234,15 @@ export default function AdminAssessmentBuilder() {
     qForm: NewQuestionForm; setQForm: (f: NewQuestionForm) => void;
     onSubmit: (e: React.FormEvent) => void; onCancel: () => void; isEdit?: boolean;
   }) {
+    // Auto-set true/false options
+    const handleTypeChange = (type: 'single_choice' | 'multiple_choice' | 'true_false') => {
+      if (type === 'true_false') {
+        setQForm({ ...qForm, question_type: type, options: ['Verdadero', 'Falso'], correctOptions: [0] });
+      } else {
+        setQForm({ ...qForm, question_type: type, correctOptions: [0] });
+      }
+    };
+
     return (
       <form onSubmit={onSubmit} className="bg-[#F8FBF8] border border-[#C8D8CB] rounded-2xl p-5 space-y-4">
         <p className="font-bold text-[#111] text-sm">{isEdit ? 'Editar pregunta' : 'Nueva pregunta'}</p>
@@ -222,7 +258,7 @@ export default function AdminAssessmentBuilder() {
           <div>
             <span className="text-sm font-semibold text-[#111] block mb-1">Tipo de pregunta</span>
             <select value={qForm.question_type}
-              onChange={e => setQForm({ ...qForm, question_type: e.target.value as any, correctOptions: [0] })}
+              onChange={e => handleTypeChange(e.target.value as any)}
               className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white text-sm outline-none focus:ring-2 focus:ring-[#1A4E26]">
               <option value="single_choice">Una respuesta correcta</option>
               <option value="multiple_choice">Varias respuestas correctas</option>
@@ -254,14 +290,16 @@ export default function AdminAssessmentBuilder() {
                   className="w-4 h-4 accent-[#1A4E26] cursor-pointer"
                 />
               </label>
-              <input type="text" value={option} placeholder={`Opción ${i + 1}`} required={i < 2}
+              <input type="text" value={option} placeholder={`Opción ${i + 1}`}
+                required={i < 2}
+                disabled={qForm.question_type === 'true_false'}
                 onChange={e => {
                   const options = [...qForm.options];
                   options[i] = e.target.value;
                   setQForm({ ...qForm, options });
                 }}
-                className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#1A4E26]" />
-              {i > 1 && (
+                className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#1A4E26] disabled:bg-slate-50 disabled:text-slate-400" />
+              {i > 1 && qForm.question_type !== 'true_false' && (
                 <button type="button"
                   onClick={() => {
                     const options = qForm.options.filter((_, j) => j !== i);
@@ -281,6 +319,13 @@ export default function AdminAssessmentBuilder() {
               <Plus size={13} /> Añadir opción
             </button>
           )}
+        </div>
+
+        <div>
+          <span className="text-sm font-semibold text-[#111] block mb-1">Retroalimentación <span className="text-xs font-normal text-slate-400">(opcional — se muestra tras responder)</span></span>
+          <textarea value={qForm.explanation} onChange={e => setQForm({ ...qForm, explanation: e.target.value })}
+            rows={2} placeholder="Explica por qué la respuesta es correcta..."
+            className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#1A4E26] resize-none text-sm" />
         </div>
 
         <div className="flex justify-end gap-3 pt-2 border-t border-slate-200">
@@ -323,6 +368,8 @@ export default function AdminAssessmentBuilder() {
     true_false: 'V / F',
   };
 
+  const totalPoints = assessment.questions.reduce((s, q) => s + q.points, 0);
+
   return (
     <div className="space-y-5">
       {/* Top bar */}
@@ -334,6 +381,9 @@ export default function AdminAssessmentBuilder() {
         <span className="text-slate-300">/</span>
         <ClipboardList size={16} className="text-amber-500" />
         <span className="text-sm font-bold text-[#111] truncate max-w-xs">{assessment.title}</span>
+        {assessment.is_final_exam && (
+          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">Examen Final</span>
+        )}
         <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${assessment.is_published ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
           {assessment.is_published ? 'Publicada' : 'Borrador'}
         </span>
@@ -343,11 +393,30 @@ export default function AdminAssessmentBuilder() {
       <div className="flex gap-5">
 
         {/* Left: Settings */}
-        <div className="w-64 shrink-0">
+        <div className="w-72 shrink-0 space-y-3">
           <form onSubmit={handleSaveAssessment} className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 space-y-4">
             <h2 className="text-base font-black text-[#111]">Configuración</h2>
 
             <Field label="Nombre de la evaluación" value={aTitle} onChange={setATitle} placeholder="Ej: Evaluación final" />
+
+            <div>
+              <span className="text-sm font-semibold text-[#111] block mb-1">Descripción <span className="text-xs font-normal text-slate-400">(opcional)</span></span>
+              <textarea value={aDescription} onChange={e => setADescription(e.target.value)}
+                rows={2} placeholder="Descripción o instrucciones para el estudiante..."
+                className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#1A4E26] resize-none text-sm" />
+            </div>
+
+            {/* Módulo asociado */}
+            <div>
+              <span className="text-sm font-semibold text-[#111] block mb-1">Módulo asociado</span>
+              <select value={aModuleId} onChange={e => setAModuleId(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white text-sm outline-none focus:ring-2 focus:ring-[#1A4E26]">
+                <option value="">Sin módulo (examen del curso)</option>
+                {modules.map(m => (
+                  <option key={m.id} value={m.id}>{m.title}</option>
+                ))}
+              </select>
+            </div>
 
             <div>
               <span className="text-sm font-semibold text-[#111] block mb-1">Puntuación mínima ({aPassingScore}%)</span>
@@ -356,17 +425,43 @@ export default function AdminAssessmentBuilder() {
                 className="w-full accent-[#1A4E26]" />
             </div>
 
-            <Field label="Intentos máximos (vacío = ilimitado)" value={aMaxAttempts}
-              onChange={setAMaxAttempts} type="number" placeholder="∞" />
-
-            <label className="flex items-center gap-2.5 cursor-pointer">
-              <input type="checkbox" checked={aIsFinalExam} onChange={e => setAIsFinalExam(e.target.checked)}
-                className="w-4 h-4 accent-[#1A4E26]" />
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <span className="text-sm font-semibold text-[#111] block">Examen final</span>
-                <span className="text-xs text-slate-500">Requerido para completar el curso</span>
+                <span className="text-sm font-semibold text-[#111] block mb-1">Intentos máximos</span>
+                <input type="number" value={aMaxAttempts} onChange={e => setAMaxAttempts(e.target.value)}
+                  placeholder="∞ ilimitados" min="1"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#1A4E26] text-sm" />
               </div>
-            </label>
+              <div>
+                <span className="text-sm font-semibold text-[#111] block mb-1 flex items-center gap-1">
+                  <Clock size={12} /> Tiempo (min)
+                </span>
+                <input type="number" value={aTimeLimitMinutes} onChange={e => setATimeLimitMinutes(e.target.value)}
+                  placeholder="Sin límite" min="1"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#1A4E26] text-sm" />
+              </div>
+            </div>
+
+            {/* Toggles */}
+            <div className="space-y-2.5">
+              <label className="flex items-center gap-2.5 cursor-pointer">
+                <input type="checkbox" checked={aIsFinalExam} onChange={e => setAIsFinalExam(e.target.checked)}
+                  className="w-4 h-4 accent-[#1A4E26]" />
+                <div>
+                  <span className="text-sm font-semibold text-[#111] block">Examen final</span>
+                  <span className="text-xs text-slate-500">Requerido para completar el curso</span>
+                </div>
+              </label>
+
+              <label className="flex items-center gap-2.5 cursor-pointer">
+                <input type="checkbox" checked={aRandomize} onChange={e => setARandomize(e.target.checked)}
+                  className="w-4 h-4 accent-[#1A4E26]" />
+                <div>
+                  <span className="text-sm font-semibold text-[#111] flex items-center gap-1"><Shuffle size={13} /> Aleatorizar preguntas</span>
+                  <span className="text-xs text-slate-500">El orden cambia en cada intento</span>
+                </div>
+              </label>
+            </div>
 
             <button type="button" onClick={() => setAIsPublished(p => !p)}
               className={`w-full flex items-center gap-2.5 p-3 rounded-xl border transition-colors
@@ -383,14 +478,21 @@ export default function AdminAssessmentBuilder() {
           </form>
 
           {/* Stats */}
-          <div className="mt-3 bg-white border border-slate-200 rounded-2xl shadow-sm p-4 text-center">
-            <span className="text-3xl font-black text-[#1A4E26]">{assessment.questions.length}</span>
-            <p className="text-xs text-slate-500 mt-0.5">pregunta{assessment.questions.length !== 1 ? 's' : ''}</p>
-            <div className="border-t border-slate-100 mt-3 pt-3 text-xs text-slate-500">
-              <p>Puntos totales: <span className="font-bold text-[#111]">
-                {assessment.questions.reduce((s, q) => s + q.points, 0)}
-              </span></p>
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
+            <div className="grid grid-cols-2 gap-3 text-center">
+              <div className="bg-slate-50 rounded-xl p-3">
+                <span className="text-2xl font-black text-[#1A4E26]">{assessment.questions.length}</span>
+                <p className="text-xs text-slate-500 mt-0.5">pregunta{assessment.questions.length !== 1 ? 's' : ''}</p>
+              </div>
+              <div className="bg-slate-50 rounded-xl p-3">
+                <span className="text-2xl font-black text-[#1A4E26]">{totalPoints}</span>
+                <p className="text-xs text-slate-500 mt-0.5">puntos totales</p>
+              </div>
+            </div>
+            <div className="mt-3 text-xs text-slate-500 space-y-1 pt-3 border-t border-slate-100">
               <p>Aprobación: <span className="font-bold text-[#111]">{aPassingScore}%</span></p>
+              {aTimeLimitMinutes && <p className="flex items-center gap-1"><Clock size={11} /> Límite: <span className="font-bold text-[#111]">{aTimeLimitMinutes} min</span></p>}
+              {aRandomize && <p className="flex items-center gap-1 text-purple-600"><Shuffle size={11} /> Preguntas aleatorizadas</p>}
             </div>
           </div>
         </div>
@@ -455,6 +557,11 @@ export default function AdminAssessmentBuilder() {
                         <span className="text-xs px-2 py-0.5 bg-[#E8F2EA] text-[#1A4E26] rounded-full font-semibold">
                           {q.points} pts
                         </span>
+                        {q.explanation && (
+                          <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full font-semibold flex items-center gap-1">
+                            <Info size={10} /> Retroalimentación
+                          </span>
+                        )}
                       </div>
                       <div className="space-y-1.5">
                         {(q.options ?? []).map(o => (
@@ -467,6 +574,12 @@ export default function AdminAssessmentBuilder() {
                           </div>
                         ))}
                       </div>
+                      {q.explanation && (
+                        <p className="mt-2 text-xs text-blue-600 bg-blue-50 rounded-lg px-3 py-1.5 flex items-start gap-1">
+                          <Info size={11} className="shrink-0 mt-0.5" />
+                          {q.explanation}
+                        </p>
+                      )}
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <button type="button" onClick={() => startEdit(q)}

@@ -41,11 +41,9 @@ export default function ProtectedRoute({ allowedRoles, children }: ProtectedRout
   }
 
 
-  // Usuarios exclusivos de academia: su código empieza con ACE- (asignado por create_academy_profile)
-  // Los afiliados/distribuidores de la plataforma tienen códigos distintos
-  const isAcademyOnly =
-    profile.rol === 'distribuidor' &&
-    (profile.codigo_distribuidor?.startsWith('ACE-') ?? false);
+  // Usuarios exclusivos de academia: no tienen paquete MLM (básico, emprendedor, lider)
+  // Los afiliados/distribuidores de la plataforma tienen un paquete asignado.
+  const isAcademyOnly = profile.rol === 'distribuidor' && !profile.paquete;
 
   if (isAcademyOnly) {
     const path = window.location.pathname;

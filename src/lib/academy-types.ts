@@ -82,6 +82,7 @@ export interface AcademyLesson {
   sort_order: number;
   is_published: boolean;
   is_free_preview: boolean;
+  is_required: boolean;
   estimated_minutes: number | null;
   metadata: Record<string, any>;
   created_at: string;

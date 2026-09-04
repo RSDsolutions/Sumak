@@ -636,19 +636,63 @@ export const academyAPI = {
   },
 
   async getAdminAssessments(courseId: string) {
-    const { data, error } = await supabase.from('academy_assessments').select('*, questions:academy_questions (id, question_text, question_type, points, sort_order, options:academy_question_options (id, option_text, is_correct, sort_order))').eq('course_id', courseId).order('sort_order', { ascending: true });
+    const { data, error } = await supabase.from('academy_assessments').select('*, questions:academy_questions (id, question_text, question_type, points, sort_order, explanation, options:academy_question_options (id, option_text, is_correct, sort_order))').eq('course_id', courseId).order('sort_order', { ascending: true });
     if (error) throw error;
     return data ?? [];
   },
 
-  async saveAdminAssessment(assessmentId: string | null, input: { course_id: string; title: string; description: string; passing_score: number; max_attempts: number | null; is_final_exam: boolean; is_published: boolean; sort_order: number }) {
+  /** Obtiene evaluaciones de un curso con info de módulo (para árbol de contenido) */
+  async getAdminAssessmentsForTree(courseId: string) {
+    const { data, error } = await supabase
+      .from('academy_assessments')
+      .select('id, title, module_id, is_final_exam, is_published, sort_order, passing_score')
+      .eq('course_id', courseId)
+      .order('sort_order', { ascending: true });
+    if (error) throw error;
+    return data ?? [];
+  },
+
+  /** Obtiene los intentos del estudiante actual para una evaluación */
+  async getMyAttempts(assessmentId: string) {
+    const { data, error } = await supabase
+      .from('academy_attempts')
+      .select('id, score, max_score, percentage, passed, status, started_at, submitted_at, graded_at')
+      .eq('assessment_id', assessmentId)
+      .order('started_at', { ascending: false });
+    if (error) throw error;
+    return data ?? [];
+  },
+
+  /** Obtiene los intentos del estudiante para TODAS las evaluaciones de un curso */
+  async getMyAttemptsForCourse(courseId: string) {
+    const { data: assessments } = await supabase
+      .from('academy_assessments')
+      .select('id')
+      .eq('course_id', courseId);
+    if (!assessments || assessments.length === 0) return [];
+    const assessmentIds = assessments.map(a => a.id);
+    const { data, error } = await supabase
+      .from('academy_attempts')
+      .select('id, assessment_id, percentage, passed, status, started_at, graded_at')
+      .in('assessment_id', assessmentIds)
+      .eq('status', 'graded')
+      .order('started_at', { ascending: false });
+    if (error) throw error;
+    return data ?? [];
+  },
+  async saveAdminAssessment(assessmentId: string | null, input: {
+    course_id: string; module_id?: string | null; title: string; description: string;
+    passing_score: number; max_attempts: number | null; time_limit_minutes: number | null;
+    is_final_exam: boolean; is_published: boolean; sort_order: number;
+    randomize_questions?: boolean;
+  }) {
     const query = assessmentId ? supabase.from('academy_assessments').update(input).eq('id', assessmentId) : supabase.from('academy_assessments').insert(input);
     const { data, error } = await query.select().single();
     if (error) throw error;
     return data;
   },
 
-  async createAdminQuestion(input: { assessment_id: string; question_text: string; question_type: string; points: number; sort_order: number; options: { option_text: string; is_correct: boolean; sort_order: number }[] }) {
+  async createAdminQuestion(input: { assessment_id: string; question_text: string; question_type: string; points: number; sort_order: number; explanation?: string; options: { option_text: string; is_correct: boolean; sort_order: number }[] }) {
     const { options, ...questionInput } = input;
     const { data: question, error } = await supabase.from('academy_questions').insert(questionInput).select().single();
     if (error) throw error;
@@ -1004,7 +1048,7 @@ export const academyAPI = {
   },
 
   /** Actualiza una pregunta existente con sus opciones (delete+insert opciones) */
-  async updateAdminQuestion(questionId: string, input: { question_text: string; question_type: string; points: number; options: { option_text: string; is_correct: boolean; sort_order: number }[] }) {
+  async updateAdminQuestion(questionId: string, input: { question_text: string; question_type: string; points: number; explanation?: string; options: { option_text: string; is_correct: boolean; sort_order: number }[] }) {
     const { options, ...questionData } = input;
     const { error: qErr } = await supabase.from('academy_questions').update(questionData).eq('id', questionId);
     if (qErr) throw qErr;

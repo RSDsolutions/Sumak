@@ -11,6 +11,7 @@ import type { AcademyLesson, AcademyModule, AcademyResource, ContentType } from 
 
 type LessonForm = {
   title: string;
+  description: string;
   content_type: ContentType;
   text_content: string;
   video_external_id: string;
@@ -18,11 +19,13 @@ type LessonForm = {
   estimated_minutes: string;
   is_published: boolean;
   is_free_preview: boolean;
+  is_required: boolean;
 };
 
 function lessonToForm(l: AcademyLesson): LessonForm {
   return {
     title: l.title,
+    description: l.description ?? '',
     content_type: l.content_type,
     text_content: l.text_content ?? '',
     video_external_id: l.video_external_id ?? '',
@@ -30,6 +33,7 @@ function lessonToForm(l: AcademyLesson): LessonForm {
     estimated_minutes: l.estimated_minutes?.toString() ?? '',
     is_published: l.is_published,
     is_free_preview: l.is_free_preview,
+    is_required: l.is_required ?? true,
   };
 }
 
@@ -116,6 +120,7 @@ export default function AdminLessonBuilder() {
       const updated = await academyAPI.saveAdminLesson(lesson.id, {
         module_id: module.id,
         title: form.title.trim(),
+        description: form.description.trim() || null,
         content_type: form.content_type,
         text_content: ['text', 'mixed'].includes(form.content_type) ? (form.text_content || null) : null,
         video_external_id: vidId,
@@ -124,6 +129,7 @@ export default function AdminLessonBuilder() {
         estimated_minutes: form.estimated_minutes ? Number(form.estimated_minutes) : null,
         is_published: form.is_published,
         is_free_preview: form.is_free_preview,
+        is_required: form.is_required,
         sort_order: lesson.sort_order,
         metadata: lesson.metadata ?? {},
       });
@@ -229,10 +235,16 @@ export default function AdminLessonBuilder() {
           {/* Main editor panel */}
           <div className="flex-1 min-w-0 space-y-4">
 
-            {/* Title */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+            {/* Title & Description */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
               <Field label="Título de la lección" value={form.title}
                 onChange={v => setField('title', v)} required placeholder="Ej: Introducción al módulo" />
+              <div>
+                <span className="text-sm font-semibold text-[#111] block mb-1">Descripción <span className="text-xs font-normal text-slate-400">(opcional)</span></span>
+                <textarea value={form.description} onChange={e => setField('description', e.target.value)}
+                  rows={2} placeholder="Breve descripción de la lección..."
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#1A4E26] resize-none text-sm" />
+              </div>
             </div>
 
             {/* Content type selector */}
@@ -285,10 +297,22 @@ export default function AdminLessonBuilder() {
                   )}
                   <div>
                     <span className="text-sm font-semibold text-[#111] block mb-1">Contenido de la lección</span>
-                    <p className="text-xs text-slate-400 mb-2">Puedes usar HTML básico para dar formato.</p>
+                    
+                    {/* HTML Toolbar */}
+                    <div className="flex flex-wrap gap-1 mb-2 p-1.5 bg-slate-50 border border-slate-200 rounded-xl">
+                      <button type="button" onClick={() => setField('text_content', form.text_content + '<strong>Texto Negrita</strong>')} className="px-2 py-1 text-xs font-bold hover:bg-slate-200 rounded">Negrita</button>
+                      <button type="button" onClick={() => setField('text_content', form.text_content + '<em>Texto Cursiva</em>')} className="px-2 py-1 text-xs italic hover:bg-slate-200 rounded">Cursiva</button>
+                      <button type="button" onClick={() => setField('text_content', form.text_content + '<br/>\n')} className="px-2 py-1 text-xs hover:bg-slate-200 rounded">Salto de línea</button>
+                      <button type="button" onClick={() => setField('text_content', form.text_content + '<ul>\n  <li>Elemento 1</li>\n  <li>Elemento 2</li>\n</ul>')} className="px-2 py-1 text-xs hover:bg-slate-200 rounded">Lista viñetas</button>
+                      <button type="button" onClick={() => setField('text_content', form.text_content + '<ol>\n  <li>Paso 1</li>\n  <li>Paso 2</li>\n</ol>')} className="px-2 py-1 text-xs hover:bg-slate-200 rounded">Lista numerada</button>
+                      <button type="button" onClick={() => setField('text_content', form.text_content + '<h2>Título H2</h2>\n')} className="px-2 py-1 text-xs font-bold hover:bg-slate-200 rounded">H2</button>
+                      <button type="button" onClick={() => setField('text_content', form.text_content + '<h3>Título H3</h3>\n')} className="px-2 py-1 text-xs font-bold hover:bg-slate-200 rounded">H3</button>
+                      <button type="button" onClick={() => setField('text_content', form.text_content + '<a href="https://" target="_blank">Enlace</a>')} className="px-2 py-1 text-xs text-blue-600 hover:bg-slate-200 rounded">Enlace</button>
+                    </div>
+
                     <textarea value={form.text_content} onChange={e => setField('text_content', e.target.value)}
-                      rows={12} placeholder="Escribe el contenido de la lección aquí..."
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#1A4E26] resize-y text-sm font-mono" />
+                      rows={12} placeholder="Escribe el contenido de la lección aquí usando HTML..."
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#1A4E26] resize-y text-sm font-mono bg-slate-50" />
                   </div>
                   {/* Preview */}
                   {form.text_content && (
@@ -453,10 +477,22 @@ export default function AdminLessonBuilder() {
               </div>
             </div>
 
-            {/* Duration */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-              <Field label="Duración estimada (min)" value={form.estimated_minutes}
-                onChange={v => setField('estimated_minutes', v)} type="number" min="0" placeholder="0" />
+            {/* Requirements */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
+              <p className="text-sm font-bold text-[#111]">Requisitos de avance</p>
+              
+              <label className="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 cursor-pointer hover:border-[#1A4E26] transition-colors">
+                <input type="checkbox" checked={form.is_required}
+                  onChange={e => setField('is_required', e.target.checked)}
+                  className="w-4 h-4 accent-[#1A4E26] shrink-0" />
+                <div className="text-left">
+                  <span className="text-sm font-semibold block text-[#111]">Obligatoria</span>
+                  <span className="text-xs text-slate-500">Requerida para graduación</span>
+                </div>
+              </label>
+
+              <Field label="Minutos estimados" value={form.estimated_minutes}
+                onChange={v => setField('estimated_minutes', v)} type="number" min="1" placeholder="Ej: 15" />
             </div>
 
             {/* Status summary */}

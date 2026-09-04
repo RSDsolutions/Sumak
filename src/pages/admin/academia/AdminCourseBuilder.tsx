@@ -124,12 +124,14 @@ function SelectField({ label, value, onChange, options }: {
 // ─── Module Row ───────────────────────────────────────────────────────────────
 
 function ModuleRow({
-  module, moduleIndex, totalModules, courseId,
-  onMoveUp, onMoveDown, onDelete, onTogglePublish, onUpdateTitle, onAddLesson,
+  module, moduleIndex, totalModules, courseId, moduleAssessments,
+  onMoveUp, onMoveDown, onDelete, onTogglePublish, onUpdateTitle, onAddLesson, onAddAssessment,
 }: {
   module: AcademyModule; moduleIndex: number; totalModules: number; courseId: string;
+  moduleAssessments: any[];
   onMoveUp: () => void; onMoveDown: () => void; onDelete: () => void;
-  onTogglePublish: () => void; onUpdateTitle: (t: string) => void; onAddLesson: () => void;
+  onTogglePublish: () => void; onUpdateTitle: (t: string) => void;
+  onAddLesson: () => void; onAddAssessment: () => void;
 }) {
   const navigate = useNavigate();
   const [editingTitle, setEditingTitle] = useState(false);
@@ -147,6 +149,8 @@ function ModuleRow({
     video: 'Video', text: 'Texto', pdf: 'PDF', external_link: 'Enlace',
     assessment: 'Evaluación', mixed: 'Mixto', presentation: 'Presentación', image: 'Imagen',
   };
+
+  const itemCount = (module.lessons ?? []).length + moduleAssessments.length;
 
   return (
     <div className={`rounded-2xl border transition-all shadow-sm mb-3 ${module.is_published ? 'border-slate-200 bg-white' : 'border-slate-200 bg-slate-50/60'}`}>
@@ -168,7 +172,7 @@ function ModuleRow({
         </button>
         <div className="flex-1 min-w-0">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
-            Módulo {module.sort_order}
+            Módulo {module.sort_order} · {itemCount} elemento{itemCount !== 1 ? 's' : ''}
           </span>
           {editingTitle ? (
             <input autoFocus value={titleVal} onChange={e => setTitleVal(e.target.value)}
@@ -194,6 +198,10 @@ function ModuleRow({
             <Trash2 size={16} />
           </button>
           <div className="w-px h-5 bg-slate-200 mx-0.5" />
+          <button type="button" onClick={onAddAssessment}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 text-white text-xs font-bold rounded-xl hover:bg-amber-600 transition-colors">
+            <ClipboardList size={14} /> Prueba
+          </button>
           <button type="button" onClick={onAddLesson}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-[#111] text-white text-xs font-bold rounded-xl hover:bg-[#333] transition-colors">
             <Plus size={14} /> Lección
@@ -203,33 +211,68 @@ function ModuleRow({
 
       {expanded && (
         <div className="border-t border-slate-100 divide-y divide-slate-50">
-          {(module.lessons ?? []).length === 0 ? (
-            <p className="text-xs text-slate-400 text-center py-4 italic">Sin lecciones aún.</p>
+          {(module.lessons ?? []).length === 0 && moduleAssessments.length === 0 ? (
+            <p className="text-xs text-slate-400 text-center py-4 italic">Sin contenido aún.</p>
           ) : (
-            (module.lessons ?? []).map((lesson, li) => (
-              <div key={lesson.id}
-                className={`flex items-center gap-3 px-5 py-2.5 group hover:bg-slate-50 transition-colors ${!lesson.is_published ? 'opacity-60' : ''}`}>
-                <LessonIcon type={lesson.content_type} />
-                <button type="button"
-                  onClick={() => navigate(`/admin/academia/cursos/${courseId}/lecciones/${lesson.id}`)}
-                  className="flex-1 text-left min-w-0">
-                  <span className="font-semibold text-sm text-[#111] group-hover:text-[#1A4E26] transition-colors block truncate">
-                    {lesson.sort_order}. {lesson.title}
+            <>
+              {(module.lessons ?? []).map((lesson, li) => (
+                <div key={lesson.id}
+                  className={`flex items-center gap-3 px-5 py-2.5 group hover:bg-slate-50 transition-colors ${!lesson.is_published ? 'opacity-60' : ''}`}>
+                  <LessonIcon type={lesson.content_type} />
+                  <button type="button"
+                    onClick={() => {
+                      // If assessment-type lesson has an assessment_id, go to assessment builder
+                      if (lesson.content_type === 'assessment' && lesson.assessment_id) {
+                        navigate(`/admin/academia/cursos/${courseId}/evaluaciones/${lesson.assessment_id}`);
+                      } else {
+                        navigate(`/admin/academia/cursos/${courseId}/lecciones/${lesson.id}`);
+                      }
+                    }}
+                    className="flex-1 text-left min-w-0">
+                    <span className="font-semibold text-sm text-[#111] group-hover:text-[#1A4E26] transition-colors block truncate">
+                      {lesson.sort_order}. {lesson.title}
+                    </span>
+                    <span className="text-xs text-slate-400">
+                      {contentTypeLabel[lesson.content_type] ?? lesson.content_type}
+                      {lesson.estimated_minutes ? ` · ${lesson.estimated_minutes} min` : ''}
+                      {!lesson.is_published ? ' · Oculta' : ''}
+                    </span>
+                  </button>
+                  <button type="button"
+                    onClick={() => navigate(`/admin/academia/cursos/${courseId}/lecciones/${lesson.id}`)}
+                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-[#E8F2EA] text-[#1A4E26] transition-all shrink-0"
+                    title={`Editar lección ${li + 1}`}>
+                    <Pencil size={15} />
+                  </button>
+                </div>
+              ))}
+              {moduleAssessments.map(a => (
+                <div key={a.id}
+                  className="flex items-center gap-3 px-5 py-2.5 group hover:bg-amber-50 transition-colors">
+                  <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-amber-50 text-amber-600">
+                    <ClipboardList size={15} />
                   </span>
-                  <span className="text-xs text-slate-400">
-                    {contentTypeLabel[lesson.content_type] ?? lesson.content_type}
-                    {lesson.estimated_minutes ? ` · ${lesson.estimated_minutes} min` : ''}
-                    {!lesson.is_published ? ' · Oculta' : ''}
-                  </span>
-                </button>
-                <button type="button"
-                  onClick={() => navigate(`/admin/academia/cursos/${courseId}/lecciones/${lesson.id}`)}
-                  className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-[#E8F2EA] text-[#1A4E26] transition-all shrink-0"
-                  title={`Editar lección ${li + 1}`}>
-                  <Pencil size={15} />
-                </button>
-              </div>
-            ))
+                  <button type="button"
+                    onClick={() => navigate(`/admin/academia/cursos/${courseId}/evaluaciones/${a.id}`)}
+                    className="flex-1 text-left min-w-0">
+                    <span className="font-semibold text-sm text-amber-900 group-hover:text-amber-700 transition-colors block truncate">
+                      {a.title}
+                    </span>
+                    <span className="text-xs text-amber-600">
+                      {a.is_final_exam ? 'Examen final' : 'Prueba de módulo'}
+                      {' · '}{a.passing_score}% mín
+                      {!a.is_published ? ' · Borrador' : ''}
+                    </span>
+                  </button>
+                  <button type="button"
+                    onClick={() => navigate(`/admin/academia/cursos/${courseId}/evaluaciones/${a.id}`)}
+                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-amber-100 text-amber-600 transition-all shrink-0"
+                    title="Editar evaluación">
+                    <Pencil size={15} />
+                  </button>
+                </div>
+              ))}
+            </>
           )}
         </div>
       )}
@@ -250,6 +293,7 @@ export default function AdminCourseBuilder() {
   const [instructors, setInstructors] = useState<any[]>([]);
   const [diplomaTypes, setDiplomaTypes] = useState<any[]>([]);
   const [assessments, setAssessments] = useState<any[]>([]);
+  const [creatingAssessment, setCreatingAssessment] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('content');
@@ -271,7 +315,7 @@ export default function AdminCourseBuilder() {
         academyAPI.getAdminCategories(),
         academyAPI.getAdminInstructors(),
         academyAPI.getAdminDiplomaTypes(),
-        academyAPI.getAdminAssessments(courseId),
+        academyAPI.getAdminAssessmentsForTree(courseId),
       ]);
       setCourse(c);
       setForm(courseToForm(c));
@@ -430,6 +474,31 @@ export default function AdminCourseBuilder() {
       setLessonPickerModule(null);
       navigate(`/admin/academia/cursos/${courseId}/lecciones/${lesson.id}`);
     } catch { toast.error('No se pudo crear la lección.'); }
+  }
+
+  async function createAssessmentAndNavigate(moduleId: string) {
+    if (!courseId || creatingAssessment) return;
+    setCreatingAssessment(true);
+    try {
+      const mod = modules.find(m => m.id === moduleId);
+      const modAssessments = assessments.filter(a => a.module_id === moduleId);
+      const newAssessment = await academyAPI.saveAdminAssessment(null, {
+        course_id: courseId,
+        module_id: moduleId,
+        title: `Prueba — ${mod?.title ?? 'Módulo'}`,
+        description: '',
+        passing_score: 70,
+        max_attempts: 3,
+        time_limit_minutes: null,
+        is_final_exam: false,
+        is_published: false,
+        sort_order: modAssessments.length + 1,
+        randomize_questions: false,
+      });
+      setAssessments(prev => [...prev, newAssessment]);
+      navigate(`/admin/academia/cursos/${courseId}/evaluaciones/${newAssessment.id}`);
+    } catch { toast.error('No se pudo crear la evaluación.'); }
+    finally { setCreatingAssessment(false); }
   }
 
   const publishChecks = {
@@ -624,27 +693,33 @@ export default function AdminCourseBuilder() {
                     + Añadir primer módulo
                   </button>
                 </div>
-              ) : modules.map((module, i) => (
-                <ModuleRow key={module.id} module={module} moduleIndex={i} totalModules={modules.length}
-                  courseId={courseId!}
-                  onMoveUp={() => moveModule(i, 'up')} onMoveDown={() => moveModule(i, 'down')}
-                  onDelete={() => setDeleteTarget(module)}
-                  onTogglePublish={() => toggleModulePublish(module)}
-                  onUpdateTitle={t => updateModuleTitle(module.id, t)}
-                  onAddLesson={() => setLessonPickerModule(module)} />
-              ))}
+              ) : modules.map((module, i) => {
+                const moduleAssessments = assessments.filter(a => a.module_id === module.id);
+                return (
+                  <ModuleRow key={module.id} module={module} moduleIndex={i} totalModules={modules.length}
+                    courseId={courseId!}
+                    moduleAssessments={moduleAssessments}
+                    onMoveUp={() => moveModule(i, 'up')} onMoveDown={() => moveModule(i, 'down')}
+                    onDelete={() => setDeleteTarget(module)}
+                    onTogglePublish={() => toggleModulePublish(module)}
+                    onUpdateTitle={t => updateModuleTitle(module.id, t)}
+                    onAddLesson={() => setLessonPickerModule(module)}
+                    onAddAssessment={() => createAssessmentAndNavigate(module.id)} />
+                );
+              })}
 
-              {assessments.length > 0 && (
-                <div className="mt-4 p-4 bg-amber-50 border border-amber-100 rounded-2xl">
-                  <h3 className="font-bold text-amber-800 mb-2 flex items-center gap-2">
-                    <ClipboardList size={16} /> Evaluaciones ({assessments.length})
+              {/* Final exam (no module) */}
+              {assessments.filter(a => !a.module_id || a.is_final_exam).length > 0 && (
+                <div className="mt-3 p-4 bg-purple-50 border border-purple-100 rounded-2xl">
+                  <h3 className="font-bold text-purple-800 mb-2 flex items-center gap-2">
+                    <ClipboardList size={16} /> Examen Final
                   </h3>
                   <div className="space-y-1.5">
-                    {assessments.map(a => (
+                    {assessments.filter(a => a.is_final_exam).map(a => (
                       <Link key={a.id} to={`/admin/academia/cursos/${courseId}/evaluaciones/${a.id}`}
-                        className="flex items-center justify-between p-2.5 bg-white border border-amber-100 rounded-xl hover:border-amber-300 transition-colors group">
-                        <span className="text-sm font-semibold text-amber-900 group-hover:text-[#1A4E26]">{a.title}</span>
-                        <span className="text-xs text-amber-600">{a.questions?.length ?? 0} preguntas · {a.passing_score}%</span>
+                        className="flex items-center justify-between p-2.5 bg-white border border-purple-100 rounded-xl hover:border-purple-300 transition-colors group">
+                        <span className="text-sm font-semibold text-purple-900 group-hover:text-[#1A4E26]">{a.title}</span>
+                        <span className="text-xs text-purple-600">{a.passing_score}% mín · {a.is_published ? 'Publicado' : 'Borrador'}</span>
                       </Link>
                     ))}
                   </div>

@@ -8,7 +8,10 @@ import {
   FileText,
   Lock,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  ClipboardList,
+  Trophy,
+  XCircle
 } from 'lucide-react';
 import { academyAPI } from '../../lib/academy';
 import type { AcademyCourse, AcademyModule, AcademyLesson, AcademyProgress } from '../../lib/academy-types';
@@ -20,6 +23,8 @@ export default function VisorLeccion() {
   const [course, setCourse] = useState<AcademyCourse | null>(null);
   const [modules, setModules] = useState<AcademyModule[]>([]);
   const [progress, setProgress] = useState<AcademyProgress[]>([]);
+  const [assessments, setAssessments] = useState<any[]>([]);
+  const [assessmentAttempts, setAssessmentAttempts] = useState<any[]>([]);
   
   const [currentLesson, setCurrentLesson] = useState<AcademyLesson | null>(null);
   const [currentModule, setCurrentModule] = useState<AcademyModule | null>(null);
@@ -35,12 +40,20 @@ export default function VisorLeccion() {
         const c = await academyAPI.getCourseBySlug(slug);
         setCourse(c);
         if (c) {
-          const [m, p] = await Promise.all([
+          const [m, p, asmnts] = await Promise.all([
             academyAPI.getCourseModules(c.id),
-            academyAPI.getMyProgress(c.id)
+            academyAPI.getMyProgress(c.id),
+            academyAPI.getAdminAssessmentsForTree(c.id).catch(() => []),
           ]);
           setModules(m);
           setProgress(p);
+          setAssessments(asmnts);
+          // Load attempts for evaluations
+          if (asmnts.length > 0) {
+            academyAPI.getMyAttemptsForCourse(c.id)
+              .then(attempts => setAssessmentAttempts(attempts))
+              .catch(() => {});
+          }
           
           if (m.length > 0 && m[0].lessons && m[0].lessons.length > 0) {
             // Find last accessed lesson or just the first one
@@ -288,8 +301,69 @@ export default function VisorLeccion() {
                         </button>
                       );
                     })}
+                    {/* Module assessments */}
+                    {assessments.filter(a => a.module_id === mod.id && a.is_published).map((a, ai) => {
+                      const bestAttempt = assessmentAttempts
+                        .filter(att => att.assessment_id === a.id)
+                        .sort((x: any, y: any) => (y.percentage ?? 0) - (x.percentage ?? 0))[0];
+                      const isPassed = bestAttempt?.passed === true;
+                      const isFailed = bestAttempt && !bestAttempt.passed;
+                      return (
+                        <button
+                          key={a.id}
+                          onClick={() => navigate(`/academia/evaluacion/${a.id}`)}
+                          className="w-full flex items-start gap-3 p-3 pl-4 sm:pl-6 text-left border-l-4 border-transparent hover:bg-amber-50 transition-colors group"
+                        >
+                          <div className="mt-0.5">
+                            {isPassed
+                              ? <Trophy size={16} className="text-[#1A4E26]" />
+                              : isFailed
+                                ? <XCircle size={16} className="text-red-400" />
+                                : <ClipboardList size={16} className="text-amber-500" />}
+                          </div>
+                          <div>
+                            <p className="text-sm text-amber-800 group-hover:text-amber-900 font-medium">
+                              {a.title}
+                            </p>
+                            <span className="text-[10px] text-amber-600">
+                              {isPassed ? '✓ Aprobada' : isFailed ? `${Math.round(bestAttempt.percentage)}% — No aprobada` : 'Prueba de módulo'}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
+              </div>
+            );
+          })}
+
+          {/* Final Exams */}
+          {assessments.filter(a => (!a.module_id || a.is_final_exam) && a.is_published).map(a => {
+            const bestAttempt = assessmentAttempts
+              .filter(att => att.assessment_id === a.id)
+              .sort((x: any, y: any) => (y.percentage ?? 0) - (x.percentage ?? 0))[0];
+            const isPassed = bestAttempt?.passed === true;
+            const isFailed = bestAttempt && !bestAttempt.passed;
+            return (
+              <div key={a.id} className="border-t-4 border-slate-200">
+                <button
+                  onClick={() => navigate(`/academia/evaluacion/${a.id}`)}
+                  className="w-full flex items-center justify-between p-4 hover:bg-purple-50 transition-colors text-left group"
+                >
+                  <div className="flex-1 pr-4">
+                    <p className="text-xs font-bold text-purple-600 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                      <Trophy size={14} /> Examen Final
+                    </p>
+                    <h3 className="text-sm font-bold text-purple-900 line-clamp-2">
+                      {a.title}
+                    </h3>
+                    <p className="text-xs text-purple-600 mt-0.5">
+                      {isPassed ? '✓ Aprobado' : isFailed ? `${Math.round(bestAttempt.percentage)}% — No aprobado` : 'Pendiente'}
+                    </p>
+                  </div>
+                  {isPassed ? <CheckCircle size={20} className="text-[#1A4E26]" /> : <ChevronLeft size={20} className="text-purple-300 group-hover:text-purple-500 rotate-180" />}
+                </button>
               </div>
             );
           })}
