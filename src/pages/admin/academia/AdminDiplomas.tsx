@@ -76,6 +76,7 @@ export default function AdminDiplomas() {
   });
   const [emitting, setEmitting] = useState(false);
   const [studentSearch, setStudentSearch] = useState('');
+  const [registerStudentSearch, setRegisterStudentSearch] = useState('');
   const [registerForm, setRegisterForm] = useState({ user_id: '', diploma_type_id: '', course_id: '', participant_name: '', program_name: '', diploma_number: '', issued_at: new Date().toISOString().slice(0, 10) });
   const [registerFile, setRegisterFile] = useState<File | null>(null);
   const [registering, setRegistering] = useState(false);
@@ -322,6 +323,15 @@ export default function AdminDiplomas() {
     (s.nombre_completo ?? '').toLowerCase().includes(studentSearch.toLowerCase()) ||
     (s.email ?? '').toLowerCase().includes(studentSearch.toLowerCase())
   );
+  const filteredRegisterStudents = students.filter(s =>
+    (s.nombre_completo ?? '').toLowerCase().includes(registerStudentSearch.toLowerCase()) ||
+    (s.email ?? '').toLowerCase().includes(registerStudentSearch.toLowerCase())
+  );
+
+  function selectRegisterStudent(student: Student) {
+    setRegisterStudentSearch(`${student.nombre_completo} · ${student.email}`);
+    setRegisterForm((current) => ({ ...current, user_id: student.id, participant_name: student.nombre_completo }));
+  }
 
   // ── UI ─────────────────────────────────────────────────────────────────────
   return (
@@ -541,7 +551,7 @@ export default function AdminDiplomas() {
           <div className="mb-6"><h2 className="text-xl font-bold text-[#111111]">Registrar diploma existente</h2><p className="text-sm text-[#6B7280] mt-1">El PDF original se conserva intacto y se genera una copia verificable con QR.</p></div>
           <form onSubmit={registerExistingDiploma} className="space-y-5">
             <div className="grid sm:grid-cols-2 gap-4">
-              <label className="block text-sm font-semibold text-[#111111]">Beneficiario<select required value={registerForm.user_id} onChange={(e) => setRegisterForm((current) => ({ ...current, user_id: e.target.value }))} className="mt-1 w-full px-3 py-2 border border-[#C8D8CB] rounded-xl bg-white"><option value="">Seleccionar usuario</option>{students.map((student) => <option key={student.id} value={student.id}>{student.nombre_completo} · {student.email}</option>)}</select></label>
+              <div className="relative"><label className="block text-sm font-semibold text-[#111111]">Beneficiario<input required={!registerForm.user_id} value={registerStudentSearch} onChange={(event) => { setRegisterStudentSearch(event.target.value); setRegisterForm((current) => ({ ...current, user_id: '' })); }} placeholder="Buscar por nombre o email..." className="mt-1 w-full px-3 py-2 border border-[#C8D8CB] rounded-xl bg-white" /></label>{registerStudentSearch && !registerForm.user_id && <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl border border-[#C8D8CB] bg-white shadow-lg">{filteredRegisterStudents.slice(0, 10).map((student) => <button type="button" key={student.id} onClick={() => selectRegisterStudent(student)} className="block w-full border-b border-[#E5ECE6] px-3 py-2 text-left text-sm last:border-0 hover:bg-[#EBF4ED]"><span className="font-semibold">{student.nombre_completo}</span><span className="ml-2 text-xs text-[#6B7280]">{student.email}</span></button>)}{filteredRegisterStudents.length === 0 && <p className="px-3 py-2 text-sm text-[#6B7280]">Sin resultados</p>}</div>}</div>
               <label className="block text-sm font-semibold text-[#111111]">Tipo de diploma<select required value={registerForm.diploma_type_id} onChange={(e) => setRegisterForm((current) => ({ ...current, diploma_type_id: e.target.value }))} className="mt-1 w-full px-3 py-2 border border-[#C8D8CB] rounded-xl bg-white"><option value="">Seleccionar tipo</option>{types.map((type) => <option key={type.id} value={type.id}>{type.name} ({type.internal_code})</option>)}</select></label>
             </div>
             <div className="grid sm:grid-cols-2 gap-4"><label className="block text-sm font-semibold text-[#111111]">Curso<select value={registerForm.course_id} onChange={(e) => setRegisterForm((current) => ({ ...current, course_id: e.target.value }))} className="mt-1 w-full px-3 py-2 border border-[#C8D8CB] rounded-xl bg-white"><option value="">Sin curso específico</option>{courses.map((course) => <option key={course.id} value={course.id}>{course.title}</option>)}</select></label><label className="block text-sm font-semibold text-[#111111]">Fecha de emisión<input required type="date" value={registerForm.issued_at} onChange={(e) => setRegisterForm((current) => ({ ...current, issued_at: e.target.value }))} className="mt-1 w-full px-3 py-2 border border-[#C8D8CB] rounded-xl" /></label></div>
