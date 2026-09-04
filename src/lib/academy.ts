@@ -527,28 +527,6 @@ export const academyAPI = {
     return data as AcademyCategory;
   },
 
-  async getAdminCourses() {
-    const { data, error } = await supabase
-      .from('academy_courses')
-      .select(`
-        *,
-        category:category_id (name, slug),
-        instructor:instructor_id (nombre_completo)
-      `)
-      .order('sort_order', { ascending: true })
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    return data as AcademyCourse[];
-  },
-
-  async getAdminCategories() {
-    const { data, error } = await supabase
-      .from('academy_categories')
-      .select('*')
-      .order('sort_order', { ascending: true });
-    if (error) throw error;
-    return data as AcademyCategory[];
-  },
 
   async saveAdminCourse(courseId: string | null, input: {
     title: string;
@@ -692,14 +670,59 @@ export const academyAPI = {
   },
 
   async getAdminInstructors() {
-    // Busca usuarios que sean admins o instructores en profiles
+    // 1. Obtener usuarios que tienen el rol de instructor en academy_roles
+    const { data: rolesData } = await supabase
+      .from('academy_roles')
+      .select('user_id')
+      .eq('role', 'instructor')
+      .is('revoked_at', null);
+
+    const instructorIds = (rolesData ?? []).map(r => r.user_id);
+
+    // 2. Obtener perfiles que son admin o que su ID está en la lista de instructores
+    let query = supabase.from('profiles').select('id, nombre_completo, email, rol');
+    
+    if (instructorIds.length > 0) {
+      query = query.or(`rol.in.(admin,instructor),id.in.(${instructorIds.join(',')})`);
+    } else {
+      query = query.in('rol', ['admin', 'instructor']);
+    }
+
+    const { data, error } = await query.order('nombre_completo', { ascending: true });
+    
+    if (error) throw error;
+    
+    return data.map(p => ({
+      ...p,
+      is_admin: p.rol === 'admin'
+    }));
+  },
+
+  async searchUsersForInstructor(searchQuery: string) {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, nombre_completo, email')
-      .in('rol', ['admin', 'instructor'])
-      .order('nombre_completo', { ascending: true });
+      .select('id, nombre_completo, email, rol')
+      .or(`nombre_completo.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`)
+      .limit(10);
     if (error) throw error;
     return data;
+  },
+
+  async assignInstructorRole(userId: string) {
+    const { error } = await supabase
+      .from('academy_roles')
+      .insert({ user_id: userId, role: 'instructor' });
+    if (error) throw error;
+  },
+
+  async revokeInstructorRole(userId: string) {
+    const { error } = await supabase
+      .from('academy_roles')
+      .update({ revoked_at: new Date().toISOString() })
+      .eq('user_id', userId)
+      .eq('role', 'instructor')
+      .is('revoked_at', null);
+    if (error) throw error;
   },
 
   async getCourseBySlug(slug: string) {

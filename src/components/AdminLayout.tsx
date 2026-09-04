@@ -58,6 +58,7 @@ const navGroups: NavGroup[] = [
     title: 'Academia',
     items: [
       { label: 'Cursos', to: '/admin/academia/cursos', icon: <BookOpen size={18} /> },
+      { label: 'Instructores', to: '/admin/academia/instructores', icon: <Users size={18} /> },
       { label: 'Inscripciones', to: '/admin/academia/inscripciones', icon: <Users size={18} /> },
       { label: 'Programas', to: '/admin/academia/programas', icon: <Layers size={18} /> },
       { label: 'Lives', to: '/admin/academia/lives', icon: <BookOpen size={18} /> },

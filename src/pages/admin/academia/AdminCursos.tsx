@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowDown, ArrowUp, BookOpen, ChevronDown, Eye, EyeOff, Loader2, Plus, Search, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, BookOpen, ChevronDown, Eye, EyeOff, Loader2, Plus, Search, Trash2, UploadCloud, GripVertical, FileText, PlayCircle, Link as LinkIcon, HelpCircle } from 'lucide-react';
 import Modal from '../../../components/Modal';
 import { academyAPI } from '../../../lib/academy';
 import { useToast } from '../../../lib/toast';
@@ -88,7 +88,8 @@ export default function AdminCursos() {
       setCourses(nextCourses);
       setCategories(nextCategories);
       setInstructors(nextInstructors);
-    } catch {
+    } catch (error) {
+      console.error("Error loading academy catalog:", error);
       toast.error('No se pudo cargar el catálogo de Academy.');
     } finally {
       setLoading(false);
@@ -451,40 +452,58 @@ export default function AdminCursos() {
         <div className="p-6 space-y-5">
           {builderLoading ? <div className="flex justify-center py-10"><Loader2 className="animate-spin text-[#1A4E26]" /></div> : <>
             <div className="flex gap-2"><input value={moduleTitle} onChange={(event) => setModuleTitle(event.target.value)} placeholder="Nombre del nuevo módulo" className="flex-1 px-3 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#1A4E26]" /><button type="button" onClick={() => void addModule()} className="px-3 py-2 rounded-xl bg-[#1A4E26] text-white text-sm font-bold"><Plus size={16} /></button></div>
-            {modules.length === 0 ? <p className="text-sm text-[#6B7280] text-center py-6">Este curso todavía no tiene módulos.</p> : modules.map((module, moduleIndex) => (
-              <section key={module.id} className={`border ${module.is_published ? 'border-[#C8D8CB]' : 'border-slate-200 bg-slate-50'} rounded-xl p-4`}>
-                <div className="flex items-center justify-between gap-3 mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="flex flex-col">
-                      <button type="button" onClick={() => moveModule(moduleIndex, 'up')} disabled={moduleIndex === 0} className="text-slate-400 hover:text-[#1A4E26] disabled:opacity-30"><ArrowUp size={14} /></button>
-                      <button type="button" onClick={() => moveModule(moduleIndex, 'down')} disabled={moduleIndex === modules.length - 1} className="text-slate-400 hover:text-[#1A4E26] disabled:opacity-30"><ArrowDown size={14} /></button>
+            {modules.length === 0 ? (
+              <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50">
+                <BookOpen size={48} className="mx-auto text-slate-300 mb-3" />
+                <p className="text-sm font-semibold text-slate-600 mb-1">Este curso todavía no tiene módulos.</p>
+                <p className="text-xs text-slate-500">Comienza agregando un módulo en la parte superior.</p>
+              </div>
+            ) : modules.map((module, moduleIndex) => (
+              <section key={module.id} className={`border border-transparent bg-white shadow-sm hover:shadow-md transition-shadow ${module.is_published ? 'ring-1 ring-slate-200' : 'ring-1 ring-slate-200 bg-slate-50/50'} rounded-2xl p-5 mb-4`}>
+                <div className="flex items-center justify-between gap-3 mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex flex-col p-1 bg-slate-100 rounded-lg">
+                      <button type="button" onClick={() => moveModule(moduleIndex, 'up')} disabled={moduleIndex === 0} className="text-slate-400 hover:text-[#1A4E26] disabled:opacity-30 p-0.5"><ArrowUp size={14} /></button>
+                      <button type="button" onClick={() => moveModule(moduleIndex, 'down')} disabled={moduleIndex === modules.length - 1} className="text-slate-400 hover:text-[#1A4E26] disabled:opacity-30 p-0.5"><ArrowDown size={14} /></button>
                     </div>
-                    <h3 className={`font-bold ${module.is_published ? 'text-[#111111]' : 'text-slate-500'}`}>{module.sort_order}. {module.title}</h3>
+                    <div>
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Módulo {module.sort_order}</span>
+                      <h3 className={`font-bold text-lg ${module.is_published ? 'text-[#111111]' : 'text-slate-500'}`}>{module.title}</h3>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button type="button" onClick={() => toggleModulePublish(module)} className={`p-1.5 rounded-lg ${module.is_published ? 'text-[#1A4E26] bg-[#E8F2EA]' : 'text-slate-500 bg-slate-200'}`}>{module.is_published ? <Eye size={16} /> : <EyeOff size={16} />}</button>
-                    <button type="button" onClick={() => deleteModule(module)} className="p-1.5 rounded-lg text-red-500 hover:bg-red-50"><Trash2 size={16} /></button>
-                    <button type="button" onClick={() => void openLesson(module.id)} className="ml-2 text-xs font-bold text-[#1A4E26] flex items-center gap-1"><Plus size={14} /> Lección</button>
+                  <div className="flex items-center gap-1.5">
+                    <button type="button" onClick={() => toggleModulePublish(module)} className={`p-2 rounded-xl transition-colors ${module.is_published ? 'text-[#1A4E26] bg-[#E8F2EA] hover:bg-[#D4E8D8]' : 'text-slate-500 bg-slate-100 hover:bg-slate-200'}`} title={module.is_published ? 'Ocultar módulo' : 'Publicar módulo'}>{module.is_published ? <Eye size={18} /> : <EyeOff size={18} />}</button>
+                    <button type="button" onClick={() => deleteModule(module)} className="p-2 rounded-xl text-red-500 bg-red-50 hover:bg-red-100 transition-colors"><Trash2 size={18} /></button>
+                    <div className="w-px h-6 bg-slate-200 mx-1"></div>
+                    <button type="button" onClick={() => void openLesson(module.id)} className="px-3 py-2 text-sm font-bold bg-[#111111] text-white rounded-xl flex items-center gap-2 hover:bg-gray-800 transition-colors shadow-sm"><Plus size={16} /> Lección</button>
                   </div>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   {(module.lessons ?? []).map((lesson, lessonIndex) => (
-                    <div key={lesson.id} className={`flex items-center gap-2 px-3 py-2 rounded-lg ${lesson.is_published ? 'bg-[#F8FBF8]' : 'bg-slate-100 opacity-75'}`}>
-                      <div className="flex flex-col">
-                        <button type="button" onClick={() => moveLesson(module.id, lessonIndex, 'up')} disabled={lessonIndex === 0} className="text-slate-400 hover:text-[#1A4E26] disabled:opacity-30"><ArrowUp size={12} /></button>
-                        <button type="button" onClick={() => moveLesson(module.id, lessonIndex, 'down')} disabled={lessonIndex === (module.lessons?.length ?? 0) - 1} className="text-slate-400 hover:text-[#1A4E26] disabled:opacity-30"><ArrowDown size={12} /></button>
+                    <div key={lesson.id} className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${lesson.is_published ? 'bg-white border-slate-100 shadow-sm' : 'bg-slate-50 border-slate-100 opacity-75'} hover:border-[#C8D8CB] transition-colors group`}>
+                      <div className="flex flex-col text-slate-300 group-hover:text-slate-400">
+                        <button type="button" onClick={() => moveLesson(module.id, lessonIndex, 'up')} disabled={lessonIndex === 0} className="hover:text-[#1A4E26] disabled:opacity-30"><ArrowUp size={12} /></button>
+                        <button type="button" onClick={() => moveLesson(module.id, lessonIndex, 'down')} disabled={lessonIndex === (module.lessons?.length ?? 0) - 1} className="hover:text-[#1A4E26] disabled:opacity-30"><ArrowDown size={12} /></button>
                       </div>
-                      <button type="button" onClick={() => void openLesson(module.id, lesson)} className="flex-1 text-left text-sm hover:text-[#1A4E26]">{lesson.sort_order}. {lesson.title} <span className="text-xs text-[#6B7280]">· {lesson.content_type}</span></button>
-                      <div className="flex items-center gap-1">
-                        <button type="button" onClick={() => toggleLessonPublish(module.id, lesson)} className={`p-1 rounded ${lesson.is_published ? 'text-[#1A4E26]' : 'text-slate-400'}`}>{lesson.is_published ? <Eye size={14} /> : <EyeOff size={14} />}</button>
-                        <button type="button" onClick={() => deleteLesson(module.id, lesson.id)} className="p-1 rounded text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
+                      
+                      <div className={`p-2 rounded-lg ${lesson.content_type === 'video' ? 'bg-red-50 text-red-600' : lesson.content_type === 'pdf' ? 'bg-orange-50 text-orange-600' : lesson.content_type === 'external_link' ? 'bg-blue-50 text-blue-600' : 'bg-indigo-50 text-indigo-600'}`}>
+                        {lesson.content_type === 'video' ? <PlayCircle size={16} /> : lesson.content_type === 'pdf' ? <FileText size={16} /> : lesson.content_type === 'external_link' ? <LinkIcon size={16} /> : <FileText size={16} />}
+                      </div>
+
+                      <button type="button" onClick={() => void openLesson(module.id, lesson)} className="flex-1 text-left">
+                        <span className="font-semibold text-gray-900 group-hover:text-[#1A4E26] transition-colors">{lesson.sort_order}. {lesson.title}</span>
+                      </button>
+                      
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button type="button" onClick={() => toggleLessonPublish(module.id, lesson)} className={`p-1.5 rounded-lg ${lesson.is_published ? 'text-[#1A4E26] hover:bg-[#E8F2EA]' : 'text-slate-400 hover:bg-slate-100'}`} title={lesson.is_published ? 'Ocultar lección' : 'Publicar lección'}>{lesson.is_published ? <Eye size={16} /> : <EyeOff size={16} />}</button>
+                        <button type="button" onClick={() => deleteLesson(module.id, lesson.id)} className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50"><Trash2 size={16} /></button>
                       </div>
                     </div>
                   ))}
                 </div>
               </section>
             ))}
-            <section className="border border-[#C8D8CB] rounded-xl p-4">
+            <section className="border-t-2 border-dashed border-slate-200 pt-6 mt-8">
               <h3 className="font-bold text-[#111111] mb-3">Evaluaciones</h3>
               <div className="flex flex-wrap gap-2 mb-3"><input value={assessmentForm.title} onChange={(event) => setAssessmentForm((current) => ({ ...current, title: event.target.value }))} placeholder="Nombre de evaluación" className="flex-1 min-w-[180px] px-3 py-2 border border-slate-200 rounded-xl" /><input value={assessmentForm.passing_score} onChange={(event) => setAssessmentForm((current) => ({ ...current, passing_score: event.target.value }))} type="number" min="0" max="100" placeholder="Aprobación" className="w-24 px-3 py-2 border border-slate-200 rounded-xl" /><button type="button" onClick={() => void addAssessment()} className="px-3 py-2 rounded-xl bg-[#1A4E26] text-white text-sm font-bold"><Plus size={16} /></button></div>
               {assessments.map((assessment) => (
@@ -512,7 +531,86 @@ export default function AdminCursos() {
       </Modal>
 
       <Modal open={Boolean(lessonDraft.moduleId)} onClose={() => setLessonDraft({ moduleId: '', lesson: null })} title={lessonDraft.lesson ? 'Editar lección' : 'Nueva lección'} subtitle="Contenido base de la lección.">
-        <form onSubmit={saveLesson} className="p-6 space-y-4"><Field label="Título" value={lessonForm.title} onChange={(value) => setLessonForm((current) => ({ ...current, title: value }))} required /><SelectField label="Tipo" value={lessonForm.content_type} onChange={(value) => setLessonForm((current) => ({ ...current, content_type: value as ContentType }))} options={[{ value: 'text', label: 'Texto' }, { value: 'video', label: 'Video YouTube' }, { value: 'pdf', label: 'PDF' }, { value: 'external_link', label: 'Enlace externo' }, { value: 'mixed', label: 'Mixto' }]} />{['text', 'mixed'].includes(lessonForm.content_type) && <label className="block text-sm font-semibold text-[#111111]">Contenido<textarea value={lessonForm.text_content} onChange={(event) => setLessonForm((current) => ({ ...current, text_content: event.target.value }))} rows={5} className="mt-1 w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#1A4E26]" /></label>}{lessonForm.content_type === 'video' && <Field label="ID de video YouTube" value={lessonForm.video_external_id} onChange={(value) => setLessonForm((current) => ({ ...current, video_external_id: value }))} required />}{lessonForm.content_type !== 'text' && <Field label="Duración (minutos)" value={lessonForm.estimated_minutes} onChange={(value) => setLessonForm((current) => ({ ...current, estimated_minutes: value }))} type="number" min="0" />}<div className="pt-4 border-t border-[#E5ECE6]"><h3 className="text-sm font-bold text-[#111111] mb-3">Recursos</h3>{lessonDraft.lesson ? <><div className="space-y-2 mb-3">{resources.map((resource) => <div key={resource.id} className="flex items-center gap-2 text-sm bg-[#F8FBF8] rounded-lg px-3 py-2"><a href={resource.file_url} target="_blank" rel="noreferrer" className="truncate flex-1 hover:underline text-[#1A4E26] font-medium">{resource.title}</a> <span className="text-xs text-[#6B7280]">· {resource.file_type || 'archivo'}</span><button type="button" onClick={() => void removeResource(resource.id)} aria-label={`Eliminar ${resource.title}`} className="text-red-500 hover:text-red-700 ml-2"><Trash2 size={15} /></button></div>)}</div><div className="grid sm:grid-cols-2 gap-2"><Field label="Nombre" value={resourceForm.title} onChange={(value) => setResourceForm((current) => ({ ...current, title: value }))} /><label className="block text-sm font-semibold text-[#111111]">Archivo<input type="file" onChange={(e) => setResourceFile(e.target.files?.[0] || null)} className="mt-1 w-full px-3 py-1.5 border border-slate-200 rounded-xl bg-white" /></label></div><div className="flex gap-2 mt-2"><Field label="URL (Si no subes archivo)" value={resourceForm.file_url} onChange={(value) => setResourceForm((current) => ({ ...current, file_url: value }))} /><SelectField label="Tipo" value={resourceForm.file_type} onChange={(value) => setResourceForm((current) => ({ ...current, file_type: value }))} options={[{ value: 'pdf', label: 'PDF' }, { value: 'document', label: 'Documento' }, { value: 'presentation', label: 'Presentación' }, { value: 'image', label: 'Imagen' }, { value: 'external_link', label: 'Enlace' }]} /></div><button type="button" onClick={(event) => void addResource(event as unknown as React.FormEvent)} disabled={uploadingResource} className="mt-2 text-xs font-bold text-[#1A4E26] flex items-center gap-1 disabled:opacity-50">{uploadingResource ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} {uploadingResource ? 'Subiendo...' : 'Agregar recurso'}</button></> : <p className="text-xs text-[#6B7280]">Guarda primero la lección para asociar recursos.</p>}</div><div className="flex justify-end gap-3 pt-3 border-t border-[#E5ECE6]"><button type="button" onClick={() => setLessonDraft({ moduleId: '', lesson: null })} className="px-4 py-2 text-sm font-bold text-[#6B7280]">Cancelar</button><button type="submit" className="px-4 py-2 rounded-xl bg-[#1A4E26] text-white font-bold text-sm">Guardar lección</button></div></form>
+        <form onSubmit={saveLesson} className="p-6 space-y-5">
+          <Field label="Título" value={lessonForm.title} onChange={(value) => setLessonForm((current) => ({ ...current, title: value }))} required />
+          <SelectField label="Tipo" value={lessonForm.content_type} onChange={(value) => setLessonForm((current) => ({ ...current, content_type: value as ContentType }))} options={[{ value: 'text', label: 'Texto' }, { value: 'video', label: 'Video YouTube' }, { value: 'pdf', label: 'PDF' }, { value: 'external_link', label: 'Enlace externo' }, { value: 'mixed', label: 'Mixto' }]} />
+          
+          {['text', 'mixed'].includes(lessonForm.content_type) && <label className="block text-sm font-semibold text-[#111111]">Contenido<textarea value={lessonForm.text_content} onChange={(event) => setLessonForm((current) => ({ ...current, text_content: event.target.value }))} rows={5} className="mt-1 w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#1A4E26] resize-none" /></label>}
+          {lessonForm.content_type === 'video' && <Field label="ID de video YouTube" value={lessonForm.video_external_id} onChange={(value) => setLessonForm((current) => ({ ...current, video_external_id: value }))} required />}
+          {lessonForm.content_type !== 'text' && <Field label="Duración estimada (minutos)" value={lessonForm.estimated_minutes} onChange={(value) => setLessonForm((current) => ({ ...current, estimated_minutes: value }))} type="number" min="0" />}
+          
+          <div className="pt-6 border-t border-slate-100">
+            <h3 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2"><LinkIcon size={18} className="text-[#D4AF37]" /> Recursos de la lección</h3>
+            
+            {lessonDraft.lesson ? (
+              <div className="space-y-4">
+                {resources.length > 0 && (
+                  <div className="grid gap-2 mb-4">
+                    {resources.map((resource) => (
+                      <div key={resource.id} className="flex items-center gap-3 text-sm bg-slate-50 border border-slate-100 rounded-xl px-4 py-3">
+                        <div className="p-2 bg-white rounded-lg text-slate-400">
+                          <FileText size={16} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <a href={resource.file_url} target="_blank" rel="noreferrer" className="truncate block hover:underline text-[#1A4E26] font-semibold">{resource.title}</a>
+                          <span className="text-xs text-slate-500 uppercase tracking-wider">{resource.file_type || 'archivo'}</span>
+                        </div>
+                        <button type="button" onClick={() => void removeResource(resource.id)} aria-label={`Eliminar ${resource.title}`} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-4">
+                  <h4 className="text-sm font-semibold text-gray-700">Añadir nuevo recurso</h4>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <Field label="Nombre del recurso" value={resourceForm.title} onChange={(value) => setResourceForm((current) => ({ ...current, title: value }))} />
+                    <SelectField label="Tipo" value={resourceForm.file_type} onChange={(value) => setResourceForm((current) => ({ ...current, file_type: value }))} options={[{ value: 'pdf', label: 'PDF' }, { value: 'document', label: 'Documento' }, { value: 'presentation', label: 'Presentación' }, { value: 'image', label: 'Imagen' }, { value: 'external_link', label: 'Enlace Web' }]} />
+                  </div>
+                  
+                  <div className="relative border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-[#1A4E26] hover:bg-[#F8FBF8] transition-colors cursor-pointer group bg-white">
+                    <input type="file" onChange={(e) => setResourceFile(e.target.files?.[0] || null)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <div className="p-3 bg-slate-50 rounded-full group-hover:bg-[#E8F2EA] transition-colors">
+                        <UploadCloud className="w-6 h-6 text-slate-400 group-hover:text-[#1A4E26]" />
+                      </div>
+                      {resourceFile ? (
+                        <p className="text-sm font-bold text-[#1A4E26]">{resourceFile.name}</p>
+                      ) : (
+                        <>
+                          <p className="text-sm font-semibold text-slate-700">Haz clic o arrastra un archivo aquí</p>
+                          <p className="text-xs text-slate-500">PDF, Imágenes, Documentos</p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-4 items-end">
+                    <div className="flex-1">
+                      <Field label="URL externa (Si no subes archivo)" value={resourceForm.file_url} onChange={(value) => setResourceForm((current) => ({ ...current, file_url: value }))} />
+                    </div>
+                    <button type="button" onClick={(event) => void addResource(event as unknown as React.FormEvent)} disabled={uploadingResource} className="px-5 py-2.5 rounded-xl bg-gray-900 hover:bg-gray-800 text-white text-sm font-bold flex items-center gap-2 transition-all disabled:opacity-50">
+                      {uploadingResource ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />} 
+                      {uploadingResource ? 'Subiendo...' : 'Agregar'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 bg-amber-50 text-amber-800 rounded-xl text-sm font-medium border border-amber-100 flex items-start gap-3">
+                <HelpCircle size={18} className="shrink-0 mt-0.5 text-amber-500" />
+                Guarda primero la lección haciendo clic en "Guardar lección" para poder asociarle recursos (archivos y links).
+              </div>
+            )}
+          </div>
+          
+          <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">
+            <button type="button" onClick={() => setLessonDraft({ moduleId: '', lesson: null })} className="px-5 py-2.5 text-sm font-bold text-[#6B7280] hover:bg-slate-100 rounded-xl transition-colors">Cancelar</button>
+            <button type="submit" className="px-5 py-2.5 rounded-xl bg-[#1A4E26] hover:bg-[#133A1C] text-white font-bold text-sm transition-colors shadow-sm">Guardar lección</button>
+          </div>
+        </form>
       </Modal>
 
       <Modal open={Boolean(questionAssessment)} onClose={() => setQuestionAssessment(null)} title="Nueva pregunta" subtitle={questionAssessment?.title}>

@@ -66,6 +66,7 @@ const AdminAcademyEnrollments = lazy(() => import('./pages/admin/academia/AdminA
 const AdminProgramas = lazy(() => import('./pages/admin/academia/AdminProgramas'));
 const AdminLives = lazy(() => import('./pages/admin/academia/AdminLives'));
 const AdminDiplomas = lazy(() => import('./pages/admin/academia/AdminDiplomas'));
+const AdminInstructores = lazy(() => import('./pages/admin/academia/AdminInstructores'));
 const AdminRecetas = lazy(() => import('./pages/admin/academia/AdminRecetas'));
 const AdminCobrosRecetas = lazy(() => import('./pages/admin/academia/AdminCobrosRecetas'));
 
@@ -699,6 +700,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/admin/academia/instructores" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout><AdminInstructores /></AdminLayout></ProtectedRoute>} />
           <Route path="/admin/academia/inscripciones" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout><AdminAcademyEnrollments /></AdminLayout></ProtectedRoute>} />
           <Route
             path="/admin/academia/programas"
