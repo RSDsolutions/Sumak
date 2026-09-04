@@ -53,3 +53,19 @@ export async function callEdgeFunction<TResp = unknown>(
 
   return json as TResp;
 }
+
+export async function callEdgeFunctionMultipart<TResp = unknown>(
+  name: 'academy-register-existing-diploma',
+  formData: FormData,
+): Promise<TResp> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error('Debes iniciar sesión para registrar un diploma.');
+  const res = await fetch(`${url}/functions/v1/${name}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${session.access_token}`, apikey: anonKey! },
+    body: formData,
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((json as { error?: string }).error ?? `Error ${res.status} en ${name}`);
+  return json as TResp;
+}

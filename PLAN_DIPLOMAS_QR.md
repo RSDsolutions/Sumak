@@ -677,11 +677,12 @@ El generador automático actual funciona exactamente igual antes y después de l
 15. Actualizar este documento y el plan general.
 16. Publicar código y migraciones solo después de validar.
 
-## 16. Estado inicial
+## 16. Estado de implementación
 
 - Auditoría: completada.
 - Plan reducido a cinco procesos: completado.
-- Implementación: pendiente.
+- Proceso 1: implementado y desplegado.
+- Procesos 2 a 5: pendientes.
 - Generador automático: protegido y sin modificaciones.
 - Dominio canónico: `https://www.sumakecuador.lat`.
 - Dominio alternativo: `https://sumak-mu.vercel.app`.
@@ -689,6 +690,20 @@ El generador automático actual funciona exactamente igual antes y después de l
 - Librerías reutilizables: `pdf-lib`, `qrcode`, `qrcode.react`.
 - Sistema de auth reutilizable: Supabase Auth + `profiles`.
 - Sistema administrativo reutilizable: `AdminLayout` + `AdminDiplomas`.
+
+### Proceso 1 completado
+
+- Migración: `supabase/migrations/20260904000510_manual_diploma_qr_registration.sql`.
+- Edge Function: `supabase/functions/academy-register-existing-diploma/index.ts`.
+- Tab administrativo: `Registrar PDF + QR` dentro de `AdminDiplomas`.
+- Cliente multipart: `callEdgeFunctionMultipart`.
+- Validación backend de administrador, MIME, extensión, firma `%PDF-` y límite de 15 MB.
+- Original guardado en bucket privado con ruta interna aleatoria.
+- Token CSPRNG y hash SHA-256 almacenados.
+- Auditoría `diploma_registered`.
+- Compensación: eliminación del original si falla el registro.
+- Prueba negativa sin autorización: `401`.
+- El generador automático `academy-issue-diploma` no fue modificado.
 
 ## 17. Regla para futuras sesiones
 

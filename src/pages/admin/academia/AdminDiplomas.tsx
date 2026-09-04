@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import {
   Award, Search, Download, Ban, FileText, CheckCircle, XCircle,
-  Plus, Edit2, Trash2, X, Save, Eye, GraduationCap, User
+  Plus, Edit2, Trash2, X, Save, Eye, GraduationCap, User, ShieldCheck
 } from 'lucide-react';
-import { supabase, callEdgeFunction } from '../../../lib/supabase';
+import { supabase, callEdgeFunction, callEdgeFunctionMultipart } from '../../../lib/supabase';
 import { academyAPI } from '../../../lib/academy';
 import { useToast } from '../../../lib/toast';
 import type { AcademyDiplomaIssuance } from '../../../lib/academy-types';
 
-type Tab = 'issued' | 'templates' | 'emit';
+type Tab = 'issued' | 'templates' | 'emit' | 'register';
 
 interface DiplomaType {
   id: string;
@@ -76,12 +76,33 @@ export default function AdminDiplomas() {
   });
   const [emitting, setEmitting] = useState(false);
   const [studentSearch, setStudentSearch] = useState('');
+  const [registerForm, setRegisterForm] = useState({ user_id: '', diploma_type_id: '', course_id: '', participant_name: '', program_name: '', diploma_number: '', issued_at: new Date().toISOString().slice(0, 10) });
+  const [registerFile, setRegisterFile] = useState<File | null>(null);
+  const [registering, setRegistering] = useState(false);
+  const [registeredUrl, setRegisteredUrl] = useState<string | null>(null);
+
+  async function registerExistingDiploma(event: React.FormEvent) {
+    event.preventDefault();
+    if (!registerFile) { toast.error('Selecciona un PDF original.'); return; }
+    setRegistering(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', registerFile);
+      Object.entries(registerForm).forEach(([key, value]) => formData.append(key, value));
+      const result = await callEdgeFunctionMultipart<{ verification_url: string }>('academy-register-existing-diploma', formData);
+      setRegisteredUrl(result.verification_url);
+      toast.success('Diploma registrado correctamente.');
+      setRegisterFile(null);
+      await loadDiplomas();
+    } catch (error) { toast.error(error instanceof Error ? error.message : 'No se pudo registrar el diploma.'); }
+    finally { setRegistering(false); }
+  }
 
   useEffect(() => { loadDiplomas(); }, []);
 
   useEffect(() => {
     if (tab === 'templates') loadTypes();
-    if (tab === 'emit') loadEmitData();
+    if (tab === 'emit' || tab === 'register') loadEmitData();
   }, [tab]);
 
   // ── Diplomas emitidos ──────────────────────────────────────────────────────
@@ -299,6 +320,7 @@ export default function AdminDiplomas() {
           { id: 'issued', label: 'Emitidos', icon: <Award size={16} /> },
           { id: 'templates', label: 'Plantillas', icon: <FileText size={16} /> },
           { id: 'emit', label: 'Emitir Diploma', icon: <Plus size={16} /> },
+          { id: 'register', label: 'Registrar PDF + QR', icon: <ShieldCheck size={16} /> },
         ] as { id: Tab; label: string; icon: React.ReactNode }[]).map(t => (
           <button
             key={t.id}
@@ -492,6 +514,25 @@ export default function AdminDiplomas() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── TAB: Emitir Diploma ── */}
+      {tab === 'register' && (
+        <div className="bg-white rounded-2xl border border-[#C8D8CB] shadow-sm p-6 sm:p-8 max-w-3xl">
+          <div className="mb-6"><h2 className="text-xl font-bold text-[#111111]">Registrar diploma existente</h2><p className="text-sm text-[#6B7280] mt-1">El PDF original se conserva intacto. La generación del QR y del PDF verificable ocurrirá en el siguiente proceso.</p></div>
+          <form onSubmit={registerExistingDiploma} className="space-y-5">
+            <div className="grid sm:grid-cols-2 gap-4">
+              <label className="block text-sm font-semibold text-[#111111]">Beneficiario<select required value={registerForm.user_id} onChange={(e) => setRegisterForm((current) => ({ ...current, user_id: e.target.value }))} className="mt-1 w-full px-3 py-2 border border-[#C8D8CB] rounded-xl bg-white"><option value="">Seleccionar usuario</option>{students.map((student) => <option key={student.id} value={student.id}>{student.nombre_completo} · {student.email}</option>)}</select></label>
+              <label className="block text-sm font-semibold text-[#111111]">Tipo de diploma<select required value={registerForm.diploma_type_id} onChange={(e) => setRegisterForm((current) => ({ ...current, diploma_type_id: e.target.value }))} className="mt-1 w-full px-3 py-2 border border-[#C8D8CB] rounded-xl bg-white"><option value="">Seleccionar tipo</option>{types.map((type) => <option key={type.id} value={type.id}>{type.name} ({type.internal_code})</option>)}</select></label>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-4"><label className="block text-sm font-semibold text-[#111111]">Curso<select value={registerForm.course_id} onChange={(e) => setRegisterForm((current) => ({ ...current, course_id: e.target.value }))} className="mt-1 w-full px-3 py-2 border border-[#C8D8CB] rounded-xl bg-white"><option value="">Sin curso específico</option>{courses.map((course) => <option key={course.id} value={course.id}>{course.title}</option>)}</select></label><label className="block text-sm font-semibold text-[#111111]">Fecha de emisión<input required type="date" value={registerForm.issued_at} onChange={(e) => setRegisterForm((current) => ({ ...current, issued_at: e.target.value }))} className="mt-1 w-full px-3 py-2 border border-[#C8D8CB] rounded-xl" /></label></div>
+            <div className="grid sm:grid-cols-2 gap-4"><label className="block text-sm font-semibold text-[#111111]">Nombre público<input required value={registerForm.participant_name} onChange={(e) => setRegisterForm((current) => ({ ...current, participant_name: e.target.value }))} className="mt-1 w-full px-3 py-2 border border-[#C8D8CB] rounded-xl" /></label><label className="block text-sm font-semibold text-[#111111]">Número de diploma (opcional)<input value={registerForm.diploma_number} onChange={(e) => setRegisterForm((current) => ({ ...current, diploma_number: e.target.value }))} className="mt-1 w-full px-3 py-2 border border-[#C8D8CB] rounded-xl" /></label></div>
+            <label className="block text-sm font-semibold text-[#111111]">Programa o formación<input required value={registerForm.program_name} onChange={(e) => setRegisterForm((current) => ({ ...current, program_name: e.target.value }))} className="mt-1 w-full px-3 py-2 border border-[#C8D8CB] rounded-xl" /></label>
+            <label className="block text-sm font-semibold text-[#111111]">PDF original<input required type="file" accept="application/pdf,.pdf" onChange={(e) => setRegisterFile(e.target.files?.[0] ?? null)} className="mt-1 block w-full text-sm text-[#6B7280] file:mr-3 file:rounded-lg file:border-0 file:bg-[#EBF4ED] file:px-3 file:py-2 file:font-bold file:text-[#1A4E26]" /><span className="text-xs text-[#6B7280]">Máximo 15 MB. El archivo original no será sobrescrito.</span></label>
+            {registeredUrl && <div className="rounded-xl bg-[#EBF4ED] border border-[#C8D8CB] p-4 text-sm"><p className="font-bold text-[#1A4E26]">Diploma registrado</p><p className="text-[#6B7280] mt-1 break-all">{registeredUrl}</p></div>}
+            <div className="flex justify-end"><button type="submit" disabled={registering} className="px-5 py-2.5 rounded-xl bg-[#1A4E26] text-white font-bold disabled:opacity-60">{registering ? 'Registrando...' : 'Registrar diploma'}</button></div>
+          </form>
         </div>
       )}
 
