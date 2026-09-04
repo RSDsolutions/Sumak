@@ -527,6 +527,29 @@ export const academyAPI = {
     return data as AcademyCategory;
   },
 
+  async getAdminCourses() {
+    const { data, error } = await supabase
+      .from('academy_courses')
+      .select(`
+        *,
+        category:category_id (name, slug),
+        instructor:instructor_id (nombre_completo)
+      `)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data as AcademyCourse[];
+  },
+
+  async getAdminCategories() {
+    const { data, error } = await supabase
+      .from('academy_categories')
+      .select('*')
+      .order('sort_order', { ascending: true });
+    if (error) throw error;
+    return data as AcademyCategory[];
+  },
+
   async saveAdminCourse(courseId: string | null, input: {
     title: string;
     slug: string;
