@@ -497,7 +497,11 @@ export const academyAPI = {
   async getAdminEnrollments() {
     const { data, error } = await supabase
       .from('academy_enrollments')
-      .select('*, course:course_id (title, price)')
+      .select(`
+        *,
+        course:course_id (title, price, slug),
+        user:user_id (nombre_completo, username)
+      `)
       .order('requested_at', { ascending: false });
     if (error) throw error;
     return data ?? [];

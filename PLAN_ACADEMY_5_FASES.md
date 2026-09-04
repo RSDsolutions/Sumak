@@ -49,7 +49,7 @@ SUMAK USER
 
 ## Registro de implementación
 
-> Corte de sesión: 2026-09-03. Este registro describe el estado real del repositorio y de Supabase remoto para retomar el trabajo en otra sesión.
+> Corte de sesión: 2026-09-04. Este registro describe el estado real del repositorio y de Supabase remoto para retomar el trabajo en otra sesión.
 
 ### Estado resumido de fases
 
@@ -57,9 +57,9 @@ SUMAK USER
 | --- | --- | --- |
 | Fase 0 | Completada | Auditoría, seguridad base, RLS, RPCs, CORS y secretos frontend. |
 | Fase 1 | Completada | Inscripciones, aprobación, estados y acceso de tres meses. |
-| Fase 2 | Mayormente completada | Pagos PayPhone/PayPal, activación backend, expiración y `pg_cron`; faltan notificaciones persistentes y pruebas negativas formales. |
+| Fase 2 | Completada | Pagos, activación backend, expiración, notificaciones persistentes con triggers y `pg_cron`. Pendiente: transferencia bancaria Academy. |
 | Fase 3 | Mayormente completada | Completion Engine, certificados, programas y lives; faltan pruebas end-to-end y revisión final del diploma. |
-| Fase 4 | Parcialmente completada | UI de cursos, solicitudes, contenido, programas, lives, diplomas y estados principales. |
+| Fase 4 | Parcialmente completada | UI de cursos, inscripciones admin, MisCursos con secciones. Pendiente: reordenamiento, preview, uploads Storage. |
 | Fase 5 | Pendiente | Matriz QA, seguridad, regresión y operación documentada. |
 
 ### Completado
@@ -67,19 +67,18 @@ SUMAK USER
 - Fase 0: auditoría de Academy, corrección de contratos de enrollment/progress/attempts, endurecimiento de RLS y RPCs, ocultamiento de respuestas correctas, revisión de CORS y eliminación de service role del frontend.
 - Diplomas QR: registro, generación verificada, verificación pública y URLs firmadas implementados de forma independiente del generador automático de diplomas.
 - Fase 1: `academy_enrollments` usa estados de aprobación, pago pendiente, activación, completado, expirado y rechazado; la activación establece tres meses desde `activated_at`; se agregó administración de solicitudes en `/admin/academia/inscripciones`.
-- Fase 1: `MisCursos` dejó de ser placeholder y muestra estados, progreso, solicitudes rechazadas y vencimiento; los cursos no activos no permiten abrir contenido.
-- Fase 2: alcance de instructor aplicado en RLS para cursos, módulos, lecciones, recursos, evaluaciones, preguntas y opciones. La migración `20260904020000_academy_instructor_scope.sql` está aplicada en remoto.
-- Fase 2: agregada la relación `academy_enrollments.payment_id` con el ledger `pagos` y el RPC backend `activate_academy_enrollment_after_payment`, que valida pago aprobado, propietario, monto del curso y estado antes de activar por tres meses; la expiración registra auditoría por inscripción.
-- Fase 2: PayPhone y PayPal aceptan `academyEnrollmentId`, validan en servidor que la inscripción esté en `payment_pending` y que el monto corresponda al curso; sus funciones de confirmación activan la inscripción mediante el RPC backend. Las cuatro funciones fueron desplegadas.
-- Fase 2: el detalle del curso ofrece checkout PayPhone/PayPal cuando la solicitud fue aprobada y está en `payment_pending`; el usuario no puede iniciar pago antes de la aprobación.
-- Fase 2: expiración automática configurada con `pg_cron` mediante el job `academy-expire-enrollments`, ejecutado diariamente a las 03:15 UTC; la operación es idempotente, nunca modifica `completed` y registra auditoría.
-- Fase 3: añadido un motor backend idempotente de finalización que exige lecciones publicadas completadas y evaluaciones publicadas aprobadas antes de marcar la matrícula como `completed`; registra auditoría de `course_completed`.
-- Fase 3: certificados de curso enlazados al motor de finalización; la emisión exige matrícula `completed` y conserva idempotencia por usuario/curso. Los programas se marcan `completed` automáticamente cuando todos sus cursos requeridos finalizan.
-- Fase 3: biblioteca de lives conectada a sesiones publicadas y diferenciada entre próximas sesiones y grabaciones; las sesiones premium/asignadas requieren acceso al curso relacionado mediante RLS.
-- Fase 3: elegibilidad de diploma de programa endurecida para exigir matrícula de programa `completed`; creada Edge Function `academy-maintenance` con secreto interno para ejecutar expiraciones diariamente; certificados registran auditoría `certificate_issued`.
-- Fase 3: secreto `ACADEMY_MAINTENANCE_SECRET` configurado en Supabase y función `academy-maintenance` desplegada sin JWT público; la función responde únicamente al header interno esperado.
-- Fase 3: el job SQL `academy-expire-enrollments` ya ejecuta directamente la expiración; `academy-maintenance` queda como alternativa manual/operativa protegida por secreto.
-- Validaciones ejecutadas: `npm run lint`, `npm run build`, `supabase db reset --local`, `supabase db lint` y `supabase migration list`.
+- Fase 1: `MisCursos` muestra estados, progreso, solicitudes rechazadas y vencimiento; los cursos no activos no permiten abrir contenido.
+- Fase 2: alcance de instructor aplicado en RLS. La migración `20260904020000_academy_instructor_scope.sql` está aplicada en remoto.
+- Fase 2: relación `academy_enrollments.payment_id` con el ledger `pagos` y RPC backend `activate_academy_enrollment_after_payment`.
+- Fase 2: PayPhone y PayPal aceptan `academyEnrollmentId`, validan monto/estado en servidor y activan la inscripción. Las cuatro funciones fueron desplegadas.
+- Fase 2: expiración automática con `pg_cron` job `academy-expire-enrollments` (03:15 UTC), idempotente.
+- Fase 2: **Notificaciones persistentes:** tabla `user_notifications` creada en Supabase; provider migrado de localStorage a Supabase con Realtime. Triggers en `academy_enrollments` y `academy_certificates` para todos los eventos clave. Job `pg_cron` `academy-expiry-reminders` (03:20 UTC) con clave única por inscripción/intervalo. Tipo `academy` añadido al sistema.
+- Fase 3: motor backend idempotente de finalización; certificados enlazados; programas completados automáticamente.
+- Fase 3: biblioteca de lives con acceso RLS; elegibilidad de diploma endurecida; Edge Function `academy-maintenance` desplegada.
+- Fase 4: **Admin Inscripciones mejorado:** nombre completo del usuario (join profiles), precio del curso, datos activación/expiración, modal de rechazo, tabs con contadores, detalles expandibles.
+- Fase 4: **MisCursos con secciones:** En progreso / Completados / Historial; badge de urgencia de vencimiento (rojo ≤7d, ámbar ≤30d); enlace a certificados; motivo de rechazo inline.
+- Validaciones ejecutadas: `npm run lint` ✅, `npm run build` ✅, `supabase db push --linked` ✅.
+
 
 ### Migraciones nuevas aplicadas
 
@@ -92,16 +91,16 @@ SUMAK USER
 - `20260904060000_academy_live_access_scope.sql`: acceso de lives.
 - `20260904070000_academy_certificate_audit.sql`: auditoría de certificados.
 - `20260904080000_academy_expiration_schedule.sql`: job diario `pg_cron`.
+- `20260904090000_academy_user_notifications.sql`: tabla `user_notifications`, triggers de Academy, job `academy-expiry-reminders`.
 
 ### Lo que falta
 
-1. **Fase 2 — Notificaciones:** persistir solicitud, aprobación, rechazo, pago, activación, recordatorios de vencimiento y expiración usando el único sistema de notificaciones existente. El provider actual es localStorage; no crear un segundo sistema sin decidir primero la fuente persistente.
-2. **Fase 2 — Transferencia bancaria Academy:** definir el flujo de comprobante y aprobación para cursos pagados por transferencia; PayPhone y PayPal ya están conectados.
-3. **Fase 3 — Completion Engine:** agregar reproducción mínima para videos y actividades obligatorias si el contenido las configura; hoy se validan lecciones publicadas y evaluaciones publicadas aprobadas.
-4. **Fase 3 — Diplomas:** ejecutar pruebas end-to-end de elegibilidad y emisión para programas con varios cursos; confirmar que los requisitos configurables del diploma coincidan con el programa.
-5. **Fase 4 — Admin:** completar reordenamiento, preview sin publicar, uploads de Storage y asignación visible de instructores; las operaciones base de cursos, contenido, evaluaciones, programas y lives ya existen.
-6. **Fase 5 — QA:** ejecutar pruebas como anónimo, estudiante, distribuidor, instructor, `academy_admin` y admin global; cubrir RLS, IDOR, pagos, expiración, certificados, diplomas y QR.
-7. **Operación:** conservar `academy-maintenance` como ejecución manual protegida; el job automático activo es `pg_cron` y no requiere configurar Scheduler HTTP adicional.
+1. **Fase 2 — Transferencia bancaria Academy:** definir el flujo de comprobante y aprobación para cursos pagados por transferencia; PayPhone y PayPal ya están conectados.
+2. **Fase 3 — Completion Engine:** agregar reproducción mínima para videos y actividades obligatorias si el contenido las configura; hoy se validan lecciones publicadas y evaluaciones publicadas aprobadas.
+3. **Fase 3 — Diplomas:** ejecutar pruebas end-to-end de elegibilidad y emisión para programas con varios cursos; confirmar que los requisitos configurables del diploma coincidan con el programa.
+4. **Fase 4 — Admin:** completar reordenamiento, preview sin publicar, uploads de Storage y asignación visible de instructores; las operaciones base de cursos, contenido, evaluaciones, programas y lives ya existen.
+5. **Fase 5 — QA:** ejecutar pruebas como anónimo, estudiante, distribuidor, instructor, `academy_admin` y admin global; cubrir RLS, IDOR, pagos, expiración, certificados, diplomas y QR.
+6. **Operación:** conservar `academy-maintenance` como ejecución manual protegida; el job automático activo es `pg_cron` y no requiere configurar Scheduler HTTP adicional.
 
 # Fase 1: Base de datos, estados y seguridad
 

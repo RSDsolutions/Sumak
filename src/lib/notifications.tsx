@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './auth';
+import { supabase } from './supabase';
 
 export type TipoNotificacion = 
   | 'pedido' 
@@ -8,7 +9,8 @@ export type TipoNotificacion =
   | 'sistema' 
   | 'alerta' 
   | 'perfil'
-  | 'red';
+  | 'red'
+  | 'academy';
 
 export interface AppNotification {
   id: string;
@@ -18,6 +20,7 @@ export interface AppNotification {
   descripcion: string;
   leido: boolean;
   link?: string | null;
+  metadata?: Record<string, unknown>;
   created_at: string;
 }
 
@@ -35,21 +38,16 @@ interface NotificationsContextValue {
 
 const NotificationsContext = createContext<NotificationsContextValue | null>(null);
 
-/** Generador de notificaciones iniciales según el rol del usuario (vacío por defecto) */
-function generateInitialNotifications(_userId: string, _role: string, _name?: string | null): AppNotification[] {
-  return [];
-}
-
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
-  const storageKey = user ? `sumak_notifications_${user.id}` : null;
-
-  // Cargar notificaciones para el usuario en sesión
+  // ---------------------------------------------------------------------------
+  // Cargar notificaciones desde Supabase (fuente canónica)
+  // ---------------------------------------------------------------------------
   const loadNotifications = useCallback(async () => {
-    if (!user || !storageKey) {
+    if (!user) {
       setNotifications([]);
       setLoading(false);
       return;
@@ -57,81 +55,138 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     setLoading(true);
     try {
-      // 1. Leer desde localStorage
-      const cached = localStorage.getItem(storageKey);
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setNotifications(parsed);
-            setLoading(false);
-            return;
-          }
-        } catch {
-          // Ignorar error de parseo
-        }
-      }
+      const { data, error } = await supabase
+        .from('user_notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(100);
 
-      // 2. Generar notificaciones iniciales contextuales
-      const role = profile?.rol || 'distribuidor';
-      const initial = generateInitialNotifications(user.id, role, profile?.nombre_completo);
-      setNotifications(initial);
-      localStorage.setItem(storageKey, JSON.stringify(initial));
+      if (error) throw error;
+      setNotifications((data ?? []) as AppNotification[]);
+    } catch {
+      // Silenciar: la UI sigue funcionando aunque no haya notificaciones
+      setNotifications([]);
     } finally {
       setLoading(false);
     }
-  }, [user, profile, storageKey]);
+  }, [user]);
 
   useEffect(() => {
-    loadNotifications();
+    void loadNotifications();
   }, [loadNotifications]);
 
-  // Marcar una notificación como leída
+  // ---------------------------------------------------------------------------
+  // Suscripción en tiempo real a nuevas notificaciones del usuario
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`user-notifications-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'user_notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          setNotifications((prev) => [payload.new as AppNotification, ...prev]);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'user_notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          setNotifications((prev) =>
+            prev.map((n) => (n.id === payload.new.id ? (payload.new as AppNotification) : n))
+          );
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'user_notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          setNotifications((prev) => prev.filter((n) => n.id !== payload.old.id));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  // ---------------------------------------------------------------------------
+  // Acciones
+  // ---------------------------------------------------------------------------
   const markAsRead = async (id: string) => {
-    setNotifications((prev) => {
-      const updated = prev.map((n) => (n.id === id ? { ...n, leido: true } : n));
-      if (storageKey) localStorage.setItem(storageKey, JSON.stringify(updated));
-      return updated;
-    });
+    // Optimistic update
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, leido: true } : n))
+    );
+    await supabase
+      .from('user_notifications')
+      .update({ leido: true })
+      .eq('id', id)
+      .eq('user_id', user?.id ?? '');
   };
 
-  // Marcar todas como leídas
   const markAllAsRead = async () => {
-    setNotifications((prev) => {
-      const updated = prev.map((n) => ({ ...n, leido: true }));
-      if (storageKey) localStorage.setItem(storageKey, JSON.stringify(updated));
-      return updated;
-    });
+    if (!user) return;
+    const unreadIds = notifications.filter((n) => !n.leido).map((n) => n.id);
+    if (unreadIds.length === 0) return;
+
+    // Optimistic update
+    setNotifications((prev) => prev.map((n) => ({ ...n, leido: true })));
+
+    await supabase.rpc('mark_notifications_read', { p_ids: unreadIds });
   };
 
-  // Eliminar una notificación
   const clearNotification = async (id: string) => {
-    setNotifications((prev) => {
-      const updated = prev.filter((n) => n.id !== id);
-      if (storageKey) localStorage.setItem(storageKey, JSON.stringify(updated));
-      return updated;
-    });
+    // Optimistic update
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    await supabase
+      .from('user_notifications')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user?.id ?? '');
   };
 
-  // Limpiar todas
   const clearAll = async () => {
+    if (!user) return;
     setNotifications([]);
-    if (storageKey) localStorage.removeItem(storageKey);
+    await supabase
+      .from('user_notifications')
+      .delete()
+      .eq('user_id', user.id);
   };
 
-  // Añadir notificación en tiempo real
+  /**
+   * addNotification: inserta localmente para feedback inmediato.
+   * En producción, las notificaciones llegan vía triggers de Supabase
+   * y la suscripción en tiempo real. Esta función es útil para notificaciones
+   * generadas en el cliente (sin trigger) o para testing.
+   */
   const addNotification = (n: Omit<AppNotification, 'id' | 'created_at'>) => {
     const newNotif: AppNotification = {
       ...n,
-      id: `notif-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       created_at: new Date().toISOString(),
     };
-
-    setNotifications((prev) => {
-      const updated = [newNotif, ...prev];
-      if (storageKey) localStorage.setItem(storageKey, JSON.stringify(updated));
-      return updated;
-    });
+    setNotifications((prev) => [newNotif, ...prev]);
   };
 
   const unreadCount = notifications.filter((n) => !n.leido).length;
