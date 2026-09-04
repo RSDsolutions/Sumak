@@ -533,6 +533,7 @@ export const academyAPI = {
     short_description: string;
     description: string;
     category_id: string | null;
+    instructor_id: string | null;
     level: string;
     access_mode: string;
     status: string;
@@ -637,6 +638,27 @@ export const academyAPI = {
       if (optionsError) throw optionsError;
     }
     return question;
+  },
+
+  async deleteAdminQuestion(questionId: string) {
+    const { error } = await supabase.from('academy_questions').delete().eq('id', questionId);
+    if (error) throw error;
+  },
+
+  async deleteAdminAssessment(assessmentId: string) {
+    const { error } = await supabase.from('academy_assessments').delete().eq('id', assessmentId);
+    if (error) throw error;
+  },
+
+  async getAdminInstructors() {
+    // Busca usuarios que sean admins o instructores en profiles
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, nombre_completo, email')
+      .in('rol', ['admin', 'instructor'])
+      .order('nombre_completo', { ascending: true });
+    if (error) throw error;
+    return data;
   },
 
   async getCourseBySlug(slug: string) {

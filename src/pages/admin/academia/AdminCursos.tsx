@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BookOpen, ChevronDown, Loader2, Plus, Search, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, BookOpen, ChevronDown, Eye, EyeOff, Loader2, Plus, Search, Trash2 } from 'lucide-react';
 import Modal from '../../../components/Modal';
 import { academyAPI } from '../../../lib/academy';
 import { useToast } from '../../../lib/toast';
@@ -18,12 +18,13 @@ type CourseForm = {
   passing_percentage: string;
   generates_certificate: boolean;
   price: string;
+  instructor_id: string;
 };
 
 const emptyForm: CourseForm = {
   title: '', slug: '', short_description: '', description: '', category_id: '',
   level: 'beginner', access_mode: 'free_registered', status: 'draft',
-  estimated_duration_minutes: '', passing_percentage: '70', generates_certificate: false, price: '0',
+  estimated_duration_minutes: '', passing_percentage: '70', generates_certificate: false, price: '0', instructor_id: '',
 };
 
 function courseToForm(course: AcademyCourse): CourseForm {
@@ -39,7 +40,8 @@ function courseToForm(course: AcademyCourse): CourseForm {
     estimated_duration_minutes: course.estimated_duration_minutes?.toString() ?? '',
     passing_percentage: course.passing_percentage.toString(),
     generates_certificate: course.generates_certificate,
-    price: '0',
+    price: course.price?.toString() || '0',
+    instructor_id: course.instructor_id ?? '',
   };
 }
 
@@ -52,6 +54,7 @@ export default function AdminCursos() {
   const toast = useToast();
   const [courses, setCourses] = useState<AcademyCourse[]>([]);
   const [categories, setCategories] = useState<AcademyCategory[]>([]);
+  const [instructors, setInstructors] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
@@ -72,16 +75,17 @@ export default function AdminCursos() {
   const [assessmentForm, setAssessmentForm] = useState({ title: '', passing_score: '70', max_attempts: '', is_final_exam: false });
   const [questionAssessment, setQuestionAssessment] = useState<any | null>(null);
   const [questionForm, setQuestionForm] = useState({ question_text: '', question_type: 'single_choice', points: '1', options: ['', ''] });
-  const [correctOption, setCorrectOption] = useState(0);
+  const [correctOptions, setCorrectOptions] = useState<number[]>([0]);
 
   async function load() {
     setLoading(true);
     try {
-      const [nextCourses, nextCategories] = await Promise.all([
-        academyAPI.getAdminCourses(), academyAPI.getAdminCategories(),
+      const [nextCourses, nextCategories, nextInstructors] = await Promise.all([
+        academyAPI.getAdminCourses(), academyAPI.getAdminCategories(), academyAPI.getAdminInstructors()
       ]);
       setCourses(nextCourses);
       setCategories(nextCategories);
+      setInstructors(nextInstructors);
     } catch {
       toast.error('No se pudo cargar el catálogo de Academy.');
     } finally {
@@ -135,13 +139,104 @@ export default function AdminCursos() {
     event.preventDefault();
     if (!questionAssessment || !questionForm.question_text.trim()) return;
     try {
-      const question = await academyAPI.createAdminQuestion({ assessment_id: questionAssessment.id, question_text: questionForm.question_text.trim(), question_type: questionForm.question_type, points: Number(questionForm.points), sort_order: (questionAssessment.questions?.length ?? 0) + 1, options: questionForm.options.filter((option) => option.trim()).map((option, index) => ({ option_text: option.trim(), is_correct: index === correctOption, sort_order: index + 1 })) });
+      const question = await academyAPI.createAdminQuestion({ assessment_id: questionAssessment.id, question_text: questionForm.question_text.trim(), question_type: questionForm.question_type, points: Number(questionForm.points), sort_order: (questionAssessment.questions?.length ?? 0) + 1, options: questionForm.options.filter((option) => option.trim()).map((option, index) => ({ option_text: option.trim(), is_correct: correctOptions.includes(index), sort_order: index + 1 })) });
       setAssessments((current) => current.map((assessment) => assessment.id === questionAssessment.id ? { ...assessment, questions: [...(assessment.questions ?? []), question] } : assessment));
       setQuestionAssessment(null);
       setQuestionForm({ question_text: '', question_type: 'single_choice', points: '1', options: ['', ''] });
-      setCorrectOption(0);
+      setCorrectOptions([0]);
       toast.success('Pregunta creada.');
     } catch { toast.error('No se pudo crear la pregunta.'); }
+  }
+
+  async function moveModule(moduleIndex: number, direction: 'up' | 'down') {
+    if ((direction === 'up' && moduleIndex === 0) || (direction === 'down' && moduleIndex === modules.length - 1)) return;
+    const newModules = [...modules];
+    const targetIndex = direction === 'up' ? moduleIndex - 1 : moduleIndex + 1;
+    const temp = newModules[moduleIndex];
+    newModules[moduleIndex] = newModules[targetIndex];
+    newModules[targetIndex] = temp;
+    newModules[moduleIndex].sort_order = moduleIndex + 1;
+    newModules[targetIndex].sort_order = targetIndex + 1;
+    setModules(newModules);
+    try {
+      await Promise.all([
+        academyAPI.saveAdminModule(newModules[moduleIndex].id, { ...newModules[moduleIndex], course_id: builderCourse!.id }),
+        academyAPI.saveAdminModule(newModules[targetIndex].id, { ...newModules[targetIndex], course_id: builderCourse!.id })
+      ]);
+    } catch { toast.error('Error reordenando módulos.'); void openBuilder(builderCourse!); }
+  }
+
+  async function deleteModule(module: AcademyModule) {
+    if (module.lessons && module.lessons.length > 0) return toast.error('Elimina primero las lecciones.');
+    if (!confirm(`¿Eliminar módulo "${module.title}"?`)) return;
+    try {
+      await academyAPI.deleteAdminModule(module.id);
+      setModules((current) => current.filter((m) => m.id !== module.id));
+      toast.success('Módulo eliminado.');
+    } catch { toast.error('Error eliminando módulo.'); }
+  }
+
+  async function toggleModulePublish(module: AcademyModule) {
+    try {
+      const updated = await academyAPI.saveAdminModule(module.id, { ...module, course_id: builderCourse!.id, is_published: !module.is_published });
+      setModules((current) => current.map((m) => m.id === module.id ? { ...m, is_published: updated.is_published } : m));
+    } catch { toast.error('Error actualizando módulo.'); }
+  }
+
+  async function moveLesson(moduleId: string, lessonIndex: number, direction: 'up' | 'down') {
+    const module = modules.find(m => m.id === moduleId);
+    if (!module || !module.lessons) return;
+    if ((direction === 'up' && lessonIndex === 0) || (direction === 'down' && lessonIndex === module.lessons.length - 1)) return;
+    
+    const newLessons = [...module.lessons];
+    const targetIndex = direction === 'up' ? lessonIndex - 1 : lessonIndex + 1;
+    const temp = newLessons[lessonIndex];
+    newLessons[lessonIndex] = newLessons[targetIndex];
+    newLessons[targetIndex] = temp;
+    newLessons[lessonIndex].sort_order = lessonIndex + 1;
+    newLessons[targetIndex].sort_order = targetIndex + 1;
+    
+    setModules(current => current.map(m => m.id === moduleId ? { ...m, lessons: newLessons } : m));
+    try {
+      await Promise.all([
+        academyAPI.saveAdminLesson(newLessons[lessonIndex].id, { ...newLessons[lessonIndex], module_id: moduleId }),
+        academyAPI.saveAdminLesson(newLessons[targetIndex].id, { ...newLessons[targetIndex], module_id: moduleId })
+      ]);
+    } catch { toast.error('Error reordenando lecciones.'); void openBuilder(builderCourse!); }
+  }
+
+  async function deleteLesson(moduleId: string, lessonId: string) {
+    if (!confirm('¿Eliminar esta lección?')) return;
+    try {
+      await academyAPI.deleteAdminLesson(lessonId);
+      setModules(current => current.map(m => m.id === moduleId ? { ...m, lessons: m.lessons?.filter(l => l.id !== lessonId) } : m));
+      toast.success('Lección eliminada.');
+    } catch { toast.error('Error eliminando lección.'); }
+  }
+
+  async function toggleLessonPublish(moduleId: string, lesson: AcademyLesson) {
+    try {
+      const updated = await academyAPI.saveAdminLesson(lesson.id, { ...lesson, module_id: moduleId, is_published: !lesson.is_published });
+      setModules(current => current.map(m => m.id === moduleId ? { ...m, lessons: m.lessons?.map(l => l.id === lesson.id ? updated as AcademyLesson : l) } : m));
+    } catch { toast.error('Error actualizando lección.'); }
+  }
+
+  async function deleteAssessment(assessmentId: string) {
+    if (!confirm('¿Eliminar evaluación?')) return;
+    try {
+      await academyAPI.deleteAdminAssessment(assessmentId);
+      setAssessments(current => current.filter(a => a.id !== assessmentId));
+      toast.success('Evaluación eliminada.');
+    } catch { toast.error('Error eliminando evaluación.'); }
+  }
+  
+  async function deleteQuestion(assessmentId: string, questionId: string) {
+    if (!confirm('¿Eliminar pregunta?')) return;
+    try {
+      await academyAPI.deleteAdminQuestion(questionId);
+      setAssessments(current => current.map(a => a.id === assessmentId ? { ...a, questions: a.questions?.filter((q: any) => q.id !== questionId) } : a));
+      toast.success('Pregunta eliminada.');
+    } catch { toast.error('Error eliminando pregunta.'); }
   }
 
   async function addModule() {
@@ -204,6 +299,7 @@ export default function AdminCursos() {
       await academyAPI.saveAdminCourse(editingCourse?.id ?? null, {
         ...form,
         category_id: form.category_id || null,
+        instructor_id: form.instructor_id || null,
         estimated_duration_minutes: form.estimated_duration_minutes ? Number(form.estimated_duration_minutes) : null,
         passing_percentage: Number(form.passing_percentage),
         price: Number(form.price),
@@ -309,8 +405,11 @@ export default function AdminCursos() {
           </div>
           <Field label="Descripción corta" value={form.short_description} onChange={(value) => setField('short_description', value)} />
           <label className="block text-sm font-semibold text-[#111111]">Descripción<textarea value={form.description} onChange={(event) => setField('description', event.target.value)} rows={4} className="mt-1 w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#1A4E26]" /></label>
-          <div className="grid sm:grid-cols-3 gap-4">
+          <div className="grid sm:grid-cols-2 gap-4">
             <SelectField label="Categoría" value={form.category_id} onChange={(value) => setField('category_id', value)} options={[{ value: '', label: 'Sin categoría' }, ...categories.map((category) => ({ value: category.id, label: category.name }))]} />
+            <SelectField label="Instructor" value={form.instructor_id} onChange={(value) => setField('instructor_id', value)} options={[{ value: '', label: 'Sin instructor' }, ...instructors.map((inst) => ({ value: inst.id, label: inst.nombre_completo }))]} />
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4">
             <SelectField label="Nivel" value={form.level} onChange={(value) => setField('level', value)} options={[{ value: 'beginner', label: 'Inicial' }, { value: 'intermediate', label: 'Intermedio' }, { value: 'advanced', label: 'Avanzado' }, { value: 'all', label: 'Todos' }]} />
             <SelectField label="Acceso" value={form.access_mode} onChange={(value) => setField('access_mode', value)} options={[{ value: 'public', label: 'Público' }, { value: 'free_registered', label: 'Gratis registrado' }, { value: 'sumak_exclusive', label: 'Exclusivo SUMAK' }, { value: 'premium', label: 'Premium' }, { value: 'assigned', label: 'Asignado' }, { value: 'hidden', label: 'Oculto' }]} />
           </div>
@@ -338,8 +437,62 @@ export default function AdminCursos() {
         <div className="p-6 space-y-5">
           {builderLoading ? <div className="flex justify-center py-10"><Loader2 className="animate-spin text-[#1A4E26]" /></div> : <>
             <div className="flex gap-2"><input value={moduleTitle} onChange={(event) => setModuleTitle(event.target.value)} placeholder="Nombre del nuevo módulo" className="flex-1 px-3 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#1A4E26]" /><button type="button" onClick={() => void addModule()} className="px-3 py-2 rounded-xl bg-[#1A4E26] text-white text-sm font-bold"><Plus size={16} /></button></div>
-            {modules.length === 0 ? <p className="text-sm text-[#6B7280] text-center py-6">Este curso todavía no tiene módulos.</p> : modules.map((module) => <section key={module.id} className="border border-[#C8D8CB] rounded-xl p-4"><div className="flex items-center justify-between gap-3"><h3 className="font-bold text-[#111111]">{module.sort_order}. {module.title}</h3><button type="button" onClick={() => void openLesson(module.id)} className="text-xs font-bold text-[#1A4E26] flex items-center gap-1"><Plus size={14} /> Lección</button></div><div className="mt-3 space-y-2">{(module.lessons ?? []).map((lesson) => <button type="button" key={lesson.id} onClick={() => void openLesson(module.id, lesson)} className="w-full text-left px-3 py-2 rounded-lg bg-[#F8FBF8] text-sm hover:bg-[#E8F2EA]">{lesson.sort_order}. {lesson.title} <span className="text-xs text-[#6B7280]">· {lesson.content_type}</span></button>)}</div></section>)}
-            <section className="border border-[#C8D8CB] rounded-xl p-4"><h3 className="font-bold text-[#111111] mb-3">Evaluaciones</h3><div className="flex flex-wrap gap-2 mb-3"><input value={assessmentForm.title} onChange={(event) => setAssessmentForm((current) => ({ ...current, title: event.target.value }))} placeholder="Nombre de evaluación" className="flex-1 min-w-[180px] px-3 py-2 border border-slate-200 rounded-xl" /><input value={assessmentForm.passing_score} onChange={(event) => setAssessmentForm((current) => ({ ...current, passing_score: event.target.value }))} type="number" min="0" max="100" placeholder="Aprobación" className="w-24 px-3 py-2 border border-slate-200 rounded-xl" /><button type="button" onClick={() => void addAssessment()} className="px-3 py-2 rounded-xl bg-[#1A4E26] text-white text-sm font-bold"><Plus size={16} /></button></div>{assessments.map((assessment) => <div key={assessment.id} className="flex items-center gap-3 py-2 border-t border-[#E5ECE6]"><span className="flex-1 text-sm font-semibold">{assessment.title} <span className="text-xs text-[#6B7280]">· {assessment.passing_score}% · {assessment.questions?.length ?? 0} preguntas</span></span><button type="button" onClick={() => setQuestionAssessment(assessment)} className="text-xs font-bold text-[#1A4E26]">Agregar pregunta</button></div>)}</section>
+            {modules.length === 0 ? <p className="text-sm text-[#6B7280] text-center py-6">Este curso todavía no tiene módulos.</p> : modules.map((module, moduleIndex) => (
+              <section key={module.id} className={`border ${module.is_published ? 'border-[#C8D8CB]' : 'border-slate-200 bg-slate-50'} rounded-xl p-4`}>
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex flex-col">
+                      <button type="button" onClick={() => moveModule(moduleIndex, 'up')} disabled={moduleIndex === 0} className="text-slate-400 hover:text-[#1A4E26] disabled:opacity-30"><ArrowUp size={14} /></button>
+                      <button type="button" onClick={() => moveModule(moduleIndex, 'down')} disabled={moduleIndex === modules.length - 1} className="text-slate-400 hover:text-[#1A4E26] disabled:opacity-30"><ArrowDown size={14} /></button>
+                    </div>
+                    <h3 className={`font-bold ${module.is_published ? 'text-[#111111]' : 'text-slate-500'}`}>{module.sort_order}. {module.title}</h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => toggleModulePublish(module)} className={`p-1.5 rounded-lg ${module.is_published ? 'text-[#1A4E26] bg-[#E8F2EA]' : 'text-slate-500 bg-slate-200'}`}>{module.is_published ? <Eye size={16} /> : <EyeOff size={16} />}</button>
+                    <button type="button" onClick={() => deleteModule(module)} className="p-1.5 rounded-lg text-red-500 hover:bg-red-50"><Trash2 size={16} /></button>
+                    <button type="button" onClick={() => void openLesson(module.id)} className="ml-2 text-xs font-bold text-[#1A4E26] flex items-center gap-1"><Plus size={14} /> Lección</button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {(module.lessons ?? []).map((lesson, lessonIndex) => (
+                    <div key={lesson.id} className={`flex items-center gap-2 px-3 py-2 rounded-lg ${lesson.is_published ? 'bg-[#F8FBF8]' : 'bg-slate-100 opacity-75'}`}>
+                      <div className="flex flex-col">
+                        <button type="button" onClick={() => moveLesson(module.id, lessonIndex, 'up')} disabled={lessonIndex === 0} className="text-slate-400 hover:text-[#1A4E26] disabled:opacity-30"><ArrowUp size={12} /></button>
+                        <button type="button" onClick={() => moveLesson(module.id, lessonIndex, 'down')} disabled={lessonIndex === (module.lessons?.length ?? 0) - 1} className="text-slate-400 hover:text-[#1A4E26] disabled:opacity-30"><ArrowDown size={12} /></button>
+                      </div>
+                      <button type="button" onClick={() => void openLesson(module.id, lesson)} className="flex-1 text-left text-sm hover:text-[#1A4E26]">{lesson.sort_order}. {lesson.title} <span className="text-xs text-[#6B7280]">· {lesson.content_type}</span></button>
+                      <div className="flex items-center gap-1">
+                        <button type="button" onClick={() => toggleLessonPublish(module.id, lesson)} className={`p-1 rounded ${lesson.is_published ? 'text-[#1A4E26]' : 'text-slate-400'}`}>{lesson.is_published ? <Eye size={14} /> : <EyeOff size={14} />}</button>
+                        <button type="button" onClick={() => deleteLesson(module.id, lesson.id)} className="p-1 rounded text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ))}
+            <section className="border border-[#C8D8CB] rounded-xl p-4">
+              <h3 className="font-bold text-[#111111] mb-3">Evaluaciones</h3>
+              <div className="flex flex-wrap gap-2 mb-3"><input value={assessmentForm.title} onChange={(event) => setAssessmentForm((current) => ({ ...current, title: event.target.value }))} placeholder="Nombre de evaluación" className="flex-1 min-w-[180px] px-3 py-2 border border-slate-200 rounded-xl" /><input value={assessmentForm.passing_score} onChange={(event) => setAssessmentForm((current) => ({ ...current, passing_score: event.target.value }))} type="number" min="0" max="100" placeholder="Aprobación" className="w-24 px-3 py-2 border border-slate-200 rounded-xl" /><button type="button" onClick={() => void addAssessment()} className="px-3 py-2 rounded-xl bg-[#1A4E26] text-white text-sm font-bold"><Plus size={16} /></button></div>
+              {assessments.map((assessment) => (
+                <div key={assessment.id} className="py-2 border-t border-[#E5ECE6]">
+                  <div className="flex items-center gap-3">
+                    <span className="flex-1 text-sm font-semibold">{assessment.title} <span className="text-xs text-[#6B7280]">· {assessment.passing_score}% · {assessment.questions?.length ?? 0} preguntas</span></span>
+                    <button type="button" onClick={() => deleteAssessment(assessment.id)} className="p-1.5 rounded-lg text-red-500 hover:bg-red-50"><Trash2 size={16} /></button>
+                    <button type="button" onClick={() => setQuestionAssessment(assessment)} className="text-xs font-bold text-[#1A4E26]">Agregar pregunta</button>
+                  </div>
+                  {(assessment.questions?.length ?? 0) > 0 && (
+                    <div className="mt-2 pl-4 border-l-2 border-[#E8F2EA] space-y-2">
+                      {assessment.questions.map((q: any) => (
+                        <div key={q.id} className="flex gap-2 items-start text-sm">
+                          <span className="flex-1 text-slate-600">{q.sort_order}. {q.question_text} <span className="text-xs text-slate-400">({q.question_type})</span></span>
+                          <button type="button" onClick={() => deleteQuestion(assessment.id, q.id)} className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </section>
           </>}
         </div>
       </Modal>
@@ -349,7 +502,50 @@ export default function AdminCursos() {
       </Modal>
 
       <Modal open={Boolean(questionAssessment)} onClose={() => setQuestionAssessment(null)} title="Nueva pregunta" subtitle={questionAssessment?.title}>
-        <form onSubmit={addQuestion} className="p-6 space-y-4"><Field label="Pregunta" value={questionForm.question_text} onChange={(value) => setQuestionForm((current) => ({ ...current, question_text: value }))} required /><div className="grid grid-cols-2 gap-3"><SelectField label="Tipo" value={questionForm.question_type} onChange={(value) => setQuestionForm((current) => ({ ...current, question_type: value }))} options={[{ value: 'single_choice', label: 'Una respuesta' }, { value: 'multiple_choice', label: 'Varias respuestas' }, { value: 'true_false', label: 'Verdadero / falso' }]} /><Field label="Puntos" value={questionForm.points} onChange={(value) => setQuestionForm((current) => ({ ...current, points: value }))} type="number" min="0" /></div><div className="space-y-2"><p className="text-sm font-semibold">Opciones y respuesta correcta</p>{questionForm.options.map((option, index) => <div key={index} className="flex items-end gap-2"><label className="pb-2"><input type="radio" name="correct-option" checked={correctOption === index} onChange={() => setCorrectOption(index)} aria-label={`Marcar opción ${index + 1} como correcta`} className="accent-[#1A4E26]" /></label><div className="flex-1"><Field label={`Opción ${index + 1}`} value={option} onChange={(value) => setQuestionForm((current) => ({ ...current, options: current.options.map((item, itemIndex) => itemIndex === index ? value : item) }))} required={index < 2} /></div></div>)}</div><div className="flex justify-end gap-3 pt-3 border-t border-[#E5ECE6]"><button type="button" onClick={() => setQuestionAssessment(null)} className="px-4 py-2 text-sm font-bold text-[#6B7280]">Cancelar</button><button type="submit" className="px-4 py-2 rounded-xl bg-[#1A4E26] text-white font-bold text-sm">Guardar pregunta</button></div></form>
+        <form onSubmit={addQuestion} className="p-6 space-y-4">
+          <Field label="Pregunta" value={questionForm.question_text} onChange={(value) => setQuestionForm((current) => ({ ...current, question_text: value }))} required />
+          <div className="grid grid-cols-2 gap-3">
+            <SelectField label="Tipo" value={questionForm.question_type} onChange={(value) => { setQuestionForm((current) => ({ ...current, question_type: value })); setCorrectOptions([0]); }} options={[{ value: 'single_choice', label: 'Una respuesta' }, { value: 'multiple_choice', label: 'Varias respuestas' }, { value: 'true_false', label: 'Verdadero / falso' }]} />
+            <Field label="Puntos" value={questionForm.points} onChange={(value) => setQuestionForm((current) => ({ ...current, points: value }))} type="number" min="0" />
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-[#111111]">Opciones y respuesta correcta</p>
+            {questionForm.options.map((option, index) => (
+              <div key={index} className="flex items-center gap-3">
+                <label className="flex items-center justify-center pt-6">
+                  <input 
+                    type={questionForm.question_type === 'multiple_choice' ? 'checkbox' : 'radio'} 
+                    name="correct-option" 
+                    checked={correctOptions.includes(index)} 
+                    onChange={() => setCorrectOptions(current => 
+                      questionForm.question_type === 'multiple_choice' 
+                        ? current.includes(index) ? current.filter(i => i !== index) : [...current, index]
+                        : [index]
+                    )} 
+                    className="accent-[#1A4E26] w-4 h-4 cursor-pointer" 
+                  />
+                </label>
+                <div className="flex-1">
+                  <Field label={`Opción ${index + 1}`} value={option} onChange={(value) => setQuestionForm((current) => ({ ...current, options: current.options.map((item, itemIndex) => itemIndex === index ? value : item) }))} required={index < 2} />
+                </div>
+                {index > 1 && (
+                  <button type="button" onClick={() => { setQuestionForm(c => ({...c, options: c.options.filter((_, i) => i !== index)})); setCorrectOptions(c => c.filter(i => i !== index).map(i => i > index ? i - 1 : i)); }} className="pt-6 text-red-400 hover:text-red-600">
+                    <Trash2 size={16} />
+                  </button>
+                )}
+              </div>
+            ))}
+            {questionForm.options.length < 6 && questionForm.question_type !== 'true_false' && (
+              <button type="button" onClick={() => setQuestionForm(c => ({...c, options: [...c.options, '']}))} className="text-xs font-bold text-[#1A4E26] flex items-center gap-1 mt-2">
+                <Plus size={14} /> Agregar opción
+              </button>
+            )}
+          </div>
+          <div className="flex justify-end gap-3 pt-3 border-t border-[#E5ECE6]">
+            <button type="button" onClick={() => setQuestionAssessment(null)} className="px-4 py-2 text-sm font-bold text-[#6B7280]">Cancelar</button>
+            <button type="submit" className="px-4 py-2 rounded-xl bg-[#1A4E26] text-white font-bold text-sm">Guardar pregunta</button>
+          </div>
+        </form>
       </Modal>
     </div>
   );
