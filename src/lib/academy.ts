@@ -601,6 +601,17 @@ export const academyAPI = {
     return data ?? [];
   },
 
+  async uploadAdminResource(courseId: string, lessonId: string, file: File) {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${courseId}/${lessonId}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+    
+    const { data, error } = await supabase.storage.from('academy-resources').upload(fileName, file);
+    if (error) throw error;
+    
+    const { data: urlData } = supabase.storage.from('academy-resources').getPublicUrl(data.path);
+    return { path: data.path, publicUrl: urlData.publicUrl };
+  },
+
   async createAdminResource(input: { lesson_id: string; title: string; description: string; file_url: string; file_name: string; file_type: string; sort_order: number }) {
     const { data, error } = await supabase
       .from('academy_resources')
@@ -612,6 +623,13 @@ export const academyAPI = {
   },
 
   async deleteAdminResource(resourceId: string) {
+    const { data: resource } = await supabase.from('academy_resources').select('file_url').eq('id', resourceId).single();
+    if (resource && resource.file_url && resource.file_url.includes('/storage/v1/object/public/academy-resources/')) {
+      const path = resource.file_url.split('/storage/v1/object/public/academy-resources/')[1];
+      if (path) {
+        await supabase.storage.from('academy-resources').remove([path]);
+      }
+    }
     const { error } = await supabase.from('academy_resources').delete().eq('id', resourceId);
     if (error) throw error;
   },

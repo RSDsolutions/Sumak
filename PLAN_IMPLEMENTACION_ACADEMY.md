@@ -104,13 +104,13 @@ La prioridad es ampliar Academy sin romper las funcionalidades actuales de SUMAK
 
 ### Fase 6: Administración avanzada
 
-- [ ] Editar y reordenar módulos.
-- [ ] Editar y reordenar lecciones.
-- [ ] Gestionar publicación y previsualización.
+- [x] Editar y reordenar módulos.
+- [x] Editar y reordenar lecciones.
+- [x] Gestionar publicación y previsualización.
 - [ ] Gestionar recursos mediante Storage con nombres internos.
-- [ ] Gestionar evaluaciones y preguntas existentes.
-- [ ] Permitir seleccionar varias respuestas correctas en preguntas múltiples.
-- [ ] Aplicar alcance de instructores sobre contenido asignado.
+- [x] Gestionar evaluaciones y preguntas existentes.
+- [x] Permitir seleccionar varias respuestas correctas en preguntas múltiples.
+- [x] Aplicar alcance de instructores sobre contenido asignado.
 - [x] Gestionar sesiones en vivo desde administración.
 - [x] Añadir auditoría de cambios administrativos mediante triggers de Supabase.
 - [x] Registrar cambios de contenido con triggers de auditoría en Supabase.
