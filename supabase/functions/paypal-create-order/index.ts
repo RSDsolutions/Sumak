@@ -55,7 +55,7 @@ Deno.serve(async (req: Request) => {
     return jsonResponse(req, { error: "Token invalido o expirado" }, 401);
   }
 
-  let payload: { orderId?: string; amount?: number | string; currency?: string; description?: string };
+  let payload: { orderId?: string; amount?: number | string; currency?: string; description?: string; academyEnrollmentId?: string };
   try {
     payload = await req.json();
   } catch {
@@ -66,6 +66,7 @@ Deno.serve(async (req: Request) => {
   const amount = Number(payload.amount ?? 0);
   const currency = String(payload.currency ?? "USD").trim().toUpperCase();
   const description = String(payload.description ?? "Compra Sumak").trim();
+  const academyEnrollmentId = String(payload.academyEnrollmentId ?? "").trim();
 
   if (!orderId || !Number.isFinite(amount) || amount <= 0) {
     return jsonResponse(req, { error: "Faltan orderId o amount valido" }, 400);
@@ -132,6 +133,23 @@ Deno.serve(async (req: Request) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
+  if (academyEnrollmentId) {
+    const { data: enrollment, error: enrollmentError } = await supabaseAdmin
+      .from("academy_enrollments")
+      .select("id, status, course:course_id (price)")
+      .eq("id", academyEnrollmentId)
+      .eq("user_id", userData.user.id)
+      .eq("status", "payment_pending")
+      .single();
+    const course = enrollment?.course as { price?: number | null } | null;
+    if (enrollmentError || !enrollment || !course || course.price === null || course.price === undefined || course.price <= 0) {
+      return jsonResponse(req, { error: "La inscripción Academy no está lista para pago." }, 409);
+    }
+    if (Math.round(amount * 100) !== Math.round(Number(course.price) * 100)) {
+      return jsonResponse(req, { error: "El monto no coincide con el precio del curso." }, 400);
+    }
+  }
+
   const paymentRow = {
     user_id: userData.user.id,
     pedido_id: null,
@@ -145,11 +163,27 @@ Deno.serve(async (req: Request) => {
     metadata: {
       orderId,
       description,
+      academyEnrollmentId: academyEnrollmentId || null,
       providerResponse: orderJson,
     },
   };
 
-  await supabaseAdmin.from("pagos").insert(paymentRow);
+  const { data: insertedPayment, error: insertError } = await supabaseAdmin.from("pagos").insert(paymentRow).select("id").single();
+  if (insertError || !insertedPayment) {
+    return jsonResponse(req, { error: "No se pudo registrar el pago." }, 500);
+  }
+  if (academyEnrollmentId) {
+    const { error: linkError } = await supabaseAdmin
+      .from("academy_enrollments")
+      .update({ payment_id: insertedPayment.id })
+      .eq("id", academyEnrollmentId)
+      .eq("user_id", userData.user.id)
+      .eq("status", "payment_pending");
+    if (linkError) {
+      await supabaseAdmin.from("pagos").delete().eq("id", insertedPayment.id);
+      return jsonResponse(req, { error: "No se pudo vincular el pago con la inscripción Academy." }, 500);
+    }
+  }
 
   return jsonResponse(req, {
     orderId: orderJson?.id ?? null,

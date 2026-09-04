@@ -28,6 +28,7 @@ export interface AcademyCourse {
   estimated_duration_minutes: number | null;
   status: CourseStatus;
   access_mode: AccessMode;
+  price?: number | null;
   prerequisites: string | null;
   passing_percentage: number;
   generates_certificate: boolean;
@@ -103,12 +104,19 @@ export interface AcademyEnrollment {
   id: string;
   user_id: string;
   course_id: string;
-  status: 'active' | 'completed' | 'dropped' | 'suspended';
+  status: 'pending' | 'approved' | 'payment_pending' | 'active' | 'completed' | 'expired' | 'rejected' | 'cancelled' | 'dropped' | 'suspended';
   progress_percentage: number;
   enrolled_at: string;
   started_at: string | null;
   completed_at: string | null;
   last_accessed_at: string | null;
+  requested_at?: string;
+  approved_at?: string | null;
+  activated_at?: string | null;
+  expires_at?: string | null;
+  rejected_at?: string | null;
+  rejection_reason?: string | null;
+  payment_status?: string;
 }
 
 export interface AcademyProgress {

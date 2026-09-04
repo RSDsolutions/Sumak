@@ -45,6 +45,7 @@ const navItems: NavItem[] = [
   { label: 'Escalera del Éxito', to: '/admin/escalera', icon: <Trophy size={18} /> },
   { label: 'Gestionar Personal', to: '/admin/personal', icon: <UserCog size={18} /> },
   { label: 'Academia: Cursos', to: '/admin/academia/cursos', icon: <BookOpen size={18} /> },
+  { label: 'Academia: Inscripciones', to: '/admin/academia/inscripciones', icon: <BookOpen size={18} /> },
   { label: 'Academia: Programas', to: '/admin/academia/programas', icon: <Layers size={18} /> },
   { label: 'Academia: Lives', to: '/admin/academia/lives', icon: <BookOpen size={18} /> },
   { label: 'Academia: Recetas', to: '/admin/academia/recetas', icon: <BookOpen size={18} /> },

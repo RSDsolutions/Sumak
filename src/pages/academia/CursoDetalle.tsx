@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { academyAPI } from '../../lib/academy';
 import { useAuth } from '../../lib/auth';
+import { callEdgeFunction } from '../../lib/supabase';
 import type { AcademyCourse, AcademyModule } from '../../lib/academy-types';
 
 export default function CursoDetalle() {
@@ -24,7 +25,8 @@ export default function CursoDetalle() {
   const [isLoading, setIsLoading] = useState(true);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
-  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [enrollmentStatus, setEnrollmentStatus] = useState<string | null>(null);
+  const [paymentProvider, setPaymentProvider] = useState<'payphone' | 'paypal' | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -42,7 +44,7 @@ export default function CursoDetalle() {
           // Check enrollment if user is logged in
           if (profile) {
             const enr = await academyAPI.checkEnrollment(c.id);
-            if (enr) setIsEnrolled(true);
+            if (enr) setEnrollmentStatus(enr.status);
           }
         }
       } catch (err) {
@@ -71,11 +73,10 @@ export default function CursoDetalle() {
     try {
       setIsEnrolling(true);
       await academyAPI.enrollInCourse(course.id);
-      setIsEnrolled(true);
-      navigate(`/academia/aprender/${slug}`);
+      setEnrollmentStatus('pending');
     } catch (err) {
       console.error("Error al inscribirse:", err);
-      alert("Hubo un error al procesar tu inscripción.");
+      alert("Hubo un error al procesar tu solicitud de inscripción.");
     } finally {
       setIsEnrolling(false);
     }
@@ -106,6 +107,35 @@ export default function CursoDetalle() {
   }, 0);
   const durationHours = Math.floor(totalDuration / 3600);
   const durationMins = Math.floor((totalDuration % 3600) / 60);
+  const canAccess = enrollmentStatus === 'active' || enrollmentStatus === 'completed';
+  const enrollmentLabel = enrollmentStatus === 'pending'
+    ? 'Solicitud pendiente'
+    : enrollmentStatus === 'payment_pending'
+      ? 'Pago pendiente'
+      : enrollmentStatus === 'rejected'
+        ? 'Solicitud rechazada'
+        : 'Solicitar inscripción';
+
+  async function startPayment(provider: 'payphone' | 'paypal') {
+    if (!course || !profile) return;
+    setPaymentProvider(provider);
+    try {
+      const orderId = `ACADEMY-${course.id.slice(0, 8)}-${crypto.randomUUID()}`;
+      const enrollment = await academyAPI.checkEnrollment(course.id);
+      if (!enrollment?.id) throw new Error('No encontramos una solicitud Academy aprobada para este pago.');
+      const response = provider === 'paypal'
+        ? await callEdgeFunction<{ approvalUrl?: string; redirectUrl?: string }>('paypal-create-order', { orderId, amount: course.price, currency: 'USD', description: `Academy: ${course.title}`, academyEnrollmentId: enrollment.id })
+        : await callEdgeFunction<{ approvalUrl?: string; redirectUrl?: string }>('payphone-create-payment', { orderId, amount: course.price, currency: 'USD', description: `Academy: ${course.title}`, academyEnrollmentId: enrollment.id });
+      const redirectUrl = provider === 'paypal' ? response.approvalUrl : response.redirectUrl;
+      if (!redirectUrl) throw new Error('La pasarela no devolvió una URL de pago.');
+      window.location.assign(redirectUrl);
+    } catch (error) {
+      console.error('Error iniciando pago Academy:', error);
+      alert(error instanceof Error ? error.message : 'No se pudo iniciar el pago.');
+    } finally {
+      setPaymentProvider(null);
+    }
+  }
 
   return (
     <div className="bg-[#F4F7F5] min-h-screen pb-24">
@@ -187,20 +217,30 @@ export default function CursoDetalle() {
                 </div>
 
                 <div className="mb-6">
-                  {isEnrolled ? (
+                  {canAccess ? (
                     <Link
                       to={`/academia/aprender/${course.slug}`}
                       className="block w-full text-center py-4 rounded-xl bg-[#1A4E26] text-white font-bold hover:bg-[#163F1E] transition-colors shadow-lg shadow-[#1A4E26]/20"
                     >
                       Continuar Aprendiendo
                     </Link>
+                  ) : enrollmentStatus ? (
+                    enrollmentStatus === 'payment_pending' ? (
+                      <div className="space-y-3">
+                        <p className="text-center text-sm font-bold text-[#92680A]">Tu solicitud fue aprobada. Completa el pago para activar 3 meses de acceso.</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button type="button" disabled={paymentProvider !== null || !course.price} onClick={() => void startPayment('payphone')} className="py-3 rounded-xl bg-[#1A4E26] text-white font-bold disabled:opacity-60">{paymentProvider === 'payphone' ? 'Cargando...' : 'PayPhone'}</button>
+                          <button type="button" disabled={paymentProvider !== null || !course.price} onClick={() => void startPayment('paypal')} className="py-3 rounded-xl bg-[#0070BA] text-white font-bold disabled:opacity-60">{paymentProvider === 'paypal' ? 'Cargando...' : 'PayPal'}</button>
+                        </div>
+                      </div>
+                    ) : <div className="w-full text-center py-4 rounded-xl bg-[#F4F7F5] text-[#6B7280] font-bold border border-[#C8D8CB]">{enrollmentLabel}</div>
                   ) : (
                     <button
                       onClick={handleEnroll}
                       disabled={isEnrolling}
                       className="w-full py-4 rounded-xl bg-[#D4AF37] text-[#0B2913] font-black hover:bg-[#F3D568] transition-colors shadow-lg shadow-[#D4AF37]/30 flex items-center justify-center disabled:opacity-70"
                     >
-                      {isEnrolling ? 'Procesando...' : 'Inscríbete Gratis'}
+                      {isEnrolling ? 'Enviando solicitud...' : enrollmentLabel}
                     </button>
                   )}
                   <p className="text-center text-xs text-[#6B7280] mt-3">
@@ -288,18 +328,18 @@ export default function CursoDetalle() {
                               <div className="mt-0.5 sm:mt-0 flex-shrink-0">
                                 {lesson.is_free_preview ? (
                                   <PlayCircle className="text-[#1A4E26]" size={18} />
-                                ) : isEnrolled ? (
+                                ) : canAccess ? (
                                   <PlayCircle className="text-[#6B7280]" size={18} />
                                 ) : (
                                   <Lock className="text-[#6B7280]" size={18} />
                                 )}
                               </div>
                               <div className="flex-1">
-                                <p className={`text-sm ${lesson.is_free_preview || isEnrolled ? 'text-[#111111] font-medium' : 'text-[#6B7280]'}`}>
+                                <p className={`text-sm ${lesson.is_free_preview || canAccess ? 'text-[#111111] font-medium' : 'text-[#6B7280]'}`}>
                                   {index + 1}.{lIdx + 1} {lesson.title}
                                 </p>
                               </div>
-                              {lesson.is_free_preview && !isEnrolled && (
+                              {lesson.is_free_preview && !canAccess && (
                                 <span className="text-[10px] font-bold text-[#1A4E26] bg-[#EBF4ED] px-2 py-0.5 rounded uppercase tracking-wide">
                                   Preview
                                 </span>

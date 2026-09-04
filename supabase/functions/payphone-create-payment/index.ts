@@ -84,6 +84,7 @@ Deno.serve(async (req: Request) => {
     amount?: number | string;
     currency?: string;
     description?: string;
+    academyEnrollmentId?: string;
     metadata?: Record<string, unknown>;
   };
 
@@ -97,6 +98,7 @@ Deno.serve(async (req: Request) => {
   const amount = Number(payload.amount ?? 0);
   const currency = String(payload.currency ?? "USD").trim().toUpperCase();
   const description = String(payload.description ?? "Compra Sumak").trim();
+  const academyEnrollmentId = String(payload.academyEnrollmentId ?? "").trim();
 
   if (!orderId || !Number.isFinite(amount) || amount <= 0) {
     return jsonResponse(req, { error: "Faltan orderId o amount valido" }, 400);
@@ -114,6 +116,23 @@ Deno.serve(async (req: Request) => {
     }, 500);
   }
 
+  if (academyEnrollmentId) {
+    const { data: enrollment, error: enrollmentError } = await supabaseAdmin
+      .from("academy_enrollments")
+      .select("id, status, course:course_id (price)")
+      .eq("id", academyEnrollmentId)
+      .eq("user_id", userData.user.id)
+      .eq("status", "payment_pending")
+      .single();
+    const course = enrollment?.course as { price?: number | null } | null;
+    if (enrollmentError || !enrollment || !course || course.price === null || course.price === undefined || course.price <= 0) {
+      return jsonResponse(req, { error: "La inscripción Academy no está lista para pago." }, 409);
+    }
+    if (Math.round(amount * 100) !== Math.round(Number(course.price) * 100)) {
+      return jsonResponse(req, { error: "El monto no coincide con el precio del curso." }, 400);
+    }
+  }
+
   const amountCents = Math.round(Number((Number(amount) * 100).toFixed(0)));
   const paymentRow = {
     user_id: userData.user.id,
@@ -129,6 +148,7 @@ Deno.serve(async (req: Request) => {
       description,
       createdFrom: "edge-function",
       provider: "payphone",
+      academyEnrollmentId: academyEnrollmentId || null,
     },
   };
 
@@ -140,6 +160,19 @@ Deno.serve(async (req: Request) => {
 
   if (insertError || !inserted) {
     return jsonResponse(req, { error: `No se pudo crear el registro de pago: ${insertError?.message ?? "desconocido"}` }, 500);
+  }
+
+  if (academyEnrollmentId) {
+    const { error: linkError } = await supabaseAdmin
+      .from("academy_enrollments")
+      .update({ payment_id: inserted.id })
+      .eq("id", academyEnrollmentId)
+      .eq("user_id", userData.user.id)
+      .eq("status", "payment_pending");
+    if (linkError) {
+      await supabaseAdmin.from("pagos").delete().eq("id", inserted.id);
+      return jsonResponse(req, { error: "No se pudo vincular el pago con la inscripción Academy." }, 500);
+    }
   }
 
   const appUrl = (Deno.env.get("APP_URL") ?? "https://www.sumakecuador.lat").replace(/\/$/, "");

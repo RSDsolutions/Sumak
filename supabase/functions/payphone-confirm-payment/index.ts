@@ -161,6 +161,14 @@ Deno.serve(async (req: Request) => {
     return jsonResponse(req, { error: `No se pudo actualizar el pago: ${updateError?.message ?? "desconocido"}` }, 500);
   }
 
+  const academyEnrollmentId = String((paymentRow.metadata as Record<string, unknown> | null)?.academyEnrollmentId ?? "").trim();
+  if (confirmed && academyEnrollmentId) {
+    const { error: activationError } = await supabaseAdmin.rpc("activate_academy_enrollment_after_payment", { p_payment_id: paymentRow.id });
+    if (activationError) {
+      return jsonResponse(req, { error: "Pago confirmado, pero no se pudo activar la inscripción Academy." }, 500);
+    }
+  }
+
   return jsonResponse(req, {
     paymentId: paymentRow.id,
     status: updated.status,

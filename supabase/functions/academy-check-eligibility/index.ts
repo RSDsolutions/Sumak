@@ -70,7 +70,7 @@ Deno.serve(async (req: Request) => {
   if (program_id) {
     const { data: program } = await supabaseAdmin.from("academy_programs").select("title, diploma_type_id").eq("id", program_id).eq("status", "published").maybeSingle();
     if (!program) return jsonResponse({ error: "Program not found" }, 404);
-    const { data: programEnrollment } = await supabaseAdmin.from("academy_program_enrollments").select("status").eq("program_id", program_id).eq("user_id", target_user_id).in("status", ["active", "completed"]).maybeSingle();
+    const { data: programEnrollment } = await supabaseAdmin.from("academy_program_enrollments").select("status").eq("program_id", program_id).eq("user_id", target_user_id).eq("status", "completed").maybeSingle();
     if (!programEnrollment) return jsonResponse({ eligible: false, reasons: ["User is not enrolled in the required program"] });
     if (program.diploma_type_id && diploma_type_id && program.diploma_type_id !== diploma_type_id) return jsonResponse({ error: "Diploma type does not match program" }, 400);
     diploma_type_id = diploma_type_id || program.diploma_type_id || undefined;

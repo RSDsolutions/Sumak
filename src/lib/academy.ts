@@ -494,6 +494,25 @@ export const academyAPI = {
     return data as AcademyCourse[];
   },
 
+  async getAdminEnrollments() {
+    const { data, error } = await supabase
+      .from('academy_enrollments')
+      .select('*, course:course_id (title, price)')
+      .order('requested_at', { ascending: false });
+    if (error) throw error;
+    return data ?? [];
+  },
+
+  async reviewEnrollment(enrollmentId: string, decision: 'approve' | 'reject', reason?: string) {
+    const { data, error } = await supabase.rpc('review_academy_enrollment', {
+      p_enrollment_id: enrollmentId,
+      p_decision: decision,
+      p_rejection_reason: reason ?? null,
+    });
+    if (error) throw error;
+    return data as AcademyEnrollment;
+  },
+
   async createAdminCategory(input: Pick<AcademyCategory, 'name' | 'slug' | 'description' | 'sort_order'>) {
     const { data, error } = await supabase
       .from('academy_categories')
@@ -677,12 +696,12 @@ export const academyAPI = {
 
   // Enrollments
   async enrollInCourse(courseId: string) {
-    const { data, error } = await supabase.rpc('enroll_academy_course', {
+    const { data, error } = await supabase.rpc('request_academy_enrollment', {
       p_course_id: courseId,
     });
-      
     if (error) throw error;
-    return data as AcademyEnrollment;
+    const result = data as { enrollment: AcademyEnrollment };
+    return result.enrollment;
   },
 
   async getMyEnrollments() {

@@ -113,7 +113,7 @@ Deno.serve(async (req: Request) => {
 
   const { data: paymentRow, error: paymentError } = await supabaseAdmin
     .from("pagos")
-    .select("id, user_id, amount, transaction_id, status")
+    .select("id, user_id, amount, transaction_id, metadata, status")
     .or(`transaction_id.eq.${orderId},transaction_id.eq.${paymentId}`)
     .maybeSingle();
 
@@ -139,6 +139,14 @@ Deno.serve(async (req: Request) => {
 
   if (result.error) {
     return jsonResponse({ error: result.error.message }, 500);
+  }
+
+  const academyEnrollmentId = String((paymentRow.metadata as Record<string, unknown> | null)?.academyEnrollmentId ?? "").trim();
+  if (approved && academyEnrollmentId) {
+    const { error: activationError } = await supabaseAdmin.rpc("activate_academy_enrollment_after_payment", { p_payment_id: paymentRow.id });
+    if (activationError) {
+      return jsonResponse({ error: "Pago confirmado, pero no se pudo activar la inscripción Academy." }, 500);
+    }
   }
 
   return jsonResponse({
