@@ -77,6 +77,9 @@ export default function AdminLessonBuilder() {
   const [resUrl, setResUrl] = useState('');
   const [resFile, setResFile] = useState<File | null>(null);
 
+  // Lesson specific upload state
+  const [uploadingPdf, setUploadingPdf] = useState(false);
+
   const load = useCallback(async () => {
     if (!lessonId || !courseId) return;
     setLoading(true);
@@ -160,6 +163,21 @@ export default function AdminLessonBuilder() {
       setResources(rs => rs.filter(r => r.id !== resourceId));
       toast.success('Recurso eliminado.');
     } catch { toast.error('Error eliminando recurso.'); }
+  }
+
+  async function handlePdfUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !lesson || !module) return;
+    setUploadingPdf(true);
+    try {
+      const up = await academyAPI.uploadAdminResource(module.course_id, lesson.id, file);
+      setField('external_url', up.publicUrl);
+      toast.success('PDF subido correctamente.');
+    } catch {
+      toast.error('No se pudo subir el PDF.');
+    } finally {
+      setUploadingPdf(false);
+    }
   }
 
   if (loading) {
@@ -285,10 +303,36 @@ export default function AdminLessonBuilder() {
 
               {/* PDF editor */}
               {form.content_type === 'pdf' && (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <p className="text-sm text-slate-600">
-                    Sube el PDF en la sección de Recursos de abajo, o ingresa la URL directa del archivo.
+                    Sube el archivo PDF o ingresa la URL directa.
                   </p>
+                  
+                  <label className="block cursor-pointer">
+                    <div className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors bg-slate-50
+                      hover:border-[#1A4E26] hover:bg-[#F8FBF8] border-slate-200`}>
+                      {uploadingPdf ? (
+                        <div className="flex flex-col items-center justify-center">
+                          <Loader2 size={24} className="animate-spin text-[#1A4E26] mb-2" />
+                          <span className="text-sm font-semibold text-[#1A4E26]">Subiendo archivo...</span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center">
+                          <Upload size={24} className="text-slate-400 mb-2" />
+                          <span className="text-sm font-semibold text-slate-700">Haz clic para subir un PDF</span>
+                          <span className="text-xs text-slate-400 mt-1">Se vinculará automáticamente a esta lección</span>
+                        </div>
+                      )}
+                    </div>
+                    <input type="file" accept=".pdf" className="sr-only" disabled={uploadingPdf} onChange={handlePdfUpload} />
+                  </label>
+
+                  <div className="flex items-center gap-4">
+                    <div className="h-px bg-slate-200 flex-1"></div>
+                    <span className="text-xs text-slate-400 font-semibold uppercase">O usa un enlace web</span>
+                    <div className="h-px bg-slate-200 flex-1"></div>
+                  </div>
+
                   <Field label="URL del archivo PDF" value={form.external_url}
                     onChange={v => setField('external_url', v)} placeholder="https://..." type="url" />
                 </div>

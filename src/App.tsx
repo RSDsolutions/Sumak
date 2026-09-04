@@ -713,19 +713,19 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/admin/academia/cursos/:courseId/lesson/:lessonId"
-            element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <AdminLayout>
-                  <AdminLessonBuilder />
-                </AdminLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/academia/cursos/:courseId/assessment/:assessmentId"
-            element={
+            <Route
+              path="/admin/academia/cursos/:courseId/lecciones/:lessonId"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminLayout>
+                    <AdminLessonBuilder />
+                  </AdminLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/academia/cursos/:courseId/evaluaciones/:assessmentId"
+              element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <AdminLayout>
                   <AdminAssessmentBuilder />

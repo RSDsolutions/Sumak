@@ -347,14 +347,14 @@ export default function VisorLeccion() {
                   </div>
                 )
               ) : currentLesson.content_type === 'pdf' ? (
-                 <div className="text-white text-center">
-                    <FileText size={48} className="mx-auto mb-4 opacity-50" />
-                    <a 
-                      href={currentLesson.file_url ? academyAPI.getPublicImageUrl(currentLesson.file_url)! : '#'} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="px-6 py-3 bg-[#D4AF37] text-black font-bold rounded-xl hover:bg-[#F3D568] transition-colors"
-                    >
+                   <div className="text-white text-center">
+                      <FileText size={48} className="mx-auto mb-4 opacity-50" />
+                      <a 
+                        href={currentLesson.external_url || '#'} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="px-6 py-3 bg-[#D4AF37] text-black font-bold rounded-xl hover:bg-[#F3D568] transition-colors"
+                      >
                       Descargar PDF
                     </a>
                  </div>
