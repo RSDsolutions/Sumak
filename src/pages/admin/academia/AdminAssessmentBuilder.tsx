@@ -73,6 +73,121 @@ function Field({ label, value, onChange, type = 'text', placeholder = '', hint =
   );
 }
 
+function QuestionForm({
+  qForm, setQForm, onSubmit, onCancel, isEdit = false, isSaving = false
+}: {
+  qForm: NewQuestionForm; setQForm: (f: NewQuestionForm) => void;
+  onSubmit: (e: React.FormEvent) => void; onCancel: () => void; isEdit?: boolean; isSaving?: boolean;
+}) {
+  // Auto-set true/false options
+  const handleTypeChange = (type: 'single_choice' | 'multiple_choice' | 'true_false') => {
+    if (type === 'true_false') {
+      setQForm({ ...qForm, question_type: type, options: ['Verdadero', 'Falso'], correctOptions: [0] });
+    } else {
+      setQForm({ ...qForm, question_type: type, correctOptions: [0] });
+    }
+  };
+
+  return (
+    <form onSubmit={onSubmit} className="bg-[#F8FBF8] border border-[#C8D8CB] rounded-2xl p-5 space-y-4">
+      <p className="font-bold text-[#111] text-sm">{isEdit ? 'Editar pregunta' : 'Nueva pregunta'}</p>
+
+      <div>
+        <span className="text-sm font-semibold text-[#111] block mb-1">Pregunta</span>
+        <textarea value={qForm.question_text} onChange={e => setQForm({ ...qForm, question_text: e.target.value })}
+          rows={2} placeholder="Escribe la pregunta aquí..." required
+          className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#1A4E26] resize-none text-sm" />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <span className="text-sm font-semibold text-[#111] block mb-1">Tipo de pregunta</span>
+          <select value={qForm.question_type}
+            onChange={e => handleTypeChange(e.target.value as any)}
+            className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white text-sm outline-none focus:ring-2 focus:ring-[#1A4E26]">
+            <option value="single_choice">Una respuesta correcta</option>
+            <option value="multiple_choice">Varias respuestas correctas</option>
+            <option value="true_false">Verdadero / Falso</option>
+          </select>
+        </div>
+        <Field label="Puntos" value={qForm.points} onChange={v => setQForm({ ...qForm, points: v })} type="number" placeholder="1" />
+      </div>
+
+      <div>
+        <p className="text-sm font-semibold text-[#111] mb-2">
+          Opciones <span className="text-xs font-normal text-slate-400">(marca la(s) correcta(s))</span>
+        </p>
+        {qForm.options.map((option, i) => (
+          <div key={i} className="flex items-center gap-2 mb-2">
+            <label className="shrink-0 flex items-center justify-center pt-1">
+              <input
+                type={qForm.question_type === 'multiple_choice' ? 'checkbox' : 'radio'}
+                name={`correct-${isEdit ? 'edit' : 'new'}`}
+                checked={qForm.correctOptions.includes(i)}
+                onChange={() => {
+                  const correctOptions = qForm.question_type === 'multiple_choice'
+                    ? qForm.correctOptions.includes(i)
+                      ? qForm.correctOptions.filter(x => x !== i)
+                      : [...qForm.correctOptions, i]
+                    : [i];
+                  setQForm({ ...qForm, correctOptions });
+                }}
+                className="w-4 h-4 accent-[#1A4E26] cursor-pointer"
+              />
+            </label>
+            <input type="text" value={option} placeholder={`Opción ${i + 1}`}
+              required={i < 2}
+              disabled={qForm.question_type === 'true_false'}
+              onChange={e => {
+                const options = [...qForm.options];
+                options[i] = e.target.value;
+                setQForm({ ...qForm, options });
+              }}
+              className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#1A4E26] disabled:bg-slate-50 disabled:text-slate-400" />
+            {i > 1 && qForm.question_type !== 'true_false' && (
+              <button type="button"
+                onClick={() => {
+                  const options = qForm.options.filter((_, j) => j !== i);
+                  const correctOptions = qForm.correctOptions.filter(x => x !== i).map(x => x > i ? x - 1 : x);
+                  setQForm({ ...qForm, options, correctOptions });
+                }}
+                className="shrink-0 p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                <XIcon size={15} />
+              </button>
+            )}
+          </div>
+        ))}
+        {qForm.options.length < 6 && qForm.question_type !== 'true_false' && (
+          <button type="button"
+            onClick={() => setQForm({ ...qForm, options: [...qForm.options, ''] })}
+            className="text-xs font-bold text-[#1A4E26] flex items-center gap-1 hover:underline mt-1">
+            <Plus size={13} /> Añadir opción
+          </button>
+        )}
+      </div>
+
+      <div>
+        <span className="text-sm font-semibold text-[#111] block mb-1">Retroalimentación <span className="text-xs font-normal text-slate-400">(opcional — se muestra tras responder)</span></span>
+        <textarea value={qForm.explanation} onChange={e => setQForm({ ...qForm, explanation: e.target.value })}
+          rows={2} placeholder="Explica por qué la respuesta es correcta..."
+          className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#1A4E26] resize-none text-sm" />
+      </div>
+
+      <div className="flex justify-end gap-3 pt-2 border-t border-slate-200">
+        <button type="button" onClick={onCancel}
+          className="px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-colors">
+          Cancelar
+        </button>
+        <button type="submit" disabled={isSaving}
+          className="flex items-center gap-2 px-4 py-2 bg-[#1A4E26] text-white font-bold text-sm rounded-xl disabled:opacity-60 hover:bg-[#163F1E] transition-colors">
+          {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+          {isEdit ? 'Actualizar pregunta' : 'Añadir pregunta'}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 export default function AdminAssessmentBuilder() {
   const { courseId, assessmentId } = useParams<{ courseId: string; assessmentId: string }>();
   const toast = useToast();
@@ -224,123 +339,6 @@ export default function AdminAssessmentBuilder() {
       options: q.options.map(o => o.option_text),
       correctOptions: q.options.filter(o => o.is_correct).map((_, i) => i),
     });
-  }
-
-  // ─── Question form renderer (shared for add & edit) ───────────────────────
-
-  function QuestionForm({
-    qForm, setQForm, onSubmit, onCancel, isEdit = false
-  }: {
-    qForm: NewQuestionForm; setQForm: (f: NewQuestionForm) => void;
-    onSubmit: (e: React.FormEvent) => void; onCancel: () => void; isEdit?: boolean;
-  }) {
-    // Auto-set true/false options
-    const handleTypeChange = (type: 'single_choice' | 'multiple_choice' | 'true_false') => {
-      if (type === 'true_false') {
-        setQForm({ ...qForm, question_type: type, options: ['Verdadero', 'Falso'], correctOptions: [0] });
-      } else {
-        setQForm({ ...qForm, question_type: type, correctOptions: [0] });
-      }
-    };
-
-    return (
-      <form onSubmit={onSubmit} className="bg-[#F8FBF8] border border-[#C8D8CB] rounded-2xl p-5 space-y-4">
-        <p className="font-bold text-[#111] text-sm">{isEdit ? 'Editar pregunta' : 'Nueva pregunta'}</p>
-
-        <div>
-          <span className="text-sm font-semibold text-[#111] block mb-1">Pregunta</span>
-          <textarea value={qForm.question_text} onChange={e => setQForm({ ...qForm, question_text: e.target.value })}
-            rows={2} placeholder="Escribe la pregunta aquí..." required
-            className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#1A4E26] resize-none text-sm" />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <span className="text-sm font-semibold text-[#111] block mb-1">Tipo de pregunta</span>
-            <select value={qForm.question_type}
-              onChange={e => handleTypeChange(e.target.value as any)}
-              className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white text-sm outline-none focus:ring-2 focus:ring-[#1A4E26]">
-              <option value="single_choice">Una respuesta correcta</option>
-              <option value="multiple_choice">Varias respuestas correctas</option>
-              <option value="true_false">Verdadero / Falso</option>
-            </select>
-          </div>
-          <Field label="Puntos" value={qForm.points} onChange={v => setQForm({ ...qForm, points: v })} type="number" placeholder="1" />
-        </div>
-
-        <div>
-          <p className="text-sm font-semibold text-[#111] mb-2">
-            Opciones <span className="text-xs font-normal text-slate-400">(marca la(s) correcta(s))</span>
-          </p>
-          {qForm.options.map((option, i) => (
-            <div key={i} className="flex items-center gap-2 mb-2">
-              <label className="shrink-0 flex items-center justify-center pt-1">
-                <input
-                  type={qForm.question_type === 'multiple_choice' ? 'checkbox' : 'radio'}
-                  name={`correct-${isEdit ? 'edit' : 'new'}`}
-                  checked={qForm.correctOptions.includes(i)}
-                  onChange={() => {
-                    const correctOptions = qForm.question_type === 'multiple_choice'
-                      ? qForm.correctOptions.includes(i)
-                        ? qForm.correctOptions.filter(x => x !== i)
-                        : [...qForm.correctOptions, i]
-                      : [i];
-                    setQForm({ ...qForm, correctOptions });
-                  }}
-                  className="w-4 h-4 accent-[#1A4E26] cursor-pointer"
-                />
-              </label>
-              <input type="text" value={option} placeholder={`Opción ${i + 1}`}
-                required={i < 2}
-                disabled={qForm.question_type === 'true_false'}
-                onChange={e => {
-                  const options = [...qForm.options];
-                  options[i] = e.target.value;
-                  setQForm({ ...qForm, options });
-                }}
-                className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#1A4E26] disabled:bg-slate-50 disabled:text-slate-400" />
-              {i > 1 && qForm.question_type !== 'true_false' && (
-                <button type="button"
-                  onClick={() => {
-                    const options = qForm.options.filter((_, j) => j !== i);
-                    const correctOptions = qForm.correctOptions.filter(x => x !== i).map(x => x > i ? x - 1 : x);
-                    setQForm({ ...qForm, options, correctOptions });
-                  }}
-                  className="shrink-0 p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                  <XIcon size={15} />
-                </button>
-              )}
-            </div>
-          ))}
-          {qForm.options.length < 6 && qForm.question_type !== 'true_false' && (
-            <button type="button"
-              onClick={() => setQForm({ ...qForm, options: [...qForm.options, ''] })}
-              className="text-xs font-bold text-[#1A4E26] flex items-center gap-1 hover:underline mt-1">
-              <Plus size={13} /> Añadir opción
-            </button>
-          )}
-        </div>
-
-        <div>
-          <span className="text-sm font-semibold text-[#111] block mb-1">Retroalimentación <span className="text-xs font-normal text-slate-400">(opcional — se muestra tras responder)</span></span>
-          <textarea value={qForm.explanation} onChange={e => setQForm({ ...qForm, explanation: e.target.value })}
-            rows={2} placeholder="Explica por qué la respuesta es correcta..."
-            className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#1A4E26] resize-none text-sm" />
-        </div>
-
-        <div className="flex justify-end gap-3 pt-2 border-t border-slate-200">
-          <button type="button" onClick={onCancel}
-            className="px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-colors">
-            Cancelar
-          </button>
-          <button type="submit" disabled={savingQ}
-            className="flex items-center gap-2 px-4 py-2 bg-[#1A4E26] text-white font-bold text-sm rounded-xl disabled:opacity-60 hover:bg-[#163F1E] transition-colors">
-            {savingQ ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-            {isEdit ? 'Actualizar pregunta' : 'Añadir pregunta'}
-          </button>
-        </div>
-      </form>
-    );
   }
 
   // ─── Render ────────────────────────────────────────────────────────────────
@@ -516,6 +514,7 @@ export default function AdminAssessmentBuilder() {
               setQForm={setNewQ}
               onSubmit={handleAddQuestion}
               onCancel={() => { setShowAddQ(false); setNewQ(emptyNewQuestion()); }}
+              isSaving={savingQ}
             />
           )}
 
@@ -541,6 +540,7 @@ export default function AdminAssessmentBuilder() {
                   onSubmit={handleSaveEditQuestion}
                   onCancel={() => { setEditingQ(null); setEditQForm(null); }}
                   isEdit
+                  isSaving={savingQ}
                 />
               ) : (
                 <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">

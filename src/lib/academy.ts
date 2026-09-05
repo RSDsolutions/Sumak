@@ -502,7 +502,7 @@ export const academyAPI = {
         course:course_id (title, price, slug),
         user:user_id (nombre_completo, username)
       `)
-      .order('requested_at', { ascending: false });
+      .order('enrolled_at', { ascending: false });
     if (error) throw error;
     return data ?? [];
   },
