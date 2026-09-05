@@ -67,6 +67,7 @@ const AdminLessonBuilder = lazy(() => import('./pages/admin/academia/AdminLesson
 const AdminAssessmentBuilder = lazy(() => import('./pages/admin/academia/AdminAssessmentBuilder'));
 const AdminAcademyEnrollments = lazy(() => import('./pages/admin/academia/AdminAcademyEnrollments'));
 const AdminProgramas = lazy(() => import('./pages/admin/academia/AdminProgramas'));
+const AdminProgramBuilder = lazy(() => import('./pages/admin/academia/AdminProgramBuilder'));
 const AdminLives = lazy(() => import('./pages/admin/academia/AdminLives'));
 const AdminDiplomas = lazy(() => import('./pages/admin/academia/AdminDiplomas'));
 const AdminInstructores = lazy(() => import('./pages/admin/academia/AdminInstructores'));
@@ -76,8 +77,9 @@ const AdminCobrosRecetas = lazy(() => import('./pages/admin/academia/AdminCobros
 // Academy pages
 const AcademyLayout = lazy(() => import('./components/AcademyLayout'));
 const AcademiaHome = lazy(() => import('./pages/academia/AcademiaHome'));
-const CatalogoCursos = lazy(() => import('./pages/academia/CatalogoCursos'));
-const CursoDetalle = lazy(() => import('./pages/academia/CursoDetalle'));
+const AcademiaCursos = lazy(() => import('./pages/academia/cursos/AcademiaCursos'));
+const AcademiaCursosDetalle = lazy(() => import('./pages/academia/cursos/AcademiaCursosDetalle'));
+const ProgramaRoadmap = lazy(() => import('./pages/academia/programas/ProgramaRoadmap'));
 const BibliotecaLives = lazy(() => import('./pages/academia/BibliotecaLives'));
 const Programas = lazy(() => import('./pages/academia/Programas'));
 const ProgramDetalle = lazy(() => import('./pages/academia/ProgramDetalle'));
@@ -761,6 +763,16 @@ export default function App() {
               <ProtectedRoute allowedRoles={['admin']}>
                 <AdminLayout>
                   <AdminProgramas />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/academia/programas/:programId/builder"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminLayout>
+                  <AdminProgramBuilder />
                 </AdminLayout>
               </ProtectedRoute>
             }

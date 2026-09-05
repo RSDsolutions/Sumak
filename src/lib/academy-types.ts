@@ -155,3 +155,31 @@ export interface AcademyDiplomaIssuance {
     internal_code: string;
   };
 }
+
+export interface AcademyProgram {
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  cover_image_url: string | null;
+  status: CourseStatus;
+  access_mode: AccessMode;
+  completion_percentage_required: number;
+  diploma_type_id: string | null;
+  final_exam_assessment_id: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+  courses?: AcademyProgramCourse[];
+}
+
+export interface AcademyProgramCourse {
+  id: string;
+  program_id: string;
+  course_id: string;
+  sort_order: number;
+  is_required: boolean;
+  created_at: string;
+  course?: AcademyCourse;
+}
+

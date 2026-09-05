@@ -7,11 +7,14 @@ import {
   Clock, 
   ChevronRight,
   TrendingUp,
-  FileText
+  TrendingUp,
+  FileText,
+  Layers
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth';
 import { displayName } from '../../../lib/profile';
 import { academyAPI } from '../../../lib/academy';
+import { academyProgramHelper } from '../../../lib/academy';
 import type { AcademyEnrollment, AcademyDiplomaIssuance } from '../../../lib/academy-types';
 
 export default function AcademiaDashboard() {
@@ -19,19 +22,22 @@ export default function AcademiaDashboard() {
   const [enrollments, setEnrollments] = useState<AcademyEnrollment[]>([]);
   const [diplomas, setDiplomas] = useState<AcademyDiplomaIssuance[]>([]);
   const [certificates, setCertificates] = useState<any[]>([]);
+  const [programs, setPrograms] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [enrs, dips, certs] = await Promise.all([
+        const [enrs, dips, certs, progs] = await Promise.all([
           academyAPI.getMyEnrollments(),
           academyAPI.getMyDiplomas(),
-          academyAPI.getMyCertificates()
+          academyAPI.getMyCertificates(),
+          academyProgramHelper.getMyEnrolledPrograms()
         ]);
         setEnrollments(enrs as AcademyEnrollment[]);
         setDiplomas(dips as AcademyDiplomaIssuance[]);
         setCertificates(certs || []);
+        setPrograms(progs || []);
       } catch (err) {
         console.error("Error cargando dashboard:", err);
       } finally {
@@ -173,6 +179,37 @@ export default function AcademiaDashboard() {
                     </div>
                   </div>
                 </div>
+              </div>
+            </section>
+          )}
+
+          {programs.length > 0 && (
+            <section className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-[#111111]">Mis Programas Activos</h2>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                {programs.map((enr: any) => (
+                  <Link 
+                    key={enr.id} 
+                    to={`/academia/programas/${enr.program?.slug}`}
+                    className="bg-[#1A4E26] rounded-[24px] p-6 hover:-translate-y-1 hover:shadow-xl transition-all group overflow-hidden relative"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-tr from-[#133A1C] to-transparent opacity-50"></div>
+                    <div className="relative z-10 flex flex-col h-full">
+                      <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-white mb-4">
+                        <Layers size={24} />
+                      </div>
+                      <h3 className="font-black text-white text-lg mb-2">{enr.program?.title}</h3>
+                      <p className="text-sm text-[#D7E9DF] line-clamp-2 mb-6 flex-1">
+                        {enr.program?.description}
+                      </p>
+                      <div className="flex items-center gap-2 text-white font-bold text-sm">
+                        Continuar ruta <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </div>
+                  </Link>
+                ))}
               </div>
             </section>
           )}

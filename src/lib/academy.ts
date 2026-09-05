@@ -1,4 +1,4 @@
-﻿import { supabase } from './supabase';
+import { supabase } from './supabase';
 import type { 
   AcademyCategory,
   AcademyCourse, 
@@ -1080,6 +1080,201 @@ export const academyAPI = {
   },
 
   /** Actualiza una pregunta existente con sus opciones (delete+insert opciones) */
+  async checkEnrollment(courseId: string) {
+    const { data, error } = await supabase
+      .from('academy_enrollments')
+      .select('*')
+      .eq('course_id', courseId)
+      .maybeSingle();
+      
+    if (error) throw error;
+    return data as AcademyEnrollment | null;
+  },
+
+  // Progress
+  async getMyProgress(courseId: string) {
+    const { data, error } = await supabase
+      .from('academy_progress')
+      .select('*')
+      .eq('course_id', courseId);
+      
+    if (error) throw error;
+    return data as AcademyProgress[];
+  },
+
+  async updateProgress(lessonId: string, courseId: string, status: 'in_progress' | 'completed', percentage: number, playbackSeconds = 0) {
+    const { data, error } = await supabase.rpc('update_academy_progress', {
+      p_lesson_id: lessonId,
+      p_course_id: courseId,
+      p_status: status,
+      p_percentage: percentage,
+      p_playback_seconds: playbackSeconds,
+    });
+    if (error) throw error;
+    return data as AcademyProgress;
+  },
+
+  // Diplomas
+  async getMyDiplomas() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("No user");
+
+    const { data, error } = await supabase
+      .from('academy_diploma_issuances')
+      .select(`
+        *,
+        diploma_type:academy_diploma_types (*)
+      `)
+      .eq('user_id', user.id)
+      .order('issued_at', { ascending: false });
+
+    if (error) throw error;
+    return data as AcademyDiplomaIssuance[];
+  },
+
+  async getMyCertificates() {
+    const { data, error } = await supabase.rpc('get_my_academy_certificates');
+    if (error) throw error;
+    return data ?? [];
+  },
+
+  async issueCourseCertificate(courseId: string) {
+    const { data, error } = await supabase.rpc('issue_academy_course_certificate', {
+      p_course_id: courseId,
+    });
+    if (error) throw error;
+    return data;
+  },
+  
+  async getAllDiplomas() {
+    const { data, error } = await supabase
+      .from('academy_diploma_issuances')
+      .select(`
+        *,
+        diploma_type:academy_diploma_types (*)
+      `)
+      .order('issued_at', { ascending: false });
+
+    if (error) throw error;
+    return data as AcademyDiplomaIssuance[];
+  },
+
+  async revokeDiploma(diplomaId: string) {
+    const { error } = await supabase
+      .from('academy_diploma_issuances')
+      .delete()
+      .eq('id', diplomaId);
+    if (error) throw error;
+  },
+  
+  // Storage
+  getPublicImageUrl(path: string | null) {
+    if (!path) return null;
+    if (path.startsWith('http')) return path;
+    const { data } = supabase.storage.from('academy-content').getPublicUrl(path);
+    return data.publicUrl;
+  },
+
+  // Assessments
+  async getAssessment(assessmentId: string) {
+    const { data, error } = await supabase
+      .from('academy_assessments')
+      .select(`
+        *,
+        questions:academy_questions (
+          id, question_type, question_text, points, sort_order
+        )
+      `)
+      .eq('id', assessmentId)
+      .single();
+      
+    if (error) throw error;
+
+    const questionIds = (data?.questions ?? []).map((question: { id: string }) => question.id);
+    const { data: options, error: optionsError } = questionIds.length
+      ? await supabase
+        .from('academy_question_options_public')
+        .select('id, question_id, option_text, sort_order')
+        .in('question_id', questionIds)
+      : { data: [], error: null };
+
+    if (optionsError) throw optionsError;
+    
+    // Sort questions and options
+    if (data && data.questions) {
+      data.questions.sort((a: any, b: any) => a.sort_order - b.sort_order);
+      data.questions.forEach((q: any) => {
+        q.options = (options ?? [])
+          .filter((option: { question_id: string }) => option.question_id === q.id)
+          .sort((a: any, b: any) => a.sort_order - b.sort_order);
+      });
+    }
+    
+    return data;
+  },
+  
+  async startAttempt(assessmentId: string) {
+    const { data, error } = await supabase.rpc('start_academy_attempt', {
+      p_assessment_id: assessmentId,
+    });
+      
+    if (error) throw error;
+    return data as string;
+  },
+  
+  async saveAnswers(attemptId: string, answers: { question_id: string, selected_option_ids: string[] }[]) {
+    const { error } = await supabase.rpc('save_academy_answers', {
+      p_attempt_id: attemptId,
+      p_answers: answers,
+    });
+    if (error) throw error;
+  },
+
+  /** Obtiene un curso por ID con joins de categorÃ­a e instructor */
+  async getAdminCourseById(courseId: string) {
+    const { data, error } = await supabase
+      .from('academy_courses')
+      .select('*, category:category_id (id, name, slug), instructor:instructor_id (id, nombre_completo)')
+      .eq('id', courseId)
+      .single();
+    if (error) throw error;
+    return data as AcademyCourse;
+  },
+
+  /** Sube portada del curso al bucket academy-content y devuelve la URL pÃºblica */
+  async uploadAdminCourseCover(courseId: string, file: File): Promise<string> {
+    const ext = file.name.split('.').pop();
+    const path = `covers/${courseId}/cover_${Date.now()}.${ext}`;
+    const { data, error } = await supabase.storage.from('academy-content').upload(path, file, { upsert: true });
+    if (error) throw error;
+    const { data: urlData } = supabase.storage.from('academy-content').getPublicUrl(data.path);
+    return urlData.publicUrl;
+  },
+
+  /** Actualiza campos parciales de un curso (para autosave de tabs individuales) */
+  async patchAdminCourse(courseId: string, patch: Partial<AcademyCourse>) {
+    const { data, error } = await supabase
+      .from('academy_courses')
+      .update(patch)
+      .eq('id', courseId)
+      .select()
+      .single();
+    if (error) throw error;
+    return data as AcademyCourse;
+  },
+
+  /** Obtiene una evaluaciÃ³n completa con preguntas y opciones para ediciÃ³n admin */
+  async getAdminAssessment(assessmentId: string) {
+    const { data, error } = await supabase
+      .from('academy_assessments')
+      .select('*, questions:academy_questions (id, question_text, question_type, points, sort_order, options:academy_question_options (id, option_text, is_correct, sort_order))')
+      .eq('id', assessmentId)
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  /** Actualiza una pregunta existente con sus opciones (delete+insert opciones) */
   async updateAdminQuestion(questionId: string, input: { question_text: string; question_type: string; points: number; explanation?: string; options: { option_text: string; is_correct: boolean; sort_order: number }[] }) {
     const { options, ...questionData } = input;
     const { error: qErr } = await supabase.from('academy_questions').update(questionData).eq('id', questionId);
@@ -1098,4 +1293,35 @@ export const academyAPI = {
     if (error) throw error;
     return data as AcademyModule;
   },
+
+  async getAdminProgramDetails(programId: string) {
+    const { data, error } = await supabase.from('academy_programs').select('*, courses:academy_program_courses (*, course:course_id (*), prerequisites:academy_program_course_prereqs!academy_program_course_prereqs_program_course_id_fkey (id, prereq_program_course_id))').eq('id', programId).single();
+    if (error) throw error;
+    return data;
+  },
+
+  async updateProgramCourse(linkId: string, updates: { sort_order?: number; is_required?: boolean }) {
+    const { error } = await supabase.from('academy_program_courses').update(updates).eq('id', linkId);
+    if (error) throw error;
+  },
+
+  async setProgramCoursePrerequisites(programCourseId: string, prereqIds: string[]) {
+    await supabase.from('academy_program_course_prereqs').delete().eq('program_course_id', programCourseId);
+    if (prereqIds.length > 0) {
+      const inserts = prereqIds.map(id => ({ program_course_id: programCourseId, prereq_program_course_id: id }));
+      const { error } = await supabase.from('academy_program_course_prereqs').insert(inserts);
+      if (error) throw error;
+    }
+  },
 };
+
+export const academyProgramHelper = {
+  async getMyEnrolledPrograms() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+    const { data, error } = await supabase.from('academy_program_enrollments').select('*, program:program_id (id, title, slug, cover_image_url, description, status, courses:academy_program_courses (id))').eq('user_id', user.id).eq('status', 'active');
+    if (error) throw error;
+    return data;
+  }
+};
+
