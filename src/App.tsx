@@ -77,8 +77,8 @@ const AdminCobrosRecetas = lazy(() => import('./pages/admin/academia/AdminCobros
 // Academy pages
 const AcademyLayout = lazy(() => import('./components/AcademyLayout'));
 const AcademiaHome = lazy(() => import('./pages/academia/AcademiaHome'));
-const AcademiaCursos = lazy(() => import('./pages/academia/cursos/AcademiaCursos'));
-const AcademiaCursosDetalle = lazy(() => import('./pages/academia/cursos/AcademiaCursosDetalle'));
+const CatalogoCursos = lazy(() => import('./pages/academia/CatalogoCursos'));
+const CursoDetalle = lazy(() => import('./pages/academia/CursoDetalle'));
 const ProgramaRoadmap = lazy(() => import('./pages/academia/programas/ProgramaRoadmap'));
 const BibliotecaLives = lazy(() => import('./pages/academia/BibliotecaLives'));
 const Programas = lazy(() => import('./pages/academia/Programas'));
