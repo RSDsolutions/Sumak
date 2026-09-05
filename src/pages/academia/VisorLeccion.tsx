@@ -404,7 +404,7 @@ export default function VisorLeccion() {
           <div className="max-w-4xl mx-auto w-full p-4 sm:p-8">
             
             {/* Player Area */}
-            <div className="bg-black aspect-video w-full rounded-2xl overflow-hidden shadow-xl flex items-center justify-center mb-8 relative">
+            <div className={`bg-black w-full rounded-2xl overflow-hidden shadow-xl flex items-center justify-center mb-8 relative ${currentLesson.content_type === 'pdf' ? 'h-[750px]' : 'aspect-video'}`}>
               {currentLesson.content_type === 'video' ? (
                 currentLesson.video_provider === 'youtube' && currentLesson.video_external_id ? (
                   <iframe 
@@ -421,16 +421,30 @@ export default function VisorLeccion() {
                   </div>
                 )
               ) : currentLesson.content_type === 'pdf' ? (
-                   <div className="text-white text-center">
-                      <FileText size={48} className="mx-auto mb-4 opacity-50" />
-                      <a 
-                        href={currentLesson.external_url || '#'} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="px-6 py-3 bg-[#D4AF37] text-black font-bold rounded-xl hover:bg-[#F3D568] transition-colors"
-                      >
-                      Descargar PDF
-                    </a>
+                   <div className="w-full h-full relative group">
+                      <iframe 
+                        src={currentLesson.file_url || currentLesson.external_url || ''} 
+                        className="w-full h-full border-0"
+                        title={currentLesson.title}
+                      />
+                      {(currentLesson.file_url || currentLesson.external_url) ? (
+                        <div className="absolute top-4 right-6 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <a 
+                            href={currentLesson.file_url || currentLesson.external_url || '#'} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            download
+                            className="flex items-center gap-2 px-4 py-2 bg-[#D4AF37] text-black text-sm font-bold rounded-xl shadow-lg hover:bg-[#F3D568] transition-colors"
+                          >
+                            <FileText size={16} /> Abrir / Descargar PDF
+                          </a>
+                        </div>
+                      ) : (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-white bg-black">
+                          <FileText size={48} className="mx-auto mb-4 opacity-50" />
+                          <p>URL del PDF no disponible</p>
+                        </div>
+                      )}
                  </div>
               ) : (
                 <div className="text-white">
@@ -455,6 +469,16 @@ export default function VisorLeccion() {
                 {isUpdatingProgress ? 'Guardando...' : isCompleted ? 'Lección Completada' : 'Marcar como Completada'}
               </button>
             </div>
+
+            {/* Lesson Description */}
+            {currentLesson.description && (
+              <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-[#C8D8CB] mb-8">
+                <h3 className="text-lg font-bold text-[#111111] mb-2">Descripción de la lección</h3>
+                <p className="text-[#4B5563] leading-relaxed whitespace-pre-wrap">
+                  {currentLesson.description}
+                </p>
+              </div>
+            )}
 
             {/* Lesson Text Content */}
             {currentLesson.text_content && (
