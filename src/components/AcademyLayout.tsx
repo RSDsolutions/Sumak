@@ -12,7 +12,8 @@ import {
   LogOut,
   ChevronLeft,
   Leaf,
-  FileText
+  FileText,
+  Search
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useSEO } from '../lib/seo';
