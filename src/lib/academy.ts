@@ -487,11 +487,30 @@ export const academyAPI = {
   async getAdminCourses() {
     const { data, error } = await supabase
       .from('academy_courses')
-      .select('*, category:category_id (name, slug), instructor:instructor_id (nombre_completo)')
+      .select('*, category:category_id (name, slug)')
       .order('sort_order', { ascending: true })
       .order('created_at', { ascending: false });
+    
     if (error) throw error;
-    return data as AcademyCourse[];
+    if (!data) return [];
+
+    const instructorIds = [...new Set(data.filter(c => c.instructor_id).map(c => c.instructor_id))];
+    let profileMap = new Map();
+    
+    if (instructorIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, nombre_completo')
+        .in('id', instructorIds);
+      if (profiles) {
+        profileMap = new Map(profiles.map(p => [p.id, p]));
+      }
+    }
+
+    return data.map(c => ({
+      ...c,
+      instructor: c.instructor_id ? (profileMap.get(c.instructor_id) || null) : null
+    })) as AcademyCourse[];
   },
 
   async getAdminEnrollments() {
@@ -499,12 +518,25 @@ export const academyAPI = {
       .from('academy_enrollments')
       .select(`
         *,
-        course:course_id (title, price, slug),
-        user:user_id (nombre_completo, username)
+        course:course_id (title, price, slug)
       `)
       .order('enrolled_at', { ascending: false });
+    
     if (error) throw error;
-    return data ?? [];
+    if (!data) return [];
+
+    const userIds = [...new Set(data.map(e => e.user_id))];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, nombre_completo, username')
+      .in('id', userIds);
+
+    const profileMap = new Map((profiles || []).map(p => [p.id, p]));
+    
+    return data.map(e => ({
+      ...e,
+      user: profileMap.get(e.user_id) || null
+    }));
   },
 
   async reviewEnrollment(enrollmentId: string, decision: 'approve' | 'reject', reason?: string) {
