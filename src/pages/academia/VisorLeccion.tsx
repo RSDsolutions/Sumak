@@ -429,11 +429,18 @@ export default function VisorLeccion() {
               ) : currentLesson.content_type === 'pdf' ? (
                 (() => {
                    const resolvedUrl = currentLesson.external_url || academyAPI.getPublicImageUrl(currentLesson.file_url) || '';
+                   let embedUrl = resolvedUrl;
+                   if (embedUrl.includes('drive.google.com')) {
+                     embedUrl = embedUrl.replace('/view', '/preview');
+                   } else if (embedUrl.startsWith('http') && !embedUrl.includes('docs.google.com/viewer')) {
+                     embedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(embedUrl)}&embedded=true`;
+                   }
+
                    return (
                      <div className="w-full h-full relative group">
                         <iframe 
-                          src={resolvedUrl} 
-                          className="w-full h-full border-0"
+                          src={embedUrl} 
+                          className="w-full h-full border-0 bg-white"
                           title={currentLesson.title}
                         />
                         {resolvedUrl ? (
