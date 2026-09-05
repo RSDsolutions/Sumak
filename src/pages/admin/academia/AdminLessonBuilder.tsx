@@ -178,7 +178,17 @@ export default function AdminLessonBuilder() {
     try {
       const up = await academyAPI.uploadAdminResource(module.course_id, lesson.id, file);
       setField('external_url', up.publicUrl);
-      toast.success('PDF subido correctamente.');
+      
+      // Auto-save the lesson with the new URL so the user doesn't have to manually click save
+      await academyAPI.saveAdminLesson(lesson.id, {
+        module_id: module.id,
+        title: form.title.trim() || lesson.title,
+        content_type: form.content_type,
+        external_url: up.publicUrl,
+        sort_order: lesson.sort_order,
+      });
+      
+      toast.success('PDF subido y guardado correctamente.');
     } catch {
       toast.error('No se pudo subir el PDF.');
     } finally {

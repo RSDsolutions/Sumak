@@ -59,7 +59,7 @@ export default function MisDiplomas() {
     <div className="max-w-6xl mx-auto space-y-8 pb-12">
       <div>
         <h1 className="text-3xl font-black text-[#111111] font-heading">
-          Mis Diplomas
+          Mis Certificaciones
         </h1>
         <p className="text-[#6B7280] mt-1 text-lg">
           Gestiona, descarga y verifica tus certificaciones oficiales.

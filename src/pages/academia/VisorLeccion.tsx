@@ -189,6 +189,12 @@ export default function VisorLeccion() {
   const currentProgress = progress.find(p => p.lesson_id === currentLesson.id);
   const isCompleted = currentProgress?.status === 'completed';
 
+  // Compute prev/next lessons
+  const allLessonsWithModules = modules.flatMap(m => (m.lessons || []).map(l => ({ lesson: l, module: m })));
+  const currentIdx = allLessonsWithModules.findIndex(x => x.lesson.id === currentLesson.id);
+  const prevLessonObj = currentIdx > 0 ? allLessonsWithModules[currentIdx - 1] : null;
+  const nextLessonObj = currentIdx >= 0 && currentIdx < allLessonsWithModules.length - 1 ? allLessonsWithModules[currentIdx + 1] : null;
+
   return (
     <div className="flex h-screen bg-white overflow-hidden">
       
@@ -421,31 +427,36 @@ export default function VisorLeccion() {
                   </div>
                 )
               ) : currentLesson.content_type === 'pdf' ? (
-                   <div className="w-full h-full relative group">
-                      <iframe 
-                        src={currentLesson.file_url || currentLesson.external_url || ''} 
-                        className="w-full h-full border-0"
-                        title={currentLesson.title}
-                      />
-                      {(currentLesson.file_url || currentLesson.external_url) ? (
-                        <div className="absolute top-4 right-6 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                          <a 
-                            href={currentLesson.file_url || currentLesson.external_url || '#'} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            download
-                            className="flex items-center gap-2 px-4 py-2 bg-[#D4AF37] text-black text-sm font-bold rounded-xl shadow-lg hover:bg-[#F3D568] transition-colors"
-                          >
-                            <FileText size={16} /> Abrir / Descargar PDF
-                          </a>
-                        </div>
-                      ) : (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500 bg-slate-50">
-                          <FileText size={48} className="mx-auto mb-4 opacity-50 text-slate-300" />
-                          <p className="font-semibold">URL del PDF no disponible</p>
-                        </div>
-                      )}
-                 </div>
+                (() => {
+                   const resolvedUrl = currentLesson.external_url || academyAPI.getPublicImageUrl(currentLesson.file_url) || '';
+                   return (
+                     <div className="w-full h-full relative group">
+                        <iframe 
+                          src={resolvedUrl} 
+                          className="w-full h-full border-0"
+                          title={currentLesson.title}
+                        />
+                        {resolvedUrl ? (
+                          <div className="absolute top-4 right-6 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <a 
+                              href={resolvedUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              download
+                              className="flex items-center gap-2 px-4 py-2 bg-[#D4AF37] text-black text-sm font-bold rounded-xl shadow-lg hover:bg-[#F3D568] transition-colors"
+                            >
+                              <FileText size={16} /> Abrir / Descargar PDF
+                            </a>
+                          </div>
+                        ) : (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500 bg-slate-50">
+                            <FileText size={48} className="mx-auto mb-4 opacity-50 text-slate-300" />
+                            <p className="font-semibold">URL del PDF no disponible</p>
+                          </div>
+                        )}
+                     </div>
+                   );
+                })()
               ) : (
                 <div className="text-white">
                   Contenido no disponible
@@ -489,6 +500,35 @@ export default function VisorLeccion() {
                 </div>
               </div>
             )}
+            
+            {/* Nav Buttons */}
+            <div className="mt-8 flex items-center justify-between border-t border-[#C8D8CB] pt-6">
+              {prevLessonObj ? (
+                <button
+                  onClick={() => handleSelectLesson(prevLessonObj.lesson, prevLessonObj.module)}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#C8D8CB] text-[#4B5563] hover:bg-slate-50 transition-colors font-semibold text-sm"
+                >
+                  <ChevronLeft size={18} />
+                  <span className="hidden sm:inline line-clamp-1 max-w-[200px]">Anterior: {prevLessonObj.lesson.title}</span>
+                  <span className="sm:hidden">Anterior</span>
+                </button>
+              ) : (
+                <div />
+              )}
+              
+              {nextLessonObj ? (
+                <button
+                  onClick={() => handleSelectLesson(nextLessonObj.lesson, nextLessonObj.module)}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#C8D8CB] text-[#4B5563] hover:bg-slate-50 transition-colors font-semibold text-sm"
+                >
+                  <span className="hidden sm:inline line-clamp-1 max-w-[200px]">Siguiente: {nextLessonObj.lesson.title}</span>
+                  <span className="sm:hidden">Siguiente</span>
+                  <ChevronLeft size={18} className="rotate-180" />
+                </button>
+              ) : (
+                <div />
+              )}
+            </div>
             
           </div>
         </div>

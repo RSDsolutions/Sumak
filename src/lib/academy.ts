@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+﻿import { supabase } from './supabase';
 import type { 
   AcademyCategory,
   AcademyCourse, 
@@ -11,9 +11,9 @@ import type {
 
 const fallbackCategory = {
   id: 'fallback-category',
-  name: 'Formación',
+  name: 'FormaciÃ³n',
   slug: 'formacion',
-  description: 'Cursos básicos y avanzados para fortalecer tu negocio y tu capacidad de liderazgo.',
+  description: 'Cursos bÃ¡sicos y avanzados para fortalecer tu negocio y tu capacidad de liderazgo.',
   icon_name: 'BookOpen',
   sort_order: 1,
   is_active: true,
@@ -22,10 +22,10 @@ const fallbackCategory = {
 
 const fallbackBasicCourse: AcademyCourse = {
   id: 'fallback-basic-course',
-  title: 'Curso Básico: Fundamentos Sumak',
+  title: 'Curso BÃ¡sico: Fundamentos Sumak',
   slug: 'curso-basico-fundamentos-sumak',
-  description: 'Un curso práctico para comprender la estructura, los valores y las primeras acciones que te permiten avanzar con claridad en tu negocio.',
-  short_description: 'Aprende los fundamentos del negocio y cómo empezar con confianza.',
+  description: 'Un curso prÃ¡ctico para comprender la estructura, los valores y las primeras acciones que te permiten avanzar con claridad en tu negocio.',
+  short_description: 'Aprende los fundamentos del negocio y cÃ³mo empezar con confianza.',
   cover_image_url: null,
   instructor_id: null,
   category_id: fallbackCategory.id,
@@ -43,12 +43,12 @@ const fallbackBasicCourse: AcademyCourse = {
     objectives: [
       'Entender la propuesta de valor de Sumak.',
       'Definir tus primeros pasos de ventas y liderazgo.',
-      'Aplicar actividades prácticas para fortalecer la acción real.'
+      'Aplicar actividades prÃ¡cticas para fortalecer la acciÃ³n real.'
     ],
     activities: [
       'Mapa de objetivos personales',
-      'Diagnóstico de tu punto de partida',
-      'Plan de 30 días con acciones concretas'
+      'DiagnÃ³stico de tu punto de partida',
+      'Plan de 30 dÃ­as con acciones concretas'
     ]
   },
   created_at: new Date().toISOString(),
@@ -61,8 +61,8 @@ const fallbackAdvancedCourse: AcademyCourse = {
   id: 'fallback-advanced-course',
   title: 'Curso Avanzado: Estrategia y Crecimiento',
   slug: 'curso-avanzado-estrategia-crecimiento',
-  description: 'Profundiza en liderazgo, conversión y escalamiento para convertir tu red en un sistema sostenible y con mayor impacto.',
-  short_description: 'Diseña procesos más avanzados para vender, liderar y duplicar resultados.',
+  description: 'Profundiza en liderazgo, conversiÃ³n y escalamiento para convertir tu red en un sistema sostenible y con mayor impacto.',
+  short_description: 'DiseÃ±a procesos mÃ¡s avanzados para vender, liderar y duplicar resultados.',
   cover_image_url: null,
   instructor_id: null,
   category_id: fallbackCategory.id,
@@ -70,7 +70,7 @@ const fallbackAdvancedCourse: AcademyCourse = {
   estimated_duration_minutes: 210,
   status: 'published',
   access_mode: 'free_registered',
-  prerequisites: 'Recomendado haber completado el curso básico.',
+  prerequisites: 'Recomendado haber completado el curso bÃ¡sico.',
   passing_percentage: 75,
   generates_certificate: true,
   diploma_type_id: null,
@@ -78,13 +78,13 @@ const fallbackAdvancedCourse: AcademyCourse = {
   sort_order: 2,
   metadata: {
     objectives: [
-      'Construir un proceso de venta más claro y repetible.',
-      'Desarrollar liderazgo para acompañar a otros.',
-      'Diseñar hábitos para escalar la red con disciplina.'
+      'Construir un proceso de venta mÃ¡s claro y repetible.',
+      'Desarrollar liderazgo para acompaÃ±ar a otros.',
+      'DiseÃ±ar hÃ¡bitos para escalar la red con disciplina.'
     ],
     activities: [
-      'Análisis de tu proceso de conversación',
-      'Plan de acompañamiento a tu red',
+      'AnÃ¡lisis de tu proceso de conversaciÃ³n',
+      'Plan de acompaÃ±amiento a tu red',
       'Sistema de seguimiento y metas semanales'
     ]
   },
@@ -101,8 +101,8 @@ const fallbackModulesByCourseId: Record<string, AcademyModule[]> = {
     {
       id: 'fallback-basic-module-1',
       course_id: 'fallback-basic-course',
-      title: 'Módulo 1 · Base y propósito',
-      description: 'Comprende la visión, la propuesta de valor y la forma de avanzar con conciencia.',
+      title: 'MÃ³dulo 1 Â· Base y propÃ³sito',
+      description: 'Comprende la visiÃ³n, la propuesta de valor y la forma de avanzar con conciencia.',
       sort_order: 1,
       is_published: true,
       created_at: new Date().toISOString(),
@@ -110,10 +110,10 @@ const fallbackModulesByCourseId: Record<string, AcademyModule[]> = {
         {
           id: 'fallback-basic-lesson-1',
           module_id: 'fallback-basic-module-1',
-          title: 'Qué es Sumak y por qué importa',
-          description: 'Conoce la visión, la estructura y la intención detrás del negocio.',
+          title: 'QuÃ© es Sumak y por quÃ© importa',
+          description: 'Conoce la visiÃ³n, la estructura y la intenciÃ³n detrÃ¡s del negocio.',
           content_type: 'text',
-          text_content: '<h3>¿Qué es Sumak?</h3><p>Sumak encarna una propuesta de crecimiento personal, bienestar y negocio con sentido. La clave no es solo vender, sino comprender cómo aportar valor real y llevar una experiencia clara a quienes te rodean.</p><ul><li>Conoce la misión y la forma de trabajar.</li><li>Identifica tu propósito al entrar al negocio.</li><li>Entiende que la confianza se construye con claridad.</li></ul><h4>Actividad:</h4><p>Escribe 3 razones por las que quieres formar parte de Sumak y 3 acciones concretas que puedes hacer en los próximos 7 días.</p>',
+          text_content: '<h3>Â¿QuÃ© es Sumak?</h3><p>Sumak encarna una propuesta de crecimiento personal, bienestar y negocio con sentido. La clave no es solo vender, sino comprender cÃ³mo aportar valor real y llevar una experiencia clara a quienes te rodean.</p><ul><li>Conoce la misiÃ³n y la forma de trabajar.</li><li>Identifica tu propÃ³sito al entrar al negocio.</li><li>Entiende que la confianza se construye con claridad.</li></ul><h4>Actividad:</h4><p>Escribe 3 razones por las que quieres formar parte de Sumak y 3 acciones concretas que puedes hacer en los prÃ³ximos 7 dÃ­as.</p>',
           video_provider: null,
           video_external_id: null,
           video_url: null,
@@ -134,9 +134,9 @@ const fallbackModulesByCourseId: Record<string, AcademyModule[]> = {
           id: 'fallback-basic-lesson-2',
           module_id: 'fallback-basic-module-1',
           title: 'Tu primer paso con estructura',
-          description: 'Organiza tus primeros pasos sin saturarte ni perder dirección.',
+          description: 'Organiza tus primeros pasos sin saturarte ni perder direcciÃ³n.',
           content_type: 'text',
-          text_content: '<h3>Tu enfoque inicial</h3><p>Antes de vender, necesitas claridad. Define cuál es tu objetivo, qué te permite avanzar y cómo medir tus primeros resultados.</p><ul><li>Establece un objetivo realista.</li><li>Define un plan de contacto y seguimiento.</li><li>Haz seguimiento con consistencia.</li></ul><h4>Actividad:</h4><p>Diseña una lista con 5 acciones concretas para tu primer mes y marca cuáles podrás ejecutar de forma consistente.</p>',
+          text_content: '<h3>Tu enfoque inicial</h3><p>Antes de vender, necesitas claridad. Define cuÃ¡l es tu objetivo, quÃ© te permite avanzar y cÃ³mo medir tus primeros resultados.</p><ul><li>Establece un objetivo realista.</li><li>Define un plan de contacto y seguimiento.</li><li>Haz seguimiento con consistencia.</li></ul><h4>Actividad:</h4><p>DiseÃ±a una lista con 5 acciones concretas para tu primer mes y marca cuÃ¡les podrÃ¡s ejecutar de forma consistente.</p>',
           video_provider: null,
           video_external_id: null,
           video_url: null,
@@ -158,8 +158,8 @@ const fallbackModulesByCourseId: Record<string, AcademyModule[]> = {
     {
       id: 'fallback-basic-module-2',
       course_id: 'fallback-basic-course',
-      title: 'Módulo 2 · Comunicación y confianza',
-      description: 'Aprende a comunicar valor, escuchar con intención y sostener conversaciones genuinas.',
+      title: 'MÃ³dulo 2 Â· ComunicaciÃ³n y confianza',
+      description: 'Aprende a comunicar valor, escuchar con intenciÃ³n y sostener conversaciones genuinas.',
       sort_order: 2,
       is_published: true,
       created_at: new Date().toISOString(),
@@ -167,10 +167,10 @@ const fallbackModulesByCourseId: Record<string, AcademyModule[]> = {
         {
           id: 'fallback-basic-lesson-3',
           module_id: 'fallback-basic-module-2',
-          title: 'Cómo hablar con claridad',
-          description: 'Haz que la propuesta sea fácil de entender para otras personas.',
+          title: 'CÃ³mo hablar con claridad',
+          description: 'Haz que la propuesta sea fÃ¡cil de entender para otras personas.',
           content_type: 'text',
-          text_content: '<h3>Conversación clara</h3><p>La clave es hablar de beneficios, no solo de producto. Las personas compran cuando entienden el valor, la intención y la utilidad para su vida.</p><ul><li>Explica de manera simple.</li><li>Haz preguntas antes de ofrecer.</li><li>Conecta la propuesta con necesidades reales.</li></ul><h4>Actividad:</h4><p>Graba una respuesta de 60 segundos explicando Sumak como si se lo contaras a una persona cercana. Revisa si suena clara, útil y natural.</p>',
+          text_content: '<h3>ConversaciÃ³n clara</h3><p>La clave es hablar de beneficios, no solo de producto. Las personas compran cuando entienden el valor, la intenciÃ³n y la utilidad para su vida.</p><ul><li>Explica de manera simple.</li><li>Haz preguntas antes de ofrecer.</li><li>Conecta la propuesta con necesidades reales.</li></ul><h4>Actividad:</h4><p>Graba una respuesta de 60 segundos explicando Sumak como si se lo contaras a una persona cercana. Revisa si suena clara, Ãºtil y natural.</p>',
           video_provider: null,
           video_external_id: null,
           video_url: null,
@@ -190,10 +190,10 @@ const fallbackModulesByCourseId: Record<string, AcademyModule[]> = {
         {
           id: 'fallback-basic-lesson-4',
           module_id: 'fallback-basic-module-2',
-          title: 'Activación semanal del plan',
-          description: 'Convierte la intención en acción cada semana.',
+          title: 'ActivaciÃ³n semanal del plan',
+          description: 'Convierte la intenciÃ³n en acciÃ³n cada semana.',
           content_type: 'text',
-          text_content: '<h3>Actúa con constancia</h3><p>No hace falta hacer todo a la vez. La clave es mantener una rutina simple y realista que ayude a avanzar sin estrés.</p><ol><li>Define 3 contactos por semana.</li><li>Pregunta, escucha y comparte valor.</li><li>Documenta cuáles conversaciones te llevaron a una siguiente acción.</li></ol><h4>Actividad:</h4><p>Elabora una mini agenda semanal con 3 objetivos claros, 3 conversaciones planeadas y 1 seguimiento para cada una.</p>',
+          text_content: '<h3>ActÃºa con constancia</h3><p>No hace falta hacer todo a la vez. La clave es mantener una rutina simple y realista que ayude a avanzar sin estrÃ©s.</p><ol><li>Define 3 contactos por semana.</li><li>Pregunta, escucha y comparte valor.</li><li>Documenta cuÃ¡les conversaciones te llevaron a una siguiente acciÃ³n.</li></ol><h4>Actividad:</h4><p>Elabora una mini agenda semanal con 3 objetivos claros, 3 conversaciones planeadas y 1 seguimiento para cada una.</p>',
           video_provider: null,
           video_external_id: null,
           video_url: null,
@@ -217,8 +217,8 @@ const fallbackModulesByCourseId: Record<string, AcademyModule[]> = {
     {
       id: 'fallback-advanced-module-1',
       course_id: 'fallback-advanced-course',
-      title: 'Módulo 1 · Posicionamiento y diferenciación',
-      description: 'Construye un mensaje más sólido para destacar y conectar con personas que realmente encajan.',
+      title: 'MÃ³dulo 1 Â· Posicionamiento y diferenciaciÃ³n',
+      description: 'Construye un mensaje mÃ¡s sÃ³lido para destacar y conectar con personas que realmente encajan.',
       sort_order: 1,
       is_published: true,
       created_at: new Date().toISOString(),
@@ -226,10 +226,10 @@ const fallbackModulesByCourseId: Record<string, AcademyModule[]> = {
         {
           id: 'fallback-advanced-lesson-1',
           module_id: 'fallback-advanced-module-1',
-          title: 'Cómo posicionarte con claridad',
+          title: 'CÃ³mo posicionarte con claridad',
           description: 'Distingue tu valor, tu enfoque y tu forma de ofrecer soluciones.',
           content_type: 'text',
-          text_content: '<h3>Posicionamiento</h3><p>El crecimiento real comienza cuando puedes explicar sin ruido qué haces, para quién y por qué tu propuesta aporta valor. Un buen posicionamiento mejora la confianza y reduce la fricción.</p><ul><li>Define tu público ideal.</li><li>Expresa un beneficio claro.</li><li>Evita mensajes genéricos o confusos.</li></ul><h4>Actividad:</h4><p>Escribe un mensaje de 3 líneas que describa tu propuesta de negocio para una persona nueva. Luego prueba si se entiende en menos de 10 segundos.</p>',
+          text_content: '<h3>Posicionamiento</h3><p>El crecimiento real comienza cuando puedes explicar sin ruido quÃ© haces, para quiÃ©n y por quÃ© tu propuesta aporta valor. Un buen posicionamiento mejora la confianza y reduce la fricciÃ³n.</p><ul><li>Define tu pÃºblico ideal.</li><li>Expresa un beneficio claro.</li><li>Evita mensajes genÃ©ricos o confusos.</li></ul><h4>Actividad:</h4><p>Escribe un mensaje de 3 lÃ­neas que describa tu propuesta de negocio para una persona nueva. Luego prueba si se entiende en menos de 10 segundos.</p>',
           video_provider: null,
           video_external_id: null,
           video_url: null,
@@ -249,10 +249,10 @@ const fallbackModulesByCourseId: Record<string, AcademyModule[]> = {
         {
           id: 'fallback-advanced-lesson-2',
           module_id: 'fallback-advanced-module-1',
-          title: 'Diagnóstico de tu proceso de venta',
-          description: 'Evalúa qué está funcionando y dónde aparece fricción en tu conversión.',
+          title: 'DiagnÃ³stico de tu proceso de venta',
+          description: 'EvalÃºa quÃ© estÃ¡ funcionando y dÃ³nde aparece fricciÃ³n en tu conversiÃ³n.',
           content_type: 'text',
-          text_content: '<h3>Revisa tu proceso</h3><p>Un sistema avanzado no se basa en suerte; se basa en observación, medición y mejora constante. Pregúntate dónde la gente se interesa, dónde duda y dónde se queda.</p><ul><li>Analiza tus conversaciones.</li><li>Identifica patrones de duda.</li><li>Haz ajustes basados en evidencia.</li></ul><h4>Actividad:</h4><p>Haz una revisión de tus últimas 5 conversaciones y anota qué preguntas abren el interés, qué dudas aparecen y qué mensajes se repiten.</p>',
+          text_content: '<h3>Revisa tu proceso</h3><p>Un sistema avanzado no se basa en suerte; se basa en observaciÃ³n, mediciÃ³n y mejora constante. PregÃºntate dÃ³nde la gente se interesa, dÃ³nde duda y dÃ³nde se queda.</p><ul><li>Analiza tus conversaciones.</li><li>Identifica patrones de duda.</li><li>Haz ajustes basados en evidencia.</li></ul><h4>Actividad:</h4><p>Haz una revisiÃ³n de tus Ãºltimas 5 conversaciones y anota quÃ© preguntas abren el interÃ©s, quÃ© dudas aparecen y quÃ© mensajes se repiten.</p>',
           video_provider: null,
           video_external_id: null,
           video_url: null,
@@ -274,8 +274,8 @@ const fallbackModulesByCourseId: Record<string, AcademyModule[]> = {
     {
       id: 'fallback-advanced-module-2',
       course_id: 'fallback-advanced-course',
-      title: 'Módulo 2 · Liderazgo y acompañamiento',
-      description: 'Acompaña mejor a otros, mejora la experiencia y crea un flujo más claro de apoyo.',
+      title: 'MÃ³dulo 2 Â· Liderazgo y acompaÃ±amiento',
+      description: 'AcompaÃ±a mejor a otros, mejora la experiencia y crea un flujo mÃ¡s claro de apoyo.',
       sort_order: 2,
       is_published: true,
       created_at: new Date().toISOString(),
@@ -283,10 +283,10 @@ const fallbackModulesByCourseId: Record<string, AcademyModule[]> = {
         {
           id: 'fallback-advanced-lesson-3',
           module_id: 'fallback-advanced-module-2',
-          title: 'Liderazgo que acompaña, no que controla',
+          title: 'Liderazgo que acompaÃ±a, no que controla',
           description: 'Aprende a orientar a otras personas desde claridad y confianza.',
           content_type: 'text',
-          text_content: '<h3>Liderar con claridad</h3><p>El liderazgo en redes no se trata de imponer; se trata de acompañar con estructura, enfoque y paciencia. Una buena guía ayuda a otros a avanzar sin frustrarse ni perder rumbo.</p><ul><li>Escucha antes de orientar.</li><li>Haz que cada paso sea simple.</li><li>Valora el progreso real.</li></ul><h4>Actividad:</h4><p>Escribe un mini plan de acompañamiento para 1 persona de tu red. Incluye objetivos, seguimiento y 3 preguntas que la ayuden a avanzar.</p>',
+          text_content: '<h3>Liderar con claridad</h3><p>El liderazgo en redes no se trata de imponer; se trata de acompaÃ±ar con estructura, enfoque y paciencia. Una buena guÃ­a ayuda a otros a avanzar sin frustrarse ni perder rumbo.</p><ul><li>Escucha antes de orientar.</li><li>Haz que cada paso sea simple.</li><li>Valora el progreso real.</li></ul><h4>Actividad:</h4><p>Escribe un mini plan de acompaÃ±amiento para 1 persona de tu red. Incluye objetivos, seguimiento y 3 preguntas que la ayuden a avanzar.</p>',
           video_provider: null,
           video_external_id: null,
           video_url: null,
@@ -309,7 +309,7 @@ const fallbackModulesByCourseId: Record<string, AcademyModule[]> = {
           title: 'Sistema de seguimiento',
           description: 'Usa un seguimiento consistente para mantener el ritmo y medir avances.',
           content_type: 'text',
-          text_content: '<h3>Seguimiento efectivo</h3><p>La continuidad se aprende a través de procesos claros y seguimiento respetuoso. Cuando existe un método, la energía se transforma en ejecución.</p><ul><li>Agenda revisiones periódicas.</li><li>Observa señales de avance.</li><li>Corrige sin castigar.</li></ul><h4>Actividad:</h4><p>Diseña un archivo o sistema personal para registrar reuniones, compromisos y próximos pasos. Define qué métricas te permitirán saber si va bien.</p>',
+          text_content: '<h3>Seguimiento efectivo</h3><p>La continuidad se aprende a travÃ©s de procesos claros y seguimiento respetuoso. Cuando existe un mÃ©todo, la energÃ­a se transforma en ejecuciÃ³n.</p><ul><li>Agenda revisiones periÃ³dicas.</li><li>Observa seÃ±ales de avance.</li><li>Corrige sin castigar.</li></ul><h4>Actividad:</h4><p>DiseÃ±a un archivo o sistema personal para registrar reuniones, compromisos y prÃ³ximos pasos. Define quÃ© mÃ©tricas te permitirÃ¡n saber si va bien.</p>',
           video_provider: null,
           video_external_id: null,
           video_url: null,
@@ -638,10 +638,10 @@ export const academyAPI = {
     const fileExt = file.name.split('.').pop();
     const fileName = `${courseId}/${lessonId}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
     
-    const { data, error } = await supabase.storage.from('academy-resources').upload(fileName, file);
+    const { data, error } = await supabase.storage.from('academy-content').upload(fileName, file);
     if (error) throw error;
     
-    const { data: urlData } = supabase.storage.from('academy-resources').getPublicUrl(data.path);
+    const { data: urlData } = supabase.storage.from('academy-content').getPublicUrl(data.path);
     return { path: data.path, publicUrl: urlData.publicUrl };
   },
 
@@ -657,10 +657,10 @@ export const academyAPI = {
 
   async deleteAdminResource(resourceId: string) {
     const { data: resource } = await supabase.from('academy_resources').select('file_url').eq('id', resourceId).single();
-    if (resource && resource.file_url && resource.file_url.includes('/storage/v1/object/public/academy-resources/')) {
-      const path = resource.file_url.split('/storage/v1/object/public/academy-resources/')[1];
+    if (resource && resource.file_url && resource.file_url.includes('/storage/v1/object/public/academy-content/')) {
+      const path = resource.file_url.split('/storage/v1/object/public/academy-content/')[1];
       if (path) {
-        await supabase.storage.from('academy-resources').remove([path]);
+        await supabase.storage.from('academy-content').remove([path]);
       }
     }
     const { error } = await supabase.from('academy_resources').delete().eq('id', resourceId);
@@ -673,7 +673,7 @@ export const academyAPI = {
     return data ?? [];
   },
 
-  /** Obtiene evaluaciones de un curso con info de módulo (para árbol de contenido) */
+  /** Obtiene evaluaciones de un curso con info de mÃ³dulo (para Ã¡rbol de contenido) */
   async getAdminAssessmentsForTree(courseId: string) {
     const { data, error } = await supabase
       .from('academy_assessments')
@@ -684,7 +684,7 @@ export const academyAPI = {
     return data ?? [];
   },
 
-  /** Obtiene los intentos del estudiante actual para una evaluación */
+  /** Obtiene los intentos del estudiante actual para una evaluaciÃ³n */
   async getMyAttempts(assessmentId: string) {
     const { data, error } = await supabase
       .from('academy_attempts')
@@ -755,7 +755,7 @@ export const academyAPI = {
 
     const instructorIds = (rolesData ?? []).map(r => r.user_id);
 
-    // 2. Obtener perfiles que son admin o que su ID está en la lista de instructores
+    // 2. Obtener perfiles que son admin o que su ID estÃ¡ en la lista de instructores
     let query = supabase.from('profiles').select('id, nombre_completo, email, rol');
     
     if (instructorIds.length > 0) {
@@ -1035,7 +1035,7 @@ export const academyAPI = {
     if (error) throw error;
   },
 
-  /** Obtiene un curso por ID con joins de categoría e instructor */
+  /** Obtiene un curso por ID con joins de categorÃ­a e instructor */
   async getAdminCourseById(courseId: string) {
     const { data, error } = await supabase
       .from('academy_courses')
@@ -1046,13 +1046,13 @@ export const academyAPI = {
     return data as AcademyCourse;
   },
 
-  /** Sube portada del curso al bucket academy-resources y devuelve la URL pública */
+  /** Sube portada del curso al bucket academy-content y devuelve la URL pÃºblica */
   async uploadAdminCourseCover(courseId: string, file: File): Promise<string> {
     const ext = file.name.split('.').pop();
     const path = `covers/${courseId}/cover_${Date.now()}.${ext}`;
-    const { data, error } = await supabase.storage.from('academy-resources').upload(path, file, { upsert: true });
+    const { data, error } = await supabase.storage.from('academy-content').upload(path, file, { upsert: true });
     if (error) throw error;
-    const { data: urlData } = supabase.storage.from('academy-resources').getPublicUrl(data.path);
+    const { data: urlData } = supabase.storage.from('academy-content').getPublicUrl(data.path);
     return urlData.publicUrl;
   },
 
@@ -1068,7 +1068,7 @@ export const academyAPI = {
     return data as AcademyCourse;
   },
 
-  /** Obtiene una evaluación completa con preguntas y opciones para edición admin */
+  /** Obtiene una evaluaciÃ³n completa con preguntas y opciones para ediciÃ³n admin */
   async getAdminAssessment(assessmentId: string) {
     const { data, error } = await supabase
       .from('academy_assessments')
@@ -1092,7 +1092,7 @@ export const academyAPI = {
     }
   },
 
-  /** Actualiza título/descripción de un módulo inline */
+  /** Actualiza tÃ­tulo/descripciÃ³n de un mÃ³dulo inline */
   async patchAdminModule(moduleId: string, patch: { title?: string; description?: string; is_published?: boolean }) {
     const { data, error } = await supabase.from('academy_modules').update(patch).eq('id', moduleId).select().single();
     if (error) throw error;

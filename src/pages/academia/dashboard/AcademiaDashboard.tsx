@@ -18,17 +18,20 @@ export default function AcademiaDashboard() {
   const { profile } = useAuth();
   const [enrollments, setEnrollments] = useState<AcademyEnrollment[]>([]);
   const [diplomas, setDiplomas] = useState<AcademyDiplomaIssuance[]>([]);
+  const [certificates, setCertificates] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [enrs, dips] = await Promise.all([
+        const [enrs, dips, certs] = await Promise.all([
           academyAPI.getMyEnrollments(),
-          academyAPI.getMyDiplomas()
+          academyAPI.getMyDiplomas(),
+          academyAPI.getMyCertificates()
         ]);
         setEnrollments(enrs as AcademyEnrollment[]);
         setDiplomas(dips as AcademyDiplomaIssuance[]);
+        setCertificates(certs || []);
       } catch (err) {
         console.error("Error cargando dashboard:", err);
       } finally {
@@ -91,19 +94,19 @@ export default function AcademiaDashboard() {
           </div>
         </div>
         
-        <div className="bg-white p-5 rounded-2xl border border-[#C8D8CB] shadow-sm flex items-center gap-4">
+        <div className="bg-white p-5 rounded-2xl border border-[#C8D8CB] shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
           <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
-            <TrendingUp size={24} />
+            <FileText size={24} />
           </div>
           <div>
-            <p className="text-sm font-medium text-[#6B7280]">Horas de Estudio</p>
-            <p className="text-2xl font-black text-[#111111]">12<span className="text-base font-medium text-[#6B7280] ml-1">hrs</span></p>
+            <p className="text-sm font-medium text-[#6B7280]">Certificados Obtenidos</p>
+            <p className="text-2xl font-black text-[#111111]">{certificates.length}</p>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-[#C8D8CB] shadow-sm flex items-center gap-4">
+        <div className="bg-white p-5 rounded-2xl border border-[#C8D8CB] shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
           <div className="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center text-purple-600">
-            <FileText size={24} />
+            <Award size={24} />
           </div>
           <div>
             <p className="text-sm font-medium text-[#6B7280]">Diplomas Obtenidos</p>
