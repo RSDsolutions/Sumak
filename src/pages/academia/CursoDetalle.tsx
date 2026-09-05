@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   PlayCircle, 
   Clock, 
@@ -18,6 +18,7 @@ import type { AcademyCourse, AcademyModule } from '../../lib/academy-types';
 export default function CursoDetalle() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { profile } = useAuth();
   
   const [course, setCourse] = useState<AcademyCourse | null>(null);
@@ -94,7 +95,7 @@ export default function CursoDetalle() {
     return (
       <div className="text-center py-32 bg-[#F4F7F5] min-h-screen">
         <h2 className="text-2xl font-bold text-[#111111]">Curso no encontrado</h2>
-        <Link to="/academia/cursos" className="text-[#1A4E26] hover:underline mt-4 inline-block">
+        <Link to={location.pathname.includes('/dashboard') ? "/academia/dashboard/explorar" : "/academia/cursos"} className="text-[#1A4E26] hover:underline mt-4 inline-block">
           Volver al catálogo
         </Link>
       </div>

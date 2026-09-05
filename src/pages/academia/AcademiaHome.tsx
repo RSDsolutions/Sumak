@@ -135,9 +135,9 @@ export default function AcademiaHome() {
             {!profile && (
               <Link
                 to="/academia/login"
-                className="px-6 py-4 text-white/50 font-semibold text-base hover:text-white transition-colors"
+                className="px-8 py-4 bg-transparent border-2 border-[#D4AF37] text-[#D4AF37] font-bold text-lg rounded-2xl hover:bg-[#D4AF37] hover:text-[#0B2913] transition-all flex items-center gap-3"
               >
-                Ya tengo cuenta →
+                Iniciar Sesión
               </Link>
             )}
           </div>

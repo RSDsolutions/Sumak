@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Search, Filter, Star, Clock, BookOpen } from 'lucide-react';
 import { academyAPI } from '../../lib/academy';
 import type { AcademyCourse, AcademyCategory } from '../../lib/academy-types';
 
 export default function CatalogoCursos() {
+  const location = useLocation();
   const [courses, setCourses] = useState<AcademyCourse[]>([]);
   const [categories, setCategories] = useState<AcademyCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -108,7 +109,7 @@ export default function CatalogoCursos() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredCourses.map(course => (
               <Link 
-                to={`/academia/cursos/${course.slug}`} 
+                to={location.pathname.includes('/dashboard') ? `/academia/dashboard/explorar/${course.slug}` : `/academia/cursos/${course.slug}`} 
                 key={course.id}
                 className="bg-white rounded-2xl overflow-hidden border border-[#C8D8CB] hover:border-[#1A4E26] shadow-sm hover:shadow-xl transition-all group flex flex-col"
               >

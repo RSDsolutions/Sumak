@@ -114,7 +114,7 @@ export default function Navbar() {
 
           {/* Academia CTA Button - Desktop */}
           <Link
-            to={user ? '/academia/dashboard' : '/academia/login'}
+            to={user ? '/academia/dashboard' : '/academia'}
             className={`hidden xl:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-sm font-bold transition-all duration-200 border ${
               location.pathname.startsWith('/academia')
                 ? 'bg-[#1A4E26] text-[#D4AF37] border-[#1A4E26]'
@@ -278,7 +278,7 @@ export default function Navbar() {
               className="mx-6 mt-4"
             >
               <Link
-                to={user ? '/academia/dashboard' : '/academia/login'}
+                to={user ? '/academia/dashboard' : '/academia'}
                 className="flex items-center justify-between w-full py-4 px-5 rounded-2xl bg-[#1A4E26] text-white font-bold text-base"
               >
                 <div className="flex items-center gap-3">

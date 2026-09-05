@@ -30,7 +30,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: 'Inicio', to: '/academia/dashboard', icon: <GraduationCap size={18} />, end: true },
   { label: 'Mis Cursos', to: '/academia/dashboard/cursos', icon: <BookOpen size={18} /> },
-  { label: 'Explorar Cursos', to: '/academia/cursos', icon: <Library size={18} /> },
+  { label: 'Explorar Cursos', to: '/academia/dashboard/explorar', icon: <Search size={18} /> },
   { label: 'Programas', to: '/academia/programas', icon: <Layers size={18} /> },
   { label: 'Mis Recetas', to: '/academia/dashboard/recetas', icon: <Leaf size={18} /> },
   { label: 'Certificaciones', to: '/academia/dashboard/diplomas', icon: <Award size={18} /> },
