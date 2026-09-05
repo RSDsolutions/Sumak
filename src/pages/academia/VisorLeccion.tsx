@@ -404,7 +404,7 @@ export default function VisorLeccion() {
           <div className="max-w-4xl mx-auto w-full p-4 sm:p-8">
             
             {/* Player Area */}
-            <div className={`bg-black w-full rounded-2xl overflow-hidden shadow-xl flex items-center justify-center mb-8 relative ${currentLesson.content_type === 'pdf' ? 'h-[750px]' : 'aspect-video'}`}>
+            <div className={`${currentLesson.content_type === 'video' ? 'bg-black' : 'bg-slate-100 border border-[#C8D8CB]'} w-full rounded-2xl overflow-hidden shadow-xl flex items-center justify-center mb-8 relative ${currentLesson.content_type === 'pdf' ? 'h-[750px]' : 'aspect-video'}`}>
               {currentLesson.content_type === 'video' ? (
                 currentLesson.video_provider === 'youtube' && currentLesson.video_external_id ? (
                   <iframe 
@@ -440,9 +440,9 @@ export default function VisorLeccion() {
                           </a>
                         </div>
                       ) : (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center text-white bg-black">
-                          <FileText size={48} className="mx-auto mb-4 opacity-50" />
-                          <p>URL del PDF no disponible</p>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500 bg-slate-50">
+                          <FileText size={48} className="mx-auto mb-4 opacity-50 text-slate-300" />
+                          <p className="font-semibold">URL del PDF no disponible</p>
                         </div>
                       )}
                  </div>

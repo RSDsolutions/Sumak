@@ -125,7 +125,7 @@ export default function AdminLessonBuilder() {
         text_content: ['text', 'mixed'].includes(form.content_type) ? (form.text_content || null) : null,
         video_external_id: vidId,
         video_provider: vidId ? 'youtube' : null,
-        external_url: form.content_type === 'external_link' ? (form.external_url || null) : null,
+        external_url: ['external_link', 'pdf'].includes(form.content_type) ? (form.external_url || null) : null,
         estimated_minutes: form.estimated_minutes ? Number(form.estimated_minutes) : null,
         is_published: form.is_published,
         is_free_preview: form.is_free_preview,
