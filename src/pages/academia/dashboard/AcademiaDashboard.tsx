@@ -7,7 +7,6 @@ import {
   Clock, 
   ChevronRight,
   TrendingUp,
-  TrendingUp,
   FileText,
   Layers
 } from 'lucide-react';
@@ -29,13 +28,13 @@ export default function AcademiaDashboard() {
     async function loadData() {
       try {
         const [enrs, dips, certs, progs] = await Promise.all([
-          academyAPI.getMyEnrollments(),
-          academyAPI.getMyDiplomas(),
-          academyAPI.getMyCertificates(),
-          academyProgramHelper.getMyEnrolledPrograms()
+          academyAPI.getMyEnrollments(profile?.id),
+          academyAPI.getMyDiplomas(profile?.id),
+          academyAPI.getMyCertificates(profile?.id),
+          academyProgramHelper.getMyEnrolledPrograms(profile?.id)
         ]);
-        setEnrollments(enrs as AcademyEnrollment[]);
-        setDiplomas(dips as AcademyDiplomaIssuance[]);
+        setEnrollments((enrs || []) as AcademyEnrollment[]);
+        setDiplomas((dips || []) as AcademyDiplomaIssuance[]);
         setCertificates(certs || []);
         setPrograms(progs || []);
       } catch (err) {
@@ -45,7 +44,7 @@ export default function AcademiaDashboard() {
       }
     }
     loadData();
-  }, []);
+  }, [profile?.id]);
 
   const activeEnrollments = enrollments.filter(e => e.status === 'active');
   const completedEnrollments = enrollments.filter(e => e.status === 'completed');
@@ -192,7 +191,7 @@ export default function AcademiaDashboard() {
                 {programs.map((enr: any) => (
                   <Link 
                     key={enr.id} 
-                    to={`/academia/programas/${enr.program?.slug}`}
+                    to={`/academia/dashboard/programas/${enr.program?.slug}`}
                     className="bg-[#1A4E26] rounded-[24px] p-6 hover:-translate-y-1 hover:shadow-xl transition-all group overflow-hidden relative"
                   >
                     <div className="absolute inset-0 bg-gradient-to-tr from-[#133A1C] to-transparent opacity-50"></div>

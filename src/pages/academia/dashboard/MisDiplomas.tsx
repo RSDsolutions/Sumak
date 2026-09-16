@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Award, Download, CheckCircle, ExternalLink, ShieldCheck, GraduationCap } from 'lucide-react';
+import { useAuth } from '../../../lib/auth';
 import { academyAPI } from '../../../lib/academy';
 import { callEdgeFunction } from '../../../lib/supabase';
 import type { AcademyDiplomaIssuance } from '../../../lib/academy-types';
 import { Link } from 'react-router-dom';
 
 export default function MisDiplomas() {
+  const { profile } = useAuth();
   const [diplomas, setDiplomas] = useState<AcademyDiplomaIssuance[]>([]);
   const [certificates, setCertificates] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -15,10 +17,10 @@ export default function MisDiplomas() {
     async function loadData() {
       try {
         const [diplomaData, certificateData] = await Promise.all([
-          academyAPI.getMyDiplomas(), academyAPI.getMyCertificates(),
+          academyAPI.getMyDiplomas(profile?.id), academyAPI.getMyCertificates(profile?.id),
         ]);
-        setDiplomas(diplomaData as AcademyDiplomaIssuance[]);
-        setCertificates(certificateData as any[]);
+        setDiplomas((diplomaData || []) as AcademyDiplomaIssuance[]);
+        setCertificates((certificateData || []) as any[]);
       } catch (err) {
         console.error("Error loading diplomas:", err);
       } finally {
@@ -26,7 +28,7 @@ export default function MisDiplomas() {
       }
     }
     loadData();
-  }, []);
+  }, [profile?.id]);
 
   const handleDownload = async (issuanceId: string) => {
     try {

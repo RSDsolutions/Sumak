@@ -60,6 +60,7 @@ export default function AdminCursos() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deletingCourse, setDeletingCourse] = useState(false);
   const [modal, setModal] = useState<'course' | 'category' | null>(null);
   const [editingCourse, setEditingCourse] = useState<AcademyCourse | null>(null);
   const [form, setForm] = useState<CourseForm>(emptyForm);
@@ -330,6 +331,27 @@ export default function AdminCursos() {
     }
   }
 
+  async function handleDeleteCourse() {
+    if (!editingCourse) return;
+    const confirmed = window.confirm(
+      `¿Estás seguro de que deseas eliminar el curso "${editingCourse.title}"?\n\nEsta acción eliminará permanentemente el curso y su contenido asociado.`
+    );
+    if (!confirmed) return;
+
+    setDeletingCourse(true);
+    try {
+      await academyAPI.deleteAdminCourse(editingCourse.id);
+      toast.success('Curso eliminado correctamente.');
+      setModal(null);
+      await load();
+    } catch (error) {
+      console.error('Error deleting course:', error);
+      toast.error('No se pudo eliminar el curso. Verifica si tiene datos relacionados o matrículas activas.');
+    } finally {
+      setDeletingCourse(false);
+    }
+  }
+
   async function saveCategory(event: React.FormEvent) {
     event.preventDefault();
     setSaving(true);
@@ -438,8 +460,47 @@ export default function AdminCursos() {
             <Field label="Aprobación (%)" value={form.passing_percentage} onChange={(value) => setField('passing_percentage', value)} type="number" min="0" max="100" />
           </div>
           <Field label="Precio" value={form.price} onChange={(value) => setField('price', value)} type="number" min="0" step="0.01" />
-          <label className="flex items-center gap-2 text-sm font-semibold text-[#111111]"><input type="checkbox" checked={form.generates_certificate} onChange={(event) => setField('generates_certificate', event.target.checked)} className="accent-[#1A4E26]" /> Este curso genera certificado</label>
-          <div className="flex justify-end gap-3 pt-3 border-t border-[#E5ECE6]"><button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm font-bold text-[#6B7280]">Cancelar</button><button type="submit" disabled={saving} className="px-4 py-2 rounded-xl bg-[#1A4E26] text-white font-bold text-sm disabled:opacity-60">{saving ? 'Guardando...' : 'Guardar curso'}</button></div>
+          <label className="flex items-center gap-2 text-sm font-semibold text-[#111111]">
+            <input
+              type="checkbox"
+              checked={form.generates_certificate}
+              onChange={(event) => setField('generates_certificate', event.target.checked)}
+              className="accent-[#1A4E26]"
+            />
+            Este curso genera certificado
+          </label>
+          <div className="flex items-center justify-between gap-3 pt-3 border-t border-[#E5ECE6]">
+            {editingCourse ? (
+              <button
+                type="button"
+                onClick={handleDeleteCourse}
+                disabled={deletingCourse || saving}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700 text-sm font-bold transition-colors disabled:opacity-50"
+              >
+                <Trash2 size={16} />
+                <span>{deletingCourse ? 'Eliminando...' : 'Eliminar curso'}</span>
+              </button>
+            ) : (
+              <div />
+            )}
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setModal(null)}
+                disabled={deletingCourse}
+                className="px-4 py-2 text-sm font-bold text-[#6B7280] hover:text-[#111111] transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={saving || deletingCourse}
+                className="px-4 py-2 rounded-xl bg-[#1A4E26] text-white font-bold text-sm disabled:opacity-60 hover:bg-[#143d1e] transition-colors shadow-sm"
+              >
+                {saving ? 'Guardando...' : 'Guardar curso'}
+              </button>
+            </div>
+          </div>
         </form>
       </Modal>
 

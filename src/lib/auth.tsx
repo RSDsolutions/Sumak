@@ -30,6 +30,105 @@ interface AuthContextValue {
   homeForProfile: (p: Profile | null) => '/admin' | '/operaciones' | '/dashboard' | '/academia/dashboard' | '/login';
 }
 
+export const LOCAL_MOCK_ADMIN: Profile = {
+  id: '16092a90-3e8e-466d-a509-eb6b074a92cd',
+  codigo_distribuidor: 'SUMAK-00001',
+  username: 'admin',
+  nombre_completo: 'Administrador Sumak',
+  cedula: '0999999999',
+  email: 'admin@sumak.com',
+  telefono: '0988447019',
+  direccion: 'Oficina Central Sumak',
+  ciudad: 'Babahoyo',
+  codigo_patrocinador: null,
+  patrocinador_id: null,
+  paquete: 'lider',
+  puntos: 9999,
+  estado: 'activo',
+  rol: 'admin',
+  avatar_url: null,
+  fecha_registro: '2026-01-01T00:00:00Z',
+  fecha_aprobacion: '2026-01-01T00:00:00Z',
+  has_completed_onboarding: true,
+};
+
+export const LOCAL_MOCK_ADMIN_USER: User = {
+  id: '16092a90-3e8e-466d-a509-eb6b074a92cd',
+  app_metadata: {},
+  user_metadata: {
+    nombre: 'Administrador Sumak',
+    rol: 'admin',
+  },
+  aud: 'authenticated',
+  created_at: '2026-01-01T00:00:00Z',
+} as User;
+
+export const LOCAL_MOCK_USER: Profile = {
+  id: '22222222-2222-4222-8222-222222222222',
+  codigo_distribuidor: 'SUMAK-00123',
+  username: 'user',
+  nombre_completo: 'Usuario Distribuidor',
+  cedula: '0988888888',
+  email: 'user@sumak.com',
+  telefono: '0991234567',
+  direccion: 'Av. Principal 123',
+  ciudad: 'Guayaquil',
+  codigo_patrocinador: 'SUMAK-00001',
+  patrocinador_id: '16092a90-3e8e-466d-a509-eb6b074a92cd',
+  paquete: 'emprendedor',
+  puntos: 150,
+  estado: 'activo',
+  rol: 'distribuidor',
+  avatar_url: null,
+  fecha_registro: '2026-01-01T00:00:00Z',
+  fecha_aprobacion: '2026-01-01T00:00:00Z',
+  has_completed_onboarding: true,
+};
+
+export const LOCAL_MOCK_USER_AUTH: User = {
+  id: '22222222-2222-4222-8222-222222222222',
+  app_metadata: {},
+  user_metadata: {
+    nombre: 'Usuario Distribuidor',
+    rol: 'distribuidor',
+  },
+  aud: 'authenticated',
+  created_at: '2026-01-01T00:00:00Z',
+} as User;
+
+export const LOCAL_MOCK_ESTUDIANTE: Profile = {
+  id: '33333333-3333-4333-8333-333333333333',
+  codigo_distribuidor: 'ACE-00088',
+  username: 'estudiante',
+  nombre_completo: 'Estudiante Academia Sumak',
+  cedula: '0977777777',
+  email: 'estudiante@sumak.com',
+  telefono: '0997654321',
+  direccion: 'Campus Virtual',
+  ciudad: 'Quito',
+  codigo_patrocinador: null,
+  patrocinador_id: null,
+  paquete: null,
+  puntos: 0,
+  estado: 'activo',
+  rol: 'distribuidor',
+  avatar_url: null,
+  fecha_registro: '2026-01-01T00:00:00Z',
+  fecha_aprobacion: '2026-01-01T00:00:00Z',
+  has_completed_onboarding: true,
+};
+
+export const LOCAL_MOCK_ESTUDIANTE_AUTH: User = {
+  id: '33333333-3333-4333-8333-333333333333',
+  app_metadata: {},
+  user_metadata: {
+    nombre: 'Estudiante Academia Sumak',
+    rol: 'estudiante',
+  },
+  aud: 'authenticated',
+  created_at: '2026-01-01T00:00:00Z',
+} as User;
+
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -59,6 +158,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
+    // Check for local mock session first (dev only)
+    if (import.meta.env.DEV) {
+      const mockRole = localStorage.getItem('sumak_local_mock_role');
+      const isMockAdmin = localStorage.getItem('sumak_local_mock_admin') === 'true';
+
+      if (mockRole === 'admin' || isMockAdmin) {
+        setUser(LOCAL_MOCK_ADMIN_USER);
+        setProfile(LOCAL_MOCK_ADMIN);
+        setLoading(false);
+        return;
+      }
+
+      if (mockRole === 'user') {
+        setUser(LOCAL_MOCK_USER_AUTH);
+        setProfile(LOCAL_MOCK_USER);
+        setLoading(false);
+        return;
+      }
+
+      if (mockRole === 'estudiante') {
+        setUser(LOCAL_MOCK_ESTUDIANTE_AUTH);
+        setProfile(LOCAL_MOCK_ESTUDIANTE);
+        setLoading(false);
+        return;
+      }
+    }
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
@@ -71,6 +197,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (import.meta.env.DEV && (localStorage.getItem('sumak_local_mock_role') || localStorage.getItem('sumak_local_mock_admin'))) return;
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
@@ -85,6 +212,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function signIn(
     email: string, password: string, captchaToken?: string,
   ): Promise<{ error: string | null; profile: Profile | null }> {
+    const trimmed = email.trim().toLowerCase();
+
+    // Bypass credenciales locales (dev only)
+    if (import.meta.env.DEV) {
+      if ((trimmed === 'admin' || trimmed === 'admin@sumak.com' || trimmed === 'admin@sumak.ec' || trimmed === 'admin@sumak.local') && password === 'admin') {
+        localStorage.setItem('sumak_local_mock_role', 'admin');
+        localStorage.setItem('sumak_local_mock_admin', 'true');
+        setUser(LOCAL_MOCK_ADMIN_USER);
+        setProfile(LOCAL_MOCK_ADMIN);
+        return { error: null, profile: LOCAL_MOCK_ADMIN };
+      }
+
+      if ((trimmed === 'user' || trimmed === 'user@sumak.com' || trimmed === 'user@sumak.ec' || trimmed === 'user@sumak.local') && password === 'user') {
+        localStorage.setItem('sumak_local_mock_role', 'user');
+        localStorage.setItem('sumak_local_mock_admin', 'false');
+        setUser(LOCAL_MOCK_USER_AUTH);
+        setProfile(LOCAL_MOCK_USER);
+        return { error: null, profile: LOCAL_MOCK_USER };
+      }
+
+      if ((trimmed === 'estudiante' || trimmed === 'estudiante@sumak.com' || trimmed === 'estudiante@sumak.ec' || trimmed === 'estudiante@sumak.local') && password === 'estudiante') {
+        localStorage.setItem('sumak_local_mock_role', 'estudiante');
+        localStorage.setItem('sumak_local_mock_admin', 'false');
+        setUser(LOCAL_MOCK_ESTUDIANTE_AUTH);
+        setProfile(LOCAL_MOCK_ESTUDIANTE);
+        return { error: null, profile: LOCAL_MOCK_ESTUDIANTE };
+      }
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -113,7 +269,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (session?.user) await fetchProfile(session.user.id);
   }
 
-  const isMockUser = false;
+  const isMockUser = Boolean(
+    user?.id === LOCAL_MOCK_ADMIN.id ||
+    user?.id === LOCAL_MOCK_USER.id ||
+    user?.id === LOCAL_MOCK_ESTUDIANTE.id ||
+    localStorage.getItem('sumak_local_mock_role') ||
+    localStorage.getItem('sumak_local_mock_admin')
+  );
 
   async function completeOnboarding(): Promise<void> {
     if (!profile) return;

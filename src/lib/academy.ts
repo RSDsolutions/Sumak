@@ -9,328 +9,6 @@ import type {
   AcademyDiplomaIssuance
 } from './academy-types';
 
-const fallbackCategory = {
-  id: 'fallback-category',
-  name: 'FormaciÃ³n',
-  slug: 'formacion',
-  description: 'Cursos bÃ¡sicos y avanzados para fortalecer tu negocio y tu capacidad de liderazgo.',
-  icon_name: 'BookOpen',
-  sort_order: 1,
-  is_active: true,
-  created_at: new Date().toISOString(),
-};
-
-const fallbackBasicCourse: AcademyCourse = {
-  id: 'fallback-basic-course',
-  title: 'Curso BÃ¡sico: Fundamentos Sumak',
-  slug: 'curso-basico-fundamentos-sumak',
-  description: 'Un curso prÃ¡ctico para comprender la estructura, los valores y las primeras acciones que te permiten avanzar con claridad en tu negocio.',
-  short_description: 'Aprende los fundamentos del negocio y cÃ³mo empezar con confianza.',
-  cover_image_url: null,
-  instructor_id: null,
-  category_id: fallbackCategory.id,
-  level: 'beginner',
-  estimated_duration_minutes: 120,
-  status: 'published',
-  access_mode: 'free_registered',
-  prerequisites: 'Sin requisitos previos.',
-  passing_percentage: 70,
-  generates_certificate: true,
-  diploma_type_id: null,
-  published_at: new Date().toISOString(),
-  sort_order: 1,
-  metadata: {
-    objectives: [
-      'Entender la propuesta de valor de Sumak.',
-      'Definir tus primeros pasos de ventas y liderazgo.',
-      'Aplicar actividades prÃ¡cticas para fortalecer la acciÃ³n real.'
-    ],
-    activities: [
-      'Mapa de objetivos personales',
-      'DiagnÃ³stico de tu punto de partida',
-      'Plan de 30 dÃ­as con acciones concretas'
-    ]
-  },
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-  category: fallbackCategory,
-  instructor: { nombre_completo: 'Staff SUMAK' }
-};
-
-const fallbackAdvancedCourse: AcademyCourse = {
-  id: 'fallback-advanced-course',
-  title: 'Curso Avanzado: Estrategia y Crecimiento',
-  slug: 'curso-avanzado-estrategia-crecimiento',
-  description: 'Profundiza en liderazgo, conversiÃ³n y escalamiento para convertir tu red en un sistema sostenible y con mayor impacto.',
-  short_description: 'DiseÃ±a procesos mÃ¡s avanzados para vender, liderar y duplicar resultados.',
-  cover_image_url: null,
-  instructor_id: null,
-  category_id: fallbackCategory.id,
-  level: 'advanced',
-  estimated_duration_minutes: 210,
-  status: 'published',
-  access_mode: 'free_registered',
-  prerequisites: 'Recomendado haber completado el curso bÃ¡sico.',
-  passing_percentage: 75,
-  generates_certificate: true,
-  diploma_type_id: null,
-  published_at: new Date().toISOString(),
-  sort_order: 2,
-  metadata: {
-    objectives: [
-      'Construir un proceso de venta mÃ¡s claro y repetible.',
-      'Desarrollar liderazgo para acompaÃ±ar a otros.',
-      'DiseÃ±ar hÃ¡bitos para escalar la red con disciplina.'
-    ],
-    activities: [
-      'AnÃ¡lisis de tu proceso de conversaciÃ³n',
-      'Plan de acompaÃ±amiento a tu red',
-      'Sistema de seguimiento y metas semanales'
-    ]
-  },
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-  category: fallbackCategory,
-  instructor: { nombre_completo: 'Staff SUMAK' }
-};
-
-const fallbackCourses: AcademyCourse[] = [fallbackBasicCourse, fallbackAdvancedCourse];
-
-const fallbackModulesByCourseId: Record<string, AcademyModule[]> = {
-  'fallback-basic-course': [
-    {
-      id: 'fallback-basic-module-1',
-      course_id: 'fallback-basic-course',
-      title: 'MÃ³dulo 1 Â· Base y propÃ³sito',
-      description: 'Comprende la visiÃ³n, la propuesta de valor y la forma de avanzar con conciencia.',
-      sort_order: 1,
-      is_published: true,
-      created_at: new Date().toISOString(),
-      lessons: [
-        {
-          id: 'fallback-basic-lesson-1',
-          module_id: 'fallback-basic-module-1',
-          title: 'QuÃ© es Sumak y por quÃ© importa',
-          description: 'Conoce la visiÃ³n, la estructura y la intenciÃ³n detrÃ¡s del negocio.',
-          content_type: 'text',
-          text_content: '<h3>Â¿QuÃ© es Sumak?</h3><p>Sumak encarna una propuesta de crecimiento personal, bienestar y negocio con sentido. La clave no es solo vender, sino comprender cÃ³mo aportar valor real y llevar una experiencia clara a quienes te rodean.</p><ul><li>Conoce la misiÃ³n y la forma de trabajar.</li><li>Identifica tu propÃ³sito al entrar al negocio.</li><li>Entiende que la confianza se construye con claridad.</li></ul><h4>Actividad:</h4><p>Escribe 3 razones por las que quieres formar parte de Sumak y 3 acciones concretas que puedes hacer en los prÃ³ximos 7 dÃ­as.</p>',
-          video_provider: null,
-          video_external_id: null,
-          video_url: null,
-          thumbnail_url: null,
-          duration_seconds: 360,
-          file_url: null,
-          file_name: null,
-          external_url: null,
-          assessment_id: null,
-          sort_order: 1,
-          is_published: true,
-          is_free_preview: true,
-          estimated_minutes: 8,
-          metadata: {},
-          created_at: new Date().toISOString(),
-        },
-        {
-          id: 'fallback-basic-lesson-2',
-          module_id: 'fallback-basic-module-1',
-          title: 'Tu primer paso con estructura',
-          description: 'Organiza tus primeros pasos sin saturarte ni perder direcciÃ³n.',
-          content_type: 'text',
-          text_content: '<h3>Tu enfoque inicial</h3><p>Antes de vender, necesitas claridad. Define cuÃ¡l es tu objetivo, quÃ© te permite avanzar y cÃ³mo medir tus primeros resultados.</p><ul><li>Establece un objetivo realista.</li><li>Define un plan de contacto y seguimiento.</li><li>Haz seguimiento con consistencia.</li></ul><h4>Actividad:</h4><p>DiseÃ±a una lista con 5 acciones concretas para tu primer mes y marca cuÃ¡les podrÃ¡s ejecutar de forma consistente.</p>',
-          video_provider: null,
-          video_external_id: null,
-          video_url: null,
-          thumbnail_url: null,
-          duration_seconds: 420,
-          file_url: null,
-          file_name: null,
-          external_url: null,
-          assessment_id: null,
-          sort_order: 2,
-          is_published: true,
-          is_free_preview: false,
-          estimated_minutes: 10,
-          metadata: {},
-          created_at: new Date().toISOString(),
-        }
-      ]
-    },
-    {
-      id: 'fallback-basic-module-2',
-      course_id: 'fallback-basic-course',
-      title: 'MÃ³dulo 2 Â· ComunicaciÃ³n y confianza',
-      description: 'Aprende a comunicar valor, escuchar con intenciÃ³n y sostener conversaciones genuinas.',
-      sort_order: 2,
-      is_published: true,
-      created_at: new Date().toISOString(),
-      lessons: [
-        {
-          id: 'fallback-basic-lesson-3',
-          module_id: 'fallback-basic-module-2',
-          title: 'CÃ³mo hablar con claridad',
-          description: 'Haz que la propuesta sea fÃ¡cil de entender para otras personas.',
-          content_type: 'text',
-          text_content: '<h3>ConversaciÃ³n clara</h3><p>La clave es hablar de beneficios, no solo de producto. Las personas compran cuando entienden el valor, la intenciÃ³n y la utilidad para su vida.</p><ul><li>Explica de manera simple.</li><li>Haz preguntas antes de ofrecer.</li><li>Conecta la propuesta con necesidades reales.</li></ul><h4>Actividad:</h4><p>Graba una respuesta de 60 segundos explicando Sumak como si se lo contaras a una persona cercana. Revisa si suena clara, Ãºtil y natural.</p>',
-          video_provider: null,
-          video_external_id: null,
-          video_url: null,
-          thumbnail_url: null,
-          duration_seconds: 420,
-          file_url: null,
-          file_name: null,
-          external_url: null,
-          assessment_id: null,
-          sort_order: 1,
-          is_published: true,
-          is_free_preview: false,
-          estimated_minutes: 10,
-          metadata: {},
-          created_at: new Date().toISOString(),
-        },
-        {
-          id: 'fallback-basic-lesson-4',
-          module_id: 'fallback-basic-module-2',
-          title: 'ActivaciÃ³n semanal del plan',
-          description: 'Convierte la intenciÃ³n en acciÃ³n cada semana.',
-          content_type: 'text',
-          text_content: '<h3>ActÃºa con constancia</h3><p>No hace falta hacer todo a la vez. La clave es mantener una rutina simple y realista que ayude a avanzar sin estrÃ©s.</p><ol><li>Define 3 contactos por semana.</li><li>Pregunta, escucha y comparte valor.</li><li>Documenta cuÃ¡les conversaciones te llevaron a una siguiente acciÃ³n.</li></ol><h4>Actividad:</h4><p>Elabora una mini agenda semanal con 3 objetivos claros, 3 conversaciones planeadas y 1 seguimiento para cada una.</p>',
-          video_provider: null,
-          video_external_id: null,
-          video_url: null,
-          thumbnail_url: null,
-          duration_seconds: 360,
-          file_url: null,
-          file_name: null,
-          external_url: null,
-          assessment_id: null,
-          sort_order: 2,
-          is_published: true,
-          is_free_preview: false,
-          estimated_minutes: 8,
-          metadata: {},
-          created_at: new Date().toISOString(),
-        }
-      ]
-    }
-  ],
-  'fallback-advanced-course': [
-    {
-      id: 'fallback-advanced-module-1',
-      course_id: 'fallback-advanced-course',
-      title: 'MÃ³dulo 1 Â· Posicionamiento y diferenciaciÃ³n',
-      description: 'Construye un mensaje mÃ¡s sÃ³lido para destacar y conectar con personas que realmente encajan.',
-      sort_order: 1,
-      is_published: true,
-      created_at: new Date().toISOString(),
-      lessons: [
-        {
-          id: 'fallback-advanced-lesson-1',
-          module_id: 'fallback-advanced-module-1',
-          title: 'CÃ³mo posicionarte con claridad',
-          description: 'Distingue tu valor, tu enfoque y tu forma de ofrecer soluciones.',
-          content_type: 'text',
-          text_content: '<h3>Posicionamiento</h3><p>El crecimiento real comienza cuando puedes explicar sin ruido quÃ© haces, para quiÃ©n y por quÃ© tu propuesta aporta valor. Un buen posicionamiento mejora la confianza y reduce la fricciÃ³n.</p><ul><li>Define tu pÃºblico ideal.</li><li>Expresa un beneficio claro.</li><li>Evita mensajes genÃ©ricos o confusos.</li></ul><h4>Actividad:</h4><p>Escribe un mensaje de 3 lÃ­neas que describa tu propuesta de negocio para una persona nueva. Luego prueba si se entiende en menos de 10 segundos.</p>',
-          video_provider: null,
-          video_external_id: null,
-          video_url: null,
-          thumbnail_url: null,
-          duration_seconds: 420,
-          file_url: null,
-          file_name: null,
-          external_url: null,
-          assessment_id: null,
-          sort_order: 1,
-          is_published: true,
-          is_free_preview: false,
-          estimated_minutes: 10,
-          metadata: {},
-          created_at: new Date().toISOString(),
-        },
-        {
-          id: 'fallback-advanced-lesson-2',
-          module_id: 'fallback-advanced-module-1',
-          title: 'DiagnÃ³stico de tu proceso de venta',
-          description: 'EvalÃºa quÃ© estÃ¡ funcionando y dÃ³nde aparece fricciÃ³n en tu conversiÃ³n.',
-          content_type: 'text',
-          text_content: '<h3>Revisa tu proceso</h3><p>Un sistema avanzado no se basa en suerte; se basa en observaciÃ³n, mediciÃ³n y mejora constante. PregÃºntate dÃ³nde la gente se interesa, dÃ³nde duda y dÃ³nde se queda.</p><ul><li>Analiza tus conversaciones.</li><li>Identifica patrones de duda.</li><li>Haz ajustes basados en evidencia.</li></ul><h4>Actividad:</h4><p>Haz una revisiÃ³n de tus Ãºltimas 5 conversaciones y anota quÃ© preguntas abren el interÃ©s, quÃ© dudas aparecen y quÃ© mensajes se repiten.</p>',
-          video_provider: null,
-          video_external_id: null,
-          video_url: null,
-          thumbnail_url: null,
-          duration_seconds: 480,
-          file_url: null,
-          file_name: null,
-          external_url: null,
-          assessment_id: null,
-          sort_order: 2,
-          is_published: true,
-          is_free_preview: false,
-          estimated_minutes: 12,
-          metadata: {},
-          created_at: new Date().toISOString(),
-        }
-      ]
-    },
-    {
-      id: 'fallback-advanced-module-2',
-      course_id: 'fallback-advanced-course',
-      title: 'MÃ³dulo 2 Â· Liderazgo y acompaÃ±amiento',
-      description: 'AcompaÃ±a mejor a otros, mejora la experiencia y crea un flujo mÃ¡s claro de apoyo.',
-      sort_order: 2,
-      is_published: true,
-      created_at: new Date().toISOString(),
-      lessons: [
-        {
-          id: 'fallback-advanced-lesson-3',
-          module_id: 'fallback-advanced-module-2',
-          title: 'Liderazgo que acompaÃ±a, no que controla',
-          description: 'Aprende a orientar a otras personas desde claridad y confianza.',
-          content_type: 'text',
-          text_content: '<h3>Liderar con claridad</h3><p>El liderazgo en redes no se trata de imponer; se trata de acompaÃ±ar con estructura, enfoque y paciencia. Una buena guÃ­a ayuda a otros a avanzar sin frustrarse ni perder rumbo.</p><ul><li>Escucha antes de orientar.</li><li>Haz que cada paso sea simple.</li><li>Valora el progreso real.</li></ul><h4>Actividad:</h4><p>Escribe un mini plan de acompaÃ±amiento para 1 persona de tu red. Incluye objetivos, seguimiento y 3 preguntas que la ayuden a avanzar.</p>',
-          video_provider: null,
-          video_external_id: null,
-          video_url: null,
-          thumbnail_url: null,
-          duration_seconds: 480,
-          file_url: null,
-          file_name: null,
-          external_url: null,
-          assessment_id: null,
-          sort_order: 1,
-          is_published: true,
-          is_free_preview: false,
-          estimated_minutes: 12,
-          metadata: {},
-          created_at: new Date().toISOString(),
-        },
-        {
-          id: 'fallback-advanced-lesson-4',
-          module_id: 'fallback-advanced-module-2',
-          title: 'Sistema de seguimiento',
-          description: 'Usa un seguimiento consistente para mantener el ritmo y medir avances.',
-          content_type: 'text',
-          text_content: '<h3>Seguimiento efectivo</h3><p>La continuidad se aprende a travÃ©s de procesos claros y seguimiento respetuoso. Cuando existe un mÃ©todo, la energÃ­a se transforma en ejecuciÃ³n.</p><ul><li>Agenda revisiones periÃ³dicas.</li><li>Observa seÃ±ales de avance.</li><li>Corrige sin castigar.</li></ul><h4>Actividad:</h4><p>DiseÃ±a un archivo o sistema personal para registrar reuniones, compromisos y prÃ³ximos pasos. Define quÃ© mÃ©tricas te permitirÃ¡n saber si va bien.</p>',
-          video_provider: null,
-          video_external_id: null,
-          video_url: null,
-          thumbnail_url: null,
-          duration_seconds: 420,
-          file_url: null,
-          file_name: null,
-          external_url: null,
-          assessment_id: null,
-          sort_order: 2,
-          is_published: true,
-          is_free_preview: false,
-          estimated_minutes: 10,
-          metadata: {},
-          created_at: new Date().toISOString(),
-        }
-      ]
-    }
-  ]
-};
-
 export const academyAPI = {
   // Courses
   async getCourses(onlyPublished = true) {
@@ -338,8 +16,7 @@ export const academyAPI = {
       .from('academy_courses')
       .select(`
         *,
-        category:category_id (name, slug),
-        instructor:instructor_id (nombre_completo)
+        category:category_id (name, slug)
       `)
       .order('sort_order', { ascending: true })
       .order('created_at', { ascending: false });
@@ -349,10 +26,30 @@ export const academyAPI = {
     }
 
     const { data, error } = await query;
-    if (error || !data || data.length === 0) {
-      return fallbackCourses as AcademyCourse[];
+    if (error) throw error;
+    if (!data) return [];
+
+    const instructorIds = [...new Set(data.filter(c => c.instructor_id).map(c => c.instructor_id))];
+    let profileMap = new Map();
+
+    if (instructorIds.length > 0) {
+      try {
+        const { data: profiles, error: profileErr } = await supabase
+          .from('profiles')
+          .select('id, nombre_completo')
+          .in('id', instructorIds);
+        if (!profileErr && profiles) {
+          profileMap = new Map(profiles.map(p => [p.id, p]));
+        }
+      } catch {
+        // Ignorar si el usuario no tiene permisos de lectura sobre la tabla profiles
+      }
     }
-    return data as AcademyCourse[];
+
+    return data.map(c => ({
+      ...c,
+      instructor: c.instructor_id ? (profileMap.get(c.instructor_id) || null) : null
+    })) as AcademyCourse[];
   },
 
   async getAdminCategories() {
@@ -372,7 +69,10 @@ export const academyAPI = {
       .eq('status', 'published')
       .order('session_date', { ascending: false, nullsFirst: false })
       .order('sort_order', { ascending: true });
-    if (error) throw error;
+    if (error) {
+      if (error.code === '42501') return [];
+      throw error;
+    }
     return data ?? [];
   },
 
@@ -583,6 +283,11 @@ export const academyAPI = {
     return data as AcademyCourse;
   },
 
+  async deleteAdminCourse(courseId: string) {
+    const { error } = await supabase.from('academy_courses').delete().eq('id', courseId);
+    if (error) throw error;
+  },
+
   async getAdminCourseContent(courseId: string) {
     const { data, error } = await supabase
       .from('academy_modules')
@@ -714,7 +419,7 @@ export const academyAPI = {
   },
   async saveAdminAssessment(assessmentId: string | null, input: {
     course_id: string; module_id?: string | null; title: string; description: string;
-    passing_score: number; max_attempts: number | null; time_limit_minutes: number | null;
+    passing_score: number; max_attempts: number | null; time_limit_minutes?: number | null;
     is_final_exam: boolean; is_published: boolean; sort_order: number;
     randomize_questions?: boolean;
   }) {
@@ -806,24 +511,34 @@ export const academyAPI = {
       .from('academy_courses')
       .select(`
         *,
-        category:category_id (name, slug),
-        instructor:instructor_id (nombre_completo)
+        category:category_id (name, slug)
       `)
       .eq('slug', slug)
       .maybeSingle();
 
-    if (error) {
-      const fallback = fallbackCourses.find((course) => course.slug === slug);
-      if (fallback) return fallback as AcademyCourse;
-      throw error;
+    if (error) throw error;
+    if (!data) return null;
+
+    let instructor = null;
+    if (data.instructor_id) {
+      try {
+        const { data: profile, error: profileErr } = await supabase
+          .from('profiles')
+          .select('id, nombre_completo')
+          .eq('id', data.instructor_id)
+          .maybeSingle();
+        if (!profileErr && profile) {
+          instructor = profile;
+        }
+      } catch {
+        // Ignorar si el usuario no tiene permisos de lectura sobre la tabla profiles
+      }
     }
 
-    if (!data) {
-      const fallback = fallbackCourses.find((course) => course.slug === slug) ?? fallbackCourses[0];
-      return fallback as AcademyCourse;
-    }
-
-    return data as AcademyCourse;
+    return {
+      ...data,
+      instructor
+    } as AcademyCourse;
   },
 
   async getCourseModules(courseId: string, onlyPublished = true) {
@@ -841,21 +556,18 @@ export const academyAPI = {
     }
 
     const { data, error } = await query;
-    if (error || !data || data.length === 0) {
-      return (fallbackModulesByCourseId[courseId] || []) as AcademyModule[];
-    }
+    if (error) throw error;
+    if (!data) return [] as AcademyModule[];
     
     // Sort lessons manually since postgREST nested ordering can be tricky
-    if (data) {
-      data.forEach(m => {
-        if (m.lessons) {
-          m.lessons.sort((a: any, b: any) => a.sort_order - b.sort_order);
-          if (onlyPublished) {
-            m.lessons = m.lessons.filter((l: any) => l.is_published);
-          }
+    data.forEach(m => {
+      if (m.lessons) {
+        m.lessons.sort((a: any, b: any) => a.sort_order - b.sort_order);
+        if (onlyPublished) {
+          m.lessons = m.lessons.filter((l: any) => l.is_published);
         }
-      });
-    }
+      }
+    });
     
     return data as AcademyModule[];
   },
@@ -870,7 +582,11 @@ export const academyAPI = {
     return result.enrollment;
   },
 
-  async getMyEnrollments() {
+  async getMyEnrollments(userId?: string) {
+    const { data: { user } } = await supabase.auth.getUser();
+    const uid = userId || user?.id;
+    if (!uid) return [];
+
     const { data, error } = await supabase
       .from('academy_enrollments')
       .select(`
@@ -879,10 +595,14 @@ export const academyAPI = {
           title, slug, cover_image_url, estimated_duration_minutes
         )
       `)
+      .eq('user_id', uid)
       .order('last_accessed_at', { ascending: false, nullsFirst: false });
       
-    if (error) throw error;
-    return data;
+    if (error) {
+      console.warn('Error al obtener inscripciones:', error.message);
+      return [];
+    }
+    return data ?? [];
   },
   
   async checkEnrollment(courseId: string) {
@@ -920,9 +640,10 @@ export const academyAPI = {
   },
 
   // Diplomas
-  async getMyDiplomas() {
+  async getMyDiplomas(userId?: string) {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("No user");
+    const uid = userId || user?.id;
+    if (!uid) return [];
 
     const { data, error } = await supabase
       .from('academy_diploma_issuances')
@@ -930,17 +651,19 @@ export const academyAPI = {
         *,
         diploma_type:academy_diploma_types (*)
       `)
-      .eq('user_id', user.id)
+      .eq('user_id', uid)
       .order('issued_at', { ascending: false });
 
-    if (error) throw error;
-    return data as AcademyDiplomaIssuance[];
+    if (error) {
+      console.warn('Error al obtener diplomas:', error.message);
+      return [];
+    }
+    return (data ?? []) as AcademyDiplomaIssuance[];
   },
 
-  async getMyCertificates() {
-    const { data, error } = await supabase.rpc('get_my_academy_certificates');
-    if (error) throw error;
-    return data ?? [];
+  async getMyCertificates(_userId?: string) {
+    // En el backend las certificaciones oficiales están unificadas en academy_diploma_issuances
+    return [];
   },
 
   async issueCourseCertificate(courseId: string) {
@@ -1035,210 +758,36 @@ export const academyAPI = {
     if (error) throw error;
   },
 
-  /** Obtiene un curso por ID con joins de categorÃ­a e instructor */
+  /** Obtiene un curso por ID con categoría e instructor */
   async getAdminCourseById(courseId: string) {
     const { data, error } = await supabase
       .from('academy_courses')
-      .select('*, category:category_id (id, name, slug), instructor:instructor_id (id, nombre_completo)')
+      .select('*, category:category_id (id, name, slug)')
       .eq('id', courseId)
       .single();
     if (error) throw error;
-    return data as AcademyCourse;
-  },
+    if (!data) return null;
 
-  /** Sube portada del curso al bucket academy-content y devuelve la URL pÃºblica */
-  async uploadAdminCourseCover(courseId: string, file: File): Promise<string> {
-    const ext = file.name.split('.').pop();
-    const path = `covers/${courseId}/cover_${Date.now()}.${ext}`;
-    const { data, error } = await supabase.storage.from('academy-content').upload(path, file, { upsert: true });
-    if (error) throw error;
-    const { data: urlData } = supabase.storage.from('academy-content').getPublicUrl(data.path);
-    return urlData.publicUrl;
-  },
-
-  /** Actualiza campos parciales de un curso (para autosave de tabs individuales) */
-  async patchAdminCourse(courseId: string, patch: Partial<AcademyCourse>) {
-    const { data, error } = await supabase
-      .from('academy_courses')
-      .update(patch)
-      .eq('id', courseId)
-      .select()
-      .single();
-    if (error) throw error;
-    return data as AcademyCourse;
-  },
-
-  /** Obtiene una evaluaciÃ³n completa con preguntas y opciones para ediciÃ³n admin */
-  async getAdminAssessment(assessmentId: string) {
-    const { data, error } = await supabase
-      .from('academy_assessments')
-      .select('*, questions:academy_questions (id, question_text, question_type, points, sort_order, options:academy_question_options (id, option_text, is_correct, sort_order))')
-      .eq('id', assessmentId)
-      .single();
-    if (error) throw error;
-    return data;
-  },
-
-  /** Actualiza una pregunta existente con sus opciones (delete+insert opciones) */
-  async checkEnrollment(courseId: string) {
-    const { data, error } = await supabase
-      .from('academy_enrollments')
-      .select('*')
-      .eq('course_id', courseId)
-      .maybeSingle();
-      
-    if (error) throw error;
-    return data as AcademyEnrollment | null;
-  },
-
-  // Progress
-  async getMyProgress(courseId: string) {
-    const { data, error } = await supabase
-      .from('academy_progress')
-      .select('*')
-      .eq('course_id', courseId);
-      
-    if (error) throw error;
-    return data as AcademyProgress[];
-  },
-
-  async updateProgress(lessonId: string, courseId: string, status: 'in_progress' | 'completed', percentage: number, playbackSeconds = 0) {
-    const { data, error } = await supabase.rpc('update_academy_progress', {
-      p_lesson_id: lessonId,
-      p_course_id: courseId,
-      p_status: status,
-      p_percentage: percentage,
-      p_playback_seconds: playbackSeconds,
-    });
-    if (error) throw error;
-    return data as AcademyProgress;
-  },
-
-  // Diplomas
-  async getMyDiplomas() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("No user");
-
-    const { data, error } = await supabase
-      .from('academy_diploma_issuances')
-      .select(`
-        *,
-        diploma_type:academy_diploma_types (*)
-      `)
-      .eq('user_id', user.id)
-      .order('issued_at', { ascending: false });
-
-    if (error) throw error;
-    return data as AcademyDiplomaIssuance[];
-  },
-
-  async getMyCertificates() {
-    const { data, error } = await supabase.rpc('get_my_academy_certificates');
-    if (error) throw error;
-    return data ?? [];
-  },
-
-  async issueCourseCertificate(courseId: string) {
-    const { data, error } = await supabase.rpc('issue_academy_course_certificate', {
-      p_course_id: courseId,
-    });
-    if (error) throw error;
-    return data;
-  },
-  
-  async getAllDiplomas() {
-    const { data, error } = await supabase
-      .from('academy_diploma_issuances')
-      .select(`
-        *,
-        diploma_type:academy_diploma_types (*)
-      `)
-      .order('issued_at', { ascending: false });
-
-    if (error) throw error;
-    return data as AcademyDiplomaIssuance[];
-  },
-
-  async revokeDiploma(diplomaId: string) {
-    const { error } = await supabase
-      .from('academy_diploma_issuances')
-      .delete()
-      .eq('id', diplomaId);
-    if (error) throw error;
-  },
-  
-  // Storage
-  getPublicImageUrl(path: string | null) {
-    if (!path) return null;
-    if (path.startsWith('http')) return path;
-    const { data } = supabase.storage.from('academy-content').getPublicUrl(path);
-    return data.publicUrl;
-  },
-
-  // Assessments
-  async getAssessment(assessmentId: string) {
-    const { data, error } = await supabase
-      .from('academy_assessments')
-      .select(`
-        *,
-        questions:academy_questions (
-          id, question_type, question_text, points, sort_order
-        )
-      `)
-      .eq('id', assessmentId)
-      .single();
-      
-    if (error) throw error;
-
-    const questionIds = (data?.questions ?? []).map((question: { id: string }) => question.id);
-    const { data: options, error: optionsError } = questionIds.length
-      ? await supabase
-        .from('academy_question_options_public')
-        .select('id, question_id, option_text, sort_order')
-        .in('question_id', questionIds)
-      : { data: [], error: null };
-
-    if (optionsError) throw optionsError;
-    
-    // Sort questions and options
-    if (data && data.questions) {
-      data.questions.sort((a: any, b: any) => a.sort_order - b.sort_order);
-      data.questions.forEach((q: any) => {
-        q.options = (options ?? [])
-          .filter((option: { question_id: string }) => option.question_id === q.id)
-          .sort((a: any, b: any) => a.sort_order - b.sort_order);
-      });
+    let instructor = null;
+    if (data.instructor_id) {
+      try {
+        const { data: profile, error: profileErr } = await supabase
+          .from('profiles')
+          .select('id, nombre_completo')
+          .eq('id', data.instructor_id)
+          .maybeSingle();
+        if (!profileErr && profile) {
+          instructor = profile;
+        }
+      } catch {
+        // Ignorar si el usuario no tiene permisos de lectura sobre la tabla profiles
+      }
     }
-    
-    return data;
-  },
-  
-  async startAttempt(assessmentId: string) {
-    const { data, error } = await supabase.rpc('start_academy_attempt', {
-      p_assessment_id: assessmentId,
-    });
-      
-    if (error) throw error;
-    return data as string;
-  },
-  
-  async saveAnswers(attemptId: string, answers: { question_id: string, selected_option_ids: string[] }[]) {
-    const { error } = await supabase.rpc('save_academy_answers', {
-      p_attempt_id: attemptId,
-      p_answers: answers,
-    });
-    if (error) throw error;
-  },
 
-  /** Obtiene un curso por ID con joins de categorÃ­a e instructor */
-  async getAdminCourseById(courseId: string) {
-    const { data, error } = await supabase
-      .from('academy_courses')
-      .select('*, category:category_id (id, name, slug), instructor:instructor_id (id, nombre_completo)')
-      .eq('id', courseId)
-      .single();
-    if (error) throw error;
-    return data as AcademyCourse;
+    return {
+      ...data,
+      instructor
+    } as AcademyCourse;
   },
 
   /** Sube portada del curso al bucket academy-content y devuelve la URL pÃºblica */
@@ -1316,12 +865,20 @@ export const academyAPI = {
 };
 
 export const academyProgramHelper = {
-  async getMyEnrolledPrograms() {
+  async getMyEnrolledPrograms(userId?: string) {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [];
-    const { data, error } = await supabase.from('academy_program_enrollments').select('*, program:program_id (id, title, slug, cover_image_url, description, status, courses:academy_program_courses (id))').eq('user_id', user.id).eq('status', 'active');
-    if (error) throw error;
-    return data;
+    const uid = userId || user?.id;
+    if (!uid) return [];
+    const { data, error } = await supabase
+      .from('academy_program_enrollments')
+      .select('*, program:program_id (id, title, slug, cover_image_url, description, status, courses:academy_program_courses (id))')
+      .eq('user_id', uid)
+      .eq('status', 'active');
+    if (error) {
+      console.warn('Error al obtener programas matriculados:', error.message);
+      return [];
+    }
+    return data ?? [];
   }
 };
 

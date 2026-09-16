@@ -517,6 +517,26 @@ export default function App() {
             }
           />
           <Route
+            path="/academia/dashboard/programas"
+            element={
+              <ProtectedRoute allowedRoles={['distribuidor', 'admin', 'operaciones']}>
+                <AcademyLayout>
+                  <Programas />
+                </AcademyLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/academia/dashboard/programas/:slug"
+            element={
+              <ProtectedRoute allowedRoles={['distribuidor', 'admin', 'operaciones']}>
+                <AcademyLayout>
+                  <ProgramDetalle />
+                </AcademyLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/academia/dashboard/biblioteca"
             element={
               <ProtectedRoute allowedRoles={['distribuidor', 'admin', 'operaciones']}>

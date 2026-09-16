@@ -25,9 +25,13 @@ export default function LoginAcademia() {
   async function resolveEmail(value: string): Promise<string | null> {
     const trimmed = value.trim();
     if (!trimmed) return null;
+    const lower = trimmed.toLowerCase();
+    if (['admin', 'user', 'estudiante'].includes(lower)) {
+      return lower;
+    }
     if (trimmed.includes('@')) return trimmed;
     // Intentar resolver como username
-    const { data } = await supabase.rpc('get_email_for_login', { p_username: trimmed.toLowerCase() });
+    const { data } = await supabase.rpc('get_email_for_login', { p_username: lower });
     return data as string | null;
   }
 
@@ -166,6 +170,47 @@ export default function LoginAcademia() {
                   <><ArrowRight size={20} /> Ingresar a mi Academia</>
                 )}
               </button>
+
+              {import.meta.env.DEV && (
+                <div className="pt-2 border-t border-white/10 space-y-2">
+                  <p className="text-[11px] text-white/50 font-medium text-center">Acceso Rápido Local (Dev):</p>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEmail('estudiante');
+                        setPassword('estudiante');
+                      }}
+                      className="py-2 px-1 rounded-xl border border-dashed border-[#D4AF37]/50 text-[#D4AF37] font-semibold text-xs hover:bg-[#D4AF37]/10 transition-colors text-center"
+                      title="Estudiante Academia (estudiante / estudiante)"
+                    >
+                      🎓 estudiante
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEmail('user');
+                        setPassword('user');
+                      }}
+                      className="py-2 px-1 rounded-xl border border-dashed border-white/20 text-white/70 font-medium text-xs hover:bg-white/5 transition-colors text-center"
+                      title="Usuario Distribuidor (user / user)"
+                    >
+                      👤 user
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEmail('admin');
+                        setPassword('admin');
+                      }}
+                      className="py-2 px-1 rounded-xl border border-dashed border-white/20 text-white/70 font-medium text-xs hover:bg-white/5 transition-colors text-center"
+                      title="Administrador (admin / admin)"
+                    >
+                      🛠️ admin
+                    </button>
+                  </div>
+                </div>
+              )}
             </form>
           )}
 

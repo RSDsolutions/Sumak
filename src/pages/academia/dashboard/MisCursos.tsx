@@ -11,6 +11,7 @@ import {
   Medal,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../../lib/auth';
 import { academyAPI } from '../../../lib/academy';
 import type { AcademyEnrollment } from '../../../lib/academy-types';
 
@@ -179,17 +180,18 @@ function Section({
 // Página principal
 // ---------------------------------------------------------------------------
 export default function MisCursos() {
+  const { profile } = useAuth();
   const [enrollments, setEnrollments] = useState<EnrollmentWithCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     academyAPI
-      .getMyEnrollments()
-      .then((data) => setEnrollments(data as EnrollmentWithCourse[]))
+      .getMyEnrollments(profile?.id)
+      .then((data) => setEnrollments((data || []) as EnrollmentWithCourse[]))
       .catch(() => setError(true))
       .finally(() => setLoading(false));
-  }, []);
+  }, [profile?.id]);
 
   if (loading) {
     return (

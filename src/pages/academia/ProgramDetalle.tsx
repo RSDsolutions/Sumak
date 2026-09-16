@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, BookOpen, CheckCircle2, GraduationCap, Loader2, Lock, PlayCircle } from 'lucide-react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { academyAPI } from '../../lib/academy';
 import { useAuth } from '../../lib/auth';
 import { useToast } from '../../lib/toast';
@@ -11,6 +11,8 @@ interface Program { id: string; title: string; description: string | null; compl
 
 export default function ProgramDetalle() {
   const { slug } = useParams<{ slug: string }>();
+  const location = useLocation();
+  const isDashboard = location.pathname.startsWith('/academia/dashboard');
   const { user } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
@@ -44,8 +46,15 @@ export default function ProgramDetalle() {
     finally { setEnrolling(false); }
   }
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#F4F7F5]"><Loader2 className="animate-spin text-[#1A4E26]" /></div>;
-  if (!program) return <div className="min-h-screen bg-[#F4F7F5] p-12 text-center"><h1 className="text-2xl font-bold">Programa no encontrado</h1><Link to="/academia/programas" className="inline-flex mt-4 text-[#1A4E26] font-bold">Volver a programas</Link></div>;
+  if (loading) return <div className="min-h-[400px] flex items-center justify-center"><Loader2 className="animate-spin text-[#1A4E26]" /></div>;
+  if (!program) return (
+    <div className="bg-white rounded-2xl border border-[#C8D8CB] p-12 text-center max-w-xl mx-auto my-12">
+      <h1 className="text-2xl font-bold text-[#111111]">Programa no encontrado</h1>
+      <Link to={isDashboard ? "/academia/dashboard/programas" : "/academia/programas"} className="inline-flex mt-4 text-[#1A4E26] font-bold hover:underline">
+        Volver a programas
+      </Link>
+    </div>
+  );
 
   const sortedCourses = [...(program.courses ?? [])].sort((a, b) => a.sort_order - b.sort_order);
   const enrolled = courseProgress.some((item) => item.status !== 'not_enrolled');
@@ -55,10 +64,10 @@ export default function ProgramDetalle() {
   });
 
   return (
-    <div className="min-h-screen bg-[#F4F7F5] py-12">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6">
-        <Link to="/academia/programas" className="inline-flex items-center gap-2 text-sm font-bold text-[#1A4E26] mb-6 hover:underline">
-          <ArrowLeft size={16} /> Todos los programas
+    <div className={isDashboard ? "max-w-4xl mx-auto pb-12" : "min-h-screen bg-[#F4F7F5] py-12 px-4 sm:px-6"}>
+      <div className={isDashboard ? "" : "max-w-4xl mx-auto"}>
+        <Link to={isDashboard ? "/academia/dashboard/programas" : "/academia/programas"} className="inline-flex items-center gap-2 text-sm font-bold text-[#1A4E26] mb-6 hover:underline">
+          <ArrowLeft size={16} /> Volver a programas
         </Link>
         <div className="bg-white rounded-[32px] border border-[#C8D8CB] overflow-hidden shadow-sm">
           <div className="bg-gradient-to-br from-[#1A4E26] to-[#0d2a13] px-6 sm:px-12 py-16 text-white relative overflow-hidden">

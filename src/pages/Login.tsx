@@ -32,11 +32,15 @@ export default function Login() {
   async function resolveEmail(value: string): Promise<string | null> {
     const trimmed = value.trim();
     if (!trimmed) return null;
+    const lower = trimmed.toLowerCase();
+    if (['admin', 'user', 'estudiante'].includes(lower)) {
+      return lower;
+    }
     // Si parece email, lo usamos tal cual.
     if (trimmed.includes('@')) return trimmed;
     // Si no, lo tratamos como username y traducimos a email.
     const { data, error: rpcError } = await supabase.rpc('get_email_for_login', {
-      p_username: trimmed.toLowerCase(),
+      p_username: lower,
     });
     if (rpcError || !data) return null;
     return data as string;
@@ -195,6 +199,46 @@ export default function Login() {
                   <ShieldCheck size={11} aria-hidden="true" />
                   Protegido por Cloudflare Turnstile
                 </p>
+              )}
+              {import.meta.env.DEV && (
+                <div className="pt-2 border-t border-[#C8D8CB]/40 space-y-2">
+                  <p className="text-[11px] text-[#6B7280] font-medium text-center">Acceso Rápido Local (Dev):</p>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIdentifier('admin');
+                        setPassword('admin');
+                      }}
+                      className="py-2 px-1 rounded-xl border border-dashed border-[#1A4E26]/40 text-[#1A4E26] font-semibold text-xs hover:bg-[#EBF4ED] transition-colors text-center"
+                      title="Administrador (admin / admin)"
+                    >
+                      🛠️ admin
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIdentifier('user');
+                        setPassword('user');
+                      }}
+                      className="py-2 px-1 rounded-xl border border-dashed border-[#1A4E26]/40 text-[#1A4E26] font-semibold text-xs hover:bg-[#EBF4ED] transition-colors text-center"
+                      title="Usuario Distribuidor (user / user)"
+                    >
+                      👤 user
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIdentifier('estudiante');
+                        setPassword('estudiante');
+                      }}
+                      className="py-2 px-1 rounded-xl border border-dashed border-[#1A4E26]/40 text-[#1A4E26] font-semibold text-xs hover:bg-[#EBF4ED] transition-colors text-center"
+                      title="Estudiante Academia (estudiante / estudiante)"
+                    >
+                      🎓 estudiante
+                    </button>
+                  </div>
+                </div>
               )}
             </form>
           )}
