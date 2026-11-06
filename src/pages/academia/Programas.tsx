@@ -199,7 +199,14 @@ export default function Programas() {
                       <img
                         src={academyAPI.getPublicImageUrl(program.cover_image_url)}
                         alt={program.title}
+                        referrerPolicy="no-referrer"
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          if (target.src !== 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80') {
+                            target.src = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80';
+                          }
+                        }}
                       />
                     ) : (
                       <>

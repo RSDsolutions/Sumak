@@ -285,7 +285,14 @@ export default function MisRecetas() {
                       <img
                         src={recipe.cover_image_url}
                         alt={recipe.title}
+                        referrerPolicy="no-referrer"
                         className={`w-full h-full object-cover ${!isApproved ? 'opacity-70 blur-[2px]' : ''}`}
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          if (target.src !== 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=800&q=80') {
+                            target.src = 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=800&q=80';
+                          }
+                        }}
                       />
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center text-white/60">

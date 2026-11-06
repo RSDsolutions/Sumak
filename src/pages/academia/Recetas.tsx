@@ -257,7 +257,18 @@ export default function Recetas() {
                   {/* Cover */}
                   <div className="aspect-[4/3] bg-gradient-to-br from-[#1A4E26] to-[#2E7D32] relative overflow-hidden">
                     {recipe.cover_image_url ? (
-                      <img src={recipe.cover_image_url} alt={recipe.title} className="w-full h-full object-cover" />
+                      <img
+                        src={recipe.cover_image_url}
+                        alt={recipe.title}
+                        referrerPolicy="no-referrer"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          if (target.src !== 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=800&q=80') {
+                            target.src = 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=800&q=80';
+                          }
+                        }}
+                      />
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center text-white/60 p-4 text-center">
                         <Leaf size={40} className="mb-2 opacity-60" />

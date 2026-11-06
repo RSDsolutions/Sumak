@@ -229,8 +229,15 @@ function CourseCard({ item, idx = 0 }: { item: CourseCardItem; idx?: number }) {
         <img
           src={item.image}
           alt={item.title}
+          referrerPolicy="no-referrer"
           className="sm:absolute sm:inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           loading="lazy"
+          onError={(e) => {
+            const target = e.currentTarget;
+            if (target.src !== 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80') {
+              target.src = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80';
+            }
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent sm:bg-gradient-to-r pointer-events-none" />
       </div>

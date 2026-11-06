@@ -421,7 +421,14 @@ export default function AcademiaDashboard() {
                       <img 
                         src={c.image} 
                         alt={c.title} 
+                        referrerPolicy="no-referrer"
                         className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover shrink-0 bg-slate-900/10"
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          if (target.src !== 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=400&q=80') {
+                            target.src = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=400&q=80';
+                          }
+                        }}
                       />
                       <div className="min-w-0 space-y-1">
                         <h3 className={`text-sm sm:text-base font-bold ${theme.title} transition-colors leading-snug truncate`}>
@@ -479,8 +486,15 @@ export default function AcademiaDashboard() {
                         <img 
                           src={c.image} 
                           alt={c.title} 
+                          referrerPolicy="no-referrer"
                           className="w-full h-full object-cover rounded-xl mix-blend-overlay opacity-80 group-hover:scale-105 transition-transform duration-500" 
                           loading="lazy"
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            if (target.src !== 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=400&q=80') {
+                              target.src = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=400&q=80';
+                            }
+                          }}
                         />
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                           <GraduationCap size={36} className="text-white drop-shadow-md group-hover:scale-110 transition-transform" />
@@ -553,7 +567,14 @@ export default function AcademiaDashboard() {
                     <img 
                       src={item.image} 
                       alt={item.title} 
+                      referrerPolicy="no-referrer"
                       className="w-12 h-12 rounded-xl object-cover shrink-0"
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        if (target.src !== 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=400&q=80') {
+                          target.src = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=400&q=80';
+                        }
+                      }}
                     />
                     <div className="min-w-0">
                       <h4 className="text-xs sm:text-sm font-bold text-[#12361B] truncate">

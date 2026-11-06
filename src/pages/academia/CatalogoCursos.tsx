@@ -25,15 +25,17 @@ function levelLabel(level?: string | null): string {
   return map[level.toLowerCase()] || level;
 }
 
+const DEFAULT_FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80';
+
 const CURATED_COURSE_GALLERY = [
   'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=800&q=80', // Planificación y estudio
   'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80', // Analítica y crecimiento
   'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80', // Liderazgo y equipo
   'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=800&q=80', // Cosmética botánica
-  'https://images.unsplash.com/photo-1512290900672-1f41b2729a67?auto=format&fit=crop&w=800&q=80', // Plantas medicinales
+  'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=800&q=80', // Plantas medicinales
   'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800&q=80', // Salud integrativa
   'https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=800&q=80', // Nutrición fresca
-  'https://images.unsplash.com/photo-1556742049-0a67c5574f73?auto=format&fit=crop&w=800&q=80', // Ventas y acuerdos
+  'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=800&q=80', // Ventas y acuerdos
   'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&w=800&q=80', // Finanzas y prosperidad
   'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=800&q=80', // Oratoria y liderazgo
   'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=800&q=80', // Reunión de negocios y metas
@@ -61,7 +63,7 @@ function getCourseThematicImage(course: AcademyCourse, index = 0): string {
     return 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=800&q=80';
   }
   if (/fito|hierba|planta|botanica|infusion|extracto/i.test(text)) {
-    return 'https://images.unsplash.com/photo-1512290900672-1f41b2729a67?auto=format&fit=crop&w=800&q=80';
+    return 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=800&q=80';
   }
   if (/biomedicina|ancestral|paredes|sanaci/i.test(text)) {
     return 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800&q=80';
@@ -85,7 +87,7 @@ function getCourseThematicImage(course: AcademyCourse, index = 0): string {
     return 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=800&q=80';
   }
   if (/venta|vender|cierre|comercial|prospec|negociaci/i.test(text)) {
-    return 'https://images.unsplash.com/photo-1556742049-0a67c5574f73?auto=format&fit=crop&w=800&q=80';
+    return 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=800&q=80';
   }
   if (/finanza|dinero|compensaci|ingreso|econom|prosperidad/i.test(text)) {
     return 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&w=800&q=80';
@@ -350,13 +352,20 @@ export default function CatalogoCursos() {
                   key={course.id}
                   className="rounded-3xl overflow-hidden border-0 shadow-xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col group cursor-pointer bg-white"
                 >
-                  {/* Top Photo Section — Fotografía nítida y diferenciada según el título */}
+                  {/* Top Photo Section — Fotografía nítida y diferenciada según el título con protección CORS y fallback automático */}
                   <div className="h-52 w-full relative overflow-hidden bg-slate-900 shrink-0">
                     <img
                       src={coverUrl}
                       alt={course.title}
+                      referrerPolicy="no-referrer"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                       loading="lazy"
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        if (target.src !== DEFAULT_FALLBACK_IMAGE) {
+                          target.src = DEFAULT_FALLBACK_IMAGE;
+                        }
+                      }}
                     />
 
                     {/* Gradient sutil en la base de la imagen para fundido suave */}
