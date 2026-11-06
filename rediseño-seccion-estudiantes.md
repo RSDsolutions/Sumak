@@ -135,3 +135,8 @@ Se llevó a cabo una refactorización integral del diseño visual y la ergonomí
 ### C. Mis Recetas (`MisRecetas.tsx`) y Programas (`Programas.tsx`):
 - Banners a ancho total horizontal sin cajas flotantes.
 - Erradicación de la caja contenedora sobre el autor `Dr. Luis Paredes` en las tarjetas de recetas, mostrándolo como texto limpio y tipográfico.
+
+### D. Sincronización Estricta de Cursos (Supabase vs Frontend):
+- Se verificó que en Supabase existen exactamente **4 cursos publicados**: *Test 2*, *Bases Fisiológicas y Prevención Renal*, *Sumak, salud y bienestar* y *Afiliarse a Sumak*.
+- Se eliminaron todos los cursos mock simulados en `MisCursos.tsx` (*Clase de Inglés*, *Estrategia de Diseño*, *Gestión de Negocios*) y en `AcademiaDashboard.tsx` (*Figma*, *C++*, *Sistemas de Diseño*).
+- Se implementaron estados vacíos claros y métricas verídicas para los estudiantes que aún no cuentan con inscripciones.

@@ -119,52 +119,6 @@ function calculateDaysLeft(expiresAt: string | null | undefined): number | null 
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
 
-// Cursos de demostración exactos al mock para garantizar vista perfecta incluso sin inscripciones
-const DEMO_COURSES: CourseCardItem[] = [
-  {
-    id: 'demo-1',
-    title: 'Clase de Inglés',
-    description: 'Lecciones de idiomas guiadas por los docentes más destacados',
-    rating: '4.5',
-    tags: ['Idiomas'],
-    dateLabel: 'Inicio',
-    dateValue: '20 Jul',
-    image: 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?auto=format&fit=crop&w=600&q=80',
-    bgGradient: 'bg-[#FCE38A]',
-    status: 'upcoming',
-    slug: 'clase-ingles',
-    canAccess: true,
-  },
-  {
-    id: 'demo-2',
-    title: 'Estrategia de Diseño',
-    description: 'Planificación integral de conceptos visuales y diseño de experiencias',
-    rating: '4.0',
-    tags: ['Diseño UI/UX', 'Diseño Web'],
-    dateLabel: 'Inicio',
-    dateValue: '22 Jul',
-    image: 'https://images.unsplash.com/photo-1626785774573-4b799315345d?auto=format&fit=crop&w=600&q=80',
-    bgGradient: 'bg-[#98A8F8]',
-    status: 'upcoming',
-    slug: 'estrategia-diseno',
-    canAccess: true,
-  },
-  {
-    id: 'demo-3',
-    title: 'Gestión de Negocios',
-    description: 'Estrategias clave para emprender y escalar proyectos con seguridad',
-    rating: '4.2',
-    tags: ['Marketing', 'Finanzas'],
-    dateLabel: 'Inicio',
-    dateValue: '26 Jul',
-    image: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=600&q=80',
-    bgGradient: 'bg-[#F6C6EA]',
-    status: 'upcoming',
-    slug: 'gestion-negocios',
-    canAccess: true,
-  },
-];
-
 // ---------------------------------------------------------------------------
 // Paleta armónica pastel SUMAK para los contenedores de las tarjetas
 // ---------------------------------------------------------------------------
@@ -315,7 +269,7 @@ export default function MisCursos() {
   // Adaptación de inscripciones reales al modelo visual de la tarjeta
   const courseItems: CourseCardItem[] = useMemo(() => {
     if (enrollments.length === 0) {
-      return DEMO_COURSES;
+      return [];
     }
 
     return enrollments.map((enr, idx) => {
@@ -387,9 +341,9 @@ export default function MisCursos() {
     );
   }
 
-  const activeCount = enrollments.filter(e => e.status === 'active').length || (enrollments.length === 0 ? 2 : 0);
-  const completedCount = enrollments.filter(e => e.status === 'completed').length || (enrollments.length === 0 ? 1 : 0);
-  const totalCount = enrollments.length || (enrollments.length === 0 ? DEMO_COURSES.length : 0);
+  const activeCount = enrollments.filter(e => e.status === 'active').length;
+  const completedCount = enrollments.filter(e => e.status === 'completed').length;
+  const totalCount = enrollments.length;
 
   return (
     <div className="w-full pb-16">
@@ -408,12 +362,18 @@ export default function MisCursos() {
               Gestiona tu ruta de aprendizaje, retoma tus lecciones en curso y monitorea tus avances y certificaciones obtenidas.
             </p>
 
-            <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed pt-0.5">
-              Actualmente cuentas con{' '}
-              <strong className="text-amber-300 font-bold">{activeCount} {activeCount === 1 ? 'curso activo' : 'cursos activos'}</strong>,{' '}
-              <strong className="text-white font-bold">{completedCount} {completedCount === 1 ? 'completado' : 'completados'}</strong> y{' '}
-              <strong className="text-amber-300 font-bold">{totalCount} en tu campus virtual</strong>.
-            </p>
+            {totalCount > 0 ? (
+              <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed pt-0.5">
+                Actualmente cuentas con{' '}
+                <strong className="text-amber-300 font-bold">{activeCount} {activeCount === 1 ? 'curso activo' : 'cursos activos'}</strong>,{' '}
+                <strong className="text-white font-bold">{completedCount} {completedCount === 1 ? 'completado' : 'completados'}</strong> y{' '}
+                <strong className="text-amber-300 font-bold">{totalCount} en tu campus virtual</strong>.
+              </p>
+            ) : (
+              <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed pt-0.5">
+                Aún no tienes asignaturas matriculadas. Explora los <strong className="text-amber-300 font-bold">4 cursos oficiales</strong> disponibles en el campus virtual SUMAK.
+              </p>
+            )}
           </div>
 
           {/* Floating 3D/Glass Badges */}
@@ -514,14 +474,14 @@ export default function MisCursos() {
         </div>
       ) : (
         <div className="bg-white rounded-3xl p-12 text-center border border-dashed border-slate-200">
-          <BookOpen className="mx-auto text-amber-500 mb-3" size={32} />
+          <BookOpen className="mx-auto text-[#1A4E26] mb-3" size={36} />
           <h3 className="text-lg font-bold text-slate-800">No hay cursos en esta sección</h3>
-          <p className="text-slate-500 text-sm mt-1 mb-6">Explora el catálogo para agregar nuevos programas a tu aprendizaje.</p>
+          <p className="text-slate-500 text-sm mt-1 mb-6">Explora los 4 cursos oficiales de SUMAK para agregar nuevos programas a tu aprendizaje.</p>
           <Link
-            to="/academia/cursos"
-            className="inline-flex px-6 py-2.5 rounded-full bg-[#FFA500] hover:bg-[#F59E0B] text-white text-xs sm:text-sm font-semibold transition-all shadow-sm"
+            to="/academia/dashboard/explorar"
+            className="inline-flex px-6 py-2.5 rounded-full bg-[#1A4E26] hover:bg-[#12361A] text-white text-xs sm:text-sm font-semibold transition-all shadow-sm"
           >
-            Explorar Catálogo
+            Explorar Catálogo Oficial
           </Link>
         </div>
       )}

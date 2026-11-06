@@ -148,3 +148,16 @@
 - [x] **Cero modificaciones en backend:** Base de datos Supabase, esquemas, migraciones y RLS policies intactas.
 - [x] **Cero dependencias innecesarias:** Trabajo exclusivo con el stack preexistente del proyecto (React 19, Tailwind CSS v4, Lucide React).
 - [x] **Preservación total de comentarios preexistentes y contratos de interfaces TypeScript.**
+
+---
+
+## 7. Erradicación de Cursos Mock y Sincronización Estricta con Supabase
+
+- **Auditoría de Cursos Reales en Supabase:** Se comprobó directamente contra la tabla `academy_courses` que existen exactamente **4 cursos oficiales publicados**:
+  1. `Test 2` (slug: `test-2`)
+  2. `Bases Fisiológicas y Prevención Renal` (slug: `bases-fisiologicas-y-prevencion-renal`)
+  3. `Sumak, salud y bienestar` (slug: `sumak-salud-y-bienestar`)
+  4. `Afiliarse a Sumak` (slug: `afiliarse-a-sumak`)
+- **Limpieza de Cursos Simulados:**
+  - En `MisCursos.tsx`: Se eliminó el array `DEMO_COURSES` (*Clase de Inglés*, *Estrategia de Diseño*, *Gestión de Negocios*) y las métricas ficticias hardcodeadas. Se implementó un estado vacío elegante con botón CTA directo al catálogo oficial.
+  - En `AcademiaDashboard.tsx`: Se erradicaron los fallbacks de *Diseño UI con Figma*, *Compilación C++*, *Sistemas de Diseño* e *Investigación Aplicada*. En "Continuar Aprendiendo" y "Cursos Para Ti" se despliegan exclusivamente las inscripciones y cursos reales de la academia.

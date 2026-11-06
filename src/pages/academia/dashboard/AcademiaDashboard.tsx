@@ -159,9 +159,9 @@ export default function AcademiaDashboard() {
   const lastAccessedDays = lastAccessed ? daysLeft(lastAccessed.expires_at) : null;
   const lastAccessedImage = lastAccessed ? getCourseThematicImage((lastAccessed as any).course) : '';
 
-  // Cursos Destacados (Estilo 3D Cards según mockup)
-  const displayFeaturedCourses = courses.length >= 3
-    ? courses.slice(0, 3).map((c, idx) => ({
+  // Cursos Destacados (Estilo 3D Cards según mockup — Muestra exclusivamente los 4 cursos reales)
+  const displayFeaturedCourses = courses.length > 0
+    ? courses.slice(0, 4).map((c, idx) => ({
         id: c.id,
         title: c.title,
         slug: c.slug,
@@ -171,7 +171,7 @@ export default function AcademiaDashboard() {
         participants: 25 + ((idx * 15) % 20),
         bgGradient: idx === 0 
           ? 'from-[#0F2E18] to-[#1A4E26]' 
-          : (idx === 1 ? 'from-[#FBBF24] to-[#F59E0B]' : 'from-[#2B6E3A] to-[#4A7C59]'),
+          : (idx === 1 ? 'from-[#FBBF24] to-[#F59E0B]' : (idx === 2 ? 'from-[#2B6E3A] to-[#4A7C59]' : 'from-[#143D27] to-[#1F5434]')),
         accentColor: idx === 0 
           ? 'bg-[#1A4E26]' 
           : (idx === 1 ? 'bg-[#F59E0B]' : 'bg-[#2B6E3A]'),
@@ -181,7 +181,7 @@ export default function AcademiaDashboard() {
         {
           id: 'feat-1',
           title: 'Bases Fisiológicas y Prevención Renal',
-          slug: 'bases-fisiologicas-renal',
+          slug: 'bases-fisiologicas-y-prevencion-renal',
           category: 'Salud & Bienestar',
           lessons: 24,
           duration: 17,
@@ -192,84 +192,62 @@ export default function AcademiaDashboard() {
         },
         {
           id: 'feat-2',
-          title: 'Liderazgo Transformacional y Duplicación',
-          slug: 'liderazgo-transformacional',
-          category: 'Liderazgo & Red',
-          lessons: 34,
-          duration: 24,
-          participants: 40,
+          title: 'Sumak, salud y bienestar',
+          slug: 'sumak-salud-y-bienestar',
+          category: 'Bienestar & Nutrición',
+          lessons: 18,
+          duration: 12,
+          participants: 35,
+          bgGradient: 'from-[#2B6E3A] to-[#4A7C59]',
+          accentColor: 'bg-[#2B6E3A]',
+          image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=600&q=80'
+        },
+        {
+          id: 'feat-3',
+          title: 'Afiliarse a Sumak',
+          slug: 'afiliarse-a-sumak',
+          category: 'Comunidad & Afiliación',
+          lessons: 10,
+          duration: 8,
+          participants: 50,
           bgGradient: 'from-[#FBBF24] to-[#F59E0B]',
           accentColor: 'bg-[#F59E0B]',
           image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=600&q=80'
         },
         {
-          id: 'feat-3',
-          title: 'Nutrición Celular y Formulación Natural',
-          slug: 'nutricion-celular-formulacion',
-          category: 'Ciencia & Salud',
-          lessons: 21,
-          duration: 27,
-          participants: 25,
-          bgGradient: 'from-[#2B6E3A] to-[#4A7C59]',
-          accentColor: 'bg-[#2B6E3A]',
-          image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=600&q=80'
+          id: 'feat-4',
+          title: 'Test 2',
+          slug: 'test-2',
+          category: 'Academia SUMAK',
+          lessons: 8,
+          duration: 5,
+          participants: 20,
+          bgGradient: 'from-[#143D27] to-[#1F5434]',
+          accentColor: 'bg-[#143D27]',
+          image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80'
         }
       ];
 
-  // Continuar Cursos
-  const displayContinueCourses = activeEnrollments.length > 0
-    ? activeEnrollments.slice(0, 4).map(enr => ({
-        id: enr.id,
-        title: (enr as any).course?.title || 'Curso Académico',
-        slug: (enr as any).course?.slug || '',
-        description: (enr as any).course?.short_description || 'Continúa avanzando en tus módulos y lecciones asignadas.',
-        progress: Math.min(100, Math.max(0, enr.progress_percentage || 0)),
-        image: getCourseThematicImage((enr as any).course)
-      }))
-    : [
-        {
-          id: 'cont-1',
-          title: 'Diseño UI',
-          slug: 'ui-design-mobile',
-          description: 'Diseño de Aplicaciones Móviles con Figma',
-          progress: 50,
-          image: 'https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?auto=format&fit=crop&w=400&q=80'
-        },
-        {
-          id: 'cont-2',
-          title: 'Programación Básica',
-          slug: 'basics-programming-c',
-          description: 'Compilación y Ejecución de Código en C++',
-          progress: 78,
-          image: 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=400&q=80'
-        }
-      ];
+  // Continuar Cursos (Únicamente inscripciones reales del estudiante)
+  const displayContinueCourses = activeEnrollments.slice(0, 4).map(enr => ({
+    id: enr.id,
+    title: (enr as any).course?.title || 'Curso Académico',
+    slug: (enr as any).course?.slug || '',
+    description: (enr as any).course?.short_description || 'Continúa avanzando en tus módulos y lecciones asignadas.',
+    progress: Math.min(100, Math.max(0, enr.progress_percentage || 0)),
+    image: getCourseThematicImage((enr as any).course)
+  }));
 
-  // Cursos Completados
+  // Cursos Completados (Únicamente certificaciones o inscripciones finalizadas)
   const displayCompletedCourses = (completedEnrollments.length > 0 || diplomas.length > 0)
-    ? (completedEnrollments.length > 0 ? completedEnrollments : diplomas).slice(0, 3).map((item: any, idx) => ({
+    ? (completedEnrollments.length > 0 ? completedEnrollments : diplomas).slice(0, 3).map((item: any) => ({
         id: item.id,
-        title: item.course?.title || item.diploma_type?.name || item.program_name || (idx === 0 ? 'Sistemas de Diseño' : 'Investigación Aplicada'),
-        date: formatDate(item.completed_at || item.issued_at) || (idx === 0 ? '21 de Enero, 2024' : '28 de Enero, 2024'),
-        score: idx === 0 ? 98 : 95,
+        title: item.course?.title || item.diploma_type?.name || item.program_name || 'Curso Aprobado',
+        date: formatDate(item.completed_at || item.issued_at) || 'Certificación Obtenida',
+        score: 100,
         image: getCourseThematicImage(item.course)
       }))
-    : [
-        {
-          id: 'comp-1',
-          title: 'Sistemas de Diseño',
-          date: '21 de Enero, 2024',
-          score: 98,
-          image: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=400&q=80'
-        },
-        {
-          id: 'comp-2',
-          title: 'Investigación Aplicada',
-          date: '28 de Enero, 2024',
-          score: 95,
-          image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=400&q=80'
-        }
-      ];
+    : [];
 
   // Diplomas Oficiales
   const displayDiplomas = diplomas.length > 0
@@ -408,53 +386,73 @@ export default function AcademiaDashboard() {
               </Link>
             </div>
 
-            <div className="space-y-3.5">
-              {displayContinueCourses.map((c, cIdx) => {
-                const theme = DASHBOARD_PASTEL_PALETTE[cIdx % DASHBOARD_PASTEL_PALETTE.length];
-                return (
-                  <Link
-                    key={c.id}
-                    to={`/academia/aprender/${c.slug}`}
-                    className={`bg-gradient-to-r ${theme.bg} rounded-2xl p-4 flex items-center justify-between gap-4 hover:shadow-xs transition-all duration-200 group`}
-                  >
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <img 
-                        src={c.image} 
-                        alt={c.title} 
-                        referrerPolicy="no-referrer"
-                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover shrink-0 bg-slate-900/10"
-                        onError={(e) => {
-                          const target = e.currentTarget;
-                          if (target.src !== 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=400&q=80') {
-                            target.src = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=400&q=80';
-                          }
-                        }}
-                      />
-                      <div className="min-w-0 space-y-1">
-                        <h3 className={`text-sm sm:text-base font-bold ${theme.title} transition-colors leading-snug truncate`}>
-                          {c.title}
-                        </h3>
-                        <p className="text-xs text-slate-600 line-clamp-1">
-                          {c.description}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3 sm:gap-4 shrink-0">
-                      <div className="w-28 sm:w-44 bg-white/70 rounded-full h-3.5 p-0.5 overflow-hidden flex items-center">
-                        <div 
-                          className="bg-[#1A4E26] h-full rounded-full flex items-center justify-center text-[9px] font-black text-white transition-all duration-500 shadow-2xs"
-                          style={{ width: `${Math.max(22, c.progress)}%` }}
-                        >
-                          {c.progress}%
+            {displayContinueCourses.length > 0 ? (
+              <div className="space-y-3.5">
+                {displayContinueCourses.map((c, cIdx) => {
+                  const theme = DASHBOARD_PASTEL_PALETTE[cIdx % DASHBOARD_PASTEL_PALETTE.length];
+                  return (
+                    <Link
+                      key={c.id}
+                      to={`/academia/aprender/${c.slug}`}
+                      className={`bg-gradient-to-r ${theme.bg} rounded-2xl p-4 flex items-center justify-between gap-4 hover:shadow-xs transition-all duration-200 group`}
+                    >
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <img 
+                          src={c.image} 
+                          alt={c.title} 
+                          referrerPolicy="no-referrer"
+                          className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover shrink-0 bg-slate-900/10"
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            if (target.src !== 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=400&q=80') {
+                              target.src = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=400&q=80';
+                            }
+                          }}
+                        />
+                        <div className="min-w-0 space-y-1">
+                          <h3 className={`text-sm sm:text-base font-bold ${theme.title} transition-colors leading-snug truncate`}>
+                            {c.title}
+                          </h3>
+                          <p className="text-xs text-slate-600 line-clamp-1">
+                            {c.description}
+                          </p>
                         </div>
                       </div>
-                      <ChevronRight size={20} className="text-slate-500 group-hover:text-[#1A4E26] group-hover:translate-x-1 transition-all shrink-0" />
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
+
+                      <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+                        <div className="w-28 sm:w-44 bg-white/70 rounded-full h-3.5 p-0.5 overflow-hidden flex items-center">
+                          <div 
+                            className="bg-[#1A4E26] h-full rounded-full flex items-center justify-center text-[9px] font-black text-white transition-all duration-500 shadow-2xs"
+                            style={{ width: `${Math.max(22, c.progress)}%` }}
+                          >
+                            {c.progress}%
+                          </div>
+                        </div>
+                        <ChevronRight size={20} className="text-slate-500 group-hover:text-[#1A4E26] group-hover:translate-x-1 transition-all shrink-0" />
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="bg-gradient-to-r from-[#EBF5EE] via-[#E1EFE5] to-[#D5E8DB] rounded-3xl p-6 sm:p-7 flex flex-col sm:flex-row items-center justify-between gap-5 border-0">
+                <div className="flex items-center gap-4 text-center sm:text-left">
+                  <div className="w-13 h-13 rounded-2xl bg-white/80 flex items-center justify-center text-[#1A4E26] shrink-0 shadow-2xs">
+                    <BookOpen size={26} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-bold text-[#12361B]">Aún no has iniciado un curso activo</h3>
+                    <p className="text-xs text-[#2D5A37] mt-0.5">Explora los 4 cursos oficiales de SUMAK para comenzar tu ruta de aprendizaje.</p>
+                  </div>
+                </div>
+                <Link
+                  to="/academia/dashboard/explorar"
+                  className="px-5 py-2.5 rounded-full bg-[#1A4E26] hover:bg-[#12361A] text-white text-xs font-semibold transition-all shrink-0 shadow-xs"
+                >
+                  Explorar Cursos
+                </Link>
+              </div>
+            )}
           </section>
 
           {/* B. Cursos Para Ti (Segundo bloque debajo de Continuar Aprendiendo) */}
@@ -557,47 +555,55 @@ export default function AcademiaDashboard() {
               </Link>
             </div>
 
-            <div className="divide-y divide-black/5">
-              {displayCompletedCourses.map((item) => (
-                <div 
-                  key={item.id}
-                  className="py-3 flex items-center justify-between gap-3 transition-colors"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <img 
-                      src={item.image} 
-                      alt={item.title} 
-                      referrerPolicy="no-referrer"
-                      className="w-12 h-12 rounded-xl object-cover shrink-0"
-                      onError={(e) => {
-                        const target = e.currentTarget;
-                        if (target.src !== 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=400&q=80') {
-                          target.src = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=400&q=80';
-                        }
-                      }}
-                    />
-                    <div className="min-w-0">
-                      <h4 className="text-xs sm:text-sm font-bold text-[#12361B] truncate">
-                        {item.title}
-                      </h4>
-                      <p className="text-[11px] text-slate-600 mt-0.5 truncate">
-                        {item.date}
-                      </p>
+            {displayCompletedCourses.length > 0 ? (
+              <div className="divide-y divide-black/5">
+                {displayCompletedCourses.map((item) => (
+                  <div 
+                    key={item.id}
+                    className="py-3 flex items-center justify-between gap-3 transition-colors"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <img 
+                        src={item.image} 
+                        alt={item.title} 
+                        referrerPolicy="no-referrer"
+                        className="w-12 h-12 rounded-xl object-cover shrink-0"
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          if (target.src !== 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=400&q=80') {
+                            target.src = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=400&q=80';
+                          }
+                        }}
+                      />
+                      <div className="min-w-0">
+                        <h4 className="text-xs sm:text-sm font-bold text-[#12361B] truncate">
+                          {item.title}
+                        </h4>
+                        <p className="text-[11px] text-slate-600 mt-0.5 truncate">
+                          {item.date}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Insignia de Puntaje */}
+                    <div className="w-13 h-13 rounded-2xl bg-white/80 flex flex-col items-center justify-center shrink-0 shadow-2xs">
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-amber-800 leading-none">
+                        Puntaje
+                      </span>
+                      <span className="text-lg font-black text-amber-950 leading-tight mt-0.5">
+                        {item.score}
+                      </span>
                     </div>
                   </div>
-
-                  {/* Insignia de Puntaje */}
-                  <div className="w-13 h-13 rounded-2xl bg-white/80 flex flex-col items-center justify-center shrink-0 shadow-2xs">
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-amber-800 leading-none">
-                      Puntaje
-                    </span>
-                    <span className="text-lg font-black text-amber-950 leading-tight mt-0.5">
-                      {item.score}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-6 text-center space-y-2">
+                <Award size={30} className="mx-auto text-[#1A4E26]/60" />
+                <p className="text-xs font-bold text-[#12361B]">Sin cursos completados aún</p>
+                <p className="text-[11px] text-[#2D5A37]/80">Al finalizar tus lecciones y evaluaciones verás tus certificaciones aquí.</p>
+              </div>
+            )}
           </section>
 
           {/* 2. Mis Diplomas */}
