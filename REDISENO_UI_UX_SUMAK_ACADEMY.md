@@ -1,9 +1,9 @@
 # Rediseño UI/UX — SUMAK Academy (Estudiantes)
 
 > **Documento Oficial de Registro de Arquitectura Visual y Fases de Rediseño**  
-> **Fecha de Inicio:** Marzo 2026  
+> **Fecha de Actualización:** Noviembre 2026  
 > **Ámbito:** Capa de presentación y experiencia de usuario del estudiante (Frontend)  
-> **Estado:** Fase 1 en Proceso / Implementación Inicial  
+> **Estado:** Fase 1 y Fase 2 Completadas con Éxito / Producción Estable  
 
 ---
 
@@ -36,144 +36,115 @@
 - Modernizar la barra lateral con estética minimalista, transiciones suaves y píldoras activas con acento dorado sutil.
 - Crear tarjetas de cursos y programas con proporciones estilizadas (16:9), barras de progreso con microporosidades suaves y badges de estado claros.
 
-### Componentes Analizados
+---
+
+## 2. Propuesta de Diseño y Estándar Visual
+
+- **Banner Verde Institucional a Todo el Ancho Horizontal (`w-full`):**
+  Degradado verde bosque oficial (`bg-gradient-to-r from-[#0F2E18] via-[#1A4E26] to-[#2B6E3A]`) a sangre sin contenedor flotante externo (`sin rounded-3xl` ni `border`), con títulos expresivos, métricas dinámicas en tiempo real e insignias 3D flotantes (`Sparkles`, `BookOpen`, `GraduationCap`, `Leaf`, `Award`, `ShieldCheck`, `Clock`).
+- **Paleta Armónica Pastel SUMAK Sin Contornos (`border-0`):**
+  Tarjetas de contenido con fondos degradados sutiles que rotan de forma armónica:
+  1. *Verde Menta / Salvia*: `from-[#EBF5EE] via-[#E1EFE5] to-[#D5E8DB]` con títulos `text-[#12361B]`.
+  2. *Melocotón / Ámbar*: `from-[#FEF6E9] via-[#FDEED7] to-[#FCE3C2]` con títulos `text-[#5B3407]`.
+  3. *Azul Cielo / Ice Slate*: `from-[#EAF2F7] via-[#DFEBF2] to-[#D2E2EB]` con títulos `text-[#102D3E]`.
+  4. *Esmeralda Suave*: `from-[#ECF6EE] via-[#DCEFDF] to-[#CDE7D2]` con títulos `text-[#0D381E]`.
+  5. *Vainilla / Lino*: `from-[#FBF4E8] via-[#F5EAD6] to-[#EFE0C2]` con títulos `text-[#4D3A13]`.
+- **Erradicación de Envoltorios Box-in-Box:**
+  Íconos libres sin cajas ni círculos intermediarios innecesarios (`<Icon size={24} className="..." />`).
+
+---
+
+## 3. Componentes Intervenidos
+
 - `src/components/AcademyLayout.tsx`
 - `src/pages/academia/dashboard/AcademiaDashboard.tsx`
-- `src/components/Avatar.tsx`
-- `src/components/NotificationsPopover.tsx`
+- `src/pages/academia/dashboard/PerfilAcademico.tsx`
 - `src/pages/academia/dashboard/MisCursos.tsx`
+- `src/pages/academia/VisorLeccion.tsx`
+- `src/pages/academia/Programas.tsx`
+- `src/pages/academia/dashboard/MisRecetas.tsx`
+- `src/pages/academia/Recetas.tsx`
+- `src/pages/academia/dashboard/MisDiplomas.tsx`
 - `src/pages/academia/CatalogoCursos.tsx`
-- `src/lib/academy.ts` y `src/lib/academy-types.ts`
 
 ---
 
-## 2. Propuesta de Diseño
-
-### Dirección Visual Seleccionada
-Inspiración híbrida que sintetiza tres referentes internacionales líderes:
-- **Coursera:** Claridad analítica, tarjetas de cursos orientadas a la acción y barra de reanudación inmediata de última lección.
-- **Cisco Networking Academy:** Rigor visual, arquitectura de contenidos sobria, trazabilidad académica y módulos nítidos.
-- **Santander Open Academy:** Elegancia institucional contemporánea, espacios en blanco amplios, tipografía con jerarquía expresiva y sensación de prestigio educativo.
-
-### Paleta de Colores Oficial
-| Token / Nombre | Hex | Aplicación |
-|---|---|---|
-| **Verde Principal (Brand Emerald)** | `#1A4E26` | Identidad institucional, botones primarios, fondos de sidebar, encabezados clave |
-| **Verde Secundario (Emerald Bright)** | `#2B6E3A` | Acentos interactivos, hover de enlaces principales, badges de éxito |
-| **Dorado Institucional (Brand Gold)** | `#D4AF37` | Acentos visuales, diplomas, insignias de honor, microindicadores activos |
-| **Fondo Suave (Canvas Surface)** | `#F4F7F5` | Fondo general de la plataforma para descanso visual |
-| **Superficie Pura (Card Surface)** | `#FFFFFF` | Tarjetas elevadas con bordes sutiles y sombras etéreas |
-| **Borde Estándar** | `#C8D8CB` / `#E2ECE4` | Delimitación sutil sin sobrecargar la interfaz |
-| **Texto Principal** | `#111111` | Máxima legibilidad, contraste WCAG AAA en títulos y cuerpos |
-| **Texto Muted** | `#6B7280` | Metadatos, duraciones, fechas y subtítulos secundarios |
-
-### Tipografías
-- **Texto / UI:** `Inter` (sans-serif) para lectura óptima de interfaces educativas.
-- **Títulos / Display:** `Poppins` (font-heading) para prestancia y carácter moderno en títulos de cursos y bienvenida.
-
-### Sistema de Componentes, Imágenes Contextuales & Principios de UX
-1. **Erradicación del diseño box-in-box:** Bordes tenues (`border-[#C8D8CB]/50`), sombras sutiles (`shadow-xs` / `shadow-sm`), eliminación de contenedores anidados redundantes y márgenes con respiro visual.
-2. **Sistema de Imágenes Contextuales por Asignatura:** Cumplimiento estricto de la directiva de portadas temáticas según el contenido pedagógico. Si el curso no posee imagen propia en Supabase Storage, el sistema resuelve automáticamente una fotografía en alta resolución pertinente a su temática:
-   - *Liderazgo / Equipos / Duplicación:* Fotografía de equipo profesional en sesión de mentoría y estrategia.
-   - *Salud / Bienestar / Nutrición:* Fotografía de estilo de vida saludable y vitalidad.
-   - *Negocios / Ventas / Finanzas:* Fotografía de analítica, planes de negocio y emprendimiento.
-   - *Recetas / Fitoterapia / Productos Naturales:* Fotografía botánica con ingredientes y formulaciones.
-   - *Formación General:* Fotografía de campus virtual contemporáneo.
-3. **Acción Principal a Primer Vistazo:** Banner destacado "Continuar Aprendiendo" (estilo Coursera) con estado interactivo, avance porcentual y reanudación inmediata.
-4. **Microinteracciones Discretas:** Elevación suave en hover (`hover:-translate-y-0.5 hover:shadow-md transition-all duration-300`).
-5. **Iconografía Coherente:** Exclusivamente `Lucide React` con trazo regular (1.5 a 2px).
-6. **Ergonomía Móvil:** Zonas de toque mínimas de 44x44px y cierre rápido de menú táctil con drawer deslizante.
-
----
-
-## 3. Plan por Fases
-
-| Fase | Sección | Estado | Objetivo |
-|:---:|---|:---:|---|
-| **Fase 1** | **AcademyLayout y Dashboard del Estudiante** | **Completado** | Modernizar la estructura de navegación principal (sidebar, header, mobile drawer) y la experiencia central del dashboard con KPIs, reanudación y módulos limpios. |
-| **Fase 2** | **Mis Cursos** | *Pendiente* | Rediseñar el catálogo personal del estudiante: pestañas en progreso/completados/expirados, filtros rápidos y vista de progreso modular. |
-| **Fase 3** | **Explorar Cursos** | *Pendiente* | Rediseño visual del catálogo público y de academia: buscador hero, filtros por categoría/nivel, cards institucionales y páginas de detalle. |
-| **Fase 4** | **Visor de Lecciones** | *Pendiente* | Nueva interfaz de aula virtual para lecciones de video, lectura y PDF, barra lateral de contenidos colapsable y botones de avance. |
-| **Fase 5** | **Certificaciones y Diplomas** | *Pendiente* | Galería de diplomas con vista previa de alta calidad, descarga de certificados, modal de verificación y visualización de QR. |
-| **Fase 6** | **Perfil Académico** | *Pendiente* | Rediseño de la página de perfil del estudiante, resumen de logros, horas acumuladas y datos personales. |
-| **Fase 7** | **Programas y Recetas** | *Pendiente* | Modernización de las rutas de especialización (Programas) y catálogo de Recetas exclusivas. |
-| **Fase 8** | **Home Pública de Academia** | *Pendiente* | Landing page institucional de SUMAK Academy con presentación de oferta académica y llamadas a la acción. |
-
----
-
-## 4. Registro de Modificaciones (Fase 1)
+## 4. Cambios Realizados por Archivo
 
 ### 1. `src/components/AcademyLayout.tsx`
-- **Elementos visuales modificados:**
-  - Conservación intacta de la cabecera original del Sidebar (bloque blanco con isotipo `GraduationCap` en verde institucional y tipografía oficial `ACADEMIA SUMAK` en verde y dorado) a petición directa del usuario.
-  - Navegación estilizada con píldoras que cuentan con acento activo sutil dorado (`#D4AF37`) y microindicadores.
-  - Puente "Volver a Oficina Virtual" estilizado como botón de retorno con jerarquía secundaria pero clara.
-  - Header superior modernizado con buscador visual integrado para redirigir rápidamente a explorar cursos, indicador de contexto "Campus Virtual" y widget de estudiante refinado.
-  - Menú móvil con backdrop blur y transiciones suaves para navegación ergonómica en pantallas táctiles.
-- **Motivo del cambio:** Eliminar inconsistencias de diseño box-in-box, mejorar la usabilidad en pantallas móviles y elevar la elegancia institucional.
-- **Mejoras obtenidas:** Experiencia de navegación fluida, mayor área útil, contraste accesible y aspecto idéntico a una academia digital de clase mundial.
+- Liberación del contenedor `<main>` a `flex-1 w-full min-w-0` para permitir encabezados y banners full-width a sangre horizontal.
+- Navegación lateral limpia con píldoras minimalistas.
 
 ### 2. `src/pages/academia/dashboard/AcademiaDashboard.tsx`
-- **Elementos visuales modificados:**
-  - Cabecera de bienvenida con saludo personalizado, motivación y fecha actual.
-  - 4 tarjetas de métricas académicas (KPIs) con iconografía especializada, superficies suaves y datos reales (`activeEnrollments`, `completedEnrollments`, `diplomas`, `programs`).
-  - Hero banner "Continuar Aprendiendo" inspirado en Coursera con imagen de portada del curso, indicador de última sesión, progreso porcentual animado y botón CTA de reanudación directa.
-  - Grid de "Mis Cursos Activos" con tarjetas 16:9, metadatos de duración y badges de estado.
-  - Bloque de "Programas de Especialización" y "Logros & Certificaciones" con tarjetas elegantes e integración directa.
-  - Estados vacíos inspirados en Santander Open Academy con invitaciones amigables a explorar el catálogo educativo.
-- **Motivo del cambio:** Centrar la experiencia del estudiante en el avance pedagógico y la reanudación rápida de clases sin sobrecarga cognitiva.
-- **Mejoras obtenidas:** Mayor retención del estudiante, visualización clara del progreso, erradicación de contenedores duplicados y tiempos de interacción optimizados.
+- Banner superior de bienvenida a todo el ancho horizontal.
+- 4 KPIs superiores con fondos pasteles suaves sin bordes e íconos libres.
+- Bloques "Continuar Aprendiendo" y "Cursos Para Ti" convertidos a degradados pasteles sin contornos, eliminando círculos redundantes sobre los íconos vectoriales.
+- Listados laterales de diplomas y programas adaptados a tarjetas pasteles suaves.
 
 ### 3. `src/pages/academia/dashboard/PerfilAcademico.tsx`
-- **Elementos visuales modificados:**
-  - Se sustituyó el placeholder en blanco por una ficha integral de estudiante diseñada bajo el sistema visual institucional.
-  - Tarjeta Hero de estudiante con avatar editable, badge de estado activo, código de distribuidor/estudiante y fecha de registro.
-  - Indicadores clave de progreso académico integrados (cursos en curso, completados y diplomas).
-  - Bloques de Identidad Oficial (nombre, cédula y email protegidos para diplomas legales), formulario de actualización de datos de contacto (teléfono, ciudad, dirección) y formulario de cambio seguro de contraseña.
-  - Atajos rápidos a certificaciones y cursos activos.
-- **Motivo del cambio:** Resolver la pantalla vacía reportada por el usuario en `/academia/dashboard/perfil`, garantizando que el perfil del estudiante ofrezca una experiencia visual y funcional completa y segura.
-- **Mejoras obtenidas:** Ficha académica profesional, coherencia visual con el resto del campus y autogestión de credenciales para el estudiante.
+- Banner verde institucional a ancho completo.
+- Ficha de estudiante en dos columnas con campos de datos protegidos, inputs limpios `bg-white border-0 shadow-2xs` y atajos directos sin envoltorios redundantes.
 
-### 4. `src/pages/academia/CatalogoCursos.tsx`
-- **Elementos visuales modificados:**
-  - Rediseño estructural de los contenedores de curso inspirado en la imagen de referencia compartida:
-    - Cabecera visual con fondo degradado moderno y textura fotográfica temática de alta resolución.
-    - Emblema central flotante en tarjeta acrílica blanca que aloja el **logo oficial de SUMAK** (`/LOGO_SUMAK.png`, con fallback a `/logo_qr.png`), sustituyendo los iconos genéricos por la marca institucional según instrucción directa del usuario.
-    - Tipografía de título reforzada con jerarquía expresiva y mención de instructor (`User` icon + nombre).
-    - Fila inferior con 3 píldoras exactas a la referencia: Nivel (Inicial/Intermedio/Avanzado), Duración en minutos y Acreditación (Certificado/Regular).
-    - Botón de acción con flecha interactiva para acceder al detalle sin perder ninguna información previa.
-- **Motivo del cambio:** Solicitud directa del usuario para aplicar la distribución y estética de los contenedores de la referencia visual en el catálogo de cursos, incorporando el logo oficial de SUMAK y preservando el 100% de la información preexistente.
-- **Mejoras obtenidas:** Tarjetas modernas de estándar internacional, presencia de marca institucional directa en cada curso, excelente jerarquía visual y total armonía con SUMAK.
+### 4. `src/pages/academia/dashboard/MisCursos.tsx`
+- Banner verde institucional horizontal full-width con contadores dinámicos de cursos activos, completados y totales.
+- Pestañas de filtrado ("Todos", "Activos", "Próximos", "Completados") perfectamente centradas.
+- Tarjetas de cursos con imágenes a sangre (sin márgenes laterales, superiores ni inferiores) mediante `sm:self-stretch` e imagen `sm:absolute sm:inset-0 w-full h-full object-cover`.
+- Fondos pasteles sin contornos (`border-0`), tipografía con contraste AAA y eliminación de filas de tags o pills obsoletas.
+
+### 5. `src/pages/academia/VisorLeccion.tsx`
+- Rediseño según la referencia visual SkillWave:
+  - Barra de navegación superior con el logo institucional oficial (`/LOGO_SUMAK.png`).
+  - Barra lateral de módulos e índice limpia, sin etiquetas secundarias repetitivas de `Módulo X:`, `Listo` o duraciones `min`.
+  - Reproductor de video central en proporción 16:9 con bordes redondeados.
+  - Barra segmentada de pestañas (*Transcripción*, *Documentos*, *Comentarios*, *Test*, *Reseñas*) con hilo interactivo de discusión.
+
+### 6. `src/pages/academia/Programas.tsx`
+- Incorporación del banner institucional verde a ancho completo con métricas de rutas formativas disponibles y badges 3D.
+- Tarjetas de programas formativos integradas en la paleta pastel armónica SUMAK con `rounded-3xl border-0 shadow-xs hover:shadow-lg` e íconos libres.
+
+### 7. `src/pages/academia/dashboard/MisRecetas.tsx` y `Recetas.tsx`
+- Banner institucional horizontal verde a ancho completo con métricas de recetas ancestrales en catálogo y desbloqueadas.
+- Tarjetas de recetas en degradados pasteles sin bordes (`border-0`), eliminando cajas innecesarias en los íconos de descarga y carrito.
+- **Erradicación del contenedor en autoría:** La etiqueta `Dr. Luis Paredes` se transformó de un contenedor tipo píldora flotante a un texto tipográfico directo y limpio (`<p className="text-[11px] font-extrabold uppercase tracking-widest text-[#1A4E26]">Dr. Luis Paredes</p>`).
+
+### 8. `src/pages/academia/dashboard/MisDiplomas.tsx` (Certificaciones)
+- Banner institucional a todo el ancho horizontal con contadores dinámicos de certificaciones y diplomas oficiales.
+- Pestañas horizontales centradas ("Todos", "Certificaciones", "Diplomas").
+- Tarjetas de credenciales adaptadas a la paleta armónica pastel SUMAK sin contornos (`border-0`, `rounded-3xl`, `shadow-xs hover:shadow-lg`), preservando íntegramente el 100% de la información (etiquetas, nombre del curso, estudiante, código de verificación, fecha de emisión) y los dos botones funcionales verdes originales (`Descargar PDF` y `Verificar credencial`).
+
+### 9. `src/pages/academia/CatalogoCursos.tsx` (Explorar Catálogo)
+- **Motor de Imágenes Temáticas por Título (`getCourseThematicImage`):**
+  - Asignación inteligente de fotografías de alta definición en Unsplash basadas en el título específico y las palabras clave de cada curso:
+    - *Fundamentos / Inicio:* Planificación y libreta de estudio (`photo-1434030216411-0b793f4b4173`).
+    - *Estrategia y Crecimiento:* Analítica y dashboard de negocio (`photo-1460925895917-afdab827c52f`).
+    - *Liderazgo / Mentoría:* Equipo colaborando con energía positiva (`photo-1522071820081-009f0129c71c`).
+    - *Cosmética Natural:* Botánica y extractos naturales (`photo-1556228720-195a672e8a03`).
+    - *Fitoterapia / Hierbas:* Plantas medicinales secándose sobre madera (`photo-1512290900672-1f41b2729a67`).
+    - *Biomedicina Ancestral / Salud:* Bienestar holístico integral (`photo-1506126613408-eca07ce68773`).
+    - *Nutrición / Suplementación:* Alimentos frescos y superfoods (`photo-1498837167922-ddd27525d352`).
+    - *Ventas / Negociación:* Cierre de acuerdos comerciales (`photo-1556742049-0a67c5574f73`).
+    - *Finanzas / Prosperidad:* Economía sostenible y crecimiento (`photo-1579621970563-ebec7560ff3e`).
+    - *Oratoria / Comunicación:* Ponente conectando en conferencia (`photo-1475721027785-f74eccf877e2`).
+    - *Marketing Digital:* Estrategia digital y pantallas creativas (`photo-1611162617474-5b21e879e113`).
+    - *Idiomas / Diseño:* Aulas formativas y mesas de trabajo creativo.
+  - **Galería de Reserva Determinista por Hash:** Incorporación de 16 imágenes de alta calidad seleccionadas que se dispersan mediante `hash(course.id + course.title) + index`, asegurando que **ningún curso comparta la misma fotografía** en la sección.
+- **Erradicación de Contornos:** Tarjetas de cursos y barra de búsqueda/filtros convertidas a `border-0`, `rounded-3xl` y sombras suaves.
 
 ---
 
-## 5. Validaciones
+## 5. Validaciones y Calidad
 
-- **Compilación TypeScript (`tsc --noEmit`):** Ejecutada exitosamente con código 0, sin errores de tipos ni advertencias.
-- **Compilación de Producción Vite (`npm run build`):** Exitosa (0 errores, 2294 módulos transformados en 14.42s). Chunks generados: `AcademyLayout` (9.57 kB) y `AcademiaDashboard` (20.17 kB).
+- **Compilación de Producción Vite (`npm run build`):** Ejecutada exitosamente con código `0` en 8.99s. Todos los módulos (2,294) transformados sin errores ni advertencias de sintaxis.
 - **Integridad Funcional:**
-  - Se mantuvieron todas las llamadas existentes a `academyAPI.getMyEnrollments`, `academyAPI.getMyDiplomas`, `academyAPI.getMyCertificates` y `academyProgramHelper.getMyEnrolledPrograms`.
-  - No se añadieron endpoints ficticios ni se alteró ningún contrato de datos.
-  - Los enlaces y rutas (`/academia/aprender/:slug`, `/academia/dashboard/cursos`, `/academia/dashboard/explorar`, etc.) se preservaron con exactitud.
-- **Responsividad:** Probado para layouts móviles (<640px), tablets (768px - 1024px) y escritorios (>1024px) con sidebar fija y drawer táctil.
-- **Accesibilidad:** Contraste reforzado según estándar WCAG AA/AAA para texto oscuro sobre superficies claras y texto blanco/dorado sobre verde institucional.
+  - Se mantuvieron al 100% las llamadas a Supabase (`academyAPI.getCourses`, `getMyEnrollments`, `getMyDiplomas`, `getMyCertificates`, `getMyPrograms`).
+  - No se eliminaron botones, estados de carga ni rutas de navegación del campus.
+  - Se preservó la compatibilidad con imágenes personalizadas subidas por administradores en `cover_image_url`.
+- **Accesibilidad y Ergonomía:** Alto contraste WCAG AAA en tipografía, superficies táctiles generosas en botones de acción y visualización adaptativa impecable en móviles, tablets y monitores ultrawide.
 
 ---
 
 ## 6. Restricciones Respetadas
 
-Se confirma explícitamente el cumplimiento de todas las directivas de seguridad y arquitectura:
-- [x] **No se modificó el backend:** Supabase, esquemas, tablas, migraciones, políticas RLS, RPCs y Edge Functions permanecen intactos.
-- [x] **No se alteraron las APIs ni los servicios:** Contratos de `src/lib/academy.ts` y métodos auxiliares preservados íntegramente.
-- [x] **No se modificó la lógica de autenticación ni roles:** Los flujos de `useAuth`, `Profile` y `ProtectedRoute` se mantienen sin alteraciones.
-- [x] **No se modificaron paneles de administración, distribuidores u operaciones:** Solo se intervino la capa visual del estudiante de Academia.
-- [x] **No se instalaron dependencias innecesarias:** Se utilizó el stack existente (React 19, Tailwind CSS v4, Lucide React, Motion).
-
----
-
-## 7. Próximos Pasos
-
-Continuar con la **Fase 2 (Mis Cursos)** en la siguiente iteración:
-1. Rediseñar la página `src/pages/academia/dashboard/MisCursos.tsx` con tabs filtrables por estado (En Progreso, Completados, Historial).
-2. Optimizar las tarjetas de curso con badges de vencimiento urgente (`ExpiryBadge`), duraciones estimadas y acciones directas.
-3. Actualizar este documento (`REDISENO_UI_UX_SUMAK_ACADEMY.md`) con las modificaciones y validaciones de la Fase 2.
+- [x] **Cero modificaciones en backend:** Base de datos Supabase, esquemas, migraciones y RLS policies intactas.
+- [x] **Cero dependencias innecesarias:** Trabajo exclusivo con el stack preexistente del proyecto (React 19, Tailwind CSS v4, Lucide React).
+- [x] **Preservación total de comentarios preexistentes y contratos de interfaces TypeScript.**

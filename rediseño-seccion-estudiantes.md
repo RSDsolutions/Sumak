@@ -116,3 +116,22 @@ Se llevó a cabo una refactorización integral del diseño visual y la ergonomí
    Usa la clase del contenedor de color degradado `rounded-2xl p-4 border-0` y coloca el ícono directo sin crear un `div` envolvente para mantener consistencia con `AcademiaDashboard.tsx`.
 3. **Mantenimiento de Inputs:**
    Preserva siempre `border-0 shadow-2xs bg-white text-slate-900` para asegurar que los formularios conserven su estética ligera sobre fondos pasteles.
+
+
+---
+
+## 🚀 7. Actualización: Explorar Catálogo, Certificaciones, Programas y Recetas (Noviembre 2026)
+
+### A. Explorar Catálogo (`CatalogoCursos.tsx`):
+- **Motor de Imágenes Temáticas por Título (`getCourseThematicImage`):** Cada curso recibe una fotografía nítida y específica basada en las palabras clave de su título (Fundamentos, Estrategia, Cosmética, Fitoterapia, Biomedicina, Nutrición, Ventas, Finanzas, Oratoria, Marketing, etc.).
+- **Dispersión Determinista sin Repeticiones:** Galería de 16 fotografías HD que se seleccionan por hash de título para asegurar que ningún curso comparta la misma imagen.
+- **Tarjetas sin Contornos:** Contenedores `border-0`, `rounded-3xl` en paleta armónica pastel SUMAK.
+
+### B. Certificaciones (`MisDiplomas.tsx`):
+- **Banner Institucional a Ancho Completo (`w-full`):** Fondo verde degradado institucional con badges 3D e información dinámica de credenciales registradas.
+- **Pestañas Centradas:** Navegación por tabs ("Todos", "Certificaciones", "Diplomas") perfectamente centrada.
+- **Tarjetas en Paleta Pastel:** Contenedores en degradado pastel sin bordes (`border-0`), preservando el 100% de la información preexistente y los botones funcionales en verde bosque oficial (`Descargar PDF` y `Verificar credencial`).
+
+### C. Mis Recetas (`MisRecetas.tsx`) y Programas (`Programas.tsx`):
+- Banners a ancho total horizontal sin cajas flotantes.
+- Erradicación de la caja contenedora sobre el autor `Dr. Luis Paredes` en las tarjetas de recetas, mostrándolo como texto limpio y tipográfico.
