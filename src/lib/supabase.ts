@@ -1,15 +1,28 @@
 import { createClient } from '@supabase/supabase-js';
 
-const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const rawUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const rawAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
-if (!url || !anonKey) {
-  throw new Error(
-    'Faltan variables de entorno de Supabase.\n' +
-    'Asegúrate de que .env.local tiene VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY.\n' +
-    'Reinicia el servidor de desarrollo después de crear o modificar .env.local.'
+export const isSupabaseConfigured = Boolean(
+  rawUrl &&
+  rawAnonKey &&
+  !rawUrl.includes('tu-proyecto') &&
+  !rawAnonKey.includes('tu-anon-key')
+);
+
+if (!isSupabaseConfigured) {
+  console.warn(
+    '⚠️ [Sumak] Variables de entorno de Supabase no configuradas o con valores de plantilla.\n' +
+    'Configura VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY en .env.local para conectar con la base de datos real.\n' +
+    'La aplicación cargará en modo local con datos de respaldo (fallback).'
   );
 }
+
+const fallbackUrl = 'https://placeholder-sumak.supabase.co';
+const fallbackKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.placeholder';
+
+const url = isSupabaseConfigured ? rawUrl! : fallbackUrl;
+const anonKey = isSupabaseConfigured ? rawAnonKey! : fallbackKey;
 
 export const supabase = createClient(url, anonKey);
 

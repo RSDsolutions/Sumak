@@ -281,7 +281,7 @@ export default function Recetas() {
                   {/* Body */}
                   <div className="p-5 flex-1 flex flex-col">
                     <div className="mb-1">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-[#1A4E26] bg-[#1A4E26]/10 px-2 py-0.5 rounded">
+                      <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#1A4E26]">
                         Dr. Luis Paredes
                       </span>
                     </div>

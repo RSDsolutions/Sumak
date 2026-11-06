@@ -592,7 +592,7 @@ export const academyAPI = {
       .select(`
         *,
         course:course_id (
-          title, slug, cover_image_url, estimated_duration_minutes
+          title, slug, cover_image_url, estimated_duration_minutes, short_description, level
         )
       `)
       .eq('user_id', uid)
