@@ -3,37 +3,60 @@ import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, Eye, EyeOff, ExternalLink, FileText, Loader2,
   PlayCircle, Save, Trash2, Upload, Plus, Lock, Unlock,
-  CheckCircle, XCircle
+  CheckCircle, XCircle, ShieldAlert, Leaf, Pill
 } from 'lucide-react';
 import { academyAPI } from '../../../lib/academy';
+import { products } from '../../../data';
 import { useToast } from '../../../lib/toast';
-import type { AcademyLesson, AcademyModule, AcademyResource, ContentType } from '../../../lib/academy-types';
+import type {
+  AcademyLesson,
+  AcademyModule,
+  AcademyResource,
+  ContentType,
+  VideoProvider,
+  AcademyBotanicalSheet,
+  AcademyLessonBotanical,
+  AcademyLessonProduct,
+  ClinicalCalloutData,
+} from '../../../lib/academy-types';
+import { ClinicalCallout } from '../../../components/academia/ClinicalComponents';
 
 type LessonForm = {
   title: string;
   description: string;
   content_type: ContentType;
   text_content: string;
+  video_provider: VideoProvider;
   video_external_id: string;
   external_url: string;
   estimated_minutes: string;
   is_published: boolean;
   is_free_preview: boolean;
   is_required: boolean;
+  has_callout: boolean;
+  callout_severity: ClinicalCalloutData['severity'];
+  callout_title: string;
+  callout_message: string;
 };
 
 function lessonToForm(l: AcademyLesson): LessonForm {
+  const callout = l.metadata?.clinical_callout;
   return {
     title: l.title,
     description: l.description ?? '',
     content_type: l.content_type,
     text_content: l.text_content ?? '',
+    video_provider: l.video_provider ?? 'youtube',
     video_external_id: l.video_external_id ?? '',
     external_url: l.external_url ?? '',
     estimated_minutes: l.estimated_minutes?.toString() ?? '',
     is_published: l.is_published,
     is_free_preview: l.is_free_preview,
     is_required: l.is_required ?? true,
+    has_callout: Boolean(callout?.title || callout?.message),
+    callout_severity: callout?.severity ?? 'warning',
+    callout_title: callout?.title ?? '',
+    callout_message: callout?.message ?? '',
   };
 }
 
@@ -70,6 +93,10 @@ export default function AdminLessonBuilder() {
   const [lesson, setLesson] = useState<AcademyLesson | null>(null);
   const [module, setModule] = useState<AcademyModule | null>(null);
   const [resources, setResources] = useState<AcademyResource[]>([]);
+  const [allBotanicals, setAllBotanicals] = useState<AcademyBotanicalSheet[]>([]);
+  const [lessonBotanicals, setLessonBotanicals] = useState<AcademyLessonBotanical[]>([]);
+  const [lessonProducts, setLessonProducts] = useState<AcademyLessonProduct[]>([]);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingResource, setUploadingResource] = useState(false);
@@ -81,6 +108,18 @@ export default function AdminLessonBuilder() {
   const [resUrl, setResUrl] = useState('');
   const [resFile, setResFile] = useState<File | null>(null);
 
+  // Botanical link form
+  const [selectedBotanicalId, setSelectedBotanicalId] = useState('');
+  const [botanicalRole, setBotanicalRole] = useState('');
+  const [addingBotanical, setAddingBotanical] = useState(false);
+
+  // Product link form
+  const [selectedProductCode, setSelectedProductCode] = useState(products[0]?.codigo ?? '00011');
+  const [productDosage, setProductDosage] = useState('');
+  const [productPhase, setProductPhase] = useState('');
+  const [productPrecautions, setProductPrecautions] = useState('');
+  const [addingProduct, setAddingProduct] = useState(false);
+
   // Lesson specific upload state
   const [uploadingPdf, setUploadingPdf] = useState(false);
 
@@ -88,7 +127,6 @@ export default function AdminLessonBuilder() {
     if (!lessonId || !courseId) return;
     setLoading(true);
     try {
-      // Load modules to find the lesson's module
       const mods = await academyAPI.getAdminCourseContent(courseId);
       let foundLesson: AcademyLesson | null = null;
       let foundModule: AcademyModule | null = null;
@@ -100,7 +138,18 @@ export default function AdminLessonBuilder() {
       setLesson(foundLesson);
       setModule(foundModule);
       setForm(lessonToForm(foundLesson));
-      setResources(await academyAPI.getAdminLessonResources(lessonId));
+
+      const [res, botsCatalog, lBots, lProds] = await Promise.all([
+        academyAPI.getAdminLessonResources(lessonId),
+        academyAPI.getBotanicalSheets(),
+        academyAPI.getLessonBotanicals(lessonId),
+        academyAPI.getLessonProducts(lessonId),
+      ]);
+      setResources(res);
+      setAllBotanicals(botsCatalog);
+      if (botsCatalog.length > 0) setSelectedBotanicalId(botsCatalog[0].id);
+      setLessonBotanicals(lBots);
+      setLessonProducts(lProds);
     } catch { toast.error('No se pudo cargar la lección.'); }
     finally { setLoading(false); }
   }, [lessonId, courseId]);
@@ -116,22 +165,37 @@ export default function AdminLessonBuilder() {
     if (!form || !lesson || !module) return;
     setSaving(true);
     try {
-      const vidId = form.content_type === 'video' ? extractYoutubeId(form.video_external_id) : null;
+      const isVideoOrMixed = ['video', 'mixed'].includes(form.content_type);
+      const vidId = isVideoOrMixed && form.video_external_id.trim()
+        ? (form.video_provider === 'youtube' ? extractYoutubeId(form.video_external_id) : form.video_external_id.trim())
+        : null;
+
+      const nextMetadata = { ...(lesson.metadata ?? {}) };
+      if (form.has_callout && (form.callout_title.trim() || form.callout_message.trim())) {
+        nextMetadata.clinical_callout = {
+          severity: form.callout_severity,
+          title: form.callout_title.trim(),
+          message: form.callout_message.trim(),
+        };
+      } else {
+        delete nextMetadata.clinical_callout;
+      }
+
       const updated = await academyAPI.saveAdminLesson(lesson.id, {
         module_id: module.id,
         title: form.title.trim(),
         description: form.description.trim() || null,
         content_type: form.content_type,
-        text_content: ['text', 'mixed'].includes(form.content_type) ? (form.text_content || null) : null,
+        text_content: ['text', 'mixed', 'video'].includes(form.content_type) ? (form.text_content || null) : null,
         video_external_id: vidId,
-        video_provider: vidId ? 'youtube' : null,
+        video_provider: vidId ? form.video_provider : null,
         external_url: ['external_link', 'pdf'].includes(form.content_type) ? (form.external_url || null) : null,
         estimated_minutes: form.estimated_minutes ? Number(form.estimated_minutes) : null,
         is_published: form.is_published,
         is_free_preview: form.is_free_preview,
         is_required: form.is_required,
         sort_order: lesson.sort_order,
-        metadata: lesson.metadata ?? {},
+        metadata: nextMetadata,
       });
       setLesson(updated);
       setForm(lessonToForm(updated));
@@ -171,15 +235,85 @@ export default function AdminLessonBuilder() {
     } catch { toast.error('Error eliminando recurso.'); }
   }
 
+  async function handleAddBotanical() {
+    if (!lesson || !selectedBotanicalId) return;
+    setAddingBotanical(true);
+    try {
+      const added = await academyAPI.addLessonBotanical({
+        lesson_id: lesson.id,
+        botanical_id: selectedBotanicalId,
+        clinical_role: botanicalRole.trim() || undefined,
+        sort_order: lessonBotanicals.length + 1,
+      });
+      setLessonBotanicals(prev => [...prev.filter(x => x.botanical_id !== selectedBotanicalId), added]);
+      setBotanicalRole('');
+      toast.success('Ficha botánica vinculada a la lección.');
+    } catch {
+      toast.error('Error vinculando ficha botánica.');
+    } finally {
+      setAddingBotanical(false);
+    }
+  }
+
+  async function handleRemoveBotanical(id: string) {
+    try {
+      await academyAPI.removeLessonBotanical(id);
+      setLessonBotanicals(prev => prev.filter(x => x.id !== id));
+      toast.success('Ficha botánica desvinculada.');
+    } catch {
+      toast.error('No se pudo desvincular.');
+    }
+  }
+
+  async function handleAddProduct() {
+    if (!lesson || !selectedProductCode || !productDosage.trim()) {
+      toast.error('Ingresa la dosificación recomendada para el producto.');
+      return;
+    }
+    const prod = products.find(p => p.codigo === selectedProductCode);
+    if (!prod) return;
+    setAddingProduct(true);
+    try {
+      const added = await academyAPI.addLessonProduct({
+        lesson_id: lesson.id,
+        product_code: prod.codigo,
+        product_name: prod.nombre,
+        product_slug: prod.slug,
+        dosage: productDosage.trim(),
+        precautions: productPrecautions.trim() || prod.precauciones || null,
+        protocol_phase: productPhase.trim() || null,
+        sort_order: lessonProducts.length + 1,
+      });
+      setLessonProducts(prev => [...prev.filter(x => x.product_code !== prod.codigo), added]);
+      setProductDosage('');
+      setProductPhase('');
+      setProductPrecautions('');
+      toast.success('Producto SUMAK vinculado con éxito.');
+    } catch {
+      toast.error('Error vinculando producto.');
+    } finally {
+      setAddingProduct(false);
+    }
+  }
+
+  async function handleRemoveProduct(id: string) {
+    try {
+      await academyAPI.removeLessonProduct(id);
+      setLessonProducts(prev => prev.filter(x => x.id !== id));
+      toast.success('Producto desvinculado.');
+    } catch {
+      toast.error('No se pudo desvincular.');
+    }
+  }
+
   async function handlePdfUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file || !lesson || !module) return;
+    if (!file || !lesson || !module || !form) return;
     setUploadingPdf(true);
     try {
       const up = await academyAPI.uploadAdminResource(module.course_id, lesson.id, file);
       setField('external_url', up.publicUrl);
       
-      // Auto-save the lesson with the new URL so the user doesn't have to manually click save
       await academyAPI.saveAdminLesson(lesson.id, {
         module_id: module.id,
         title: form.title.trim() || lesson.title,
@@ -213,7 +347,9 @@ export default function AdminLessonBuilder() {
     );
   }
 
-  const videoId = form.content_type === 'video' ? extractYoutubeId(form.video_external_id) : null;
+  const videoId = ['video', 'mixed'].includes(form.content_type) && form.video_provider === 'youtube'
+    ? extractYoutubeId(form.video_external_id)
+    : null;
 
   return (
     <div className="space-y-0">
@@ -277,12 +413,38 @@ export default function AdminLessonBuilder() {
                 ))}
               </div>
 
-              {/* VIDEO editor */}
-              {form.content_type === 'video' && (
-                <div className="space-y-4">
-                  <Field label="ID o URL del video de YouTube" value={form.video_external_id}
-                    onChange={v => setField('video_external_id', v)} placeholder="Ej: dQw4w9WgXcQ o https://youtu.be/..." />
-                  {videoId && (
+              {/* VIDEO / MIXED video provider editor */}
+              {['video', 'mixed'].includes(form.content_type) && (
+                <div className="space-y-4 mb-5">
+                  <div className="grid sm:grid-cols-3 gap-3">
+                    <label className="block">
+                      <span className="text-sm font-semibold text-[#111] block mb-1">Proveedor de Video</span>
+                      <select
+                        value={form.video_provider}
+                        onChange={e => setField('video_provider', e.target.value as VideoProvider)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white outline-none focus:ring-2 focus:ring-[#1A4E26] text-sm"
+                      >
+                        <option value="youtube">YouTube</option>
+                        <option value="zoom">Zoom (Grabación / Enlace)</option>
+                        <option value="tiktok">TikTok (ID o URL)</option>
+                        <option value="vimeo">Vimeo</option>
+                        <option value="custom">URL Directa / Custom</option>
+                      </select>
+                    </label>
+                    <div className="sm:col-span-2">
+                      <Field
+                        label={`ID o URL de ${form.video_provider.toUpperCase()}`}
+                        value={form.video_external_id}
+                        onChange={v => setField('video_external_id', v)}
+                        placeholder={
+                          form.video_provider === 'youtube'
+                            ? 'Ej: dQw4w9WgXcQ o https://youtu.be/...'
+                            : 'https://...'
+                        }
+                      />
+                    </div>
+                  </div>
+                  {videoId && form.video_provider === 'youtube' && (
                     <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-900 aspect-video">
                       <iframe
                         src={`https://www.youtube.com/embed/${videoId}`}
@@ -290,23 +452,16 @@ export default function AdminLessonBuilder() {
                         className="w-full h-full" />
                     </div>
                   )}
-                  {!videoId && form.video_external_id && (
-                    <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-lg">
-                      No se pudo extraer un ID válido de YouTube. Verifica el formato.
-                    </p>
-                  )}
                 </div>
               )}
 
-              {/* TEXT / MIXED editor */}
-              {['text', 'mixed'].includes(form.content_type) && (
+              {/* TEXT / MIXED / VIDEO rich notes editor */}
+              {['text', 'mixed', 'video'].includes(form.content_type) && (
                 <div className="space-y-4">
-                  {form.content_type === 'mixed' && (
-                    <Field label="ID o URL del video de YouTube (opcional)" value={form.video_external_id}
-                      onChange={v => setField('video_external_id', v)} placeholder="Opcional para lecciones mixtas" />
-                  )}
                   <div>
-                    <span className="text-sm font-semibold text-[#111] block mb-1">Contenido de la lección</span>
+                    <span className="text-sm font-semibold text-[#111] block mb-1">
+                      Contenido enriquecido de la lección (Subtítulos y Bloques HTML)
+                    </span>
                     
                     {/* HTML Toolbar */}
                     <div className="flex flex-wrap gap-1 mb-2 p-1.5 bg-slate-50 border border-slate-200 rounded-xl">
@@ -315,13 +470,13 @@ export default function AdminLessonBuilder() {
                       <button type="button" onClick={() => setField('text_content', form.text_content + '<br/>\n')} className="px-2 py-1 text-xs hover:bg-slate-200 rounded">Salto de línea</button>
                       <button type="button" onClick={() => setField('text_content', form.text_content + '<ul>\n  <li>Elemento 1</li>\n  <li>Elemento 2</li>\n</ul>')} className="px-2 py-1 text-xs hover:bg-slate-200 rounded">Lista viñetas</button>
                       <button type="button" onClick={() => setField('text_content', form.text_content + '<ol>\n  <li>Paso 1</li>\n  <li>Paso 2</li>\n</ol>')} className="px-2 py-1 text-xs hover:bg-slate-200 rounded">Lista numerada</button>
-                      <button type="button" onClick={() => setField('text_content', form.text_content + '<h2>Título H2</h2>\n')} className="px-2 py-1 text-xs font-bold hover:bg-slate-200 rounded">H2</button>
-                      <button type="button" onClick={() => setField('text_content', form.text_content + '<h3>Título H3</h3>\n')} className="px-2 py-1 text-xs font-bold hover:bg-slate-200 rounded">H3</button>
+                      <button type="button" onClick={() => setField('text_content', form.text_content + '<h2>Subtítulo Clínico H2</h2>\n')} className="px-2 py-1 text-xs font-bold hover:bg-slate-200 rounded">H2</button>
+                      <button type="button" onClick={() => setField('text_content', form.text_content + '<h3>Subtítulo H3</h3>\n')} className="px-2 py-1 text-xs font-bold hover:bg-slate-200 rounded">H3</button>
                       <button type="button" onClick={() => setField('text_content', form.text_content + '<a href="https://" target="_blank">Enlace</a>')} className="px-2 py-1 text-xs text-blue-600 hover:bg-slate-200 rounded">Enlace</button>
                     </div>
 
                     <textarea value={form.text_content} onChange={e => setField('text_content', e.target.value)}
-                      rows={12} placeholder="Escribe el contenido de la lección aquí usando HTML..."
+                      rows={10} placeholder="Escribe el contenido de la lección aquí usando HTML..."
                       className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#1A4E26] resize-y text-sm font-mono bg-slate-50" />
                   </div>
                   {/* Preview */}
@@ -387,10 +542,228 @@ export default function AdminLessonBuilder() {
               )}
             </div>
 
+            {/* Clinical Callout / Safety Alert Builder */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-bold text-[#111] flex items-center gap-2">
+                  <ShieldAlert size={18} className="text-amber-600" />
+                  Callout de Seguridad Médica / Advertencia de Toxicidad
+                </h3>
+                <label className="inline-flex items-center gap-2 text-sm font-semibold cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.has_callout}
+                    onChange={e => setField('has_callout', e.target.checked)}
+                    className="w-4 h-4 accent-[#1A4E26]"
+                  />
+                  Mostrar Callout en esta lección
+                </label>
+              </div>
+
+              {form.has_callout && (
+                <div className="space-y-3 pt-2 border-t border-slate-100">
+                  <div className="grid sm:grid-cols-3 gap-3">
+                    <label className="block">
+                      <span className="text-sm font-semibold text-[#111] block mb-1">Severidad Clínica</span>
+                      <select
+                        value={form.callout_severity}
+                        onChange={e => setField('callout_severity', e.target.value as ClinicalCalloutData['severity'])}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white outline-none focus:ring-2 focus:ring-[#1A4E26] text-sm"
+                      >
+                        <option value="info">Nota Clínica (Info)</option>
+                        <option value="warning">Advertencia Fisiológica (Warning)</option>
+                        <option value="contraindication">Contraindicación Estricta (Rojo)</option>
+                        <option value="toxicity">Alerta de Toxicidad / Dosificación</option>
+                      </select>
+                    </label>
+                    <div className="sm:col-span-2">
+                      <Field
+                        label="Título de la Alerta Médica"
+                        value={form.callout_title}
+                        onChange={v => setField('callout_title', v)}
+                        placeholder="Ej: Advertencia sobre el impacto del sodio procesado..."
+                      />
+                    </div>
+                  </div>
+                  <label className="block">
+                    <span className="text-sm font-semibold text-[#111] block mb-1">Mensaje Clínico Detallado</span>
+                    <textarea
+                      rows={3}
+                      value={form.callout_message}
+                      onChange={e => setField('callout_message', e.target.value)}
+                      placeholder="Describe la precaución clínica, contraindicación o mecanismo fisiológico..."
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#1A4E26] text-sm"
+                    />
+                  </label>
+                  {(form.callout_title || form.callout_message) && (
+                    <div className="pt-2">
+                      <ClinicalCallout
+                        callout={{
+                          severity: form.callout_severity,
+                          title: form.callout_title || 'Título de alerta',
+                          message: form.callout_message || 'Descripción de la alerta médica...',
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Linked Botanical Sheets Section */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+              <h3 className="text-base font-bold text-[#111] flex items-center gap-2">
+                <Leaf size={18} className="text-[#1A4E26]" />
+                Fichas Botánicas Vinculadas (`academy_lesson_botanicals`)
+              </h3>
+
+              {lessonBotanicals.length > 0 && (
+                <div className="space-y-2">
+                  {lessonBotanicals.map(lb => (
+                    <div key={lb.id} className="flex items-center justify-between gap-3 p-3 bg-[#F4F7F5] border border-[#C8D8CB] rounded-xl">
+                      <div>
+                        <p className="text-sm font-bold text-[#111]">
+                          🌿 {lb.botanical?.common_name ?? lb.botanical_id}{' '}
+                          {lb.botanical?.scientific_name && (
+                            <span className="italic font-normal text-slate-500">({lb.botanical.scientific_name})</span>
+                          )}
+                        </p>
+                        {lb.clinical_role && <p className="text-xs text-slate-600 mt-0.5">{lb.clinical_role}</p>}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveBotanical(lb.id)}
+                        className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="border border-dashed border-slate-200 rounded-xl p-4 space-y-3">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Vincular planta del Vademécum SUMAK</p>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <label className="block">
+                    <span className="text-sm font-semibold text-[#111] block mb-1">Planta Medicinal</span>
+                    <select
+                      value={selectedBotanicalId}
+                      onChange={e => setSelectedBotanicalId(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white text-sm"
+                    >
+                      {allBotanicals.map(b => (
+                        <option key={b.id} value={b.id}>
+                          {b.common_name} ({b.scientific_name}) — Toxicidad: {b.toxicity_level}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <Field
+                    label="Rol clínico en esta lección"
+                    value={botanicalRole}
+                    onChange={setBotanicalRole}
+                    placeholder="Ej: Activo litolítico en Madre Silvestre"
+                  />
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleAddBotanical}
+                    disabled={addingBotanical || !selectedBotanicalId}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-[#1A4E26] text-white text-xs font-bold rounded-xl hover:bg-[#163F1E] disabled:opacity-50"
+                  >
+                    <Plus size={14} /> Vincular Ficha Botánica
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Linked SUMAK Products & Clinical Dosage Section */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+              <h3 className="text-base font-bold text-[#111] flex items-center gap-2">
+                <Pill size={18} className="text-[#1A4E26]" />
+                Productos SUMAK y Dosificación Vinculada (`academy_lesson_products`)
+              </h3>
+
+              {lessonProducts.length > 0 && (
+                <div className="space-y-2">
+                  {lessonProducts.map(lp => (
+                    <div key={lp.id} className="flex items-center justify-between gap-3 p-3 bg-[#F4F7F5] border border-[#C8D8CB] rounded-xl">
+                      <div>
+                        <p className="text-sm font-bold text-[#111]">
+                          [{lp.product_code}] {lp.product_name}
+                        </p>
+                        <p className="text-xs text-[#1A4E26] font-semibold mt-0.5">Dosis: {lp.dosage}</p>
+                        {lp.precautions && <p className="text-xs text-red-700 mt-0.5">⚠️ {lp.precautions}</p>}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveProduct(lp.id)}
+                        className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="border border-dashed border-slate-200 rounded-xl p-4 space-y-3">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Enlazar producto del catálogo con dosis clínica</p>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <label className="block">
+                    <span className="text-sm font-semibold text-[#111] block mb-1">Producto Comercial SUMAK</span>
+                    <select
+                      value={selectedProductCode}
+                      onChange={e => setSelectedProductCode(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white text-sm"
+                    >
+                      {products.map(p => (
+                        <option key={p.codigo} value={p.codigo}>
+                          [{p.codigo}] {p.nombre} (${p.pvp.toFixed(2)})
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <Field
+                    label="Fase del Protocolo (opcional)"
+                    value={productPhase}
+                    onChange={setProductPhase}
+                    placeholder="Ej: Fase 2: Litolisis y Drenaje Renal"
+                  />
+                </div>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <Field
+                    label="Dosificación Clínica Exacta"
+                    value={productDosage}
+                    onChange={setProductDosage}
+                    placeholder="Ej: 1 cápsula 2 veces al día antes de los alimentos"
+                  />
+                  <Field
+                    label="Precaución Específica"
+                    value={productPrecautions}
+                    onChange={setProductPrecautions}
+                    placeholder="Ej: Contraindicado en gestación y lactancia"
+                  />
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleAddProduct}
+                    disabled={addingProduct || !productDosage.trim()}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-[#1A4E26] text-white text-xs font-bold rounded-xl hover:bg-[#163F1E] disabled:opacity-50"
+                  >
+                    <Plus size={14} /> Enlazar Producto Dosificado
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {/* Resources section */}
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
               <h3 className="text-base font-bold text-[#111] mb-4 flex items-center gap-2">
-                <FileText size={18} className="text-[#1A4E26]" /> Recursos de la lección
+                <FileText size={18} className="text-[#1A4E26]" /> Recursos y PDFs de respaldo de la lección
               </h3>
 
               {/* Existing resources */}
@@ -419,7 +792,7 @@ export default function AdminLessonBuilder() {
               <div className="border border-dashed border-slate-200 rounded-xl p-4 space-y-3">
                 <p className="text-sm font-semibold text-slate-600">Añadir recurso</p>
                 <div className="grid sm:grid-cols-2 gap-3">
-                  <Field label="Nombre del recurso" value={resTitle} onChange={setResTitle} placeholder="Ej: Guía de estudio" />
+                  <Field label="Nombre del recurso" value={resTitle} onChange={setResTitle} placeholder="Ej: Guia_Eje_Intestino_Rinon.pdf" />
                   <label className="block">
                     <span className="text-sm font-semibold text-[#111] block mb-1">Tipo</span>
                     <select value={resType} onChange={e => setResType(e.target.value)}
@@ -516,10 +889,10 @@ export default function AdminLessonBuilder() {
               </div>
               {form.content_type === 'video' && (
                 <div className="flex items-center gap-2 text-sm">
-                  {videoId
+                  {form.video_external_id.trim()
                     ? <CheckCircle size={15} className="text-[#1A4E26]" />
                     : <XCircle size={15} className="text-amber-500" />}
-                  <span className="text-slate-600">Video de YouTube</span>
+                  <span className="text-slate-600">Video ({form.video_provider})</span>
                 </div>
               )}
               {['text', 'mixed'].includes(form.content_type) && (

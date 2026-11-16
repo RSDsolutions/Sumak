@@ -34,7 +34,20 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
 import { academyAPI } from '../../lib/academy';
-import type { AcademyCourse, AcademyModule, AcademyLesson, AcademyProgress } from '../../lib/academy-types';
+import type {
+  AcademyCourse,
+  AcademyModule,
+  AcademyLesson,
+  AcademyProgress,
+  AcademyLessonBotanical,
+  AcademyLessonProduct,
+} from '../../lib/academy-types';
+import {
+  ClinicalCallout,
+  BotanicalSheetsSection,
+  DosedIngredientsList,
+  StepByStepRecipeCard,
+} from '../../components/academia/ClinicalComponents';
 
 // Tipos para el sistema de discusión / comentarios
 interface CommentReply {
@@ -130,6 +143,8 @@ export default function VisorLeccion() {
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
   const [lessonResources, setLessonResources] = useState<any[]>([]);
+  const [lessonBotanicals, setLessonBotanicals] = useState<AcademyLessonBotanical[]>([]);
+  const [lessonProducts, setLessonProducts] = useState<AcademyLessonProduct[]>([]);
 
   useEffect(() => {
     async function loadData() {
@@ -197,12 +212,18 @@ export default function VisorLeccion() {
     loadData();
   }, [slug]);
 
-  // Al cambiar de lección, cargar recursos específicos
+  // Al cambiar de lección, cargar recursos, fichas botánicas y productos vinculados
   useEffect(() => {
     if (currentLesson) {
       academyAPI.getAdminLessonResources(currentLesson.id)
         .then(res => setLessonResources(res || []))
         .catch(() => setLessonResources([]));
+      academyAPI.getLessonBotanicals(currentLesson.id)
+        .then(bots => setLessonBotanicals(bots || []))
+        .catch(() => setLessonBotanicals([]));
+      academyAPI.getLessonProducts(currentLesson.id)
+        .then(prods => setLessonProducts(prods || []))
+        .catch(() => setLessonProducts([]));
     }
   }, [currentLesson?.id]);
 
@@ -666,7 +687,7 @@ export default function VisorLeccion() {
 
             {/* Contenedor del Reproductor de Video */}
             <div className="w-full rounded-2xl sm:rounded-3xl overflow-hidden shadow-md bg-black border border-slate-200/80 aspect-video relative flex items-center justify-center">
-              {currentLesson.content_type === 'video' ? (
+              {['video', 'mixed'].includes(currentLesson.content_type) ? (
                 currentLesson.video_provider === 'youtube' && currentLesson.video_external_id ? (
                   <iframe 
                     src={`https://www.youtube.com/embed/${currentLesson.video_external_id}?autoplay=0&rel=0`}
@@ -780,6 +801,22 @@ export default function VisorLeccion() {
                 </button>
               </div>
             </div>
+
+            {/* Callout Clínico de Seguridad / Toxicidad */}
+            {currentLesson.metadata?.clinical_callout && (
+              <ClinicalCallout callout={currentLesson.metadata.clinical_callout} />
+            )}
+
+            {/* Tarjeta de Protocolo / Receta Paso a Paso */}
+            {currentLesson.metadata?.recipe_card && (
+              <StepByStepRecipeCard recipe={currentLesson.metadata.recipe_card} />
+            )}
+
+            {/* Fichas Botánicas Vinculadas */}
+            <BotanicalSheetsSection items={lessonBotanicals} />
+
+            {/* Productos SUMAK y Dosificación Vinculada */}
+            <DosedIngredientsList items={lessonProducts} />
 
             {/* --------------------------------------------------------------- */}
             {/* 3. Pestañas Segmentadas (Estilo SkillWave: Transcript/Docs/Comments/Test/Reviews) */}

@@ -54,6 +54,7 @@ export interface AcademyModule {
   description: string | null;
   sort_order: number;
   is_published: boolean;
+  metadata?: Record<string, any>;
   created_at: string;
   
   // Joins
@@ -61,7 +62,66 @@ export interface AcademyModule {
 }
 
 export type ContentType = 'video' | 'text' | 'pdf' | 'presentation' | 'image' | 'external_link' | 'assessment' | 'mixed';
-export type VideoProvider = 'youtube' | 'vimeo' | 'cloudflare' | 'mux' | 'bunny' | 'custom';
+export type VideoProvider = 'youtube' | 'vimeo' | 'cloudflare' | 'mux' | 'bunny' | 'zoom' | 'tiktok' | 'custom';
+
+export interface ClinicalCalloutData {
+  severity: 'info' | 'warning' | 'contraindication' | 'toxicity';
+  title: string;
+  message: string;
+}
+
+export interface RecipeCardData {
+  title: string;
+  prep_time?: string;
+  servings?: string;
+  ingredients: {
+    name: string;
+    dose: string;
+    notes?: string;
+  }[];
+  steps: string[];
+}
+
+export interface AcademyBotanicalSheet {
+  id: string;
+  slug: string;
+  common_name: string;
+  scientific_name: string;
+  image_url: string | null;
+  part_used: string | null;
+  active_compounds: { name: string; action: string }[];
+  properties: string[];
+  traditional_uses: string[];
+  toxicity_level: 'low' | 'moderate' | 'high' | 'strict_caution';
+  toxicity_notes: string | null;
+  clinical_precautions: string;
+  contraindications: string[];
+  related_product_code: string | null;
+  is_active: boolean;
+}
+
+export interface AcademyLessonBotanical {
+  id: string;
+  lesson_id: string;
+  botanical_id: string;
+  clinical_role: string | null;
+  sort_order: number;
+  botanical?: AcademyBotanicalSheet;
+}
+
+export interface AcademyLessonProduct {
+  id: string;
+  lesson_id: string;
+  producto_id?: string | null;
+  product_code: string;
+  product_name: string;
+  product_slug: string;
+  dosage: string;
+  administration_route: string | null;
+  precautions: string | null;
+  protocol_phase: string | null;
+  sort_order: number;
+}
 
 export interface AcademyLesson {
   id: string;
@@ -84,13 +144,18 @@ export interface AcademyLesson {
   is_free_preview: boolean;
   is_required?: boolean;
   estimated_minutes: number | null;
-  metadata: Record<string, any>;
+  metadata: {
+    clinical_callout?: ClinicalCalloutData;
+    recipe_card?: RecipeCardData;
+    [key: string]: any;
+  };
   created_at: string;
 }
 
 export interface AcademyResource {
   id: string;
   lesson_id: string;
+  module_id?: string | null;
   title: string;
   description: string | null;
   file_url: string;
@@ -144,7 +209,7 @@ export interface AcademyDiplomaIssuance {
   course_id: string | null;
   participant_name: string;
   program_name: string;
-  status: 'issued' | 'valid' | 'revoked' | 'superseded' | 'invalidated';
+  status: 'issued' | 'valid' | 'revoked' | 'superseded' | 'invalidated' | 'pending_pdf';
   issued_at: string;
   revoked_at: string | null;
   revocation_reason: string | null;
@@ -182,4 +247,3 @@ export interface AcademyProgramCourse {
   created_at: string;
   course?: AcademyCourse;
 }
-

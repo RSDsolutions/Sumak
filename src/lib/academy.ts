@@ -6,7 +6,11 @@ import type {
   AcademyLesson, 
   AcademyEnrollment,
   AcademyProgress,
-  AcademyDiplomaIssuance
+  AcademyDiplomaIssuance,
+  AcademyBotanicalSheet,
+  AcademyLessonBotanical,
+  AcademyLessonProduct,
+  AcademyResource,
 } from './academy-types';
 
 export const academyAPI = {
@@ -329,14 +333,88 @@ export const academyAPI = {
     if (error) throw error;
   },
 
-  async getAdminLessonResources(lessonId: string) {
+  async getAdminLessonResources(lessonId: string): Promise<AcademyResource[]> {
     const { data, error } = await supabase
       .from('academy_resources')
       .select('*')
       .eq('lesson_id', lessonId)
       .order('sort_order', { ascending: true });
     if (error) throw error;
-    return data ?? [];
+    return (data ?? []) as AcademyResource[];
+  },
+
+  async getLessonResources(lessonId: string): Promise<AcademyResource[]> {
+    return academyAPI.getAdminLessonResources(lessonId);
+  },
+
+  async getBotanicalSheets(): Promise<AcademyBotanicalSheet[]> {
+    const { data, error } = await supabase
+      .from('academy_botanical_sheets')
+      .select('*')
+      .eq('is_active', true)
+      .order('common_name', { ascending: true });
+    if (error) return [];
+    return (data ?? []) as AcademyBotanicalSheet[];
+  },
+
+  async getLessonBotanicals(lessonId: string): Promise<AcademyLessonBotanical[]> {
+    const { data, error } = await supabase
+      .from('academy_lesson_botanicals')
+      .select('*, botanical:botanical_id (*)')
+      .eq('lesson_id', lessonId)
+      .order('sort_order', { ascending: true });
+    if (error) return [];
+    return (data ?? []) as AcademyLessonBotanical[];
+  },
+
+  async addLessonBotanical(input: { lesson_id: string; botanical_id: string; clinical_role?: string; sort_order?: number }) {
+    const { data, error } = await supabase
+      .from('academy_lesson_botanicals')
+      .upsert(input, { onConflict: 'lesson_id,botanical_id' })
+      .select('*, botanical:botanical_id (*)')
+      .single();
+    if (error) throw error;
+    return data as AcademyLessonBotanical;
+  },
+
+  async removeLessonBotanical(id: string) {
+    const { error } = await supabase.from('academy_lesson_botanicals').delete().eq('id', id);
+    if (error) throw error;
+  },
+
+  async getLessonProducts(lessonId: string): Promise<AcademyLessonProduct[]> {
+    const { data, error } = await supabase
+      .from('academy_lesson_products')
+      .select('*')
+      .eq('lesson_id', lessonId)
+      .order('sort_order', { ascending: true });
+    if (error) return [];
+    return (data ?? []) as AcademyLessonProduct[];
+  },
+
+  async addLessonProduct(input: {
+    lesson_id: string;
+    product_code: string;
+    product_name: string;
+    product_slug: string;
+    dosage: string;
+    administration_route?: string | null;
+    precautions?: string | null;
+    protocol_phase?: string | null;
+    sort_order?: number;
+  }) {
+    const { data, error } = await supabase
+      .from('academy_lesson_products')
+      .upsert(input, { onConflict: 'lesson_id,product_code' })
+      .select('*')
+      .single();
+    if (error) throw error;
+    return data as AcademyLessonProduct;
+  },
+
+  async removeLessonProduct(id: string) {
+    const { error } = await supabase.from('academy_lesson_products').delete().eq('id', id);
+    if (error) throw error;
   },
 
   async uploadAdminResource(courseId: string, lessonId: string, file: File) {
