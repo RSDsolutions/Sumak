@@ -33,7 +33,7 @@ type EnrollmentWithCourse = AcademyEnrollment & {
   };
 };
 
-type TabType = 'all' | 'active' | 'upcoming' | 'completed';
+type TabType = 'all' | 'active' | 'upcoming' | 'completed' | 'expired';
 
 interface CourseCardItem {
   id: string;
@@ -43,13 +43,15 @@ interface CourseCardItem {
   tags: string[];
   dateLabel: string;
   dateValue: string;
+  expiresAtLabel?: string | null;
   image: string;
   bgGradient: string;
-  status: 'active' | 'upcoming' | 'completed' | 'history';
+  status: 'active' | 'upcoming' | 'completed' | 'expired' | 'history';
   slug?: string;
   canAccess: boolean;
   progress?: number;
   daysLeft?: number | null;
+  enrolledTimestamp?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -216,32 +218,64 @@ function CourseCard({ item, idx = 0 }: { item: CourseCardItem; idx?: number }) {
           </p>
         </div>
 
-        {/* Fila inferior: Fecha a la izquierda y Botón a la derecha */}
-        <div className="flex items-center justify-between gap-4 pt-1">
-          <div className="flex items-center gap-1.5 text-xs">
+        {/* Fila inferior: Fecha / Expiración a la izquierda y Botón a la derecha */}
+        <div className="flex flex-wrap items-center justify-between gap-4 pt-1">
+          <div className="flex flex-wrap items-center gap-1.5 text-xs">
             <span className={`${theme.textMuted} font-medium opacity-80`}>{item.dateLabel}</span>
             <span className="font-bold text-xs sm:text-sm text-slate-800">{item.dateValue}</span>
 
+            {item.expiresAtLabel && (
+              <span className="ml-2 text-[11px] font-medium text-slate-700 bg-white/75 px-2.5 py-0.5 rounded-full border border-black/5">
+                ⏳ Acceso hasta: <strong>{item.expiresAtLabel}</strong>
+              </span>
+            )}
+
             {/* Micro-progreso si el curso está activo */}
             {item.progress !== undefined && item.progress > 0 && (
-              <span className="ml-2 text-[11px] font-bold text-emerald-800 bg-emerald-100/80 px-2.5 py-0.5 rounded-full border border-emerald-300/50">
+              <span className="ml-1 text-[11px] font-bold text-emerald-800 bg-emerald-100/80 px-2.5 py-0.5 rounded-full border border-emerald-300/50">
                 {item.progress}%
               </span>
             )}
-            {item.daysLeft !== null && item.daysLeft !== undefined && item.daysLeft <= 30 && (
+            {item.daysLeft !== null && item.daysLeft !== undefined && item.daysLeft <= 7 && item.daysLeft > 0 && (
+              <span className="ml-1 text-[11px] font-bold text-red-800 bg-red-100 px-2.5 py-0.5 rounded-full border border-red-300">
+                ⚠ Tu acceso termina {item.daysLeft === 1 ? 'mañana' : `en ${item.daysLeft} días`}
+              </span>
+            )}
+            {item.daysLeft !== null && item.daysLeft !== undefined && item.daysLeft > 7 && item.daysLeft <= 30 && (
               <span className="ml-1 text-[11px] font-semibold text-amber-900 bg-amber-100/80 px-2 py-0.5 rounded-full border border-amber-300/50">
                 {item.daysLeft}d restantes
               </span>
             )}
           </div>
 
-          {/* Botón de acción */}
-          <Link
-            to={targetUrl}
-            className={`px-5 py-2 rounded-xl text-white font-bold text-xs sm:text-sm shadow-xs hover:shadow transition-all shrink-0 inline-flex items-center justify-center cursor-pointer ${theme.btn}`}
-          >
-            {item.status === 'active' && item.progress && item.progress > 0 ? 'Continuar' : 'Ver curso'}
-          </Link>
+          {/* Botón de acción según estado real */}
+          {item.status === 'expired' ? (
+            <span className="px-4 py-2 rounded-xl bg-slate-200 text-slate-600 font-bold text-xs sm:text-sm shrink-0">
+              Acceso expirado
+            </span>
+          ) : item.status === 'completed' ? (
+            <div className="flex items-center gap-2">
+              <Link
+                to="/academia/dashboard/diplomas"
+                className="px-4 py-2 rounded-xl bg-white/90 text-[#1A4E26] border border-[#1A4E26]/20 font-bold text-xs sm:text-sm hover:bg-white transition-all"
+              >
+                Ver certificado
+              </Link>
+              <Link
+                to={targetUrl}
+                className={`px-4 py-2 rounded-xl text-white font-bold text-xs sm:text-sm shadow-xs hover:shadow transition-all shrink-0 inline-flex items-center justify-center cursor-pointer ${theme.btn}`}
+              >
+                Repasar
+              </Link>
+            </div>
+          ) : (
+            <Link
+              to={targetUrl}
+              className={`px-5 py-2 rounded-xl text-white font-bold text-xs sm:text-sm shadow-xs hover:shadow transition-all shrink-0 inline-flex items-center justify-center cursor-pointer ${theme.btn}`}
+            >
+              {item.status === 'active' ? 'Continuar curso' : item.status === 'upcoming' ? 'Solicitud pendiente' : 'Ver curso'}
+            </Link>
+          )}
         </div>
       </div>
     </div>
@@ -257,6 +291,8 @@ export default function MisCursos() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'recent' | 'progress' | 'name'>('recent');
 
   useEffect(() => {
     academyAPI
@@ -294,9 +330,10 @@ export default function MisCursos() {
       }
 
       let statusCategory: CourseCardItem['status'] = 'history';
-      if (enr.status === 'active') statusCategory = 'active';
+      if (enr.status === 'expired' || (enr.status === 'active' && days === 0)) statusCategory = 'expired';
+      else if (enr.status === 'active') statusCategory = 'active';
       else if (enr.status === 'completed') statusCategory = 'completed';
-      else if (['pending', 'payment_pending', 'waiting_list'].includes(enr.status)) statusCategory = 'upcoming';
+      else if (['pending', 'approved', 'payment_pending', 'waiting_list'].includes(enr.status)) statusCategory = 'upcoming';
 
       return {
         id: enr.id,
@@ -306,22 +343,39 @@ export default function MisCursos() {
         tags,
         dateLabel: 'Inicio',
         dateValue: formatDisplayDate(enr.enrolled_at || enr.requested_at),
+        expiresAtLabel: enr.expires_at ? formatDisplayDate(enr.expires_at) : null,
         image: visual.image,
         bgGradient: visual.bg,
         status: statusCategory,
         slug: course?.slug,
-        canAccess,
+        canAccess: canAccess && statusCategory !== 'expired',
         progress: enr.progress_percentage || 0,
         daysLeft: days,
+        enrolledTimestamp: new Date(enr.last_accessed_at || enr.enrolled_at || 0).getTime(),
       };
     });
   }, [enrollments]);
 
-  // Filtrado reactivo por pestañas
+  // Filtrado reactivo por pestañas, búsqueda y ordenamiento
   const filteredCourses = useMemo(() => {
-    if (activeTab === 'all') return courseItems;
-    return courseItems.filter((item) => item.status === activeTab);
-  }, [courseItems, activeTab]);
+    let list = activeTab === 'all' ? [...courseItems] : courseItems.filter((item) => item.status === activeTab);
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(
+        (item) =>
+          item.title.toLowerCase().includes(q) ||
+          item.description.toLowerCase().includes(q)
+      );
+    }
+    if (sortBy === 'progress') {
+      list.sort((a, b) => (b.progress || 0) - (a.progress || 0));
+    } else if (sortBy === 'name') {
+      list.sort((a, b) => a.title.localeCompare(b.title));
+    } else {
+      list.sort((a, b) => (b.enrolledTimestamp || 0) - (a.enrolledTimestamp || 0));
+    }
+    return list;
+  }, [courseItems, activeTab, searchQuery, sortBy]);
 
   if (loading) {
     return (
@@ -408,8 +462,31 @@ export default function MisCursos() {
         {/* Barra de pestañas horizontales y contenido */}
         <div className="space-y-4">
 
+        {/* Buscador y Selector de Orden + Barra de pestañas horizontales */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Buscar en mis cursos..."
+            className="w-full sm:w-80 px-4 py-2 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:border-[#1A4E26]"
+          />
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <span className="text-xs font-semibold text-slate-500">Ordenar por:</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'recent' | 'progress' | 'name')}
+              className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 focus:outline-hidden focus:border-[#1A4E26]"
+            >
+              <option value="recent">Más recientes</option>
+              <option value="progress">Más avanzados</option>
+              <option value="name">Nombre</option>
+            </select>
+          </div>
+        </div>
+
         {/* Barra de pestañas horizontales centrada */}
-        <div className="flex items-center justify-center gap-6 sm:gap-8 border-b border-slate-200/80 pb-3 text-sm sm:text-base select-none">
+        <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-8 border-b border-slate-200/80 pb-3 text-sm sm:text-base select-none">
           {/* Todos */}
           <button
             type="button"
@@ -423,7 +500,7 @@ export default function MisCursos() {
             Todos
           </button>
 
-          {/* Activos */}
+          {/* En curso */}
           <button
             type="button"
             onClick={() => setActiveTab('active')}
@@ -433,10 +510,10 @@ export default function MisCursos() {
                 : 'text-slate-400 hover:text-slate-700'
             }`}
           >
-            Activos
+            En curso
           </button>
 
-          {/* Próximos con el distintivo punto naranja */}
+          {/* Pendientes */}
           <button
             type="button"
             onClick={() => setActiveTab('upcoming')}
@@ -447,7 +524,7 @@ export default function MisCursos() {
             }`}
           >
             <span className="w-2 h-2 rounded-full bg-amber-500 inline-block mr-2" />
-            Próximos
+            Pendientes
           </button>
 
           {/* Completados */}
@@ -461,6 +538,19 @@ export default function MisCursos() {
             }`}
           >
             Completados
+          </button>
+
+          {/* Expirados */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('expired')}
+            className={`transition-colors font-medium ${
+              activeTab === 'expired'
+                ? 'text-slate-900 font-bold'
+                : 'text-slate-400 hover:text-slate-700'
+            }`}
+          >
+            Expirados
           </button>
         </div>
       </div>

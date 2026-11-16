@@ -527,6 +527,40 @@ export default function VisorLeccion() {
             <p className="text-[11px] text-slate-500 mt-1.5 font-medium">
               {completedLessons} de {totalLessons} lecciones completadas
             </p>
+
+            {/* Tarjeta de Requisitos para Completar el Curso y Emitir Certificado */}
+            {(() => {
+              const requiredLessons = allLessonsWithModules.filter(x => x.lesson.is_required !== false);
+              const completedReqLessons = requiredLessons.filter(x =>
+                progress.some(pr => pr.lesson_id === x.lesson.id && pr.status === 'completed')
+              ).length;
+              const publishedAssessments = assessments.filter(a => a.is_published);
+              const passedAssessmentsCount = publishedAssessments.filter(a =>
+                assessmentAttempts.some(att => att.assessment_id === a.id && att.passed === true)
+              ).length;
+
+              return (
+                <div className="mt-3 p-3 rounded-xl bg-[#F4F7F5] border border-[#C8D8CB] space-y-1.5">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[#1A4E26] flex items-center gap-1">
+                    <Award size={12} /> Requisitos para Certificado
+                  </p>
+                  <div className="flex items-center justify-between text-[11px] text-slate-700">
+                    <span>Lecciones obligatorias:</span>
+                    <strong className={completedReqLessons >= requiredLessons.length ? 'text-emerald-700' : 'text-slate-900'}>
+                      {completedReqLessons} / {requiredLessons.length}
+                    </strong>
+                  </div>
+                  {publishedAssessments.length > 0 && (
+                    <div className="flex items-center justify-between text-[11px] text-slate-700">
+                      <span>Evaluaciones aprobadas:</span>
+                      <strong className={passedAssessmentsCount >= publishedAssessments.length ? 'text-emerald-700' : 'text-amber-700'}>
+                        {passedAssessmentsCount} / {publishedAssessments.length}
+                      </strong>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Acordeón de Módulos y Lecciones */}
@@ -579,18 +613,20 @@ export default function VisorLeccion() {
                                 : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'}
                             `}
                           >
-                            {/* Ícono de estado estilo SkillWave (círculo fucsia/esmeralda con check) */}
+                            {/* Ícono de estado: ✓ completada, ▶ actual, 🔒 pendiente secuencial */}
                             <div className="shrink-0 flex items-center justify-center">
                               {isDone ? (
-                                <div className="w-4 h-4 rounded-full bg-[#1A4E26] text-white flex items-center justify-center shadow-2xs">
+                                <div className="w-4 h-4 rounded-full bg-[#1A4E26] text-white flex items-center justify-center shadow-2xs" title="Completada">
                                   <Check size={10} strokeWidth={3} />
                                 </div>
                               ) : isCurrent ? (
-                                <div className="w-4 h-4 rounded-full border-2 border-[#1A4E26] flex items-center justify-center bg-white">
-                                  <div className="w-1.5 h-1.5 rounded-full bg-[#1A4E26]" />
+                                <div className="w-4 h-4 rounded-full bg-[#1A4E26] text-white flex items-center justify-center shadow-2xs" title="En curso">
+                                  <PlayCircle size={11} />
                                 </div>
                               ) : (
-                                <div className="w-4 h-4 rounded-full border-2 border-slate-300" />
+                                <div className="w-4 h-4 rounded-full border border-slate-300 flex items-center justify-center text-slate-400" title="Pendiente">
+                                  <Lock size={9} />
+                                </div>
                               )}
                             </div>
 

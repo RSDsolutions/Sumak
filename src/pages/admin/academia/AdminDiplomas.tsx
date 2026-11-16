@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import {
   Award, Search, Download, Ban, FileText, CheckCircle, XCircle,
-  Plus, Edit2, Trash2, X, Save, Eye, GraduationCap, User, ShieldCheck, Copy, ExternalLink
+  Plus, Edit2, Trash2, X, Save, Eye, GraduationCap, User, ShieldCheck, Copy, ExternalLink, LayoutTemplate
 } from 'lucide-react';
 import { supabase, callEdgeFunction, callEdgeFunctionMultipart, callPublicEdgeFunction } from '../../../lib/supabase';
 import { academyAPI } from '../../../lib/academy';
 import { useToast } from '../../../lib/toast';
 import type { AcademyDiplomaIssuance } from '../../../lib/academy-types';
+import AdminTemplateBuilder from './AdminTemplateBuilder';
 
 type Tab = 'issued' | 'templates' | 'emit' | 'register';
 
@@ -63,6 +64,7 @@ export default function AdminDiplomas() {
   const [loadingTypes, setLoadingTypes] = useState(false);
   const [editingType, setEditingType] = useState<Partial<DiplomaType> | null>(null);
   const [savingType, setSavingType] = useState(false);
+  const [buildingTemplateId, setBuildingTemplateId] = useState<string | null>(null);
 
   // --- Emitir diploma ---
   const [courses, setCourses] = useState<Course[]>([]);
@@ -266,6 +268,23 @@ export default function AdminDiplomas() {
     else { toast.success('Plantilla eliminada'); await loadTypes(); }
   }
 
+  async function openBuilder(typeId: string) {
+    const { data, error } = await supabase
+      .from('academy_diploma_templates')
+      .select('id')
+      .eq('diploma_type_id', typeId)
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
+      
+    if (error || !data) {
+      toast.error('No se pudo cargar la plantilla base');
+      return;
+    }
+    
+    setBuildingTemplateId(data.id);
+  }
+
   // ── Emitir diploma ─────────────────────────────────────────────────────────
   async function loadEmitData() {
     const [coursesRes, studentsRes] = await Promise.all([
@@ -336,6 +355,13 @@ export default function AdminDiplomas() {
   // ── UI ─────────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6 max-w-7xl">
+      {buildingTemplateId && (
+        <AdminTemplateBuilder 
+          templateId={buildingTemplateId} 
+          onClose={() => setBuildingTemplateId(null)} 
+        />
+      )}
+      
       <div>
         <h1 className="text-2xl font-black text-[#111111]">Diplomas y Certificados</h1>
         <p className="text-[#6B7280]">Gestión de credenciales: plantillas, emisión y auditoría.</p>
@@ -505,10 +531,16 @@ export default function AdminDiplomas() {
               {types.map(type => (
                 <div key={type.id} className="bg-white border border-[#C8D8CB] rounded-2xl p-5 shadow-sm flex flex-col gap-3">
                   {/* Preview Card */}
-                  <div className="bg-gradient-to-br from-[#1A4E26] to-[#163F1E] rounded-xl p-4 text-white text-center">
+                  <div className="bg-gradient-to-br from-[#1A4E26] to-[#163F1E] rounded-xl p-4 text-white text-center relative group">
                     <Award size={28} className="mx-auto mb-2 text-[#D4AF37]" />
                     <p className="font-black text-sm uppercase tracking-wider">{type.name}</p>
                     <p className="text-xs text-white/60 mt-1 font-mono">{type.internal_code}</p>
+                    <button 
+                      onClick={() => openBuilder(type.id)}
+                      className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2 font-bold rounded-xl"
+                    >
+                      <LayoutTemplate size={20} /> Diseñar Plantilla
+                    </button>
                   </div>
 
                   <div className="flex-1">
@@ -524,6 +556,12 @@ export default function AdminDiplomas() {
                   </div>
 
                   <div className="flex gap-2 pt-2 border-t border-gray-100">
+                    <button
+                      onClick={() => openBuilder(type.id)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-sm font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition"
+                    >
+                      <LayoutTemplate size={14} /> Diseñar
+                    </button>
                     <button
                       onClick={() => setEditingType(type)}
                       className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-sm font-semibold text-[#1A4E26] bg-[#EBF4ED] hover:bg-[#1A4E26]/20 rounded-lg transition"

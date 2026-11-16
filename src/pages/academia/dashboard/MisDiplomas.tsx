@@ -27,7 +27,8 @@ interface CredentialCardItem {
   participantName?: string;
   issued_at: string;
   verification_code: string;
-  status: 'active' | 'revoked' | 'sample';
+  status: 'active' | 'revoked' | 'sample' | 'pending_pdf';
+  pdfStoragePath?: string | null;
   isDiploma?: boolean;
 }
 
@@ -114,7 +115,7 @@ function CredentialCard({
   idx = 0,
 }: {
   item: CredentialCardItem;
-  onDownload: (id: string, isDiploma?: boolean) => void;
+  onDownload: (item: CredentialCardItem) => void;
   isDownloading: boolean;
   idx?: number;
 }) {
@@ -127,10 +128,15 @@ function CredentialCard({
       {/* Zona Superior */}
       <div className="p-5 sm:p-6 flex flex-col items-center flex-1">
         {/* Píldora superior tipo Certificación / Diploma en amarillo con barra dorada a la izquierda */}
-        <div className="mb-3">
+        <div className="mb-3 flex items-center gap-2">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-[#FEF3C7] text-[#92400E] text-xs font-bold border-l-4 border-[#F59E0B] shadow-2xs">
-            {item.type === 'diploma' ? 'Diploma' : 'Certificación'}
+            {item.type === 'diploma' ? 'Diploma de Programa' : 'Certificado de Curso'}
           </div>
+          {item.status === 'pending_pdf' && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-amber-100 text-amber-800 text-[10px] font-bold">
+              <Loader2 size={11} className="animate-spin" /> Generando PDF...
+            </span>
+          )}
         </div>
 
         {/* Gráfico central del certificado o diploma */}
@@ -172,13 +178,13 @@ function CredentialCard({
         {/* Botón Descargar PDF en verde oscuro */}
         <button
           type="button"
-          onClick={() => onDownload(item.id, item.isDiploma)}
+          onClick={() => onDownload(item)}
           disabled={isDownloading || item.status === 'revoked'}
           className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-[#1A4E26] hover:bg-[#143D1E] active:scale-95 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 cursor-pointer whitespace-nowrap shadow-2xs border-0"
           title="Descargar credencial en PDF"
         >
           <Download size={14} className="shrink-0 text-white" />
-          <span>{isDownloading ? 'Generando PDF...' : 'Descargar PDF'}</span>
+          <span>{isDownloading || item.status === 'pending_pdf' ? 'Generando PDF...' : 'Descargar PDF'}</span>
         </button>
 
         {/* Botón Verificar Credencial en verde oscuro */}
@@ -214,8 +220,31 @@ export default function MisDiplomas() {
           academyAPI.getMyDiplomas(profile?.id),
           academyAPI.getMyCertificates(profile?.id),
         ]);
-        setDiplomas((diplomaData || []) as AcademyDiplomaIssuance[]);
-        setCertificates((certificateData || []) as any[]);
+        const dips = (diplomaData || []) as AcademyDiplomaIssuance[];
+        const certs = (certificateData || []) as any[];
+        setDiplomas(dips);
+        setCertificates(certs);
+
+        // Si existen credenciales en estado 'pending_pdf', invocar automáticamente la Edge Function para generar su PDF
+        const pendingItems = [...dips, ...certs].filter((x: any) => x.status === 'pending_pdf');
+        if (pendingItems.length > 0) {
+          for (const pending of pendingItems) {
+            callEdgeFunction<{ success?: boolean; path?: string }>('academy-generate-certificate-pdf', {
+              certificate_id: pending.id,
+            })
+              .then((res) => {
+                if (res?.path) {
+                  setCertificates((prev) =>
+                    prev.map((c) => (c.id === pending.id ? { ...c, status: 'valid', pdf_storage_path: res.path } : c))
+                  );
+                  setDiplomas((prev) =>
+                    prev.map((d) => (d.id === pending.id ? ({ ...d, status: 'valid', pdf_storage_path: res.path } as any) : d))
+                  );
+                }
+              })
+              .catch(() => {});
+          }
+        }
       } catch (err) {
         console.error('Error loading diplomas:', err);
       } finally {
@@ -225,14 +254,28 @@ export default function MisDiplomas() {
     loadData();
   }, [profile?.id]);
 
-  const handleDownload = async (issuanceId: string, isDiploma = true) => {
+  const handleDownload = async (item: CredentialCardItem) => {
     try {
-      setDownloadingId(issuanceId);
+      setDownloadingId(item.id);
 
-      // Si es un diploma oficial con registro de emisión en Supabase
-      if (isDiploma && !issuanceId.startsWith('demo-')) {
+      if (!item.id.startsWith('demo-')) {
+        // Si aún está en 'pending_pdf' o sin ruta de PDF, generarlo primero vía Edge Function
+        if (item.status === 'pending_pdf' || !item.pdfStoragePath) {
+          const genRes = await callEdgeFunction<{ success?: boolean; path?: string }>('academy-generate-certificate-pdf', {
+            certificate_id: item.id,
+          }).catch(() => null);
+          if (genRes?.path) {
+            setCertificates((prev) =>
+              prev.map((c) => (c.id === item.id ? { ...c, status: 'valid', pdf_storage_path: genRes.path } : c))
+            );
+            setDiplomas((prev) =>
+              prev.map((d) => (d.id === item.id ? ({ ...d, status: 'valid', pdf_storage_path: genRes.path } as any) : d))
+            );
+          }
+        }
+
         const res = await callEdgeFunction<{ ok: boolean; signedUrl: string }>('academy-sign-document-url', {
-          issuance_id: issuanceId,
+          issuance_id: item.id,
         });
         if (res.signedUrl) {
           window.open(res.signedUrl, '_blank');
@@ -240,8 +283,8 @@ export default function MisDiplomas() {
         }
       }
 
-      // Fallback para certificados o demostración: abre la credencial verificable
-      window.open(`/academia/verificar?code=${issuanceId}`, '_blank');
+      // Fallback para demostración: abre la credencial verificable
+      window.open(`/academia/verificar?code=${item.verification_code}`, '_blank');
     } catch (err) {
       console.error('Error downloading diploma:', err);
       alert('Hubo un error al descargar el documento. Por favor intenta nuevamente.');
@@ -255,31 +298,33 @@ export default function MisDiplomas() {
     const items: CredentialCardItem[] = [];
 
     // Diplomas de programas completados
-    diplomas.forEach((dip) => {
+    diplomas.forEach((dip: any) => {
       items.push({
         id: dip.id,
         type: 'diploma',
-        categoryLabel: 'CURSO',
-        title: dip.program_name || dip.diploma_type?.name || 'Nombre del Curso',
+        categoryLabel: 'PROGRAMA',
+        title: dip.program_name || dip.diploma_type?.name || 'Diploma de Programa SUMAK',
         participantName: dip.participant_name || profile?.nombre_completo || 'Estudiante SUMAK',
         issued_at: dip.issued_at,
         verification_code: dip.verification_code,
-        status: dip.status === 'revoked' ? 'revoked' : 'active',
+        status: dip.status === 'revoked' ? 'revoked' : dip.status === 'pending_pdf' ? 'pending_pdf' : 'active',
+        pdfStoragePath: dip.pdf_storage_path ?? null,
         isDiploma: true,
       });
     });
 
     // Certificaciones de cursos completados
-    certificates.forEach((cert) => {
+    certificates.forEach((cert: any) => {
       items.push({
         id: cert.id,
         type: 'certificado',
         categoryLabel: 'CURSO',
-        title: cert.course_name || cert.title || 'Nombre del Curso',
+        title: cert.course_name || cert.program_name || cert.title || 'Certificado de Curso SUMAK',
         participantName: cert.participant_name || profile?.nombre_completo || 'Estudiante SUMAK',
         issued_at: cert.issued_at,
-        verification_code: cert.certificate_number || cert.verification_code || cert.id,
-        status: 'active',
+        verification_code: cert.verification_code || cert.diploma_number || cert.id,
+        status: cert.status === 'revoked' ? 'revoked' : cert.status === 'pending_pdf' ? 'pending_pdf' : 'active',
+        pdfStoragePath: cert.pdf_storage_path ?? null,
         isDiploma: false,
       });
     });

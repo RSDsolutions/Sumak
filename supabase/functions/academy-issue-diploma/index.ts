@@ -308,51 +308,98 @@ Deno.serve(async (req: Request) => {
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const margin = 24;
 
-  // Layered frame and corner ornaments give the generated certificate its
-  // printable ceremonial layout without requiring an uploaded PDF template.
-  page.drawRectangle({ x: margin, y: margin, width: width - margin * 2, height: height - margin * 2, borderColor: ink, borderWidth: 5 });
-  page.drawRectangle({ x: margin + 12, y: margin + 12, width: width - (margin + 12) * 2, height: height - (margin + 12) * 2, borderColor: gold, borderWidth: 1.5 });
-  page.drawRectangle({ x: margin + 22, y: margin + 22, width: width - (margin + 22) * 2, height: height - (margin + 22) * 2, borderColor: mutedGold, borderWidth: 0.7 });
-  for (const corner of [[margin + 18, height - margin - 18], [width - margin - 18, height - margin - 18], [margin + 18, margin + 18], [width - margin - 18, margin + 18]]) {
-    const [x, y] = corner;
-    page.drawCircle({ x, y, size: 8, borderColor: gold, borderWidth: 1.5 });
-    page.drawCircle({ x, y, size: 3, color: gold });
-    page.drawLine({ start: { x: x - 18, y }, end: { x: x + 18, y }, thickness: 1, color: gold });
-    page.drawLine({ start: { x, y: y - 18 }, end: { x, y: y + 18 }, thickness: 1, color: gold });
-  }
+    // Helpers
+    const hexToRgbColor = (hex: string) => {
+      hex = hex.replace(/^#/, '');
+      if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+      const bigint = parseInt(hex, 16);
+      const r = ((bigint >> 16) & 255) / 255;
+      const g = ((bigint >> 8) & 255) / 255;
+      const b = (bigint & 255) / 255;
+      return rgb(r, g, b);
+    };
 
-  // Brand lockup.
-  drawCenteredText(page, 'SUMAK', height - 88, 42, boldFont, ink, width);
-  drawCenteredText(page, 'VIDA ECUADOR S.A.', height - 108, 10, boldFont, gold, width);
-  page.drawLine({ start: { x: width / 2 - 125, y: height - 126 }, end: { x: width / 2 + 125, y: height - 126 }, thickness: 1.2, color: gold });
+    const getFont = (fStr: string) => {
+      if (fStr === 'bold') return boldFont;
+      if (fStr === 'italic') return italicFont;
+      return font;
+    };
 
-  const title = (template.title_text || '{{diploma_type_name}}').replace('{{diploma_type_name}}', dtInfo?.name || '');
-  drawCenteredText(page, title.toUpperCase(), height - 172, 28, boldFont, ink, width);
-  drawCenteredText(page, template.subtitle_text || 'ACADEMIA SUMAK', height - 195, 11, font, gold, width);
-  page.drawLine({ start: { x: width / 2 - 75, y: height - 211 }, end: { x: width / 2 + 75, y: height - 211 }, thickness: 1, color: mutedGold });
+    const drawDynamicText = (text: string, config: any) => {
+      if (!config || config.visible === false) return;
+      const f = getFont(config.font || 'normal');
+      const size = config.size || 14;
+      const color = hexToRgbColor(config.color || '#000000');
+      
+      const textWidth = f.widthOfTextAtSize(text, size);
+      let renderX = config.x;
+      
+      if (config.align === 'center') {
+        renderX = config.x - textWidth / 2;
+      } else if (config.align === 'right') {
+        renderX = config.x - textWidth;
+      }
 
-  drawCenteredText(page, 'Se certifica que:', height - 246, 13, font, textColor, width);
-  drawCenteredText(page, participantName, height - 292, 25, boldFont, ink, width);
-  page.drawLine({ start: { x: width / 2 - 190, y: height - 305 }, end: { x: width / 2 + 190, y: height - 305 }, thickness: 1, color: gold });
+      const renderY = height - config.y;
 
-  const bodyText = (template.body_text || 'Por haber completado el curso {{course_name}}.')
-    .replace('{{participant_name}}', participantName)
-    .replace('{{course_name}}', programName);
-  drawWrappedCenteredText(page, bodyText, height - 342, 13, font, textColor, width, width - 180, 6);
+      // Handle wrapping for long texts like body if max_width is provided
+      if (config.max_width && textWidth > config.max_width) {
+        drawWrappedCenteredText(page, text, renderY, size, f, color, width, config.max_width, 6);
+      } else {
+        page.drawText(text, { x: renderX, y: renderY, size, font: f, color });
+      }
+    };
 
-  const dateText = new Date().toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: 'numeric' });
-  drawCenteredText(page, `Emitido el ${dateText}`, height - 430, 11, font, textColor, width);
+    // Default config fallback if none exists
+    const layoutConfig = template.layout_config || {
+      "participant_name": { "x": width/2, "y": 290, "size": 36, "color": "#0a2213", "align": "center", "font": "bold", "visible": true },
+      "course_name": { "x": width/2, "y": 380, "size": 24, "color": "#111111", "align": "center", "font": "bold", "visible": true },
+      "issue_date": { "x": width/2, "y": 440, "size": 12, "color": "#333333", "align": "center", "font": "normal", "visible": true },
+      "verification_text": { "x": width/2, "y": height - 45, "size": 9, "color": "#ab8224", "align": "center", "font": "normal", "visible": true }
+    };
 
-  const signatureY = 92;
-  page.drawLine({ start: { x: 120, y: signatureY }, end: { x: 310, y: signatureY }, thickness: 1, color: ink });
-  page.drawLine({ start: { x: width - 310, y: signatureY }, end: { x: width - 120, y: signatureY }, thickness: 1, color: ink });
-  drawCenteredAt(page, template.signatory_name || 'Dr. Luis Paredes', width / 2 - 215, signatureY - 18, 11, boldFont, textColor);
-  drawCenteredAt(page, 'Estudiante', width / 2 + 215, signatureY - 18, 11, font, textColor);
-  drawCenteredAt(page, template.signatory_title || 'Formador de formadores', width / 2 - 215, signatureY - 33, 9, font, textColor);
-  drawCenteredAt(page, 'Participante', width / 2 + 215, signatureY - 33, 9, font, textColor);
+    // Render elements dynamically
+    const dateText = `Emitido el ${new Date().toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: 'numeric' })}`;
+    const footerText = `Diploma N° ${diplomaNumber}  |  Código de Verificación: ${verificationCode}`;
 
-  // Verification info
-  drawCenteredText(page, `Diploma N° ${diplomaNumber}  ·  Código ${verificationCode}`, 42, 8, font, gold, width);
+    if (layoutConfig.participant_name) drawDynamicText(participantName, layoutConfig.participant_name);
+    if (layoutConfig.course_name) drawDynamicText(programName, layoutConfig.course_name);
+    if (layoutConfig.issue_date) drawDynamicText(dateText, layoutConfig.issue_date);
+    if (layoutConfig.verification_text) drawDynamicText(footerText, layoutConfig.verification_text);
+
+    // QR Placeholder
+    if (layoutConfig.qr_code && layoutConfig.qr_code.visible !== false) {
+      const qx = layoutConfig.qr_code.x;
+      const qy = height - layoutConfig.qr_code.y;
+      const qsize = layoutConfig.qr_code.size || 80;
+      page.drawRectangle({ x: qx, y: qy - qsize, width: qsize, height: qsize, borderColor: rgb(0,0,0), borderWidth: 1 });
+      page.drawText("QR", { x: qx + qsize/2 - 10, y: qy - qsize/2, size: 10, font: font, color: rgb(0,0,0) });
+    }
+
+    // ----------------------------------------------------
+    // FALLBACK DE BORDES SI NO HAY BACKGROUND
+    // ----------------------------------------------------
+    if (!template.background_image_url) {
+      const ink = hexToRgbColor('#0a2213');
+      const gold = hexToRgbColor('#ab8224');
+      const mutedGold = hexToRgbColor('#d1b978');
+      const margin = 24;
+
+      page.drawRectangle({ x: margin, y: margin, width: width - margin * 2, height: height - margin * 2, borderColor: ink, borderWidth: 5 });
+      page.drawRectangle({ x: margin + 12, y: margin + 12, width: width - (margin + 12) * 2, height: height - (margin + 12) * 2, borderColor: gold, borderWidth: 1.5 });
+      page.drawRectangle({ x: margin + 22, y: margin + 22, width: width - (margin + 22) * 2, height: height - (margin + 22) * 2, borderColor: mutedGold, borderWidth: 0.7 });
+      
+      for (const corner of [[margin + 18, height - margin - 18], [width - margin - 18, height - margin - 18], [margin + 18, margin + 18], [width - margin - 18, margin + 18]]) {
+        const [x, y] = corner;
+        page.drawCircle({ x, y, size: 8, borderColor: gold, borderWidth: 1.5 });
+        page.drawCircle({ x, y, size: 3, color: gold });
+        page.drawLine({ start: { x: x - 18, y }, end: { x: x + 18, y }, thickness: 1, color: gold });
+        page.drawLine({ start: { x, y: y - 18 }, end: { x, y: y + 18 }, thickness: 1, color: gold });
+      }
+
+      drawDynamicText('ACADEMIA SUMAK', { x: width/2, y: 88, size: 42, font: 'bold', align: 'center', color: '#0a2213' });
+      drawDynamicText('SUMAK VIDA ECUADOR S.A.', { x: width/2, y: 108, size: 10, font: 'bold', align: 'center', color: '#ab8224' });
+    }
 
   const pdfBytes = await pdfDoc.save();
 

@@ -41,7 +41,8 @@ export async function callEdgeFunction<TResp = unknown>(
     | 'academy-verify-diploma'
     | 'academy-sign-document-url'
     | 'academy-revoke-diploma'
-    | 'academy-generate-verified-diploma',
+    | 'academy-generate-verified-diploma'
+    | 'academy-generate-certificate-pdf',
   body: Record<string, unknown>,
 ): Promise<TResp> {
   const { data: { session } } = await supabase.auth.getSession();

@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, callEdgeFunction } from './supabase';
 import type { 
   AcademyCategory,
   AcademyCourse, 
@@ -717,7 +717,7 @@ export const academyAPI = {
     return data as AcademyProgress;
   },
 
-  // Diplomas
+  // Diplomas (credential_type = 'diploma')
   async getMyDiplomas(userId?: string) {
     const { data: { user } } = await supabase.auth.getUser();
     const uid = userId || user?.id;
@@ -730,6 +730,7 @@ export const academyAPI = {
         diploma_type:academy_diploma_types (*)
       `)
       .eq('user_id', uid)
+      .or('credential_type.eq.diploma,credential_type.is.null')
       .order('issued_at', { ascending: false });
 
     if (error) {
@@ -739,9 +740,39 @@ export const academyAPI = {
     return (data ?? []) as AcademyDiplomaIssuance[];
   },
 
-  async getMyCertificates(_userId?: string) {
-    // En el backend las certificaciones oficiales están unificadas en academy_diploma_issuances
-    return [];
+  // Certificados de Curso (credential_type = 'certificate')
+  async getMyCertificates(userId?: string) {
+    const { data: { user } } = await supabase.auth.getUser();
+    const uid = userId || user?.id;
+    if (!uid) return [];
+
+    const { data, error } = await supabase
+      .from('academy_diploma_issuances')
+      .select(`
+        id,
+        diploma_number,
+        verification_code,
+        verification_token,
+        user_id,
+        course_id,
+        participant_name,
+        course_name,
+        program_name,
+        status,
+        issued_at,
+        credential_type,
+        pdf_storage_path,
+        diploma_type:academy_diploma_types (name, internal_code)
+      `)
+      .eq('user_id', uid)
+      .eq('credential_type', 'certificate')
+      .order('issued_at', { ascending: false });
+
+    if (error) {
+      console.warn('Error al obtener certificados:', error.message);
+      return [];
+    }
+    return data ?? [];
   },
 
   async issueCourseCertificate(courseId: string) {
@@ -765,12 +796,11 @@ export const academyAPI = {
     return data as AcademyDiplomaIssuance[];
   },
 
-  async revokeDiploma(diplomaId: string) {
-    const { error } = await supabase
-      .from('academy_diploma_issuances')
-      .delete()
-      .eq('id', diplomaId);
-    if (error) throw error;
+  async revokeDiploma(diplomaId: string, reason = 'Revocado por administración') {
+    return await callEdgeFunction('academy-revoke-diploma', {
+      diploma_id: diplomaId,
+      revocation_reason: reason,
+    });
   },
   
   // Storage

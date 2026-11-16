@@ -161,3 +161,28 @@
 - **Limpieza de Cursos Simulados:**
   - En `MisCursos.tsx`: Se eliminó el array `DEMO_COURSES` (*Clase de Inglés*, *Estrategia de Diseño*, *Gestión de Negocios*) y las métricas ficticias hardcodeadas. Se implementó un estado vacío elegante con botón CTA directo al catálogo oficial.
   - En `AcademiaDashboard.tsx`: Se erradicaron los fallbacks de *Diseño UI con Figma*, *Compilación C++*, *Sistemas de Diseño* e *Investigación Aplicada*. En "Continuar Aprendiendo" y "Cursos Para Ti" se despliegan exclusivamente las inscripciones y cursos reales de la academia.
+
+---
+
+## 8. Fase 3: Integración de Componentes Clínicos, Botánicos y Sistema de Credenciales (Noviembre 2026)
+
+### 1. Visor de Lección (`VisorLeccion.tsx`)
+- **Indicadores de Navegación de Lecciones:** Estado de cada lección visualmente diferenciado con `✓` (completada), `▶` (en curso) y `🔒` (bloqueada).
+- **Tarjeta "Requisitos para Certificado":** Widget compacto con barra de progreso y contador dinámico de lecciones obligatorias completadas respecto al total.
+- **Callouts Clínicos (`clinical_callout`):** Banners de advertencia médica con estilo visual según severidad:
+  - `info`: Fondo azul celeste sutil (`bg-[#EAF2F7]`) con ícono informativo.
+  - `warning`: Fondo ámbar/miel (`bg-[#FEF6E9]`) con ícono de advertencia de precaución en dosificación o contraindicaciones.
+  - `danger`: Fondo rosáceo/rojo pastel (`bg-[#FDF2F2]`) con ícono de alerta de toxicidad médica.
+- **Tarjetas de Recetas Terapéuticas (`recipe_card`):** Despliegue de recetas con lista de ingredientes, tiempo estimado, porciones, preparación y posología.
+- **Vínculos Botánicos y Productos Relacionados:** Despliegue de fichas técnicas (`academy_botanical_sheets`) y productos recomendados Sumak con enlaces y dosis.
+
+### 2. Mis Cursos (`MisCursos.tsx`)
+- Pestañas de filtrado (*Todos*, *Activos*, *Próximos*, *Completados*, *Expirados*).
+- Búsqueda en tiempo real sobre el catálogo de inscripciones del estudiante.
+- Ordenamiento por fecha, progreso porcentual o título.
+- Alerta visual destacada en caso de proximidad a vencimiento (cuando resten 7 días o menos de acceso).
+
+### 3. Mis Diplomas (`MisDiplomas.tsx`)
+- Pestañas independientes para "Certificados de Cursos" y "Diplomas Oficiales".
+- Detección de estado `'pending_pdf'` con generación automática de PDF en background invocando `academy-generate-certificate-pdf`.
+- Botón de descarga de PDF con URL firmada e hipervínculo directo al verificador público con código QR.

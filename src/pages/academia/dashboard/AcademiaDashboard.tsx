@@ -340,30 +340,30 @@ export default function AcademiaDashboard() {
       {/* Contenido inferior centrado */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-7 space-y-10">
 
-      {/* 2. Independent KPI Cards — Contenedores de colores armónicos sin contornos y con íconos libres */}
+      {/* 2. Independent KPI Cards — Cursos Activos, Completados, Certificados y Diplomas */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-gradient-to-br from-[#EBF5EE] via-[#E1EFE5] to-[#D5E8DB] rounded-3xl p-5 sm:p-6 shadow-xs flex flex-col items-center justify-center text-center hover:shadow-sm transition-shadow">
           <BookOpen size={28} className="text-[#1A4E26] mb-2" />
-          <p className="text-xs font-semibold text-[#2D5A37]">En Progreso</p>
+          <p className="text-xs font-semibold text-[#2D5A37]">Cursos Activos</p>
           <p className="text-2xl sm:text-3xl font-black text-[#12361B] font-heading mt-0.5">{activeEnrollments.length}</p>
         </div>
 
         <div className="bg-gradient-to-br from-[#FEF6E9] via-[#FDEED7] to-[#FCE3C2] rounded-3xl p-5 sm:p-6 shadow-xs flex flex-col items-center justify-center text-center hover:shadow-sm transition-shadow">
           <CheckCircle2 size={28} className="text-[#92400E] mb-2" />
-          <p className="text-xs font-semibold text-[#7C4C18]">Completados</p>
+          <p className="text-xs font-semibold text-[#7C4C18]">Cursos Completados</p>
           <p className="text-2xl sm:text-3xl font-black text-[#5B3407] font-heading mt-0.5">{completedEnrollments.length}</p>
         </div>
 
         <div className="bg-gradient-to-br from-[#EAF2F7] via-[#DFEBF2] to-[#D2E2EB] rounded-3xl p-5 sm:p-6 shadow-xs flex flex-col items-center justify-center text-center hover:shadow-sm transition-shadow">
-          <Award size={28} className="text-[#1E3A5F] mb-2" />
-          <p className="text-xs font-semibold text-[#2C526A]">Diplomas</p>
-          <p className="text-2xl sm:text-3xl font-black text-[#102D3E] font-heading mt-0.5">{diplomas.length}</p>
+          <GraduationCap size={28} className="text-[#1E3A5F] mb-2" />
+          <p className="text-xs font-semibold text-[#2C526A]">Certificados</p>
+          <p className="text-2xl sm:text-3xl font-black text-[#102D3E] font-heading mt-0.5">{certificates.length}</p>
         </div>
 
         <div className="bg-gradient-to-br from-[#FBF4E8] via-[#F5EAD6] to-[#EFE0C2] rounded-3xl p-5 sm:p-6 shadow-xs flex flex-col items-center justify-center text-center hover:shadow-sm transition-shadow">
-          <GraduationCap size={28} className="text-[#785E2A] mb-2" />
-          <p className="text-xs font-semibold text-[#6E5421]">Programas</p>
-          <p className="text-2xl sm:text-3xl font-black text-[#4D3A13] font-heading mt-0.5">{programs.length}</p>
+          <Award size={28} className="text-[#785E2A] mb-2" />
+          <p className="text-xs font-semibold text-[#6E5421]">Diplomas</p>
+          <p className="text-2xl sm:text-3xl font-black text-[#4D3A13] font-heading mt-0.5">{diplomas.length}</p>
         </div>
       </div>
 
@@ -541,6 +541,43 @@ export default function AcademiaDashboard() {
         {/* Right Column: Cursos Completados & Mis Diplomas (Contenedores pasteles sin contornos e íconos libres) */}
         <div className="xl:col-span-4 space-y-7">
           
+          {/* 0. Próximas Actividades Pendientes */}
+          <section className="bg-gradient-to-br from-[#FBF4E8] via-[#F5EAD6] to-[#EFE0C2] rounded-3xl p-6 shadow-xs space-y-3.5">
+            <div className="flex items-center justify-between">
+              <h2 className="font-heading font-black text-base text-[#4D3A13]">
+                Próximas Actividades
+              </h2>
+              <Link
+                to="/academia/dashboard/cursos"
+                className="text-xs font-bold text-[#785E2A] hover:underline"
+              >
+                Mis cursos
+              </Link>
+            </div>
+            <div className="divide-y divide-black/5">
+              {(displayContinueCourses.length > 0 ? displayContinueCourses : displayFeaturedCourses.slice(0, 3)).map((act: any, idx: number) => (
+                <Link
+                  key={act.id || idx}
+                  to={act.progress !== undefined ? `/academia/aprender/${act.slug}` : `/academia/cursos/${act.slug}`}
+                  className="py-2.5 flex items-center justify-between gap-3 group"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <PlayCircle size={18} className="text-[#785E2A] shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-[#4D3A13] truncate group-hover:underline">
+                        {act.title}
+                      </p>
+                      <span className="text-[11px] text-[#6E5421]">
+                        {act.progress !== undefined ? `En curso (${act.progress}% completado)` : 'Módulo clínico disponible'}
+                      </span>
+                    </div>
+                  </div>
+                  <ChevronRight size={15} className="text-[#785E2A] shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                </Link>
+              ))}
+            </div>
+          </section>
+
           {/* 1. Cursos Completados */}
           <section className="bg-gradient-to-br from-[#EBF5EE] via-[#E1EFE5] to-[#D5E8DB] rounded-3xl p-6 shadow-xs space-y-4">
             <div className="flex items-center justify-between">
