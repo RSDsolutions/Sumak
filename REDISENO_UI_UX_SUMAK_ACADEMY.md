@@ -151,13 +151,26 @@
 
 ---
 
-## 7. Erradicación de Cursos Mock y Sincronización Estricta con Supabase
+## 7. Erradicación de Cursos Legacy / Prueba y Consolidación del Catálogo Oficial
 
-- **Auditoría de Cursos Reales en Supabase:** Se comprobó directamente contra la tabla `academy_courses` que existen exactamente **4 cursos oficiales publicados**:
-  1. `Test 2` (slug: `test-2`)
-  2. `Bases Fisiológicas y Prevención Renal` (slug: `bases-fisiologicas-y-prevencion-renal`)
-  3. `Sumak, salud y bienestar` (slug: `sumak-salud-y-bienestar`)
-  4. `Afiliarse a Sumak` (slug: `afiliarse-a-sumak`)
+- **Purga de Cursos Antiguos y de Demostración:** Se ejecutó una limpieza completa de la base de datos eliminando los 9 cursos obsoletos y de prueba que no correspondían a la academia médica:
+  - `Test` (slug: `test`)
+  - `Test 2` (slug: `test-2`)
+  - `Cursos dev` (slug: `curso-dev`)
+  - `Bases Fisiológicas y Prevención Renal` (slug duplicado antiguo: `bases-fisiologicas-y-prevencion-renal`)
+  - `Sumak, salud y bienestar` (slug: `sumak-salud-y-bienestar`)
+  - `Afiliarse a Sumak` (slug: `afiliarse-a-sumak`)
+  - `Introduccion a Sumak` (slug: `introduccion-a-sumak`)
+  - `Escalar en Sumak` (slug: `escalar-en-sumak`)
+  - `Tomar las Riendas de Sumak` (slug: `tomar-las-riendas-de-sumak`)
+- **Catálogo Oficial Activo (7 Cursos Especializados):**
+  1. `bases-fisiologicas-prevencion-renal-sumak`: *Bases Fisiológicas y Prevención Renal: El Enfoque Ancestral SUMAK*
+  2. `fitoterapia-avanzada-protocolos-renales-sumak`: *Fitoterapia Avanzada y Protocolos Renales con Chancapiedra y Plantas Andinas*
+  3. `salud-urinaria-prostata-equilibrio-femenino`: *Salud Urinaria, Próstata y Equilibrio Femenino*
+  4. `hepatologia-integrativa-higado-graso-regeneracion`: *Hepatología Integrativa: Hígado Graso, Cirrosis y Regeneración*
+  5. `gastroenterologia-funcional-gastritis-colitis-sumak`: *Gastroenterología Funcional: Gastritis, Úlceras, Colitis, H. Pylori y Hemorroides*
+  6. `vademecum-herbolaria-toxicologia-botanica-sumak`: *Vademécum de Herbolaria, Toxicología Botánica y Fitoterapia Práctica*
+  7. `salud-metabolica-pancreas-diabetes-hipertension-sumak`: *Salud Metabólica, Páncreas, Diabetes, Hipertensión y Nutrición Cromática*
 - **Limpieza de Cursos Simulados:**
   - En `MisCursos.tsx`: Se eliminó el array `DEMO_COURSES` (*Clase de Inglés*, *Estrategia de Diseño*, *Gestión de Negocios*) y las métricas ficticias hardcodeadas. Se implementó un estado vacío elegante con botón CTA directo al catálogo oficial.
   - En `AcademiaDashboard.tsx`: Se erradicaron los fallbacks de *Diseño UI con Figma*, *Compilación C++*, *Sistemas de Diseño* e *Investigación Aplicada*. En "Continuar Aprendiendo" y "Cursos Para Ti" se despliegan exclusivamente las inscripciones y cursos reales de la academia.
