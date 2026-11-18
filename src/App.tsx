@@ -88,6 +88,7 @@ const AcademiaDashboard = lazy(() => import('./pages/academia/dashboard/Academia
 const MisCursos = lazy(() => import('./pages/academia/dashboard/MisCursos'));
 const MisDiplomas = lazy(() => import('./pages/academia/dashboard/MisDiplomas'));
 const PerfilAcademico = lazy(() => import('./pages/academia/dashboard/PerfilAcademico'));
+const CredencialEstudiantil = lazy(() => import('./pages/academia/dashboard/CredencialEstudiantil'));
 const MisRecetas = lazy(() => import('./pages/academia/dashboard/MisRecetas'));
 const VisorLeccion = lazy(() => import('./pages/academia/VisorLeccion'));
 const Evaluacion = lazy(() => import('./pages/academia/Evaluacion'));
@@ -471,6 +472,7 @@ export default function App() {
           <Route path="/academia/programas" element={<PublicLayout><PageTransition><Programas /></PageTransition></PublicLayout>} />
           <Route path="/academia/programas/:slug" element={<PublicLayout><PageTransition><ProgramDetalle /></PageTransition></PublicLayout>} />
           <Route path="/academia/verificar" element={<PublicLayout><PageTransition><VerificarDiploma /></PageTransition></PublicLayout>} />
+          <Route path="/academia/credencial" element={<CredencialEstudiantil />} />
           <Route path="/verificar-diploma/:token" element={<PublicLayout><PageTransition><VerificarDiplomaPublico /></PageTransition></PublicLayout>} />
           {/* Auth pages for academy — standalone, no PublicLayout nav */}
           <Route path="/academia/login" element={<Suspense fallback={null}><LoginAcademia /></Suspense>} />
@@ -562,6 +564,16 @@ export default function App() {
               <ProtectedRoute allowedRoles={['distribuidor', 'admin', 'operaciones']}>
                 <AcademyLayout>
                   <MisDiplomas />
+                </AcademyLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/academia/dashboard/credencial"
+            element={
+              <ProtectedRoute allowedRoles={['distribuidor', 'admin', 'operaciones']}>
+                <AcademyLayout>
+                  <CredencialEstudiantil />
                 </AcademyLayout>
               </ProtectedRoute>
             }

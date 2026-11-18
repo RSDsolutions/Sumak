@@ -23,13 +23,16 @@ import {
   Hash,
   GraduationCap,
   Leaf,
-  Clock
+  Clock,
+  QrCode
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth';
 import { displayName } from '../../../lib/profile';
 import { supabase } from '../../../lib/supabase';
 import { academyAPI } from '../../../lib/academy';
 import Avatar from '../../../components/Avatar';
+import AcademyStudentCardModal from '../../../components/academia/AcademyStudentCardModal';
+import { getAcademyStudentCode } from '../../../lib/academyCardCanvas';
 
 const AVATAR_BUCKET = 'avatares';
 const AVATAR_MAX_MB = 3;
@@ -54,6 +57,7 @@ export default function PerfilAcademico() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarMsg, setAvatarMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [showStudentCardModal, setShowStudentCardModal] = useState(false);
 
   // Estadísticas reales del perfil
   const [activeCoursesCount, setActiveCoursesCount] = useState<number>(0);
@@ -370,6 +374,23 @@ export default function PerfilAcademico() {
               <h2 className="text-2xl sm:text-3xl font-black text-[#111111] font-heading">
                 {profile.nombre_completo || displayName(profile)}
               </h2>
+              <button
+                type="button"
+                onClick={() => setShowStudentCardModal(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0F2E18] text-[#FBE697] hover:bg-[#1A4E26] border border-[#D4AF37]/40 text-xs font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer"
+                title="Generar y descargar Credencial Estudiantil con QR"
+              >
+                <QrCode size={14} className="text-[#D4AF37] shrink-0" />
+                <span>Credencial Estudiantil QR</span>
+              </button>
+              <Link
+                to="/academia/dashboard/credencial"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#EBF4ED] text-[#1A4E26] hover:bg-[#d7eadb] border border-[#C8D8CB] text-xs font-bold transition-all"
+                title="Ver Credencial Estudiantil Interactiva 3D"
+              >
+                <Sparkles size={13} className="text-[#D4AF37]" />
+                <span>Vista 3D</span>
+              </Link>
             </div>
 
             {/* Lista Estructurada de Datos Oficiales */}
@@ -402,12 +423,15 @@ export default function PerfilAcademico() {
                   <span>Teléfono: <strong className="text-slate-900 font-bold ml-1">{profile.telefono || 'No registrado'}</strong></span>
                 </div>
 
-                {profile.codigo_distribuidor && (
-                  <div className="flex items-center justify-center md:justify-start gap-2.5">
-                    <Hash size={16} className="text-[#D4AF37] shrink-0" />
-                    <span>Código de Distribuidor: <strong className="font-mono text-[#1A4E26] bg-[#EBF4ED] px-2 py-0.5 rounded border border-[#C8D8CB] font-bold ml-1">{profile.codigo_distribuidor}</strong></span>
-                  </div>
-                )}
+                <div className="flex items-center justify-center md:justify-start gap-2.5">
+                  <GraduationCap size={16} className="text-[#D4AF37] shrink-0" />
+                  <span>
+                    Matrícula Estudiantil:{' '}
+                    <strong className="font-mono text-[#0F2E18] bg-[#EBF4ED] px-2 py-0.5 rounded border border-[#C8D8CB] font-bold ml-1">
+                      {getAcademyStudentCode(profile.id, profile.fecha_registro)}
+                    </strong>
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -499,6 +523,29 @@ export default function PerfilAcademico() {
             </h2>
 
           <div className="space-y-3">
+            {/* Atajo 0: Credencial Estudiantil Digital con QR */}
+            <Link
+              to="/academia/dashboard/credencial"
+              className="bg-gradient-to-r from-[#0F2E18] via-[#133A1C] to-[#1A4E26] rounded-2xl p-4 flex items-center justify-between gap-4 hover:shadow-md transition-all duration-200 group border-0 text-white"
+            >
+              <div className="flex items-center gap-3.5 min-w-0">
+                <QrCode size={26} className="text-[#D4AF37] shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-white group-hover:text-[#FBE697] transition-colors truncate">
+                    Mi Credencial Estudiantil con QR
+                  </p>
+                  <p className="text-xs text-emerald-100/80 truncate">
+                    Carnet académico interactivo 3D y descargable en PNG ({getAcademyStudentCode(profile.id, profile.fecha_registro)})
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs font-bold text-[#FBE697] hidden sm:inline">Ver / Descargar</span>
+                <ChevronRight size={18} className="text-[#D4AF37] group-hover:translate-x-0.5 transition-all" />
+              </div>
+            </Link>
+
             {/* Atajo 1: Diplomas y Certificaciones (Contenedor de color sin contorno con icono libre) */}
             <Link
               to="/academia/dashboard/diplomas"
@@ -731,6 +778,15 @@ export default function PerfilAcademico() {
       </div>
     </div>
   </div>
+
+  <AcademyStudentCardModal
+    open={showStudentCardModal}
+    onClose={() => setShowStudentCardModal(false)}
+    profile={profile}
+    activeCoursesCount={activeCoursesCount}
+    completedCoursesCount={completedCoursesCount}
+    diplomasCount={diplomasCount}
+  />
   </div>
 );
 }

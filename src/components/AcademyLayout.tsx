@@ -14,7 +14,8 @@ import {
   Search,
   Sparkles,
   Compass,
-  ArrowUpRight
+  ArrowUpRight,
+  QrCode
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useSEO } from '../lib/seo';
@@ -37,6 +38,7 @@ const navItems: NavItem[] = [
   { label: 'Programas', to: '/academia/dashboard/programas', icon: Layers },
   { label: 'Mis Recetas', to: '/academia/dashboard/recetas', icon: Leaf },
   { label: 'Certificaciones', to: '/academia/dashboard/diplomas', icon: Award },
+  { label: 'Mi Credencial QR', to: '/academia/dashboard/credencial', icon: QrCode },
   { label: 'Mi Perfil', to: '/academia/dashboard/perfil', icon: User },
 ];
 
