@@ -72,12 +72,16 @@ export interface ClinicalCalloutData {
 
 export interface RecipeCardData {
   title: string;
+  image_url?: string;
   prep_time?: string;
   servings?: string;
+  posology?: string;
+  benefits?: string[];
   ingredients: {
     name: string;
     dose: string;
     notes?: string;
+    image_url?: string;
   }[];
   steps: string[];
 }
@@ -146,7 +150,9 @@ export interface AcademyLesson {
   estimated_minutes: number | null;
   metadata: {
     clinical_callout?: ClinicalCalloutData;
+    clinical_callouts?: ClinicalCalloutData[];
     recipe_card?: RecipeCardData;
+    recipe_cards?: RecipeCardData[];
     [key: string]: any;
   };
   created_at: string;
@@ -183,6 +189,13 @@ export interface AcademyEnrollment {
   rejected_at?: string | null;
   rejection_reason?: string | null;
   payment_status?: string;
+  payment_id?: string | null;
+  payment_method?: string | null;
+  banco_destino?: string | null;
+  voucher_numero?: string | null;
+  payment_receipt_url?: string | null;
+  payment_submitted_at?: string | null;
+  payment_reviewed_at?: string | null;
 }
 
 export interface AcademyProgress {

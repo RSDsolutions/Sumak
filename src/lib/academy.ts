@@ -126,16 +126,16 @@ export const academyAPI = {
     return data;
   },
 
-  async createRecipePurchase(input: { recipeIds: string[]; paymentMethod: string; receiptPath: string; bankName: string; voucherNumber: string }) {
+  async createRecipePurchase(input: { recipeIds: string[]; paymentMethod: string; receiptPath?: string | null; bankName?: string | null; voucherNumber?: string | null }) {
     const { data, error } = await supabase.rpc('create_academy_recipe_purchase', {
       p_recipe_ids: input.recipeIds,
       p_payment_method: input.paymentMethod,
-      p_payment_receipt_url: input.receiptPath,
-      p_banco_destino: input.bankName,
-      p_voucher_numero: input.voucherNumber,
+      p_payment_receipt_url: input.receiptPath ?? null,
+      p_banco_destino: input.bankName ?? null,
+      p_voucher_numero: input.voucherNumber ?? null,
     });
     if (error) throw error;
-    return data as { purchase_id: string; total_amount: number; status: string };
+    return data as { purchase_id: string; payment_id?: string; total_amount: number; status: string };
   },
 
   async uploadAndCreateRecipePurchase(input: { userId: string; recipeIds: string[]; receiptFile: File; bankName: string; voucherNumber: string }) {
@@ -150,6 +150,103 @@ export const academyAPI = {
       await supabase.storage.from('academy-receipts').remove([receiptPath]);
       throw error;
     }
+  },
+
+  async startRecipeDigitalPayment(input: { recipeIds: string[]; titleSummary: string; totalAmount: number; provider: 'payphone' | 'paypal' }) {
+    const created = await academyAPI.createRecipePurchase({
+      recipeIds: input.recipeIds,
+      paymentMethod: input.provider,
+    });
+    const orderId = `ACAD-REC-${created.purchase_id.slice(0, 8)}-${crypto.randomUUID().slice(0, 8)}`;
+    const fnName = input.provider === 'paypal' ? 'paypal-create-order' : 'payphone-create-payment';
+    const response = await callEdgeFunction<{
+      paymentId?: string;
+      orderId?: string;
+      approvalUrl?: string;
+      redirectUrl?: string;
+    }>(fnName, {
+      orderId,
+      amount: created.total_amount || input.totalAmount,
+      currency: 'USD',
+      description: input.titleSummary || 'Recetas Milenarias SUMAK Academy',
+      academyRecipePurchaseId: created.purchase_id,
+    });
+
+    return {
+      purchaseId: created.purchase_id,
+      paymentId: response.paymentId,
+      orderId: response.orderId || orderId,
+      redirectUrl: input.provider === 'paypal' ? response.approvalUrl : response.redirectUrl,
+    };
+  },
+
+  async uploadAndSubmitCourseTransfer(input: {
+    userId: string;
+    courseId: string;
+    receiptFile: File;
+    bankName: string;
+    voucherNumber: string;
+  }) {
+    if (input.receiptFile.size > 5 * 1024 * 1024) {
+      throw new Error('El comprobante no puede superar los 5 MB.');
+    }
+    const extension = input.receiptFile.name.split('.').pop()?.toLowerCase() || 'jpg';
+    const receiptPath = `${input.userId}/${Date.now()}-course-voucher.${extension}`;
+    const { error: uploadError } = await supabase.storage
+      .from('academy-receipts')
+      .upload(receiptPath, input.receiptFile, { upsert: false });
+    if (uploadError) throw uploadError;
+
+    try {
+      const { data, error } = await supabase.rpc('submit_academy_enrollment_transfer', {
+        p_course_id: input.courseId,
+        p_receipt_url: receiptPath,
+        p_banco_destino: input.bankName,
+        p_voucher_numero: input.voucherNumber,
+      });
+      if (error) throw error;
+      return data as { ok: boolean; payment_id: string; enrollment: AcademyEnrollment };
+    } catch (error) {
+      await supabase.storage.from('academy-receipts').remove([receiptPath]);
+      throw error;
+    }
+  },
+
+  async startCourseDigitalPayment(input: {
+    courseId: string;
+    enrollmentId: string;
+    title: string;
+    price: number;
+    provider: 'payphone' | 'paypal';
+  }) {
+    const orderId = `ACAD-CRS-${input.courseId.slice(0, 8)}-${crypto.randomUUID().slice(0, 8)}`;
+    const fnName = input.provider === 'paypal' ? 'paypal-create-order' : 'payphone-create-payment';
+    const response = await callEdgeFunction<{
+      paymentId?: string;
+      orderId?: string;
+      approvalUrl?: string;
+      redirectUrl?: string;
+    }>(fnName, {
+      orderId,
+      amount: input.price,
+      currency: 'USD',
+      description: `Curso SUMAK: ${input.title}`,
+      academyEnrollmentId: input.enrollmentId,
+    });
+
+    return {
+      paymentId: response.paymentId,
+      orderId: response.orderId || orderId,
+      redirectUrl: input.provider === 'paypal' ? response.approvalUrl : response.redirectUrl,
+    };
+  },
+
+  async getReceiptSignedUrl(path: string): Promise<string> {
+    const { data, error } = await supabase.storage
+      .from('academy-receipts')
+      .createSignedUrl(path, 60 * 60);
+    if (error) throw error;
+    return data.signedUrl;
   },
 
   async reviewRecipePurchase(purchaseId: string, status: 'approved' | 'rejected', rejectionReason?: string) {
@@ -232,7 +329,7 @@ export const academyAPI = {
     const userIds = [...new Set(data.map(e => e.user_id))];
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('id, nombre_completo, username')
+      .select('id, nombre_completo, username, email')
       .in('id', userIds);
 
     const profileMap = new Map((profiles || []).map(p => [p.id, p]));

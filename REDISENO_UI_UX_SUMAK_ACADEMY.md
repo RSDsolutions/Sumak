@@ -199,3 +199,17 @@
 - Pestañas independientes para "Certificados de Cursos" y "Diplomas Oficiales".
 - Detección de estado `'pending_pdf'` con generación automática de PDF en background invocando `academy-generate-certificate-pdf`.
 - Botón de descarga de PDF con URL firmada e hipervínculo directo al verificador público con código QR.
+
+---
+
+## 9. Fase 4: Enriquecimiento Maestro de los 11 Módulos, Infografías HTML/Tailwind y Activos Locales (Noviembre 2026)
+
+- **Migración SQL (`20261116000003_enrich_full_curriculum_content_and_visuals.sql`):**
+  - Enriquecimiento al 100% de las 29 lecciones de los 7 cursos oficiales cubriendo íntegramente los 11 módulos del Manual Académico SUMAK Vida Ecuador.
+  - Creación y actualización de las **24 Fichas Botánicas individuales** en `public.academy_botanical_sheets` (11 plantas del Módulo 6 + 10 infusiones del Módulo 7 unificando Canela y Cola de Caballo + 4 plantas renales andinas).
+  - Creación del **Módulo 11 (Portafolio Oficial y Fichas Técnicas de los 6 Productos SUMAK)** con desglose completo de ingredientes, funciones por planta y micronutrientes.
+- **Mejoras Visuales en `VisorLeccion.tsx` y `ClinicalComponents.tsx`:**
+  - Cabecera hero académica institucional con imagen temática (`thumbnail_url`) para lecciones de lectura clínica.
+  - Renderizado directo del contenido clínico enriquecido (`text_content`) con estilizado automático de imágenes (`rounded-2xl shadow-md object-cover w-full max-h-[420px] my-6`), infografías histológicas de 5 etapas del hígado, matriz 5x3 de tolerancia digestiva, plato saludable de Harvard / 9 pulgadas e infografía cromática de los 5 colores de los alimentos.
+  - Soporte para múltiples recetas por lección (`recipe_cards`) con fotografía ilustrativa (`image_url`), badges de beneficios, posología destacada e íconos botánicos locales automáticos (`/ingredientes/*.png`).
+  - Despliegue de productos SUMAK con fotografía real de envase (`/products/*.png`), cuadrícula expandible de ingredientes con miniaturas `/ingredientes/*.png` y píldoras doradas de vitaminas y minerales (`Ca`, `Mg`, `Zn`, `Se`, `K`, `Fe`, `Cr`, `Ácido Fólico`, `Vitamina B6`, etc.).

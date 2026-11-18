@@ -8,26 +8,40 @@ import {
   CheckCircle,
   Lock,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Landmark,
+  AlertCircle
 } from 'lucide-react';
 import { academyAPI } from '../../lib/academy';
 import { useAuth } from '../../lib/auth';
-import { callEdgeFunction } from '../../lib/supabase';
-import type { AcademyCourse, AcademyModule } from '../../lib/academy-types';
+import { useToast } from '../../lib/toast';
+import AcademyTransferCheckout from '../../components/AcademyTransferCheckout';
+import type { BankAccount } from '../../data';
+import type { AcademyCourse, AcademyModule, AcademyEnrollment } from '../../lib/academy-types';
 
 export default function CursoDetalle() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const location = useLocation();
   const { profile } = useAuth();
+  const toast = useToast();
   
   const [course, setCourse] = useState<AcademyCourse | null>(null);
   const [modules, setModules] = useState<AcademyModule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
-  const [enrollmentStatus, setEnrollmentStatus] = useState<string | null>(null);
-  const [paymentProvider, setPaymentProvider] = useState<'payphone' | 'paypal' | null>(null);
+  const [enrollment, setEnrollment] = useState<AcademyEnrollment | null>(null);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+
+  const enrollmentStatus = enrollment?.status ?? null;
+
+  async function refreshEnrollment(courseId: string) {
+    if (!profile) return;
+    const enr = await academyAPI.checkEnrollment(courseId);
+    setEnrollment(enr);
+  }
 
   useEffect(() => {
     async function loadData() {
@@ -38,14 +52,12 @@ export default function CursoDetalle() {
         if (c) {
           const m = await academyAPI.getCourseModules(c.id);
           setModules(m);
-          // Expand first module by default
           if (m.length > 0) {
             setExpandedModules(new Set([m[0].id]));
           }
-          // Check enrollment if user is logged in
           if (profile) {
             const enr = await academyAPI.checkEnrollment(c.id);
-            if (enr) setEnrollmentStatus(enr.status);
+            setEnrollment(enr);
           }
         }
       } catch (err) {
@@ -71,17 +83,79 @@ export default function CursoDetalle() {
     }
     if (!course) return;
 
+    const isPaidCourse = Number(course.price ?? 0) > 0;
+
     try {
       setIsEnrolling(true);
-      await academyAPI.enrollInCourse(course.id);
-      setEnrollmentStatus('pending');
+      const enr = await academyAPI.enrollInCourse(course.id);
+      setEnrollment(enr);
+
+      if (enr.status === 'active') {
+        toast.success('¡Inscripción activada! Ya puedes comenzar el curso 🌿');
+        navigate(`/academia/aprender/${course.slug}`);
+      } else if (isPaidCourse || enr.status === 'payment_pending') {
+        setIsCheckoutOpen(true);
+      } else {
+        toast.success('Solicitud de inscripción enviada.');
+      }
     } catch (err) {
       console.error("Error al inscribirse:", err);
-      alert("Hubo un error al procesar tu solicitud de inscripción.");
+      toast.error("Hubo un error al procesar tu inscripción.");
     } finally {
       setIsEnrolling(false);
     }
   };
+
+  async function handleTransferSubmit(receiptFile: File, bank: BankAccount, voucherNumber: string) {
+    if (!course || !profile?.id) return;
+    try {
+      setIsSubmittingPayment(true);
+      const res = await academyAPI.uploadAndSubmitCourseTransfer({
+        userId: profile.id,
+        courseId: course.id,
+        receiptFile,
+        bankName: bank.banco,
+        voucherNumber,
+      });
+      setEnrollment(res.enrollment);
+      setIsCheckoutOpen(false);
+      toast.success('¡Comprobante enviado! Verificaremos tu pago para activar tu acceso 🌿');
+    } catch (err: any) {
+      console.error('Error subiendo comprobante de curso:', err);
+      toast.error(err?.message || 'No se pudo registrar el comprobante.');
+    } finally {
+      setIsSubmittingPayment(false);
+    }
+  }
+
+  async function handleDigitalPayment(provider: 'payphone' | 'paypal') {
+    if (!course || !profile) return;
+    try {
+      setIsSubmittingPayment(true);
+      let currentEnrollment = enrollment;
+      if (!currentEnrollment) {
+        currentEnrollment = await academyAPI.enrollInCourse(course.id);
+        setEnrollment(currentEnrollment);
+      }
+      const res = await academyAPI.startCourseDigitalPayment({
+        courseId: course.id,
+        enrollmentId: currentEnrollment.id,
+        title: course.title,
+        price: Number(course.price ?? 0),
+        provider,
+      });
+      if (!res.redirectUrl) {
+        throw new Error('La pasarela no devolvió una URL de pago.');
+      }
+      window.location.assign(res.redirectUrl);
+    } catch (error: any) {
+      console.error('Error iniciando pago digital Academy:', error);
+      toast.error(error?.message || 'No se pudo iniciar el pago digital.');
+    } finally {
+      setIsSubmittingPayment(false);
+      if (course) void refreshEnrollment(course.id);
+    }
+  }
 
   if (isLoading) {
     return (
@@ -109,34 +183,19 @@ export default function CursoDetalle() {
   const durationHours = Math.floor(totalDuration / 3600);
   const durationMins = Math.floor((totalDuration % 3600) / 60);
   const canAccess = enrollmentStatus === 'active' || enrollmentStatus === 'completed';
+  const coursePrice = Number(course.price ?? 0);
+  const isPaidCourse = coursePrice > 0;
+  const isPendingVerification = enrollment?.payment_status === 'pending_verification';
+  const isPaymentRejected = enrollment?.payment_status === 'rejected' || enrollmentStatus === 'rejected';
   const enrollmentLabel = enrollmentStatus === 'pending'
-    ? 'Solicitud pendiente'
-    : enrollmentStatus === 'payment_pending'
-      ? 'Pago pendiente'
-      : enrollmentStatus === 'rejected'
-        ? 'Solicitud rechazada'
-        : 'Solicitar inscripción';
-
-  async function startPayment(provider: 'payphone' | 'paypal') {
-    if (!course || !profile) return;
-    setPaymentProvider(provider);
-    try {
-      const orderId = `ACADEMY-${course.id.slice(0, 8)}-${crypto.randomUUID()}`;
-      const enrollment = await academyAPI.checkEnrollment(course.id);
-      if (!enrollment?.id) throw new Error('No encontramos una solicitud Academy aprobada para este pago.');
-      const response = provider === 'paypal'
-        ? await callEdgeFunction<{ approvalUrl?: string; redirectUrl?: string }>('paypal-create-order', { orderId, amount: course.price, currency: 'USD', description: `Academy: ${course.title}`, academyEnrollmentId: enrollment.id })
-        : await callEdgeFunction<{ approvalUrl?: string; redirectUrl?: string }>('payphone-create-payment', { orderId, amount: course.price, currency: 'USD', description: `Academy: ${course.title}`, academyEnrollmentId: enrollment.id });
-      const redirectUrl = provider === 'paypal' ? response.approvalUrl : response.redirectUrl;
-      if (!redirectUrl) throw new Error('La pasarela no devolvió una URL de pago.');
-      window.location.assign(redirectUrl);
-    } catch (error) {
-      console.error('Error iniciando pago Academy:', error);
-      alert(error instanceof Error ? error.message : 'No se pudo iniciar el pago.');
-    } finally {
-      setPaymentProvider(null);
-    }
-  }
+    ? 'Solicitud en revisión'
+    : isPendingVerification
+      ? 'Comprobante en verificación'
+      : enrollmentStatus === 'payment_pending'
+        ? `Completar Pago ($${coursePrice.toFixed(2)})`
+        : isPaidCourse
+          ? `Inscribirme por $${coursePrice.toFixed(2)}`
+          : 'Inscribirme Gratis';
 
   return (
     <div className="bg-[#F4F7F5] min-h-screen pb-24">
@@ -217,6 +276,16 @@ export default function CursoDetalle() {
                   </div>
                 </div>
 
+                {/* Precio del curso */}
+                <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#6B7280]">
+                    Inversión Académica
+                  </span>
+                  <span className="text-2xl font-black text-[#1A4E26]">
+                    {isPaidCourse ? `$${coursePrice.toFixed(2)} USD` : 'Gratuito'}
+                  </span>
+                </div>
+
                 <div className="mb-6">
                   {canAccess ? (
                     <Link
@@ -225,27 +294,63 @@ export default function CursoDetalle() {
                     >
                       Continuar Aprendiendo
                     </Link>
-                  ) : enrollmentStatus ? (
-                    enrollmentStatus === 'payment_pending' ? (
-                      <div className="space-y-3">
-                        <p className="text-center text-sm font-bold text-[#92680A]">Tu solicitud fue aprobada. Completa el pago para activar 3 meses de acceso.</p>
-                        <div className="grid grid-cols-2 gap-2">
-                          <button type="button" disabled={paymentProvider !== null || !course.price} onClick={() => void startPayment('payphone')} className="py-3 rounded-xl bg-[#1A4E26] text-white font-bold disabled:opacity-60">{paymentProvider === 'payphone' ? 'Cargando...' : 'PayPhone'}</button>
-                          <button type="button" disabled={paymentProvider !== null || !course.price} onClick={() => void startPayment('paypal')} className="py-3 rounded-xl bg-[#0070BA] text-white font-bold disabled:opacity-60">{paymentProvider === 'paypal' ? 'Cargando...' : 'PayPal'}</button>
-                        </div>
+                  ) : isPendingVerification ? (
+                    <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 space-y-2 text-left">
+                      <div className="flex items-center gap-2 text-amber-900 font-black text-xs uppercase tracking-wider">
+                        <Landmark size={15} className="text-amber-700" />
+                        Comprobante en Verificación
                       </div>
-                    ) : <div className="w-full text-center py-4 rounded-xl bg-[#F4F7F5] text-[#6B7280] font-bold border border-[#C8D8CB]">{enrollmentLabel}</div>
+                      <p className="text-xs text-amber-800 leading-relaxed">
+                        Recibimos tu comprobante{enrollment?.banco_destino ? ` (${enrollment.banco_destino} • N° ${enrollment.voucher_numero})` : ''}. Nuestro equipo confirmará el pago para activar tu acceso al curso.
+                      </p>
+                    </div>
+                  ) : isPaymentRejected ? (
+                    <div className="space-y-3">
+                      <div className="rounded-xl bg-red-50 border border-red-200 p-3.5 text-left">
+                        <p className="text-xs font-bold text-red-900 flex items-center gap-1.5">
+                          <AlertCircle size={14} className="text-red-600 shrink-0" />
+                          Observación en el pago / solicitud:
+                        </p>
+                        <p className="text-xs text-red-700 mt-1">
+                          {enrollment?.rejection_reason || 'El comprobante no pudo ser validado. Por favor sube un nuevo comprobante.'}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => (isPaidCourse ? setIsCheckoutOpen(true) : void handleEnroll())}
+                        className="w-full py-3.5 rounded-xl bg-[#1A4E26] hover:bg-[#0F2E18] text-white font-black transition-colors text-sm"
+                      >
+                        {isPaidCourse ? 'Subir Nuevo Comprobante de Pago' : 'Reintentar Inscripción'}
+                      </button>
+                    </div>
+                  ) : enrollmentStatus === 'payment_pending' ? (
+                    <div className="space-y-3">
+                      <p className="text-center text-xs sm:text-sm font-bold text-[#92680A] bg-amber-50 border border-amber-200 rounded-xl p-3">
+                        Completa el pago de <strong>${coursePrice.toFixed(2)} USD</strong> para activar tu acceso al curso.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setIsCheckoutOpen(true)}
+                        className="w-full py-4 rounded-xl bg-[#1A4E26] hover:bg-[#0F2E18] text-white font-black transition-colors shadow-lg shadow-[#1A4E26]/20 flex items-center justify-center gap-2"
+                      >
+                        <Landmark size={18} /> Pagar e Inscribirme Ahora
+                      </button>
+                    </div>
+                  ) : enrollmentStatus === 'pending' ? (
+                    <div className="w-full text-center py-4 rounded-xl bg-[#F4F7F5] text-[#6B7280] font-bold border border-[#C8D8CB]">
+                      {enrollmentLabel}
+                    </div>
                   ) : (
                     <button
                       onClick={handleEnroll}
                       disabled={isEnrolling}
                       className="w-full py-4 rounded-xl bg-[#D4AF37] text-[#0B2913] font-black hover:bg-[#F3D568] transition-colors shadow-lg shadow-[#D4AF37]/30 flex items-center justify-center disabled:opacity-70"
                     >
-                      {isEnrolling ? 'Enviando solicitud...' : enrollmentLabel}
+                      {isEnrolling ? 'Procesando...' : enrollmentLabel}
                     </button>
                   )}
                   <p className="text-center text-xs text-[#6B7280] mt-3">
-                    Incluye acceso de por vida y futuras actualizaciones.
+                    Incluye acceso completo al material clínico, fichas botánicas y certificación oficial.
                   </p>
                 </div>
 
@@ -365,6 +470,19 @@ export default function CursoDetalle() {
           </div>
         </div>
       </div>
+
+      {isCheckoutOpen && isPaidCourse && (
+        <AcademyTransferCheckout
+          summaryTitle="Resumen de Inscripción al Curso"
+          items={[{ id: course.id, title: course.title, price: coursePrice }]}
+          total={coursePrice}
+          submitting={isSubmittingPayment}
+          onClose={() => setIsCheckoutOpen(false)}
+          onSubmit={handleTransferSubmit}
+          onDigitalPayment={(provider) => void handleDigitalPayment(provider)}
+          clientTransactionId={`ACAD-CRS-${course.id.slice(0, 8)}`}
+        />
+      )}
     </div>
   );
 }

@@ -89,8 +89,6 @@ export default function Recetas() {
 
     try {
       setIsSubmitting(true);
-      void bank;
-      void voucherNumber;
       await academyAPI.uploadAndCreateRecipePurchase({
         userId: profile.id,
         recipeIds: Array.from(selectedIds),
@@ -106,6 +104,30 @@ export default function Recetas() {
     } catch (error: any) {
       console.error('Error in checkout:', error);
       toast.error('Error al procesar la compra: ' + error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleDigitalPayment(provider: 'payphone' | 'paypal') {
+    if (selectedIds.size === 0) return;
+    if (!profile?.id) {
+      toast.error('Debe iniciar sesión para comprar');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const { redirectUrl } = await academyAPI.startRecipeDigitalPayment({
+        recipeIds: Array.from(selectedIds),
+        titleSummary: `${selectedIds.size} receta(s) milenaria(s) SUMAK Academy`,
+        totalAmount,
+        provider,
+      });
+      window.location.href = redirectUrl;
+    } catch (error: any) {
+      console.error('Error in digital checkout:', error);
+      toast.error('Error al iniciar pago digital: ' + (error.message || 'Intenta nuevamente'));
     } finally {
       setIsSubmitting(false);
     }
@@ -361,11 +383,13 @@ export default function Recetas() {
       {/* ── CHECKOUT MODAL ── */}
       {isCheckoutOpen && (
         <AcademyTransferCheckout
+          summaryTitle="Recetas seleccionadas"
           recipes={selectedRecipes}
           total={totalAmount}
           submitting={isSubmitting}
           onClose={() => setIsCheckoutOpen(false)}
           onSubmit={(file, bank, voucherNumber) => handleCheckout(file, bank, voucherNumber)}
+          onDigitalPayment={handleDigitalPayment}
         />
       )}
     </div>

@@ -47,6 +47,7 @@ interface CourseCardItem {
   image: string;
   bgGradient: string;
   status: 'active' | 'upcoming' | 'completed' | 'expired' | 'history';
+  paymentStatus?: string;
   slug?: string;
   canAccess: boolean;
   progress?: number;
@@ -273,7 +274,17 @@ function CourseCard({ item, idx = 0 }: { item: CourseCardItem; idx?: number }) {
               to={targetUrl}
               className={`px-5 py-2 rounded-xl text-white font-bold text-xs sm:text-sm shadow-xs hover:shadow transition-all shrink-0 inline-flex items-center justify-center cursor-pointer ${theme.btn}`}
             >
-              {item.status === 'active' ? 'Continuar curso' : item.status === 'upcoming' ? 'Solicitud pendiente' : 'Ver curso'}
+              {item.status === 'active'
+                ? 'Continuar curso'
+                : item.paymentStatus === 'pending_verification'
+                  ? 'En verificación de pago'
+                  : item.paymentStatus === 'pending_payment'
+                    ? 'Completar pago'
+                    : item.paymentStatus === 'failed'
+                      ? 'Reenviar comprobante'
+                      : item.status === 'upcoming'
+                        ? 'Solicitud pendiente'
+                        : 'Ver curso'}
             </Link>
           )}
         </div>
@@ -347,6 +358,7 @@ export default function MisCursos() {
         image: visual.image,
         bgGradient: visual.bg,
         status: statusCategory,
+        paymentStatus: enr.payment_status,
         slug: course?.slug,
         canAccess: canAccess && statusCategory !== 'expired',
         progress: enr.progress_percentage || 0,
@@ -425,7 +437,7 @@ export default function MisCursos() {
               </p>
             ) : (
               <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed pt-0.5">
-                Aún no tienes asignaturas matriculadas. Explora los <strong className="text-amber-300 font-bold">4 cursos oficiales</strong> disponibles en el campus virtual SUMAK.
+                Aún no tienes asignaturas matriculadas. Explora los <strong className="text-amber-300 font-bold">7 cursos oficiales</strong> disponibles en el campus virtual SUMAK.
               </p>
             )}
           </div>
@@ -566,7 +578,7 @@ export default function MisCursos() {
         <div className="bg-white rounded-3xl p-12 text-center border border-dashed border-slate-200">
           <BookOpen className="mx-auto text-[#1A4E26] mb-3" size={36} />
           <h3 className="text-lg font-bold text-slate-800">No hay cursos en esta sección</h3>
-          <p className="text-slate-500 text-sm mt-1 mb-6">Explora los 4 cursos oficiales de SUMAK para agregar nuevos programas a tu aprendizaje.</p>
+          <p className="text-slate-500 text-sm mt-1 mb-6">Explora los 7 cursos oficiales de SUMAK para agregar nuevos programas a tu aprendizaje.</p>
           <Link
             to="/academia/dashboard/explorar"
             className="inline-flex px-6 py-2.5 rounded-full bg-[#1A4E26] hover:bg-[#12361A] text-white text-xs sm:text-sm font-semibold transition-all shadow-sm"

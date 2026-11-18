@@ -1,4 +1,4 @@
-﻿import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -55,7 +55,14 @@ Deno.serve(async (req: Request) => {
     return jsonResponse(req, { error: "Token invalido o expirado" }, 401);
   }
 
-  let payload: { orderId?: string; amount?: number | string; currency?: string; description?: string; academyEnrollmentId?: string };
+  let payload: {
+    orderId?: string;
+    amount?: number | string;
+    currency?: string;
+    description?: string;
+    academyEnrollmentId?: string;
+    academyRecipePurchaseId?: string;
+  };
   try {
     payload = await req.json();
   } catch {
@@ -67,6 +74,7 @@ Deno.serve(async (req: Request) => {
   const currency = String(payload.currency ?? "USD").trim().toUpperCase();
   const description = String(payload.description ?? "Compra Sumak").trim();
   const academyEnrollmentId = String(payload.academyEnrollmentId ?? "").trim();
+  const academyRecipePurchaseId = String(payload.academyRecipePurchaseId ?? "").trim();
 
   if (!orderId || !Number.isFinite(amount) || amount <= 0) {
     return jsonResponse(req, { error: "Faltan orderId o amount valido" }, 400);
@@ -97,6 +105,12 @@ Deno.serve(async (req: Request) => {
     return jsonResponse(req, { error: "PayPal no devolvio access_token" }, 502);
   }
 
+  const contextQuery = academyEnrollmentId
+    ? `&context=academy_course&enrollmentId=${encodeURIComponent(academyEnrollmentId)}`
+    : academyRecipePurchaseId
+      ? `&context=academy_recipes&purchaseId=${encodeURIComponent(academyRecipePurchaseId)}`
+      : "";
+
   const orderResponse = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders`, {
     method: "POST",
     headers: {
@@ -116,8 +130,8 @@ Deno.serve(async (req: Request) => {
       application_context: {
         brand_name: "Sumak",
         user_action: "PAY_NOW",
-        return_url: `${Deno.env.get("APP_URL") ?? "http://localhost:3000"}/checkout/return?provider=paypal&orderId=${encodeURIComponent(orderId)}`,
-        cancel_url: `${Deno.env.get("APP_URL") ?? "http://localhost:3000"}/checkout/cancel?provider=paypal&orderId=${encodeURIComponent(orderId)}`,
+        return_url: `${Deno.env.get("APP_URL") ?? "http://localhost:3000"}/checkout/return?provider=paypal&orderId=${encodeURIComponent(orderId)}${contextQuery}`,
+        cancel_url: `${Deno.env.get("APP_URL") ?? "http://localhost:3000"}/checkout/cancel?provider=paypal&orderId=${encodeURIComponent(orderId)}${contextQuery}`,
       },
     }),
   });
@@ -139,7 +153,7 @@ Deno.serve(async (req: Request) => {
       .select("id, status, course:course_id (price)")
       .eq("id", academyEnrollmentId)
       .eq("user_id", userData.user.id)
-      .eq("status", "payment_pending")
+      .in("status", ["pending", "payment_pending"])
       .single();
     const course = enrollment?.course as { price?: number | null } | null;
     if (enrollmentError || !enrollment || !course || course.price === null || course.price === undefined || course.price <= 0) {
@@ -150,10 +164,28 @@ Deno.serve(async (req: Request) => {
     }
   }
 
+  if (academyRecipePurchaseId) {
+    const { data: purchase, error: purchaseError } = await supabaseAdmin
+      .from("academy_recipe_purchases")
+      .select("id, status, total_amount")
+      .eq("id", academyRecipePurchaseId)
+      .eq("user_id", userData.user.id)
+      .in("status", ["pending", "processing"])
+      .single();
+    if (purchaseError || !purchase || Number(purchase.total_amount) <= 0) {
+      return jsonResponse(req, { error: "La compra de recetas no está lista para pago." }, 409);
+    }
+    if (Math.round(amount * 100) !== Math.round(Number(purchase.total_amount) * 100)) {
+      return jsonResponse(req, { error: "El monto no coincide con el total de las recetas." }, 400);
+    }
+  }
+
   const paymentRow = {
     user_id: userData.user.id,
     pedido_id: null,
     afiliacion_id: null,
+    academy_enrollment_id: academyEnrollmentId || null,
+    academy_recipe_purchase_id: academyRecipePurchaseId || null,
     provider: "paypal",
     payment_method: "paypal",
     amount,
@@ -164,6 +196,7 @@ Deno.serve(async (req: Request) => {
       orderId,
       description,
       academyEnrollmentId: academyEnrollmentId || null,
+      academyRecipePurchaseId: academyRecipePurchaseId || null,
       providerResponse: orderJson,
     },
   };
@@ -175,13 +208,23 @@ Deno.serve(async (req: Request) => {
   if (academyEnrollmentId) {
     const { error: linkError } = await supabaseAdmin
       .from("academy_enrollments")
-      .update({ payment_id: insertedPayment.id })
+      .update({ payment_id: insertedPayment.id, status: "payment_pending", payment_method: "paypal" })
       .eq("id", academyEnrollmentId)
-      .eq("user_id", userData.user.id)
-      .eq("status", "payment_pending");
+      .eq("user_id", userData.user.id);
     if (linkError) {
       await supabaseAdmin.from("pagos").delete().eq("id", insertedPayment.id);
       return jsonResponse(req, { error: "No se pudo vincular el pago con la inscripción Academy." }, 500);
+    }
+  }
+  if (academyRecipePurchaseId) {
+    const { error: linkRecError } = await supabaseAdmin
+      .from("academy_recipe_purchases")
+      .update({ payment_id: insertedPayment.id, payment_method: "paypal" })
+      .eq("id", academyRecipePurchaseId)
+      .eq("user_id", userData.user.id);
+    if (linkRecError) {
+      await supabaseAdmin.from("pagos").delete().eq("id", insertedPayment.id);
+      return jsonResponse(req, { error: "No se pudo vincular el pago con la compra de recetas." }, 500);
     }
   }
 

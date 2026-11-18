@@ -1,4 +1,4 @@
-﻿import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -85,6 +85,7 @@ Deno.serve(async (req: Request) => {
     currency?: string;
     description?: string;
     academyEnrollmentId?: string;
+    academyRecipePurchaseId?: string;
     metadata?: Record<string, unknown>;
   };
 
@@ -99,6 +100,7 @@ Deno.serve(async (req: Request) => {
   const currency = String(payload.currency ?? "USD").trim().toUpperCase();
   const description = String(payload.description ?? "Compra Sumak").trim();
   const academyEnrollmentId = String(payload.academyEnrollmentId ?? "").trim();
+  const academyRecipePurchaseId = String(payload.academyRecipePurchaseId ?? "").trim();
 
   if (!orderId || !Number.isFinite(amount) || amount <= 0) {
     return jsonResponse(req, { error: "Faltan orderId o amount valido" }, 400);
@@ -122,7 +124,7 @@ Deno.serve(async (req: Request) => {
       .select("id, status, course:course_id (price)")
       .eq("id", academyEnrollmentId)
       .eq("user_id", userData.user.id)
-      .eq("status", "payment_pending")
+      .in("status", ["pending", "payment_pending"])
       .single();
     const course = enrollment?.course as { price?: number | null } | null;
     if (enrollmentError || !enrollment || !course || course.price === null || course.price === undefined || course.price <= 0) {
@@ -133,11 +135,29 @@ Deno.serve(async (req: Request) => {
     }
   }
 
+  if (academyRecipePurchaseId) {
+    const { data: purchase, error: purchaseError } = await supabaseAdmin
+      .from("academy_recipe_purchases")
+      .select("id, status, total_amount")
+      .eq("id", academyRecipePurchaseId)
+      .eq("user_id", userData.user.id)
+      .in("status", ["pending", "processing"])
+      .single();
+    if (purchaseError || !purchase || Number(purchase.total_amount) <= 0) {
+      return jsonResponse(req, { error: "La compra de recetas no está lista para pago." }, 409);
+    }
+    if (Math.round(amount * 100) !== Math.round(Number(purchase.total_amount) * 100)) {
+      return jsonResponse(req, { error: "El monto no coincide con el total de las recetas." }, 400);
+    }
+  }
+
   const amountCents = Math.round(Number((Number(amount) * 100).toFixed(0)));
   const paymentRow = {
     user_id: userData.user.id,
     pedido_id: null,
     afiliacion_id: null,
+    academy_enrollment_id: academyEnrollmentId || null,
+    academy_recipe_purchase_id: academyRecipePurchaseId || null,
     provider: "payphone",
     payment_method: "payphone",
     amount: amountCents,
@@ -149,6 +169,7 @@ Deno.serve(async (req: Request) => {
       createdFrom: "edge-function",
       provider: "payphone",
       academyEnrollmentId: academyEnrollmentId || null,
+      academyRecipePurchaseId: academyRecipePurchaseId || null,
     },
   };
 
@@ -165,19 +186,36 @@ Deno.serve(async (req: Request) => {
   if (academyEnrollmentId) {
     const { error: linkError } = await supabaseAdmin
       .from("academy_enrollments")
-      .update({ payment_id: inserted.id })
+      .update({ payment_id: inserted.id, status: "payment_pending", payment_method: "payphone" })
       .eq("id", academyEnrollmentId)
-      .eq("user_id", userData.user.id)
-      .eq("status", "payment_pending");
+      .eq("user_id", userData.user.id);
     if (linkError) {
       await supabaseAdmin.from("pagos").delete().eq("id", inserted.id);
       return jsonResponse(req, { error: "No se pudo vincular el pago con la inscripción Academy." }, 500);
     }
   }
 
+  if (academyRecipePurchaseId) {
+    const { error: linkRecError } = await supabaseAdmin
+      .from("academy_recipe_purchases")
+      .update({ payment_id: inserted.id, payment_method: "payphone" })
+      .eq("id", academyRecipePurchaseId)
+      .eq("user_id", userData.user.id);
+    if (linkRecError) {
+      await supabaseAdmin.from("pagos").delete().eq("id", inserted.id);
+      return jsonResponse(req, { error: "No se pudo vincular el pago con la compra de recetas." }, 500);
+    }
+  }
+
+  const contextQuery = academyEnrollmentId
+    ? `&context=academy_course&enrollmentId=${encodeURIComponent(academyEnrollmentId)}&paymentId=${encodeURIComponent(inserted.id)}`
+    : academyRecipePurchaseId
+      ? `&context=academy_recipes&purchaseId=${encodeURIComponent(academyRecipePurchaseId)}&paymentId=${encodeURIComponent(inserted.id)}`
+      : "";
+
   const appUrl = (Deno.env.get("APP_URL") ?? "https://www.sumakecuador.lat").replace(/\/$/, "");
-  const returnUrl = `${appUrl}/checkout/return?provider=payphone&orderId=${encodeURIComponent(orderId)}`;
-  const cancelUrl = `${appUrl}/checkout/cancel?provider=payphone&orderId=${encodeURIComponent(orderId)}`;
+  const returnUrl = `${appUrl}/checkout/return?provider=payphone&orderId=${encodeURIComponent(orderId)}${contextQuery}`;
+  const cancelUrl = `${appUrl}/checkout/cancel?provider=payphone&orderId=${encodeURIComponent(orderId)}${contextQuery}`;
 
   const providerRequest = {
     amount: amountCents,

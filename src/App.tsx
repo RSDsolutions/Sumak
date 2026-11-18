@@ -936,6 +936,16 @@ export default function App() {
             }
           />
           <Route
+            path="/operaciones/academia/inscripciones"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'operaciones']}>
+                <OperacionesLayout>
+                  <AdminAcademyEnrollments />
+                </OperacionesLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/operaciones/academia/recetas"
             element={
               <ProtectedRoute allowedRoles={['admin', 'operaciones']}>

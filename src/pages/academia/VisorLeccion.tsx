@@ -721,46 +721,48 @@ export default function VisorLeccion() {
               </span>
             </div>
 
-            {/* Contenedor del Reproductor de Video */}
-            <div className="w-full rounded-2xl sm:rounded-3xl overflow-hidden shadow-md bg-black border border-slate-200/80 aspect-video relative flex items-center justify-center">
-              {['video', 'mixed'].includes(currentLesson.content_type) ? (
-                currentLesson.video_provider === 'youtube' && currentLesson.video_external_id ? (
-                  <iframe 
-                    src={`https://www.youtube.com/embed/${currentLesson.video_external_id}?autoplay=0&rel=0`}
-                    title={currentLesson.title}
-                    className="absolute inset-0 w-full h-full"
-                    allowFullScreen
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  />
-                ) : (
-                  <div className="text-white text-center p-6">
-                    <PlayCircle size={52} className="mx-auto mb-2 text-emerald-400/80" />
-                    <p className="text-sm font-semibold">Video en preparación para esta lección</p>
-                    <p className="text-xs text-white/60 mt-1">El material multimedia se está optimizando en el servidor.</p>
-                  </div>
-                )
-              ) : currentLesson.content_type === 'pdf' ? (
-                (() => {
-                  const resolvedUrl = currentLesson.external_url || academyAPI.getPublicImageUrl(currentLesson.file_url) || '';
+            {/* Contenedor Multimedia o Cabecera Visual Académica de la Lección */}
+            {['video', 'mixed'].includes(currentLesson.content_type) &&
+            currentLesson.video_provider === 'youtube' &&
+            currentLesson.video_external_id ? (
+              <div className="w-full rounded-2xl sm:rounded-3xl overflow-hidden shadow-md bg-black border border-slate-200/80 aspect-video relative flex items-center justify-center">
+                <iframe
+                  src={`https://www.youtube.com/embed/${currentLesson.video_external_id}?autoplay=0&rel=0`}
+                  title={currentLesson.title}
+                  className="absolute inset-0 w-full h-full"
+                  allowFullScreen
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                />
+              </div>
+            ) : currentLesson.content_type === 'pdf' ? (
+              <div className="w-full rounded-2xl sm:rounded-3xl overflow-hidden shadow-md bg-white border border-slate-200/80 aspect-video relative flex items-center justify-center">
+                {(() => {
+                  const resolvedUrl =
+                    currentLesson.external_url ||
+                    academyAPI.getPublicImageUrl(currentLesson.file_url) ||
+                    '';
                   let embedUrl = resolvedUrl;
                   if (embedUrl.includes('drive.google.com')) {
                     embedUrl = embedUrl.replace('/view', '/preview');
-                  } else if (embedUrl.startsWith('http') && !embedUrl.includes('docs.google.com/viewer')) {
+                  } else if (
+                    embedUrl.startsWith('http') &&
+                    !embedUrl.includes('docs.google.com/viewer')
+                  ) {
                     embedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(embedUrl)}&embedded=true`;
                   }
 
                   return (
                     <div className="w-full h-full relative group bg-white">
-                      <iframe 
-                        src={embedUrl} 
+                      <iframe
+                        src={embedUrl}
                         className="w-full h-full border-0"
                         title={currentLesson.title}
                       />
                       {resolvedUrl && (
                         <div className="absolute top-4 right-4 z-10">
-                          <a 
-                            href={resolvedUrl} 
-                            target="_blank" 
+                          <a
+                            href={resolvedUrl}
+                            target="_blank"
                             rel="noopener noreferrer"
                             download
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1A4E26] text-white text-xs font-bold rounded-lg shadow hover:bg-[#0F2E18] transition-colors"
@@ -771,16 +773,59 @@ export default function VisorLeccion() {
                       )}
                     </div>
                   );
-                })()
-              ) : (
-                <div className="text-white text-center p-6">
-                  <FileText size={48} className="mx-auto mb-2 text-slate-400" />
-                  <p className="text-sm font-semibold">Lección de lectura y conceptos clave</p>
+                })()}
+              </div>
+            ) : (
+              <div className="w-full rounded-2xl sm:rounded-3xl overflow-hidden shadow-md bg-gradient-to-r from-[#0F2E18] via-[#1A4E26] to-[#2B6E3A] text-white relative">
+                {currentLesson.thumbnail_url && (
+                  <img
+                    src={currentLesson.thumbnail_url}
+                    alt={currentLesson.title}
+                    referrerPolicy="no-referrer"
+                    className="w-full h-56 sm:h-72 object-cover opacity-35 mix-blend-overlay absolute inset-0"
+                  />
+                )}
+                <div className="relative z-10 p-6 sm:p-9 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                  <div className="space-y-3 max-w-2xl">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-[#D4AF37] text-[#0B2913] px-3 py-1 rounded-full">
+                        <BookOpen size={12} /> Cátedra Magistral SUMAK
+                      </span>
+                      {currentModule && (
+                        <span className="text-xs font-bold bg-white/15 text-emerald-100 px-3 py-1 rounded-full border border-white/20">
+                          {currentModule.title}
+                        </span>
+                      )}
+                      {currentLesson.estimated_minutes && (
+                        <span className="inline-flex items-center gap-1 text-xs bg-white/10 text-white/90 px-2.5 py-1 rounded-full">
+                          <Clock size={12} className="text-[#D4AF37]" /> {currentLesson.estimated_minutes} min de estudio
+                        </span>
+                      )}
+                    </div>
+                    <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-white leading-tight">
+                      {currentLesson.title}
+                    </h1>
+                    {currentLesson.description && (
+                      <p className="text-xs sm:text-sm text-emerald-50/90 leading-relaxed">
+                        {currentLesson.description}
+                      </p>
+                    )}
+                  </div>
+                  {currentLesson.thumbnail_url && (
+                    <div className="w-full md:w-56 h-36 sm:h-40 rounded-2xl overflow-hidden border-2 border-white/25 shadow-lg shrink-0 bg-white/10">
+                      <img
+                        src={currentLesson.thumbnail_url}
+                        alt={currentLesson.title}
+                        referrerPolicy="no-referrer"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
-            {/* Barra de Acciones debajo del video (Bookmarks + Navegación Prev/Next + Completar) */}
+            {/* Barra de Acciones debajo del bloque superior (Bookmarks + Navegación Prev/Next + Completar) */}
             <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
               
               {/* Botón Bookmarks con ícono amarillo */}
@@ -838,15 +883,33 @@ export default function VisorLeccion() {
               </div>
             </div>
 
-            {/* Callout Clínico de Seguridad / Toxicidad */}
+            {/* Callouts Clínicos de Seguridad / Toxicidad */}
             {currentLesson.metadata?.clinical_callout && (
               <ClinicalCallout callout={currentLesson.metadata.clinical_callout} />
             )}
+            {Array.isArray(currentLesson.metadata?.clinical_callouts) &&
+              currentLesson.metadata.clinical_callouts.map((c, idx) => (
+                <ClinicalCallout key={idx} callout={c} />
+              ))}
 
-            {/* Tarjeta de Protocolo / Receta Paso a Paso */}
+            {/* Contenido Académico y Clínico Enriquecido de la Lección */}
+            {currentLesson.text_content && (
+              <div className="bg-white rounded-2xl border border-[#C8D8CB] p-6 sm:p-8 shadow-sm">
+                <div
+                  className="prose prose-sm sm:prose-base prose-emerald max-w-none text-slate-700 [&_img]:rounded-2xl [&_img]:shadow-md [&_img]:object-cover [&_img]:w-full [&_img]:max-h-[420px] [&_img]:my-6 [&_h2]:text-[#0B2913] [&_h2]:font-black [&_h3]:text-[#1A4E26] [&_h3]:font-bold"
+                  dangerouslySetInnerHTML={{ __html: currentLesson.text_content }}
+                />
+              </div>
+            )}
+
+            {/* Tarjetas de Protocolo / Receta Paso a Paso (Individual y Múltiples) */}
             {currentLesson.metadata?.recipe_card && (
               <StepByStepRecipeCard recipe={currentLesson.metadata.recipe_card} />
             )}
+            {Array.isArray(currentLesson.metadata?.recipe_cards) &&
+              currentLesson.metadata.recipe_cards.map((rec, idx) => (
+                <StepByStepRecipeCard key={idx} recipe={rec} />
+              ))}
 
             {/* Fichas Botánicas Vinculadas */}
             <BotanicalSheetsSection items={lessonBotanicals} />

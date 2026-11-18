@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -12,8 +13,11 @@ import {
   ExternalLink,
   Sparkles,
   BookOpen,
+  ChevronDown,
+  ChevronUp,
+  Droplets,
 } from 'lucide-react';
-import { products } from '../../data';
+import { products, parseIngredient } from '../../data';
 import type {
   ClinicalCalloutData,
   AcademyBotanicalSheet,
@@ -43,7 +47,7 @@ export function ClinicalCallout({ callout }: { callout: ClinicalCalloutData }) {
       textTitle: 'text-amber-950',
       textBody: 'text-amber-900',
       badgeBg: 'bg-amber-200/70 text-amber-900',
-      badgeLabel: 'Advertencia Fisiológica',
+      badgeLabel: 'Advertencia Fisiológica y Clínica',
       icon: <AlertTriangle size={20} className="text-amber-600 shrink-0" />,
     },
     contraindication: {
@@ -53,7 +57,7 @@ export function ClinicalCallout({ callout }: { callout: ClinicalCalloutData }) {
       textTitle: 'text-red-950',
       textBody: 'text-red-900',
       badgeBg: 'bg-red-200/70 text-red-900',
-      badgeLabel: 'Contraindicación Clínica Estricta',
+      badgeLabel: 'Signos de Alarma y Contraindicación Estricta',
       icon: <ShieldAlert size={20} className="text-red-600 shrink-0" />,
     },
     toxicity: {
@@ -84,7 +88,7 @@ export function ClinicalCallout({ callout }: { callout: ClinicalCalloutData }) {
           <h4 className={`font-bold text-base sm:text-lg leading-snug mb-1.5 ${s.textTitle}`}>
             {callout.title}
           </h4>
-          <p className={`text-sm leading-relaxed ${s.textBody}`}>
+          <p className={`text-sm leading-relaxed whitespace-pre-line ${s.textBody}`}>
             {callout.message}
           </p>
         </div>
@@ -102,6 +106,8 @@ export function BotanicalSheetCard({
   sheet: AcademyBotanicalSheet;
   clinicalRole?: string | null;
 }) {
+  const [imgFailed, setImgFailed] = useState(false);
+
   const toxicityBadge: Record<
     AcademyBotanicalSheet['toxicity_level'],
     { label: string; cls: string }
@@ -111,7 +117,7 @@ export function BotanicalSheetCard({
       cls: 'bg-emerald-100 text-emerald-800 border-emerald-300',
     },
     moderate: {
-      label: 'Toxicidad Moderada (Requiere extracto estandarizado)',
+      label: 'Toxicidad Moderada (Uso prudente / estandarizado)',
       cls: 'bg-amber-100 text-amber-900 border-amber-300',
     },
     high: {
@@ -119,8 +125,8 @@ export function BotanicalSheetCard({
       cls: 'bg-red-100 text-red-800 border-red-300',
     },
     strict_caution: {
-      label: 'Precaución Clínica Estricta',
-      cls: 'bg-purple-100 text-purple-900 border-purple-300',
+      label: 'Precaución Clínica Estricta (Prohibida ingesta casera)',
+      cls: 'bg-rose-200 text-rose-950 border-rose-400',
     },
   };
 
@@ -129,16 +135,21 @@ export function BotanicalSheetCard({
     ? products.find((p) => p.codigo === sheet.related_product_code)
     : undefined;
 
+  const parsedFallback = parseIngredient(sheet.common_name).image;
+  const resolvedImage = !imgFailed ? (sheet.image_url || parsedFallback) : parsedFallback;
+
   return (
     <div className="bg-white rounded-2xl border border-[#C8D8CB] shadow-sm overflow-hidden">
       {/* Header */}
       <div className="bg-gradient-to-r from-[#0B2913] via-[#1A4E26] to-[#163F1E] p-5 sm:p-6 text-white flex flex-col sm:flex-row sm:items-center gap-4">
-        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/10 border border-white/20 p-2 flex items-center justify-center shrink-0">
-          {sheet.image_url ? (
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/15 border border-white/25 p-2 flex items-center justify-center shrink-0 overflow-hidden">
+          {resolvedImage && !imgFailed ? (
             <img
-              src={sheet.image_url}
+              src={resolvedImage}
               alt={sheet.common_name}
-              className="w-full h-full object-contain drop-shadow"
+              referrerPolicy="no-referrer"
+              onError={() => setImgFailed(true)}
+              className="w-full h-full object-contain rounded-xl drop-shadow"
             />
           ) : (
             <Leaf size={32} className="text-[#D4AF37]" />
@@ -160,13 +171,13 @@ export function BotanicalSheetCard({
             </span>
           </h3>
           {sheet.part_used && (
-            <p className="text-xs text-white/75 mt-1">
-              <strong>Parte utilizada:</strong> {sheet.part_used}
+            <p className="text-xs text-white/80 mt-1">
+              <strong>Parte utilizada / Preparación:</strong> {sheet.part_used}
             </p>
           )}
           {clinicalRole && (
             <p className="text-xs text-emerald-100 mt-2 bg-white/10 rounded-lg px-3 py-1.5 border border-white/10">
-              <strong>Rol en esta lección:</strong> {clinicalRole}
+              <strong>Rol clínico en esta lección:</strong> {clinicalRole}
             </p>
           )}
         </div>
@@ -178,14 +189,14 @@ export function BotanicalSheetCard({
         {sheet.active_compounds && sheet.active_compounds.length > 0 && (
           <div>
             <h4 className="text-xs font-black uppercase tracking-wider text-[#1A4E26] mb-2.5 flex items-center gap-1.5">
-              <FlaskConical size={14} /> Tabla de Compuestos Bioactivos y Mecanismo
+              <FlaskConical size={14} /> Tabla de Compuestos Bioactivos y Acción Fisiológica
             </h4>
             <div className="overflow-x-auto border border-slate-200 rounded-xl">
               <table className="w-full text-left text-xs sm:text-sm">
                 <thead className="bg-[#F4F7F5] text-[#0B2913] font-bold border-b border-slate-200">
                   <tr>
                     <th className="py-2.5 px-3.5 w-2/5">Compuesto Activo</th>
-                    <th className="py-2.5 px-3.5">Acción Fisiológica / Renal</th>
+                    <th className="py-2.5 px-3.5">Acción Fisiológica / Clínica</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -222,7 +233,7 @@ export function BotanicalSheetCard({
           {sheet.traditional_uses?.length > 0 && (
             <div className="bg-[#F8FBF8] border border-[#C8D8CB]/60 rounded-xl p-4">
               <h5 className="text-xs font-black uppercase tracking-wider text-[#1A4E26] mb-2">
-                Usos Clínicos y Tradicionales
+                Beneficios Tradicionales y Preparación Prudente
               </h5>
               <ul className="space-y-1.5">
                 {sheet.traditional_uses.map((u, i) => (
@@ -271,15 +282,24 @@ export function BotanicalSheetCard({
         {/* Producto SUMAK que contiene esta planta */}
         {linkedProduct && (
           <div className="flex items-center justify-between gap-3 pt-2 border-t border-slate-100 text-xs">
-            <span className="text-slate-500">
-              Presente en formulación estandarizada SUMAK:{' '}
-              <strong className="text-[#1A4E26]">{linkedProduct.nombre}</strong>
-            </span>
+            <div className="flex items-center gap-2.5">
+              {linkedProduct.imagen && (
+                <img
+                  src={linkedProduct.imagen}
+                  alt={linkedProduct.nombre}
+                  className="w-8 h-8 object-contain rounded-lg border border-slate-200 p-0.5 bg-white"
+                />
+              )}
+              <span className="text-slate-600">
+                Presente en formulación estandarizada SUMAK:{' '}
+                <strong className="text-[#1A4E26]">{linkedProduct.nombre}</strong>
+              </span>
+            </div>
             <Link
               to={`/productos/${linkedProduct.slug}`}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 font-bold text-[#1A4E26] hover:underline"
+              className="inline-flex items-center gap-1 font-bold text-[#1A4E26] hover:underline shrink-0"
             >
               Ver en catálogo <ExternalLink size={12} />
             </Link>
@@ -296,16 +316,16 @@ export function BotanicalSheetsSection({ items }: { items: AcademyLessonBotanica
 
   return (
     <div className="space-y-4 mb-8">
-      <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-xl bg-[#1A4E26] text-white flex items-center justify-center">
+      <div className="flex items-center gap-2.5">
+        <div className="w-9 h-9 rounded-xl bg-[#1A4E26] text-white flex items-center justify-center shadow-xs">
           <Leaf size={18} />
         </div>
         <div>
           <h3 className="text-lg font-black text-[#111111]">
-            Vademécum y Fichas Botánicas de la Lección
+            Vademécum y Fichas Botánicas de la Lección ({validItems.length})
           </h3>
           <p className="text-xs text-[#6B7280]">
-            Compuestos activos, mecanismos renales y niveles de seguridad clínica
+            Compuestos activos, beneficios tradicionales, preparación prudente y niveles de seguridad clínica
           </p>
         </div>
       </div>
@@ -324,6 +344,188 @@ export function BotanicalSheetsSection({ items }: { items: AcademyLessonBotanica
 
 // ─── 3. Dosed Ingredients / Linked SUMAK Products List ───────────────────────
 
+function ProductCardItem({ item }: { item: AcademyLessonProduct }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const catalogProduct = products.find(
+    (p) => p.codigo === item.product_code || p.slug === item.product_slug
+  );
+
+  const rawIngredients = catalogProduct?.ingredientes ?? [];
+  const parsedList = rawIngredients.map((raw) => parseIngredient(raw));
+  const botanicalIngredients = parsedList.filter((p) => !p.isNutrient);
+  const nutrientIngredients = parsedList.filter((p) => p.isNutrient);
+
+  // Extract individual mineral/vitamin pills from nutrient strings
+  const nutrientPills = nutrientIngredients.flatMap((n) => {
+    const clean = n.name.replace(/^(Minerales esenciales:|Minerales:|Vitaminas:)\s*/i, '');
+    return clean
+      .split(/,| y /i)
+      .map((s) => s.trim())
+      .filter(Boolean);
+  });
+
+  const visibleBotanicals = expanded ? botanicalIngredients : botanicalIngredients.slice(0, 8);
+
+  return (
+    <div className="rounded-2xl border border-[#C8D8CB] bg-gradient-to-br from-white via-white to-[#F4F7F5] p-5 sm:p-6 flex flex-col md:flex-row items-start gap-5 hover:border-[#1A4E26]/50 transition-all shadow-2xs">
+      {/* Product Bottle / Package Image */}
+      <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl bg-white border border-[#C8D8CB] p-2.5 flex items-center justify-center shrink-0 mx-auto md:mx-0 shadow-2xs">
+        {catalogProduct?.imagen ? (
+          <img
+            src={catalogProduct.imagen}
+            alt={item.product_name}
+            className="w-full h-full object-contain drop-shadow-xs"
+          />
+        ) : (
+          <Sparkles size={32} className="text-[#1A4E26]" />
+        )}
+      </div>
+
+      {/* Product Details & Dosage */}
+      <div className="flex-1 min-w-0 space-y-3 w-full">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[10px] font-mono font-bold bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-md border border-slate-200">
+              Cód. {item.product_code}
+            </span>
+            {catalogProduct?.presentacion && (
+              <span className="text-[10px] font-bold bg-emerald-50 text-[#1A4E26] border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                {catalogProduct.presentacion}
+              </span>
+            )}
+            {catalogProduct?.pvp && (
+              <span className="text-[10px] font-extrabold bg-[#FEF6E9] text-[#7C4C18] border border-amber-200 px-2.5 py-0.5 rounded-full">
+                PVP ${catalogProduct.pvp.toFixed(2)}
+              </span>
+            )}
+            {item.protocol_phase && (
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-[#1A4E26] text-white px-2.5 py-0.5 rounded-full">
+                {item.protocol_phase}
+              </span>
+            )}
+          </div>
+          <Link
+            to={`/productos/${catalogProduct?.slug || item.product_slug}`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 text-xs font-bold text-[#1A4E26] hover:underline"
+          >
+            Ver ficha comercial <ExternalLink size={12} />
+          </Link>
+        </div>
+
+        <div>
+          <h4 className="text-lg sm:text-xl font-black text-[#111111]">
+            {item.product_name}
+          </h4>
+          {catalogProduct?.tagline && (
+            <p className="text-xs font-semibold text-[#1A4E26]">{catalogProduct.tagline}</p>
+          )}
+        </div>
+
+        {/* Dosage Box */}
+        <div className="bg-[#EBF4ED] border border-[#1A4E26]/20 rounded-xl p-3.5">
+          <p className="text-xs font-black uppercase tracking-wider text-[#1A4E26] mb-1 flex items-center gap-1.5">
+            <Droplets size={14} /> Posología y Dosificación Exacta Recomendada:
+          </p>
+          <p className="text-sm font-bold text-[#0B2913]">{item.dosage}</p>
+          {item.administration_route && (
+            <p className="text-xs text-[#2D5A37] mt-1">
+              <strong>Vía y modo de administración:</strong> {item.administration_route}
+            </p>
+          )}
+        </div>
+
+        {/* Botanical Ingredients with real /ingredientes/*.png thumbnails */}
+        {botanicalIngredients.length > 0 && (
+          <div className="space-y-2 pt-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-600">
+                Activos Botánicos y Fitonutrientes ({botanicalIngredients.length})
+              </span>
+              {botanicalIngredients.length > 8 && (
+                <button
+                  type="button"
+                  onClick={() => setExpanded(!expanded)}
+                  className="inline-flex items-center gap-1 text-xs font-bold text-[#1A4E26] hover:underline"
+                >
+                  {expanded ? (
+                    <>
+                      Mostrar menos <ChevronUp size={13} />
+                    </>
+                  ) : (
+                    <>
+                      Ver los {botanicalIngredients.length} ingredientes <ChevronDown size={13} />
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+              {visibleBotanicals.map((ing, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center gap-2 bg-white border border-slate-200/90 rounded-xl p-2 shadow-2xs"
+                >
+                  {ing.image ? (
+                    <img
+                      src={ing.image}
+                      alt={ing.name}
+                      className="w-7 h-7 object-contain shrink-0"
+                    />
+                  ) : (
+                    <Leaf size={15} className="text-[#1A4E26] shrink-0" />
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-slate-800 truncate" title={ing.name}>
+                      {ing.name}
+                    </p>
+                    {ing.description && (
+                      <p className="text-[10px] text-slate-500 truncate" title={ing.description}>
+                        {ing.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Micronutrients / Vitamins & Minerals Pills */}
+        {nutrientPills.length > 0 && (
+          <div className="pt-1">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-900 block mb-1.5">
+              Complejo de Vitaminas, Minerales y Oligoelementos:
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {nutrientPills.map((pill, idx) => (
+                <span
+                  key={idx}
+                  className="text-[11px] font-bold bg-[#FEF6E9] text-[#5B3407] border border-[#D4AF37]/50 px-2.5 py-0.5 rounded-full shadow-2xs"
+                >
+                  ✨ {pill}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Precautions */}
+        {item.precautions && (
+          <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-3.5 py-2.5 text-xs text-red-900">
+            <ShieldAlert size={15} className="text-red-600 shrink-0 mt-0.5" />
+            <span>
+              <strong>Precaución clínica:</strong> {item.precautions}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function DosedIngredientsList({ items }: { items: AcademyLessonProduct[] }) {
   if (!items || items.length === 0) return null;
 
@@ -339,111 +541,19 @@ export function DosedIngredientsList({ items }: { items: AcademyLessonProduct[] 
               Fórmulas SUMAK Vinculadas y Dosificación Clínica
             </h3>
             <p className="text-xs text-[#6B7280]">
-              Posología exacta, fase del protocolo y precauciones terapéuticas
+              Envase oficial, ingredientes activos con iconografía botánica, micronutrientes y posología exacta
             </p>
           </div>
         </div>
         <span className="text-[10px] font-bold uppercase tracking-widest bg-[#EBF4ED] text-[#1A4E26] px-3 py-1 rounded-full border border-[#C8D8CB]">
-          {items.length} {items.length === 1 ? 'Producto Asociado' : 'Productos Asociados'}
+          {items.length} {items.length === 1 ? 'Fórmula Asociada' : 'Fórmulas Asociadas'}
         </span>
       </div>
 
-      <div className="grid grid-cols-1 gap-4">
-        {items.map((item) => {
-          const catalogProduct = products.find(
-            (p) => p.codigo === item.product_code || p.slug === item.product_slug
-          );
-
-          return (
-            <div
-              key={item.id}
-              className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-white to-[#F4F7F5] p-4 sm:p-5 flex flex-col sm:flex-row items-start gap-4 hover:border-[#1A4E26]/40 transition-all"
-            >
-              {/* Product Thumbnail */}
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white border border-[#C8D8CB] p-2 flex items-center justify-center shrink-0">
-                {catalogProduct?.imagen ? (
-                  <img
-                    src={catalogProduct.imagen}
-                    alt={item.product_name}
-                    className="w-full h-full object-contain"
-                  />
-                ) : (
-                  <Sparkles size={28} className="text-[#1A4E26]" />
-                )}
-              </div>
-
-              {/* Product Details & Dosage */}
-              <div className="flex-1 min-w-0 space-y-2.5 w-full">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-[10px] font-mono font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
-                      Cód. {item.product_code}
-                    </span>
-                    {item.protocol_phase && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider bg-[#1A4E26] text-white px-2.5 py-0.5 rounded-full">
-                        {item.protocol_phase}
-                      </span>
-                    )}
-                  </div>
-                  <Link
-                    to={`/productos/${item.product_slug}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-xs font-bold text-[#1A4E26] hover:underline"
-                  >
-                    Ver ficha comercial <ExternalLink size={12} />
-                  </Link>
-                </div>
-
-                <h4 className="text-base sm:text-lg font-black text-[#111111]">
-                  {item.product_name}
-                </h4>
-
-                {/* Dosage Box */}
-                <div className="bg-[#EBF4ED] border border-[#1A4E26]/20 rounded-xl p-3">
-                  <p className="text-xs font-black uppercase tracking-wider text-[#1A4E26] mb-0.5">
-                    💧 Dosificación Exacta Recomendada:
-                  </p>
-                  <p className="text-sm font-bold text-[#0B2913]">{item.dosage}</p>
-                  {item.administration_route && (
-                    <p className="text-xs text-[#4B5563] mt-1">
-                      <strong>Modo de administración:</strong> {item.administration_route}
-                    </p>
-                  )}
-                </div>
-
-                {/* Key Ingredients from Catalog */}
-                {catalogProduct?.ingredientes && catalogProduct.ingredientes.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 pt-0.5">
-                    {catalogProduct.ingredientes.slice(0, 6).map((ing, idx) => (
-                      <span
-                        key={idx}
-                        className="text-[11px] bg-white border border-slate-200 text-slate-700 px-2 py-0.5 rounded-lg font-medium"
-                      >
-                        🌿 {ing}
-                      </span>
-                    ))}
-                    {catalogProduct.ingredientes.length > 6 && (
-                      <span className="text-[11px] text-slate-500 px-1.5 py-0.5">
-                        +{catalogProduct.ingredientes.length - 6} activos más
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {/* Precautions */}
-                {item.precautions && (
-                  <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2 text-xs text-red-900">
-                    <ShieldAlert size={15} className="text-red-600 shrink-0 mt-0.5" />
-                    <span>
-                      <strong>Precaución clínica:</strong> {item.precautions}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
+      <div className="grid grid-cols-1 gap-5">
+        {items.map((item) => (
+          <ProductCardItem key={item.id} item={item} />
+        ))}
       </div>
     </div>
   );
@@ -452,49 +562,100 @@ export function DosedIngredientsList({ items }: { items: AcademyLessonProduct[] 
 // ─── 4. Step-By-Step Recipe / Protocol Card ──────────────────────────────────
 
 export function StepByStepRecipeCard({ recipe }: { recipe: RecipeCardData }) {
+  const [imgErr, setImgErr] = useState(false);
+
   return (
     <div className="bg-white rounded-2xl border-2 border-[#D4AF37]/50 shadow-sm overflow-hidden mb-8">
-      <div className="bg-gradient-to-r from-[#0B2913] to-[#1A4E26] p-5 sm:p-6 text-white">
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-          <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest bg-[#D4AF37] text-[#0B2913] px-3 py-1 rounded-full">
-            <BookOpen size={12} /> Tarjeta de Protocolo / Receta Paso a Paso
-          </span>
-          <div className="flex items-center gap-3 text-xs text-white/80">
+      {/* Header with optional Recipe Hero Image */}
+      <div className="bg-gradient-to-r from-[#0B2913] via-[#1A4E26] to-[#2B6E3A] p-5 sm:p-6 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-2 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest bg-[#D4AF37] text-[#0B2913] px-3 py-1 rounded-full">
+              <BookOpen size={12} /> Receta Magistral / Protocolo Paso a Paso
+            </span>
             {recipe.prep_time && (
-              <span className="inline-flex items-center gap-1">
-                <Clock size={13} className="text-[#D4AF37]" /> {recipe.prep_time}
+              <span className="inline-flex items-center gap-1 text-xs bg-white/15 px-2.5 py-0.5 rounded-full text-white/90">
+                <Clock size={12} className="text-[#D4AF37]" /> {recipe.prep_time}
               </span>
             )}
-            {recipe.servings && <span>• {recipe.servings}</span>}
+            {recipe.servings && (
+              <span className="text-xs bg-white/15 px-2.5 py-0.5 rounded-full text-white/90">
+                {recipe.servings}
+              </span>
+            )}
           </div>
+          <h3 className="text-lg sm:text-xl font-black text-white leading-snug">
+            {recipe.title}
+          </h3>
+          {recipe.benefits && recipe.benefits.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {recipe.benefits.map((b, i) => (
+                <span
+                  key={i}
+                  className="text-[11px] font-bold bg-emerald-950/60 text-emerald-200 border border-emerald-400/30 px-2.5 py-0.5 rounded-full"
+                >
+                  ✓ {b}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
-        <h3 className="text-lg sm:text-xl font-black text-white">{recipe.title}</h3>
+
+        {recipe.image_url && !imgErr && (
+          <div className="w-full sm:w-36 h-32 sm:h-28 rounded-2xl overflow-hidden border-2 border-white/25 shrink-0 shadow-md">
+            <img
+              src={recipe.image_url}
+              alt={recipe.title}
+              referrerPolicy="no-referrer"
+              onError={() => setImgErr(true)}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )}
       </div>
 
       <div className="p-5 sm:p-6 space-y-6">
-        {/* Ingredients / Doses */}
+        {/* Ingredients / Doses with Automatic Botanical Icons */}
         {recipe.ingredients?.length > 0 && (
           <div>
-            <h4 className="text-xs font-black uppercase tracking-wider text-[#1A4E26] mb-3">
-              Componentes y Dosificación por Fase
+            <h4 className="text-xs font-black uppercase tracking-wider text-[#1A4E26] mb-3 flex items-center gap-1.5">
+              <Leaf size={14} /> Ingredientes Exactos y Proporciones
             </h4>
-            <div className="grid sm:grid-cols-2 gap-2.5">
-              {recipe.ingredients.map((ing, i) => (
-                <div
-                  key={i}
-                  className="p-3 rounded-xl bg-[#F4F7F5] border border-[#C8D8CB] flex flex-col justify-between"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="font-bold text-sm text-[#111111]">{ing.name}</span>
-                    {ing.notes && (
-                      <span className="text-[10px] font-bold bg-[#1A4E26]/10 text-[#1A4E26] px-2 py-0.5 rounded-full shrink-0">
-                        {ing.notes}
-                      </span>
-                    )}
+            <div className="grid sm:grid-cols-2 gap-3">
+              {recipe.ingredients.map((ing, i) => {
+                const resolvedIcon = ing.image_url || parseIngredient(ing.name).image;
+                return (
+                  <div
+                    key={i}
+                    className="p-3.5 rounded-xl bg-[#F4F7F5] border border-[#C8D8CB] flex items-center gap-3"
+                  >
+                    <div className="w-11 h-11 rounded-xl bg-white border border-[#C8D8CB] p-1.5 flex items-center justify-center shrink-0">
+                      {resolvedIcon ? (
+                        <img
+                          src={resolvedIcon}
+                          alt={ing.name}
+                          className="w-full h-full object-contain"
+                        />
+                      ) : (
+                        <Leaf size={18} className="text-[#1A4E26]" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="font-bold text-sm text-[#111111] leading-tight">
+                          {ing.name}
+                        </span>
+                        {ing.notes && (
+                          <span className="text-[10px] font-bold bg-[#1A4E26]/10 text-[#1A4E26] px-2 py-0.5 rounded-full shrink-0">
+                            {ing.notes}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs font-semibold text-[#1A4E26] mt-0.5">{ing.dose}</p>
+                    </div>
                   </div>
-                  <p className="text-xs font-semibold text-[#1A4E26] mt-1">{ing.dose}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -503,9 +664,9 @@ export function StepByStepRecipeCard({ recipe }: { recipe: RecipeCardData }) {
         {recipe.steps?.length > 0 && (
           <div>
             <h4 className="text-xs font-black uppercase tracking-wider text-[#1A4E26] mb-3">
-              Secuencia de Aplicación Paso a Paso
+              Preparación y Aplicación Paso a Paso
             </h4>
-            <ol className="space-y-3">
+            <ol className="space-y-2.5">
               {recipe.steps.map((step, idx) => (
                 <li
                   key={idx}
@@ -518,6 +679,21 @@ export function StepByStepRecipeCard({ recipe }: { recipe: RecipeCardData }) {
                 </li>
               ))}
             </ol>
+          </div>
+        )}
+
+        {/* Posology Footer */}
+        {recipe.posology && (
+          <div className="p-4 rounded-xl bg-[#FEF6E9] border border-[#D4AF37]/50 flex items-start gap-3">
+            <Clock size={18} className="text-[#92400E] shrink-0 mt-0.5" />
+            <div>
+              <span className="text-[11px] font-black uppercase tracking-wider text-[#92400E] block">
+                Posología y Modo de Consumo Clínico
+              </span>
+              <p className="text-xs sm:text-sm font-semibold text-[#5B3407] mt-0.5">
+                {recipe.posology}
+              </p>
+            </div>
           </div>
         )}
       </div>

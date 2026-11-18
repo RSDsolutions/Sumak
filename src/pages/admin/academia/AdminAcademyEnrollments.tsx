@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import {
   CheckCircle,
   Clock3,
@@ -11,6 +12,13 @@ import {
   BadgeDollarSign,
   AlertCircle,
   ChevronDown,
+  Eye,
+  Download,
+  Building2,
+  Landmark,
+  CreditCard,
+  Wallet,
+  ArrowUpRight,
 } from 'lucide-react';
 import { academyAPI } from '../../../lib/academy';
 import { useToast } from '../../../lib/toast';
@@ -18,17 +26,27 @@ import type { AcademyEnrollment } from '../../../lib/academy-types';
 
 interface EnrollmentRow extends AcademyEnrollment {
   course?: { title: string; price: number | null; slug: string | null };
-  user?: { nombre_completo: string | null; username: string | null };
+  user?: { nombre_completo: string | null; username: string | null; email?: string | null };
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+  all:             { label: 'Todas',          color: 'bg-slate-100 text-slate-700 border-slate-200' },
   pending:         { label: 'Pendiente',      color: 'bg-amber-50 text-amber-700 border-amber-200' },
-  approved:        { label: 'Aprobado',        color: 'bg-sky-50 text-sky-700 border-sky-200' },
-  payment_pending: { label: 'Pago pendiente', color: 'bg-blue-50 text-blue-700 border-blue-200' },
-  active:          { label: 'Activo',          color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  completed:       { label: 'Completado',      color: 'bg-[#EBF4ED] text-[#1A4E26] border-[#C8D8CB]' },
-  rejected:        { label: 'Rechazado',       color: 'bg-red-50 text-red-700 border-red-200' },
-  expired:         { label: 'Expirado',        color: 'bg-slate-100 text-slate-600 border-slate-200' },
+  payment_pending: { label: 'Pago / Comprobante', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+  approved:        { label: 'Aprobado',       color: 'bg-sky-50 text-sky-700 border-sky-200' },
+  active:          { label: 'Activo',         color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  completed:       { label: 'Completado',     color: 'bg-[#EBF4ED] text-[#1A4E26] border-[#C8D8CB]' },
+  rejected:        { label: 'Rechazado',      color: 'bg-red-50 text-red-700 border-red-200' },
+  expired:         { label: 'Expirado',       color: 'bg-slate-100 text-slate-600 border-slate-200' },
+};
+
+const PAYMENT_STATUS_LABELS: Record<string, { label: string; color: string }> = {
+  not_required:         { label: 'Sin pago requerido',    color: 'bg-slate-100 text-slate-600 border-slate-200' },
+  pending_payment:      { label: 'Esperando pago',        color: 'bg-amber-50 text-amber-700 border-amber-200' },
+  pending_verification: { label: 'Voucher por verificar', color: 'bg-blue-100 text-blue-800 border-blue-300' },
+  paid:                 { label: 'Pago verificado',       color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  failed:               { label: 'Voucher rechazado',     color: 'bg-red-50 text-red-700 border-red-200' },
+  refunded:             { label: 'Reembolsado',           color: 'bg-purple-50 text-purple-700 border-purple-200' },
 };
 
 function fmt(value?: string | null) {
@@ -114,13 +132,19 @@ function RejectModal({ courseTitle, onConfirm, onCancel }: RejectModalProps) {
 // ---------------------------------------------------------------------------
 export default function AdminAcademyEnrollments() {
   const toast = useToast();
+  const location = useLocation();
+  const basePath = location.pathname.startsWith('/operaciones') ? '/operaciones' : '/admin';
+
   const [enrollments, setEnrollments] = useState<EnrollmentRow[]>([]);
-  const [filter, setFilter] = useState('pending');
+  const [filter, setFilter] = useState('all');
+  const [methodFilter, setMethodFilter] = useState<'all' | 'transferencia' | 'payphone' | 'paypal' | 'free'>('all');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
   const [rejectTarget, setRejectTarget] = useState<EnrollmentRow | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [selectedReceipt, setSelectedReceipt] = useState<string | null>(null);
+  const [loadingReceipt, setLoadingReceipt] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -136,11 +160,28 @@ export default function AdminAcademyEnrollments() {
 
   useEffect(() => { void load(); }, []);
 
+  async function handleViewReceipt(enrollment: EnrollmentRow) {
+    if (!enrollment.payment_receipt_url) return;
+    setLoadingReceipt(enrollment.id);
+    try {
+      const signedUrl = await academyAPI.getReceiptSignedUrl(enrollment.payment_receipt_url);
+      setSelectedReceipt(signedUrl);
+    } catch {
+      toast.error('No se pudo cargar el comprobante de pago.');
+    } finally {
+      setLoadingReceipt(null);
+    }
+  }
+
   async function handleApprove(enrollment: EnrollmentRow) {
     setProcessing(enrollment.id);
     try {
       await academyAPI.reviewEnrollment(enrollment.id, 'approve');
-      toast.success('Solicitud aprobada.');
+      toast.success(
+        enrollment.status === 'payment_pending'
+          ? 'Pago verificado y curso activado por 3 meses.'
+          : 'Solicitud aprobada.'
+      );
       await load();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'No se pudo aprobar.';
@@ -157,7 +198,7 @@ export default function AdminAcademyEnrollments() {
     setProcessing(target.id);
     try {
       await academyAPI.reviewEnrollment(target.id, 'reject', reason);
-      toast.success('Solicitud rechazada.');
+      toast.success('Solicitud o comprobante rechazado.');
       await load();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'No se pudo rechazar.';
@@ -167,19 +208,45 @@ export default function AdminAcademyEnrollments() {
     }
   }
 
+  function getEnrollmentMethod(e: EnrollmentRow): 'transferencia' | 'payphone' | 'paypal' | 'free' {
+    const m = (e.payment_method || '').toLowerCase().trim();
+    if (m === 'payphone') return 'payphone';
+    if (m === 'paypal') return 'paypal';
+    if (m === 'transferencia' || e.payment_receipt_url || e.voucher_numero || e.banco_destino) return 'transferencia';
+    if ((e.course?.price ?? 0) > 0 || (e.payment_status && e.payment_status !== 'not_required')) return 'transferencia';
+    return 'free';
+  }
+
   const visible = enrollments.filter(
     (e) =>
-      e.status === filter &&
-      `${e.user?.nombre_completo ?? e.user_id} ${e.course?.title ?? ''}`.toLowerCase().includes(search.toLowerCase())
+      (filter === 'all' || e.status === filter) &&
+      (methodFilter === 'all' || getEnrollmentMethod(e) === methodFilter) &&
+      `${e.user?.nombre_completo ?? e.user_id} ${e.user?.email ?? ''} ${e.course?.title ?? ''} ${e.voucher_numero ?? ''}`
+        .toLowerCase()
+        .includes(search.toLowerCase())
   );
 
   // Contadores por estado para los tabs
-  const counts = enrollments.reduce<Record<string, number>>((acc, e) => {
-    acc[e.status] = (acc[e.status] ?? 0) + 1;
-    return acc;
-  }, {});
+  const counts = enrollments.reduce<Record<string, number>>(
+    (acc, e) => {
+      acc[e.status] = (acc[e.status] ?? 0) + 1;
+      acc.all = (acc.all ?? 0) + 1;
+      return acc;
+    },
+    { all: 0 }
+  );
 
-  const tabs = ['pending', 'approved', 'payment_pending', 'active', 'completed', 'rejected', 'expired'];
+  const methodCounts = enrollments.reduce<Record<string, number>>(
+    (acc, e) => {
+      const m = getEnrollmentMethod(e);
+      acc[m] = (acc[m] ?? 0) + 1;
+      acc.all = (acc.all ?? 0) + 1;
+      return acc;
+    },
+    { all: 0, transferencia: 0, payphone: 0, paypal: 0, free: 0 }
+  );
+
+  const tabs = ['all', 'payment_pending', 'pending', 'active', 'approved', 'completed', 'rejected', 'expired'];
 
   return (
     <>
@@ -192,9 +259,21 @@ export default function AdminAcademyEnrollments() {
       )}
 
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-black text-[#111111]">Inscripciones Academy</h1>
-          <p className="text-[#6B7280] mt-1">Revisa y decide las solicitudes de acceso a cursos.</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-black text-[#111111]">Inscripciones y Matrículas Academy</h1>
+            <p className="text-[#6B7280] mt-1">
+              Revisa solicitudes de acceso, verifica comprobantes de pago y activa cursos por 3 meses.
+            </p>
+          </div>
+          <Link
+            to={`${basePath}/academia/cobros`}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#1A4E26] text-white text-xs font-bold hover:bg-[#163F1E] transition-colors shadow-2xs shrink-0 self-start sm:self-auto"
+          >
+            <BadgeDollarSign size={15} />
+            Ir al Centro de Cobros Unificado
+            <ArrowUpRight size={14} />
+          </Link>
         </div>
 
         {/* Tabs de estado */}
@@ -219,6 +298,47 @@ export default function AdminAcademyEnrollments() {
                     {counts[s]}
                   </span>
                 ) : null}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Filtro por Método de Pago */}
+        <div className="flex flex-wrap items-center gap-2 bg-white border border-[#C8D8CB] rounded-2xl p-3.5">
+          <span className="text-xs font-extrabold uppercase tracking-wider text-[#6B7280] mr-1">
+            Filtrar por modalidad de pago:
+          </span>
+          {(
+            [
+              { key: 'all', label: 'Todos', icon: null },
+              { key: 'transferencia', label: 'Transferencia Bancaria', icon: Landmark },
+              { key: 'payphone', label: 'PayPhone', icon: CreditCard },
+              { key: 'paypal', label: 'PayPal', icon: Wallet },
+              { key: 'free', label: 'Gratuitos', icon: null },
+            ] as const
+          ).map((m) => {
+            const Icon = m.icon;
+            const active = methodFilter === m.key;
+            return (
+              <button
+                key={m.key}
+                type="button"
+                onClick={() => setMethodFilter(m.key)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer ${
+                  active
+                    ? 'bg-[#0F2E18] text-[#D4AF37] border-[#0F2E18]'
+                    : 'bg-[#F4F7F5] text-[#374151] border-slate-200 hover:border-[#1A4E26]'
+                }`}
+              >
+                {Icon && <Icon size={13} />}
+                {m.label}
+                <span
+                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                    active ? 'bg-white/15 text-white' : 'bg-white text-slate-600'
+                  }`}
+                >
+                  {methodCounts[m.key] ?? 0}
+                </span>
               </button>
             );
           })}
@@ -253,8 +373,10 @@ export default function AdminAcademyEnrollments() {
             <div className="divide-y divide-[#E5ECE6]">
               {visible.map((enrollment) => {
                 const cfg = STATUS_CONFIG[enrollment.status] ?? { label: enrollment.status, color: 'bg-slate-100 text-slate-600 border-slate-200' };
+                const payCfg = PAYMENT_STATUS_LABELS[enrollment.payment_status ?? 'not_required'] ?? PAYMENT_STATUS_LABELS.not_required;
                 const isExpanded = expanded === enrollment.id;
-                const isPending = enrollment.status === 'pending';
+                const canReview = enrollment.status === 'pending' || enrollment.status === 'payment_pending';
+                const hasReceipt = Boolean(enrollment.payment_receipt_url);
 
                 return (
                   <div key={enrollment.id} className="p-4 sm:p-5">
@@ -271,39 +393,94 @@ export default function AdminAcademyEnrollments() {
                           <p className="font-bold text-[#111111] truncate">
                             {enrollment.user?.nombre_completo ?? enrollment.user?.username ?? 'Usuario desconocido'}
                           </p>
+                          {enrollment.user?.email && (
+                            <span className="text-xs text-[#6B7280] truncate">({enrollment.user.email})</span>
+                          )}
                           <span className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border ${cfg.color}`}>
                             {cfg.label}
                           </span>
+                          {enrollment.payment_status && enrollment.payment_status !== 'not_required' && (
+                            <span className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border ${payCfg.color}`}>
+                              {payCfg.label}
+                            </span>
+                          )}
+                          {(() => {
+                            const method = getEnrollmentMethod(enrollment);
+                            if (method === 'free') return null;
+                            const label =
+                              method === 'payphone'
+                                ? 'PayPhone'
+                                : method === 'paypal'
+                                  ? 'PayPal'
+                                  : 'Transferencia Bancaria';
+                            const color =
+                              method === 'payphone'
+                                ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                : method === 'paypal'
+                                  ? 'bg-sky-50 text-sky-800 border-sky-200'
+                                  : 'bg-emerald-50 text-[#1A4E26] border-emerald-200';
+                            return (
+                              <span className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border ${color}`}>
+                                {label}
+                              </span>
+                            );
+                          })()}
                         </div>
                         <p className="text-sm text-[#374151] mt-0.5 truncate">
                           {enrollment.course?.title ?? 'Curso Academy'}
                           {enrollment.course?.price != null && (
-                            <span className="ml-2 text-xs text-[#6B7280]">— {fmtPrice(enrollment.course.price)}</span>
+                            <span className="ml-2 text-xs font-bold text-[#1A4E26]">— {fmtPrice(enrollment.course.price)}</span>
                           )}
                         </p>
-                        <p className="text-xs text-[#9CA3AF] mt-1">
-                          Solicitado: {fmt(enrollment.requested_at ?? enrollment.enrolled_at)}
-                        </p>
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-[#9CA3AF] mt-1">
+                          <span>Solicitado: {fmt(enrollment.requested_at ?? enrollment.enrolled_at)}</span>
+                          {enrollment.banco_destino && (
+                            <span className="inline-flex items-center gap-1 text-[#374151] font-medium">
+                              <Building2 size={12} className="text-[#1A4E26]" />
+                              {enrollment.banco_destino}
+                            </span>
+                          )}
+                          {enrollment.voucher_numero && (
+                            <span className="font-mono text-[#111111] font-semibold bg-slate-100 px-2 py-0.5 rounded">
+                              Voucher: {enrollment.voucher_numero}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       {/* Acciones */}
-                      <div className="flex items-center gap-2 shrink-0">
-                        {isPending && (
+                      <div className="flex flex-wrap items-center gap-2 shrink-0">
+                        {hasReceipt && (
+                          <button
+                            type="button"
+                            disabled={loadingReceipt === enrollment.id}
+                            onClick={() => void handleViewReceipt(enrollment)}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold hover:bg-blue-100 transition-colors disabled:opacity-50"
+                          >
+                            <Eye size={14} />
+                            {loadingReceipt === enrollment.id ? 'Cargando…' : 'Ver Comprobante'}
+                          </button>
+                        )}
+                        {canReview && (
                           <>
                             <button
                               type="button"
                               disabled={processing === enrollment.id}
                               onClick={() => void handleApprove(enrollment)}
-                              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#EBF4ED] text-[#1A4E26] text-xs font-bold hover:bg-[#d5ebd8] transition-colors disabled:opacity-50"
+                              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#EBF4ED] text-[#1A4E26] border border-[#C8D8CB] text-xs font-bold hover:bg-[#d5ebd8] transition-colors disabled:opacity-50"
                             >
                               <CheckCircle size={14} />
-                              {processing === enrollment.id ? 'Procesando…' : 'Aprobar'}
+                              {processing === enrollment.id
+                                ? 'Procesando…'
+                                : enrollment.status === 'payment_pending'
+                                  ? 'Aprobar Pago y Activar'
+                                  : 'Aprobar'}
                             </button>
                             <button
                               type="button"
                               disabled={processing === enrollment.id}
                               onClick={() => setRejectTarget(enrollment)}
-                              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 text-red-600 text-xs font-bold hover:bg-red-100 transition-colors disabled:opacity-50"
+                              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 text-red-600 border border-red-200 text-xs font-bold hover:bg-red-100 transition-colors disabled:opacity-50"
                             >
                               <XCircle size={14} />
                               Rechazar
@@ -327,8 +504,26 @@ export default function AdminAcademyEnrollments() {
                       <div className="mt-4 ml-0 sm:ml-[52px] bg-slate-50 rounded-xl p-4 grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
                         <div className="space-y-0.5">
                           <p className="text-[#9CA3AF] uppercase tracking-wide font-semibold">Estado de pago</p>
-                          <p className="text-[#111111] font-bold">{enrollment.payment_status ?? 'not_required'}</p>
+                          <p className="text-[#111111] font-bold">{payCfg.label}</p>
                         </div>
+                        {enrollment.payment_method && (
+                          <div className="space-y-0.5">
+                            <p className="text-[#9CA3AF] uppercase tracking-wide font-semibold">Método de pago</p>
+                            <p className="text-[#111111] font-bold uppercase">{enrollment.payment_method}</p>
+                          </div>
+                        )}
+                        {enrollment.banco_destino && (
+                          <div className="space-y-0.5">
+                            <p className="text-[#9CA3AF] uppercase tracking-wide font-semibold">Banco destino</p>
+                            <p className="text-[#111111] font-bold">{enrollment.banco_destino}</p>
+                          </div>
+                        )}
+                        {enrollment.voucher_numero && (
+                          <div className="space-y-0.5">
+                            <p className="text-[#9CA3AF] uppercase tracking-wide font-semibold">N° Comprobante</p>
+                            <p className="text-[#111111] font-mono font-bold">{enrollment.voucher_numero}</p>
+                          </div>
+                        )}
                         {enrollment.approved_at && (
                           <div className="space-y-0.5">
                             <p className="text-[#9CA3AF] uppercase tracking-wide font-semibold flex items-center gap-1"><CalendarCheck2 size={11} /> Aprobado</p>
@@ -376,6 +571,41 @@ export default function AdminAcademyEnrollments() {
           )}
         </div>
       </div>
+
+      {/* Modal para ver comprobante de pago */}
+      {selectedReceipt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white p-4 rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col items-center relative shadow-2xl">
+            <button
+              type="button"
+              onClick={() => setSelectedReceipt(null)}
+              className="absolute -top-3 -right-3 bg-white text-gray-900 rounded-full p-2 shadow-lg hover:bg-gray-100"
+            >
+              <XCircle size={22} />
+            </button>
+            <h3 className="text-base font-black text-[#111111] mb-3 self-start">
+              Comprobante de Pago — Curso SUMAK Academy
+            </h3>
+            <div className="overflow-auto flex-1 w-full flex justify-center bg-gray-50 rounded-xl p-2">
+              {selectedReceipt.toLowerCase().includes('.pdf') ? (
+                <iframe src={selectedReceipt} title="Comprobante PDF" className="w-full h-[70vh] rounded-lg" />
+              ) : (
+                <img src={selectedReceipt} alt="Comprobante de pago" className="max-w-full max-h-[75vh] object-contain rounded-lg" />
+              )}
+            </div>
+            <div className="mt-4 flex gap-3 w-full">
+              <a
+                href={selectedReceipt}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex justify-center items-center gap-2 bg-[#1A4E26] text-white py-2.5 rounded-xl font-bold text-sm hover:bg-[#163F1E] transition-colors"
+              >
+                <Download size={16} /> Abrir / Descargar Comprobante
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

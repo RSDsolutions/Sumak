@@ -1,4 +1,4 @@
-﻿import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -142,10 +142,19 @@ Deno.serve(async (req: Request) => {
   }
 
   const academyEnrollmentId = String((paymentRow.metadata as Record<string, unknown> | null)?.academyEnrollmentId ?? "").trim();
+  const academyRecipePurchaseId = String((paymentRow.metadata as Record<string, unknown> | null)?.academyRecipePurchaseId ?? "").trim();
+
   if (approved && academyEnrollmentId) {
     const { error: activationError } = await supabaseAdmin.rpc("activate_academy_enrollment_after_payment", { p_payment_id: paymentRow.id });
     if (activationError) {
       return jsonResponse({ error: "Pago confirmado, pero no se pudo activar la inscripción Academy." }, 500);
+    }
+  }
+
+  if (approved && academyRecipePurchaseId) {
+    const { error: recipeActivationError } = await supabaseAdmin.rpc("activate_academy_recipes_after_payment", { p_payment_id: paymentRow.id });
+    if (recipeActivationError) {
+      return jsonResponse({ error: "Pago confirmado, pero no se pudieron desbloquear las recetas Academy." }, 500);
     }
   }
 

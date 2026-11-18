@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
-import { CheckCircle2, XCircle, AlertTriangle, ArrowRight, Loader2, ShoppingCart } from 'lucide-react';
-import { useAuth } from '../lib/auth';
+import { CheckCircle2, XCircle, AlertTriangle, ArrowRight, Loader2, ShoppingCart, GraduationCap, BookOpen } from 'lucide-react';
 import { useCart } from '../lib/cart';
 import { supabase } from '../lib/supabase';
 
@@ -27,17 +26,20 @@ type PaymentStatusState = 'verifying' | 'approved' | 'declined' | 'error';
 export default function PaymentReturn() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const { user } = useAuth();
   const { clear } = useCart();
 
   const provider = searchParams.get('provider') ?? 'payphone';
   const providerLabel = provider === 'paypal' ? 'PayPal' : provider === 'payphone' ? 'Payphone' : 'Pago';
+  const context = searchParams.get('context'); // 'academy_course' | 'academy_recipes' | null
+  const isAcademy = context === 'academy_course' || context === 'academy_recipes';
+  const paymentId = searchParams.get('paymentId') ?? '';
+  const paypalToken = searchParams.get('token') ?? '';
 
   // Parámetros de la URL
   const payphoneStatus = searchParams.get('transactionStatus'); // Approved | Declined | Canceled
   const genericStatus = searchParams.get('status') ?? searchParams.get('payment_status');
   const isPathCancel = location.pathname.includes('/cancel');
-  const orderId = searchParams.get('orderId') ?? searchParams.get('id') ?? searchParams.get('reference') ?? '';
+  const orderId = searchParams.get('orderId') ?? searchParams.get('id') ?? searchParams.get('reference') ?? paypalToken ?? '';
   const clientTxId = searchParams.get('clientTransactionId') ?? searchParams.get('clientTxId') ?? '';
 
   // Estados de la vista
@@ -70,7 +72,59 @@ export default function PaymentReturn() {
       setStatusMessage('Verificando confirmación del pago...');
 
       try {
-        // ── 1. VERIFICACIÓN CRIPTOGRÁFICA CON PAYPHONE ──
+        // ── FLUJO ACADEMIA (CURSOS Y RECETAS) ──
+        if (isAcademy && paymentId) {
+          setStatusMessage(`Confirmando tu pago de SUMAK Academy con ${providerLabel}...`);
+
+          if (provider === 'paypal') {
+            if (!paypalToken && !orderId) {
+              throw new Error('No se recibió el identificador de la orden de PayPal.');
+            }
+            const { data: capData, error: capError } = await supabase.functions.invoke('paypal-capture-order', {
+              body: { paymentId, paypalOrderId: paypalToken || orderId },
+            });
+            if (capError) {
+              throw new Error('No se pudo capturar el pago en PayPal. Intenta nuevamente.');
+            }
+            if (capData?.status !== 'aprobado') {
+              if (!cancelled) {
+                setStatusState('declined');
+                setStatusMessage('El pago en PayPal no pudo ser completado o fue rechazado.');
+              }
+              return;
+            }
+          } else {
+            const { data: confData, error: confError } = await supabase.functions.invoke('payphone-confirm-payment', {
+              body: {
+                paymentId,
+                transactionId: orderId ? Number(orderId) : undefined,
+                clientTransactionId: clientTxId || undefined,
+              },
+            });
+            if (confError) {
+              throw new Error('No pudimos confirmar la transacción con PayPhone.');
+            }
+            if (confData?.status !== 'aprobado') {
+              if (!cancelled) {
+                setStatusState('declined');
+                setStatusMessage('Tu pago no fue aprobado por PayPhone.');
+              }
+              return;
+            }
+          }
+
+          if (!cancelled) {
+            setStatusState('approved');
+            setStatusMessage(
+              context === 'academy_course'
+                ? `¡Tu pago con ${providerLabel} fue confirmado! Tu inscripción al curso ya está activa.`
+                : `¡Tu pago con ${providerLabel} fue confirmado! Tus recetas milenarias ya están desbloqueadas.`
+            );
+          }
+          return;
+        }
+
+        // ── 1. VERIFICACIÓN CRIPTOGRÁFICA CON PAYPHONE (TIENDA E-COMMERCE) ──
         if (provider === 'payphone') {
           if (!orderId && !clientTxId) {
             throw new Error('No se recibieron los identificadores de la transacción de Payphone.');
@@ -184,7 +238,7 @@ export default function PaymentReturn() {
     return () => {
       cancelled = true;
     };
-  }, [clientTxId, orderId, provider, providerLabel]);
+  }, [clientTxId, context, isAcademy, orderId, paymentId, paypalToken, provider, providerLabel]);
 
   // ══════════════════════════════════════════════════════════════════════════
   // VISTA 1: PAGO DECLINADO / RECHAZADO / CANCELADO
@@ -225,16 +279,23 @@ export default function PaymentReturn() {
 
             <div className="grid gap-3 sm:grid-cols-2 pt-2">
               <Link
-                to="/"
+                to={isAcademy ? '/academia' : '/'}
                 className="inline-flex items-center justify-center rounded-xl border border-[#C8D8CB] bg-white px-4 py-3 text-sm font-semibold text-[#111111] hover:bg-[#F4F7F5] transition-colors"
               >
-                Volver a la tienda
+                {isAcademy ? 'Volver a Academia' : 'Volver a la tienda'}
               </Link>
               <Link
-                to="/dashboard/pedido/nuevo"
+                to={
+                  context === 'academy_course'
+                    ? '/academia/cursos'
+                    : context === 'academy_recipes'
+                      ? '/academia/recetas'
+                      : '/dashboard/pedido/nuevo'
+                }
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1A4E26] px-4 py-3 text-sm font-bold text-white hover:bg-[#163F1E] transition-all shadow-md"
               >
-                <ShoppingCart size={16} /> Reintentar Pedido
+                {isAcademy ? <GraduationCap size={16} /> : <ShoppingCart size={16} />}
+                {isAcademy ? 'Reintentar Inscripción / Compra' : 'Reintentar Pedido'}
               </Link>
             </div>
           </div>
@@ -340,7 +401,7 @@ export default function PaymentReturn() {
             <CheckCircle2 size={44} className="text-white" />
           </div>
           <h1 className="font-heading text-2xl sm:text-3xl font-bold mb-2">
-            ¡Pago Aprobado y Pedido Confirmado!
+            {isAcademy ? '¡Pago Aprobado y Acceso Activado!' : '¡Pago Aprobado y Pedido Confirmado!'}
           </h1>
           <p className="text-white/85 text-sm max-w-md mx-auto leading-relaxed">
             {statusMessage}
@@ -401,21 +462,43 @@ export default function PaymentReturn() {
           )}
 
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-700">
-            Tu pedido ya está en manos del administrador para ser preparado y despachado.
+            {context === 'academy_course'
+              ? 'Tu acceso al curso ya está habilitado por 3 meses. Puedes comenzar tus clases inmediatamente.'
+              : context === 'academy_recipes'
+                ? 'Tus recetas milenarias ya están desbloqueadas en tu panel para descarga directa en PDF.'
+                : 'Tu pedido ya está en manos del administrador para ser preparado y despachado.'}
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 pt-2">
             <Link
-              to="/"
+              to={isAcademy ? '/academia' : '/'}
               className="inline-flex items-center justify-center rounded-xl border border-[#C8D8CB] bg-[#F4F7F5] px-4 py-3 text-sm font-semibold text-[#111111] hover:border-[#A8C2AD] transition-colors"
             >
-              Volver a la tienda
+              {isAcademy ? 'Inicio Academia' : 'Volver a la tienda'}
             </Link>
             <Link
-              to="/dashboard/pedidos"
+              to={
+                context === 'academy_course'
+                  ? '/academia/dashboard/cursos'
+                  : context === 'academy_recipes'
+                    ? '/academia/dashboard/recetas'
+                    : '/dashboard/pedidos'
+              }
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1A4E26] px-4 py-3 text-sm font-bold text-white hover:bg-[#163F1E] transition-all shadow-md"
             >
-              Ver mis pedidos <ArrowRight size={16} />
+              {context === 'academy_course' ? (
+                <>
+                  <BookOpen size={16} /> Ir a mis cursos <ArrowRight size={16} />
+                </>
+              ) : context === 'academy_recipes' ? (
+                <>
+                  <GraduationCap size={16} /> Ir a mis recetas <ArrowRight size={16} />
+                </>
+              ) : (
+                <>
+                  Ver mis pedidos <ArrowRight size={16} />
+                </>
+              )}
             </Link>
           </div>
         </div>
