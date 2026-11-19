@@ -11,6 +11,8 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import WhatsAppButton from './components/WhatsAppButton';
 
+const SumakChatbotWidget = lazy(() => import('./components/SumakChatbotWidget'));
+
 // PERF-002: code-splitting por ruta. Cada page se descarga bajo demanda
 // la primera vez que el usuario la visita. Reduce el bundle inicial
 // significativamente. Vite genera un chunk por cada lazy() import.
@@ -1058,6 +1060,9 @@ export default function App() {
             }
           />
         </Routes>
+        </Suspense>
+        <Suspense fallback={null}>
+          <SumakChatbotWidget />
         </Suspense>
         </ToastProvider>
         </CartProvider>
