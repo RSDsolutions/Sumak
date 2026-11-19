@@ -34,6 +34,8 @@ interface Program {
 interface ProgramProgress {
   percentage: number;
   eligible: boolean;
+  required_courses?: number;
+  completed_courses?: number;
 }
 
 const PROGRAMAS_PASTEL_PALETTE = [
@@ -225,22 +227,32 @@ export default function Programas() {
                       </div>
 
                       {user && (
-                        <div className="bg-white/70 backdrop-blur-xs p-3.5 rounded-2xl border-0 shadow-xs">
-                          <div className="flex justify-between text-xs font-bold text-slate-700">
-                            <span>Tu progreso</span>
+                        <div className="bg-white/75 backdrop-blur-xs p-3.5 rounded-2xl border-0 shadow-xs space-y-2">
+                          <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                            <span>Tu progreso en el programa</span>
                             <span className="text-[#1A4E26] font-extrabold">{programProgress?.percentage ?? 0}%</span>
                           </div>
-                          <div className="h-2 bg-slate-200/80 rounded-full mt-2 overflow-hidden">
+                          <div className="h-2 bg-slate-200/80 rounded-full overflow-hidden">
                             <div
                               className={`h-full ${theme.progressBg} rounded-full transition-all duration-500`}
                               style={{ width: `${programProgress?.percentage ?? 0}%` }}
                             />
                           </div>
-                          {programProgress?.eligible && (
-                            <p className="text-xs font-bold text-[#1A4E26] mt-2 flex items-center gap-1.5">
-                              <ShieldCheck size={14} /> Requisitos de cursos completados
-                            </p>
-                          )}
+                          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                            {programProgress?.eligible ? (
+                              <Link
+                                to="/academia/dashboard/diplomas"
+                                className="text-xs font-bold text-[#1A4E26] flex items-center gap-1.5 hover:underline"
+                              >
+                                <ShieldCheck size={14} /> ¡Diploma Oficial Emitido! Ver en Certificaciones
+                              </Link>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-amber-800 bg-amber-100/90 px-2.5 py-0.5 rounded-full">
+                                <Clock size={12} />
+                                Diploma Pendiente ({programProgress?.completed_courses ?? 0} de {programProgress?.required_courses ?? courses.length} cursos aprobados)
+                              </span>
+                            )}
+                          </div>
                         </div>
                       )}
 

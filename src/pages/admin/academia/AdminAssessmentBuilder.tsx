@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import {
   ArrowLeft, ClipboardList, Eye, EyeOff, Loader2, Plus, Save, Trash2, Check, X as XIcon,
-  Clock, Shuffle, BookOpen, Info
+  Clock, Shuffle, Info
 } from 'lucide-react';
 import { academyAPI } from '../../../lib/academy';
 import { useToast } from '../../../lib/toast';
@@ -190,6 +190,8 @@ function QuestionForm({
 
 export default function AdminAssessmentBuilder() {
   const { courseId, assessmentId } = useParams<{ courseId: string; assessmentId: string }>();
+  const location = useLocation();
+  const basePath = location.pathname.startsWith('/operaciones') ? '/operaciones' : '/admin';
   const toast = useToast();
 
   const [assessment, setAssessment] = useState<AssessmentData | null>(null);
@@ -355,7 +357,7 @@ export default function AdminAssessmentBuilder() {
     return (
       <div className="text-center py-24 text-slate-500">
         <p>Evaluación no encontrada.</p>
-        <Link to={`/admin/academia/cursos/${courseId}/builder`} className="text-[#1A4E26] font-bold underline mt-2 block">Volver</Link>
+        <Link to={`${basePath}/academia/cursos/${courseId}/builder`} className="text-[#1A4E26] font-bold underline mt-2 block">Volver</Link>
       </div>
     );
   }
@@ -372,9 +374,9 @@ export default function AdminAssessmentBuilder() {
     <div className="space-y-5">
       {/* Top bar */}
       <div className="flex items-center gap-3 flex-wrap">
-        <Link to={`/admin/academia/cursos/${courseId}/builder`}
+        <Link to={`${basePath}/academia/cursos/${courseId}/builder`}
           className="flex items-center gap-1.5 text-sm font-semibold text-[#6B7280] hover:text-[#1A4E26] transition-colors">
-          <ArrowLeft size={16} /> Builder
+          <ArrowLeft size={16} /> Volver al Curso
         </Link>
         <span className="text-slate-300">/</span>
         <ClipboardList size={16} className="text-amber-500" />

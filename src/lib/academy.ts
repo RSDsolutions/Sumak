@@ -375,10 +375,17 @@ export const academyAPI = {
     passing_percentage: number;
     generates_certificate: boolean;
     price: number;
+    cover_image_url?: string | null;
+    prerequisites?: string | null;
+    sort_order?: number;
   }) {
+    const payload = {
+      ...input,
+      published_at: input.status === 'published' ? new Date().toISOString() : undefined,
+    };
     const query = courseId
-      ? supabase.from('academy_courses').update(input).eq('id', courseId)
-      : supabase.from('academy_courses').insert(input);
+      ? supabase.from('academy_courses').update(payload).eq('id', courseId)
+      : supabase.from('academy_courses').insert(payload);
     const { data, error } = await query.select().single();
     if (error) throw error;
     return data as AcademyCourse;
@@ -879,6 +886,71 @@ export const academyAPI = {
     if (error) throw error;
     return data;
   },
+
+  async completeCourseIfEligible(courseId: string) {
+    const { data, error } = await supabase.rpc('complete_academy_course_if_eligible', {
+      p_course_id: courseId,
+    });
+    if (error) throw error;
+    return data as {
+      completed: boolean;
+      already_completed?: boolean;
+      certificate_id?: string | null;
+      certificate_issued?: boolean;
+      progress_percentage?: number;
+      lessons?: { completed: number; total: number };
+      assessments?: { passed: number; total: number };
+    };
+  },
+
+  async completeProgramIfEligible(programId: string) {
+    const { data, error } = await supabase.rpc('complete_academy_program_if_eligible', {
+      p_program_id: programId,
+    });
+    if (error) throw error;
+    return data as {
+      completed: boolean;
+      already_completed?: boolean;
+      diploma_id?: string | null;
+      diploma_number?: string;
+      verification_code?: string;
+      completed_courses?: number;
+      required_courses?: number;
+    };
+  },
+
+  async syncAndGetMyCredentials() {
+    const { data, error } = await supabase.rpc('sync_and_get_my_academy_credentials');
+    if (error) {
+      console.warn('Error sincronizando credenciales:', error.message);
+      return { pending_certificates: [], pending_diplomas: [] };
+    }
+    return (data ?? { pending_certificates: [], pending_diplomas: [] }) as {
+      pending_certificates: Array<{
+        enrollment_id: string;
+        course_id: string;
+        title: string;
+        slug: string;
+        enrollment_status: string;
+        payment_status?: string;
+        progress_percentage: number;
+        total_lessons: number;
+        completed_lessons: number;
+        total_assessments: number;
+        passed_assessments: number;
+      }>;
+      pending_diplomas: Array<{
+        program_id: string;
+        title: string;
+        slug: string;
+        description?: string | null;
+        required_courses: number;
+        completed_courses: number;
+        enrolled_courses: number;
+        progress_percentage: number;
+      }>;
+    };
+  },
   
   async getAllDiplomas() {
     const { data, error } = await supabase
@@ -995,10 +1067,20 @@ export const academyAPI = {
     } as AcademyCourse;
   },
 
-  /** Sube portada del curso al bucket academy-content y devuelve la URL pÃºblica */
+  /** Sube portada del curso al bucket academy-content y devuelve la URL pública */
   async uploadAdminCourseCover(courseId: string, file: File): Promise<string> {
     const ext = file.name.split('.').pop();
     const path = `covers/${courseId}/cover_${Date.now()}.${ext}`;
+    const { data, error } = await supabase.storage.from('academy-content').upload(path, file, { upsert: true });
+    if (error) throw error;
+    const { data: urlData } = supabase.storage.from('academy-content').getPublicUrl(data.path);
+    return urlData.publicUrl;
+  },
+
+  /** Sube una imagen inline para el contenido o receta de una lección */
+  async uploadLessonInlineImage(courseId: string, lessonId: string, file: File): Promise<string> {
+    const ext = file.name.split('.').pop() || 'png';
+    const path = `lessons/${courseId}/${lessonId}/img_${Date.now()}.${ext}`;
     const { data, error } = await supabase.storage.from('academy-content').upload(path, file, { upsert: true });
     if (error) throw error;
     const { data: urlData } = supabase.storage.from('academy-content').getPublicUrl(data.path);

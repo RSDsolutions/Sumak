@@ -3,7 +3,7 @@ import { Layers, Loader2, Plus, ArrowRight } from 'lucide-react';
 import { academyAPI } from '../../../lib/academy';
 import { useToast } from '../../../lib/toast';
 import Modal from '../../../components/Modal';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface Course { id: string; title: string }
 interface DiplomaType { id: string; name: string; internal_code: string }
@@ -18,6 +18,8 @@ function slugify(value: string) { return value.toLowerCase().normalize('NFD').re
 export default function AdminProgramas() {
   const toast = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+  const basePath = location.pathname.startsWith('/operaciones') ? '/operaciones' : '/admin';
   const [programs, setPrograms] = useState<Program[]>([]);
   const [diplomaTypes, setDiplomaTypes] = useState<DiplomaType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,7 +58,7 @@ export default function AdminProgramas() {
       });
       toast.success('Programa creado exitosamente.');
       setIsModalOpen(false);
-      navigate(`/admin/academia/programas/${saved.id}/builder`);
+      navigate(`${basePath}/academia/programas/${saved.id}/builder`);
     } catch { toast.error('No se pudo crear el programa.'); }
     finally { setSaving(false); }
   }
@@ -88,7 +90,7 @@ export default function AdminProgramas() {
             <button 
               type="button" 
               key={program.id} 
-              onClick={() => navigate(`/admin/academia/programas/${program.id}/builder`)} 
+              onClick={() => navigate(`${basePath}/academia/programas/${program.id}/builder`)} 
               className="text-left bg-white border border-[#E5ECE6] rounded-[24px] p-6 hover:shadow-xl hover:-translate-y-1 hover:border-[#7EE7B0] transition-all duration-300 group flex flex-col"
             >
               <div className="flex items-start gap-4 mb-4">

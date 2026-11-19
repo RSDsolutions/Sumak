@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ChevronLeft, CheckCircle, AlertTriangle, PlayCircle, Clock,
-  RefreshCw, BookOpen, Trophy, XCircle, Info
+  RefreshCw, BookOpen, Trophy, XCircle, Info, Award
 } from 'lucide-react';
 import { academyAPI } from '../../lib/academy';
 import { callEdgeFunction } from '../../lib/supabase';
@@ -33,6 +33,10 @@ export default function Evaluacion() {
   const [answers, setAnswers] = useState<Record<string, string[]>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [courseCompletionInfo, setCourseCompletionInfo] = useState<{
+    completed: boolean;
+    certificateId?: string | null;
+  } | null>(null);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -138,8 +142,21 @@ export default function Evaluacion() {
         selected_option_ids: opts,
       }));
       await academyAPI.saveAnswers(attemptId, formattedAnswers);
-      const res = await callEdgeFunction('academy-grade-assessment', { attempt_id: attemptId });
+      const res = await callEdgeFunction<any>('academy-grade-assessment', { attempt_id: attemptId });
       setResult(res);
+
+      // Si aprobó la evaluación, verificar y emitir automáticamente el Certificado del Curso y Diploma del Programa
+      if (res?.passed && assessment?.course_id) {
+        const comp = await academyAPI.completeCourseIfEligible(assessment.course_id).catch(() => null);
+        await academyAPI.syncAndGetMyCredentials().catch(() => null);
+        if (comp?.completed) {
+          setCourseCompletionInfo({
+            completed: true,
+            certificateId: comp.certificate_id,
+          });
+        }
+      }
+
       // Reload attempt history
       const updatedAttempts = await academyAPI.getMyAttempts(assessmentId!);
       setPastAttempts(updatedAttempts as AttemptRecord[]);
@@ -292,6 +309,30 @@ export default function Evaluacion() {
               )}
 
               {/* Actions */}
+              {result.passed && courseCompletionInfo?.completed && (
+                <div className="bg-gradient-to-r from-[#0F2E18] to-[#1A4E26] text-white rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md">
+                  <div className="flex items-center gap-3.5 text-center sm:text-left">
+                    <div className="w-12 h-12 rounded-2xl bg-[#D4AF37]/20 border border-[#D4AF37]/50 flex items-center justify-center text-[#D4AF37] shrink-0">
+                      <Award size={26} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-extrabold uppercase tracking-widest text-[#FBE697]">
+                        ¡Certificado Oficial Emitido!
+                      </p>
+                      <p className="text-sm font-bold text-white mt-0.5">
+                        Completaste el 100% del curso y tu certificado ya está listo para descargar.
+                      </p>
+                    </div>
+                  </div>
+                  <Link
+                    to="/academia/dashboard/diplomas"
+                    className="px-5 py-2.5 rounded-xl bg-[#D4AF37] text-[#0B2913] font-black text-xs sm:text-sm hover:bg-[#c49f2e] transition-colors shrink-0 shadow"
+                  >
+                    Ver mi Certificado
+                  </Link>
+                </div>
+              )}
+
               <div className="flex flex-col gap-3 pt-2 border-t border-slate-100">
                 <button onClick={() => navigate(-1)}
                   className="flex items-center justify-center gap-2 w-full py-3.5 bg-[#1A4E26] text-white font-bold rounded-xl hover:bg-[#163F1E] transition-colors">

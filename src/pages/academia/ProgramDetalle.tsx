@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, BookOpen, CheckCircle2, GraduationCap, Loader2, Lock, PlayCircle } from 'lucide-react';
+import { ArrowLeft, Award, BookOpen, CheckCircle2, Clock, GraduationCap, Loader2, Lock, PlayCircle } from 'lucide-react';
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { academyAPI } from '../../lib/academy';
 import { useAuth } from '../../lib/auth';
@@ -86,17 +86,38 @@ export default function ProgramDetalle() {
             <div className="flex flex-wrap items-center justify-between gap-4 mb-10 pb-8 border-b border-[#E5ECE6]">
               <div>
                 <h2 className="text-2xl font-black text-[#111111] mb-2">Roadmap del Programa</h2>
-                <p className="text-sm text-[#6B7280]">{sortedCourses.length} cursos · {program.completion_percentage_required}% requerido para certificación</p>
-                {user && courseProgress.length > 0 && <p className="text-sm font-bold text-[#1A4E26] mt-2 bg-[#EAFBF1] inline-block px-3 py-1 rounded-full">En curso</p>}
+                <p className="text-sm text-[#6B7280]">{sortedCourses.length} cursos · {program.completion_percentage_required}% requerido para Diploma Oficial</p>
+                {user && enrolled && (
+                  <div className="flex flex-wrap items-center gap-2 mt-2.5">
+                    {!firstUncompleted ? (
+                      <Link
+                        to="/academia/dashboard/diplomas"
+                        className="inline-flex items-center gap-1.5 text-xs font-black text-[#0F2E18] bg-[#EBF4ED] border border-[#1A4E26]/30 px-3.5 py-1.5 rounded-full hover:bg-[#d7eadb] transition-colors"
+                      >
+                        <Award size={14} className="text-[#D4AF37]" />
+                        ¡Diploma Oficial Emitido! Ver en Mis Certificaciones
+                      </Link>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-amber-900 bg-amber-100 border border-amber-300 px-3.5 py-1.5 rounded-full">
+                        <Clock size={13} />
+                        Diploma Pendiente ({courseProgress.filter((c) => c.status === 'completed').length} de {sortedCourses.length} cursos completados)
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
               {!enrolled ? (
                 <button type="button" onClick={() => void enroll()} disabled={enrolling} className="px-8 py-4 rounded-xl bg-[#D4AF37] text-[#0B2913] font-black hover:bg-[#C5A02E] hover:scale-105 transition-all shadow-lg active:scale-95">
                   {enrolling ? 'Inscribiendo...' : user ? 'Inscribirme al programa' : 'Iniciar sesión para inscribirme'}
                 </button>
               ) : (
-                firstUncompleted && (
+                firstUncompleted ? (
                   <Link to={`/academia/aprender/${firstUncompleted.course?.slug}`} className="px-8 py-4 rounded-xl bg-[#1A4E26] text-white font-black hover:bg-[#133A1C] hover:scale-105 transition-all shadow-lg active:scale-95 flex items-center gap-2">
                     <PlayCircle size={20} /> Continuar ruta
+                  </Link>
+                ) : (
+                  <Link to="/academia/dashboard/diplomas" className="px-8 py-4 rounded-xl bg-[#D4AF37] text-[#0B2913] font-black hover:bg-[#C5A02E] hover:scale-105 transition-all shadow-lg active:scale-95 flex items-center gap-2">
+                    <Award size={20} /> Descargar Diploma
                   </Link>
                 )
               )}

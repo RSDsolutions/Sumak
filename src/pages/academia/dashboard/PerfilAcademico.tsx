@@ -82,16 +82,56 @@ export default function PerfilAcademico() {
     async function loadStats() {
       if (!profile?.id) return;
       try {
-        const [enrs, dips] = await Promise.all([
+        const syncData = await academyAPI.syncAndGetMyCredentials();
+        const [enrs, dips, certs] = await Promise.all([
           academyAPI.getMyEnrollments(profile.id),
-          academyAPI.getMyDiplomas(profile.id)
+          academyAPI.getMyDiplomas(profile.id),
+          academyAPI.getMyCertificates(profile.id),
         ]);
         const active = (enrs || []).filter((e: any) => e.status === 'active').length;
         const completed = (enrs || []).filter((e: any) => e.status === 'completed').length;
+        const allIssued = [
+          ...(dips || []).map((d: any) => ({
+            id: d.id,
+            title: d.program_name || 'Diploma de Programa SUMAK',
+            description: `Código de verificación: ${d.verification_code || 'VERIFICADO'}`,
+            modules: `Emitido el ${formatDate(d.issued_at)}`,
+            badgeLabel: 'Diploma Emitido',
+            link: d.verification_code ? `/academia/verificar?code=${d.verification_code}` : '/academia/dashboard/diplomas',
+          })),
+          ...(certs || []).map((c: any) => ({
+            id: c.id,
+            title: c.course_name || c.program_name || 'Certificado de Curso SUMAK',
+            description: `Código de verificación: ${c.verification_code || 'VERIFICADO'}`,
+            modules: `Emitido el ${formatDate(c.issued_at)}`,
+            badgeLabel: 'Certificado Emitido',
+            link: c.verification_code ? `/academia/verificar?code=${c.verification_code}` : '/academia/dashboard/diplomas',
+          })),
+        ];
+
+        const allPending = [
+          ...(syncData.pending_diplomas || []).map((pd) => ({
+            id: `pending-dip-${pd.program_id}`,
+            title: pd.title,
+            description: `Programa en curso (${pd.completed_courses} de ${pd.required_courses} cursos aprobados)`,
+            modules: `Avance actual: ${pd.progress_percentage}%`,
+            badgeLabel: 'Diploma Pendiente',
+            link: `/academia/dashboard/programas/${pd.slug}`,
+          })),
+          ...(syncData.pending_certificates || []).map((pc) => ({
+            id: `pending-cert-${pc.course_id}`,
+            title: pc.title,
+            description: `Curso en progreso (${pc.completed_lessons} de ${pc.total_lessons} lecciones completadas)`,
+            modules: `Avance actual: ${pc.progress_percentage}%`,
+            badgeLabel: 'Certificado Pendiente',
+            link: `/academia/aprender/${pc.slug}`,
+          })),
+        ];
+
         setActiveCoursesCount(active);
         setCompletedCoursesCount(completed);
-        setDiplomasCount((dips || []).length);
-        setDiplomas(dips || []);
+        setDiplomasCount(allIssued.length);
+        setDiplomas([...allIssued, ...allPending]);
       } catch (err) {
         console.error('Error cargando estadísticas de perfil:', err);
       }
@@ -207,46 +247,17 @@ export default function PerfilAcademico() {
     );
   }
 
-  // Lista de certificaciones y diplomas oficiales del estudiante
-  const displayCertifications = diplomas.length > 0
-    ? diplomas.slice(0, 3).map((dip: any, idx: number) => ({
-        id: dip.id,
-        title: dip.program_name || 'Certificado Oficial de Participación',
-        description: `Código de verificación: ${dip.verification_code || 'QR-VERIFICADO'}`,
-        modules: `Emitido el ${formatDate(dip.issued_at)}`,
-        icon: Award,
-        iconBg: idx % 2 === 0 ? 'bg-amber-50 text-[#D4AF37]' : 'bg-emerald-50 text-[#1A4E26]',
-        link: dip.verification_code ? `/academia/verificar?code=${dip.verification_code}` : '/academia/dashboard/diplomas'
-      }))
-    : [
-        {
-          id: 'demo-cert-1',
-          title: 'Certificación en Biomedicina Ancestral y Prevención',
-          description: 'Código de verificación: SUMAK-CERT-8841',
-          modules: 'Emitido el 28 de octubre 2026',
-          icon: Award,
-          iconBg: 'bg-amber-50 text-[#D4AF37]',
-          link: '/academia/dashboard/diplomas'
-        },
-        {
-          id: 'demo-cert-2',
-          title: 'Diploma en Liderazgo y Redes de Distribución',
-          description: 'Código de verificación: SUMAK-DIP-4092',
-          modules: 'Emitido el 15 de septiembre 2026',
-          icon: Award,
-          iconBg: 'bg-emerald-50 text-[#1A4E26]',
-          link: '/academia/dashboard/diplomas'
-        },
-        {
-          id: 'demo-cert-3',
-          title: 'Certificación en Prevención Renal y Bienestar',
-          description: 'Código de verificación: SUMAK-CERT-1205',
-          modules: 'Emitido el 05 de agosto 2026',
-          icon: Award,
-          iconBg: 'bg-amber-50 text-[#D4AF37]',
-          link: '/academia/dashboard/diplomas'
-        }
-      ];
+  // Lista de certificaciones y diplomas oficiales (emitidos y pendientes en progreso) del estudiante
+  const displayCertifications = diplomas.slice(0, 4).map((dip: any, idx: number) => ({
+    id: dip.id,
+    title: dip.title || dip.program_name || 'Credencial SUMAK Academy',
+    description: dip.description || `Código de verificación: ${dip.verification_code || 'QR-VERIFICADO'}`,
+    modules: dip.modules || `Emitido el ${formatDate(dip.issued_at)}`,
+    badgeLabel: dip.badgeLabel || 'Certificado',
+    icon: Award,
+    iconBg: idx % 2 === 0 ? 'bg-amber-50 text-[#D4AF37]' : 'bg-emerald-50 text-[#1A4E26]',
+    link: dip.link || '/academia/dashboard/diplomas',
+  }));
 
   const ubicacionTexto = [profile.ciudad, profile.direccion].filter(Boolean).join(', ') || 'No registrada';
 
@@ -498,7 +509,7 @@ export default function PerfilAcademico() {
 
                     <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-1 sm:pt-0">
                       <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${color.badgeText} bg-white shadow-2xs`}>
-                        Certificado
+                        {cert.badgeLabel || 'Certificado'}
                       </span>
 
                       <Link

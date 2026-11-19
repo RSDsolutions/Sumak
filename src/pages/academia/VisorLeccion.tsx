@@ -259,6 +259,7 @@ export default function VisorLeccion() {
     try {
       const newP = await academyAPI.updateProgress(currentLesson.id, course.id, 'completed', 100);
       setProgress(prev => [...prev.filter(p => p.lesson_id !== currentLesson.id), newP as AcademyProgress]);
+      await academyAPI.completeCourseIfEligible(course.id).catch(() => undefined);
       await academyAPI.issueCourseCertificate(course.id).catch(() => undefined);
       
       // Auto-avance a la siguiente lección
@@ -539,25 +540,62 @@ export default function VisorLeccion() {
                 assessmentAttempts.some(att => att.assessment_id === a.id && att.passed === true)
               ).length;
 
+              const allLessonsDone = requiredLessons.length > 0 && completedReqLessons >= requiredLessons.length;
+              const allAssessmentsDone = passedAssessmentsCount >= publishedAssessments.length;
+              const isCertificateReady = allLessonsDone && allAssessmentsDone;
+              const nextPendingAssessment = publishedAssessments.find(
+                a => !assessmentAttempts.some(att => att.assessment_id === a.id && att.passed === true)
+              );
+
               return (
-                <div className="mt-3 p-3 rounded-xl bg-[#F4F7F5] border border-[#C8D8CB] space-y-1.5">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-[#1A4E26] flex items-center gap-1">
-                    <Award size={12} /> Requisitos para Certificado
-                  </p>
+                <div className={`mt-3 p-3 rounded-xl border space-y-2 ${
+                  isCertificateReady
+                    ? 'bg-[#EBF4ED] border-[#1A4E26]/40'
+                    : 'bg-[#F4F7F5] border-[#C8D8CB]'
+                }`}>
+                  <div className="flex items-center justify-between gap-1">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-[#1A4E26] flex items-center gap-1">
+                      <Award size={12} /> {isCertificateReady ? '¡Certificado Emitido!' : 'Certificado Pendiente'}
+                    </p>
+                    <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full ${
+                      isCertificateReady
+                        ? 'bg-[#1A4E26] text-white'
+                        : 'bg-amber-100 text-amber-800'
+                    }`}>
+                      {isCertificateReady ? 'Completado' : 'En curso'}
+                    </span>
+                  </div>
                   <div className="flex items-center justify-between text-[11px] text-slate-700">
                     <span>Lecciones obligatorias:</span>
-                    <strong className={completedReqLessons >= requiredLessons.length ? 'text-emerald-700' : 'text-slate-900'}>
+                    <strong className={allLessonsDone ? 'text-emerald-700' : 'text-slate-900'}>
                       {completedReqLessons} / {requiredLessons.length}
                     </strong>
                   </div>
                   {publishedAssessments.length > 0 && (
                     <div className="flex items-center justify-between text-[11px] text-slate-700">
                       <span>Evaluaciones aprobadas:</span>
-                      <strong className={passedAssessmentsCount >= publishedAssessments.length ? 'text-emerald-700' : 'text-amber-700'}>
+                      <strong className={allAssessmentsDone ? 'text-emerald-700' : 'text-amber-700'}>
                         {passedAssessmentsCount} / {publishedAssessments.length}
                       </strong>
                     </div>
                   )}
+                  {isCertificateReady ? (
+                    <Link
+                      to="/academia/dashboard/diplomas"
+                      className="mt-1 w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-[#1A4E26] hover:bg-[#143D1E] text-white text-[11px] font-bold transition-colors shadow-2xs"
+                    >
+                      <Award size={13} className="text-[#D4AF37]" />
+                      <span>Ver y Descargar Certificado</span>
+                    </Link>
+                  ) : allLessonsDone && nextPendingAssessment ? (
+                    <Link
+                      to={`/academia/evaluacion/${nextPendingAssessment.id}`}
+                      className="mt-1 w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-[#D4AF37] hover:bg-[#c49f2e] text-[#0F2E18] text-[11px] font-black transition-colors shadow-2xs"
+                    >
+                      <ClipboardList size={13} />
+                      <span>Rendir Evaluación para Certificarme</span>
+                    </Link>
+                  ) : null}
                 </div>
               );
             })()}

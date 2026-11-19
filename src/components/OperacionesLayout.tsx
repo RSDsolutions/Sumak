@@ -47,6 +47,8 @@ const navItems: NavItem[] = [
   { label: 'Distribuidores', to: '/operaciones/distribuidores', icon: <Users size={18} aria-hidden="true" /> },
   { label: 'Red Binaria', to: '/operaciones/red', icon: <Network size={18} aria-hidden="true" /> },
   { label: 'Escalera del Éxito', to: '/operaciones/escalera', icon: <Trophy size={18} aria-hidden="true" /> },
+  { label: 'Academia: Cursos', to: '/operaciones/academia/cursos', icon: <BookOpen size={18} aria-hidden="true" /> },
+  { label: 'Academia: Programas', to: '/operaciones/academia/programas', icon: <BookOpen size={18} aria-hidden="true" /> },
   { label: 'Academia: Cobros y Pagos', to: '/operaciones/academia/cobros', icon: <DollarSign size={18} aria-hidden="true" /> },
   { label: 'Academia: Inscripciones', to: '/operaciones/academia/inscripciones', icon: <Users size={18} aria-hidden="true" /> },
   { label: 'Academia: Recetas', to: '/operaciones/academia/recetas', icon: <BookOpen size={18} aria-hidden="true" /> },

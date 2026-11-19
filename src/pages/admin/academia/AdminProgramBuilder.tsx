@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Loader2, ArrowLeft, GripVertical, Plus, Trash2, ShieldAlert } from 'lucide-react';
 import { academyAPI } from '../../../lib/academy';
 import { useToast } from '../../../lib/toast';
@@ -7,6 +7,8 @@ import { useToast } from '../../../lib/toast';
 export default function AdminProgramBuilder() {
   const { programId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const basePath = location.pathname.startsWith('/operaciones') ? '/operaciones' : '/admin';
   const toast = useToast();
   
   const [program, setProgram] = useState<any>(null);
@@ -96,7 +98,7 @@ export default function AdminProgramBuilder() {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
-      <button onClick={() => navigate('/admin/academia/programas')} className="flex items-center gap-2 text-sm font-bold text-[#6B7280] hover:text-[#111111]">
+      <button onClick={() => navigate(`${basePath}/academia/programas`)} className="flex items-center gap-2 text-sm font-bold text-[#6B7280] hover:text-[#111111]">
         <ArrowLeft size={16} /> Volver a programas
       </button>
 
