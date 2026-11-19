@@ -64,7 +64,7 @@ const navGroups: NavGroup[] = [
       { label: 'Lives', to: '/admin/academia/lives', icon: <BookOpen size={18} /> },
       { label: 'Recetas', to: '/admin/academia/recetas', icon: <BookOpen size={18} /> },
       { label: 'Cobros y Pagos', to: '/admin/academia/cobros', icon: <DollarSign size={18} /> },
-      { label: 'Diplomas', to: '/admin/academia/diplomas', icon: <Award size={18} /> },
+      { label: 'Diplomas y Certificados', to: '/admin/academia/diplomas', icon: <Award size={18} /> },
     ],
   },
   {

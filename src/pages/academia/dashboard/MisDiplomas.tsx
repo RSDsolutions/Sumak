@@ -35,6 +35,10 @@ interface IssuedCredentialCardItem {
   issued_at: string;
   verification_code: string;
   diploma_number?: string;
+  diplomaTypeName?: string;
+  templateId?: string | null;
+  diplomaTypeId?: string | null;
+  registrationSource?: string | null;
   status: 'active' | 'revoked' | 'pending_pdf';
   pdfStoragePath?: string | null;
 }
@@ -491,45 +495,37 @@ export default function MisDiplomas() {
     try {
       setDownloadingId(item.id);
 
-      // Intentar obtener el PDF oficial en Storage vía Edge Function
-      try {
-        if (item.status === 'pending_pdf' || !item.pdfStoragePath) {
-          const genRes = await callEdgeFunction<{ success?: boolean; path?: string }>(
-            'academy-generate-certificate-pdf',
-            { certificate_id: item.id }
-          ).catch(() => null);
+      // Si es un diploma externo registrado manualmente (PDF + QR estampado), abrir su PDF firmado
+      if (item.registrationSource === 'manual_qr' && item.pdfStoragePath) {
+        try {
+          const res = await callEdgeFunction<{ ok: boolean; signedUrl: string }>('academy-sign-document-url', {
+            issuance_id: item.id,
+          }).catch(() => null);
 
-          if (genRes?.path) {
-            setCertificates((prev) =>
-              prev.map((c) => (c.id === item.id ? { ...c, status: 'valid', pdf_storage_path: genRes.path } : c))
-            );
-            setDiplomas((prev) =>
-              prev.map((d) => (d.id === item.id ? ({ ...d, status: 'valid', pdf_storage_path: genRes.path } as any) : d))
-            );
+          if (res?.signedUrl) {
+            window.open(res.signedUrl, '_blank');
+            return;
           }
+        } catch {
+          // continuar al motor visual
         }
-
-        const res = await callEdgeFunction<{ ok: boolean; signedUrl: string }>('academy-sign-document-url', {
-          issuance_id: item.id,
-        }).catch(() => null);
-
-        if (res?.signedUrl) {
-          window.open(res.signedUrl, '_blank');
-          return;
-        }
-      } catch {
-        // Si la Edge Function no está disponible, usar el generador vectorial local en alta resolución
       }
 
-      // Generador local infalible en alta resolución con código QR verificable
-      await generateAndDownloadCredentialDocument({
-        type: item.type,
-        title: item.title,
-        participantName: item.participantName,
-        verificationCode: item.verification_code,
-        diplomaNumber: item.diploma_number,
-        issuedAt: item.issued_at,
-      });
+      // Renderizar y descargar PDF oficial respetando al 100% la plantilla del Estudio Visual SUMAK
+      await generateAndDownloadCredentialDocument(
+        {
+          type: item.type,
+          title: item.title,
+          participantName: item.participantName,
+          verificationCode: item.verification_code,
+          diplomaNumber: item.diploma_number,
+          issuedAt: item.issued_at,
+          diplomaTypeName: item.diplomaTypeName,
+          templateId: item.templateId,
+          diplomaTypeId: item.diplomaTypeId,
+        },
+        'pdf'
+      );
     } catch (err) {
       console.error('Error downloading credential:', err);
     } finally {
@@ -552,6 +548,10 @@ export default function MisDiplomas() {
         issued_at: dip.issued_at,
         verification_code: dip.verification_code,
         diploma_number: dip.diploma_number,
+        diplomaTypeName: dip.diploma_type?.name,
+        templateId: dip.template_id ?? null,
+        diplomaTypeId: dip.diploma_type_id ?? null,
+        registrationSource: dip.registration_source ?? null,
         status: dip.status === 'revoked' ? 'revoked' : dip.status === 'pending_pdf' ? 'pending_pdf' : 'active',
         pdfStoragePath: dip.pdf_storage_path ?? null,
       });
@@ -568,6 +568,10 @@ export default function MisDiplomas() {
         issued_at: cert.issued_at,
         verification_code: cert.verification_code || cert.diploma_number || cert.id,
         diploma_number: cert.diploma_number,
+        diplomaTypeName: cert.diploma_type?.name,
+        templateId: cert.template_id ?? null,
+        diplomaTypeId: cert.diploma_type_id ?? null,
+        registrationSource: cert.registration_source ?? null,
         status: cert.status === 'revoked' ? 'revoked' : cert.status === 'pending_pdf' ? 'pending_pdf' : 'active',
         pdfStoragePath: cert.pdf_storage_path ?? null,
       });

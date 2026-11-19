@@ -154,7 +154,7 @@ Deno.serve(async (req: Request) => {
     .from("profiles")
     .select("rol")
     .eq("id", callerId)
-    .eq("rol", "admin")
+    .in("rol", ["admin", "operaciones"])
     .maybeSingle();
 
   const { data: staffRoles } = await supabaseAdmin
@@ -306,6 +306,7 @@ Deno.serve(async (req: Request) => {
 
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const italicFont = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
   const margin = 24;
 
     // Helpers

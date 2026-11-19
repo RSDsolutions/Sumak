@@ -69,12 +69,12 @@ Deno.serve(async (req: Request) => {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  // Verify caller is admin
+  // Verify caller is admin or operaciones
   const { data: globalAdmin } = await supabaseAdmin
     .from("profiles")
     .select("rol")
     .eq("id", callerId)
-    .eq("rol", "admin")
+    .in("rol", ["admin", "operaciones"])
     .maybeSingle();
     
   const { data: staffRoles } = await supabaseAdmin

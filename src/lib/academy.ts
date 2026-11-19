@@ -859,6 +859,9 @@ export const academyAPI = {
         verification_token,
         user_id,
         course_id,
+        program_id,
+        diploma_type_id,
+        template_id,
         participant_name,
         course_name,
         program_name,
@@ -866,7 +869,7 @@ export const academyAPI = {
         issued_at,
         credential_type,
         pdf_storage_path,
-        diploma_type:academy_diploma_types (name, internal_code)
+        diploma_type:academy_diploma_types (name, internal_code, credential_category)
       `)
       .eq('user_id', uid)
       .eq('credential_type', 'certificate')
@@ -957,12 +960,95 @@ export const academyAPI = {
       .from('academy_diploma_issuances')
       .select(`
         *,
-        diploma_type:academy_diploma_types (*)
+        diploma_type:academy_diploma_types (*),
+        template:academy_diploma_templates (id, version, page_size, orientation, signatory_name, signatory_title, background_image_url, layout_config)
       `)
       .order('issued_at', { ascending: false });
 
     if (error) throw error;
-    return data as AcademyDiplomaIssuance[];
+    return data as (AcademyDiplomaIssuance & {
+      credential_type?: 'certificate' | 'diploma' | null;
+      course_name?: string | null;
+      program_id?: string | null;
+      pdf_storage_path?: string | null;
+      registration_source?: string | null;
+      metadata?: Record<string, any>;
+      template?: any;
+    })[];
+  },
+
+  async uploadDiplomaTemplateAsset(templateId: string, file: File, kind: 'bg' | 'graphic' | 'watermark' = 'graphic'): Promise<string> {
+    const safeExt = (file.name.split('.').pop() || 'png').replace(/[^a-zA-Z0-9]/g, '');
+    const path = `diploma-templates/${templateId}/${kind}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}.${safeExt}`;
+    const { data, error } = await supabase.storage.from('academy-content').upload(path, file, { upsert: true });
+    if (error) throw error;
+    const { data: urlData } = supabase.storage.from('academy-content').getPublicUrl(data.path);
+    return urlData.publicUrl;
+  },
+
+  async adminIssueCredential(input: {
+    user_id: string;
+    credential_type: 'certificate' | 'diploma';
+    diploma_type_id: string;
+    participant_name: string;
+    program_name: string;
+    course_id?: string | null;
+    program_id?: string | null;
+    issued_at?: string;
+  }) {
+    const { data, error } = await supabase.rpc('admin_issue_academy_credential', {
+      p_user_id: input.user_id,
+      p_credential_type: input.credential_type,
+      p_diploma_type_id: input.diploma_type_id,
+      p_participant_name: input.participant_name,
+      p_program_name: input.program_name,
+      p_course_id: input.course_id || null,
+      p_program_id: input.program_id || null,
+      p_issued_at: input.issued_at || new Date().toISOString(),
+    });
+    if (error) throw error;
+    return data as { ok: boolean; id: string; diploma_number: string; verification_code: string; credential_type: string };
+  },
+
+  async adminRevokeCredential(issuanceId: string, reason = 'Revocado por administración académica') {
+    const { data, error } = await supabase.rpc('admin_revoke_academy_credential', {
+      p_issuance_id: issuanceId,
+      p_reason: reason,
+    });
+    if (error) throw error;
+    return data;
+  },
+
+  async getAdminPendingCredentials() {
+    const { data, error } = await supabase.rpc('admin_get_pending_academy_credentials');
+    if (error) throw error;
+    return (data ?? { pending_certificates: [], pending_diplomas: [] }) as {
+      pending_certificates: Array<{
+        enrollment_id: string;
+        user_id: string;
+        student_name: string;
+        student_email?: string;
+        course_id: string;
+        course_title: string;
+        diploma_type_id?: string | null;
+        enrollment_status: string;
+        progress_percentage: number;
+        enrolled_at: string;
+      }>;
+      pending_diplomas: Array<{
+        program_enrollment_id: string;
+        user_id: string;
+        student_name: string;
+        student_email?: string;
+        program_id: string;
+        program_title: string;
+        diploma_type_id?: string | null;
+        program_status: string;
+        required_courses: number;
+        completed_courses: number;
+        progress_percentage: number;
+      }>;
+    };
   },
 
   async revokeDiploma(diplomaId: string, reason = 'Revocado por administración') {

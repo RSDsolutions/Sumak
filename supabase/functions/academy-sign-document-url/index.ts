@@ -90,7 +90,10 @@ Deno.serve(async (req: Request) => {
       .eq("id", callerId)
       .maybeSingle();
 
-    const isGlobalAdmin = globalAdmin?.rol === "admin" || globalAdmin?.role === "admin";
+    const isGlobalAdmin =
+      globalAdmin?.rol === "admin" ||
+      globalAdmin?.rol === "operaciones" ||
+      globalAdmin?.role === "admin";
     const isAcademyStaff = (staffRoles || []).some((role) => role.role === "academy_admin");
     if (!isGlobalAdmin && !isAcademyStaff) {
       return jsonResponse({ error: "Unauthorized to access this diploma" }, 403);
